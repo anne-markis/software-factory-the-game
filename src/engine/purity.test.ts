@@ -7,7 +7,10 @@ const FORBIDDEN = [/\bdocument\b/, /\bwindow\b/, /\blocalStorage\b/, /from "\.\.
 
 describe("engine purity", () => {
   it("engine sources never touch the DOM or import from ui", () => {
-    const files = readdirSync(ENGINE_DIR).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
+    // recursive so engine files nested in future subdirectories stay covered
+    const files = readdirSync(ENGINE_DIR, { recursive: true, encoding: "utf-8" }).filter(
+      (f) => f.endsWith(".ts") && !f.endsWith(".test.ts"),
+    );
     expect(files.length).toBeGreaterThan(0);
     for (const file of files) {
       const src = readFileSync(join(ENGINE_DIR, file), "utf-8");
