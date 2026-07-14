@@ -1,0 +1,15 @@
+{
+  "seed": 20260714,
+  "stocks": { "backlog": 10000, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0 },
+  "baseRates": { "pull": 1, "finish": 1, "deploy": 1 },
+  "debtMultiplier": 0.5,
+  "baseBurnPerDay": 5,
+  "contextSwitchFactor": 0.85,
+  "initialProject": {
+    "id": "first-contract",
+    "name": "First Contract",
+    "sizePoints": 10000,
+    "payoutPerPoint": 3,
+    "completionBonus": 2000
+  }
+}
