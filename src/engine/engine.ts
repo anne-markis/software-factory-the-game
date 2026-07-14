@@ -50,6 +50,11 @@ export class Engine {
     }
   }
 
+  /**
+   * Returns the live state object for cheap per-tick reads. Callers must not
+   * mutate it, and must not hold the reference across ticks expecting
+   * immutability: Readonly is shallow and compile-time only.
+   */
   getState(): Readonly<GameState> {
     return this.state;
   }

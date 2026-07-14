@@ -29,6 +29,9 @@ export function contextSwitchTax(state: GameState): number {
 
 export function effectiveRate(state: GameState, rate: RateId): number {
   let value = state.baseRates[rate];
+  // Sickness deliberately scales only add-op modifiers (an instance's additive
+  // contribution to a rate). If a future sick-able concept uses mul modifiers,
+  // sickness will not apply to it without extending this function.
   for (const m of state.modifiers) {
     if (m.op === "add" && applies(m, rate)) value += m.value * sickFactorFor(state, m.source);
   }

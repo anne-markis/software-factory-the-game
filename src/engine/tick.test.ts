@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
 import { parseStartConfig } from "./content";
 import startJson from "../../content/start.json";
-import type { GameContent } from "./types";
+import type { GameContent, GameState } from "./types";
 
 export function testContent(): GameContent {
   return { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [] };
@@ -62,5 +62,19 @@ describe("tick", () => {
     expect(s.stocks.backlog).toBeGreaterThanOrEqual(0);
     expect(s.stocks.inProgress).toBeGreaterThanOrEqual(0);
     expect(s.stocks.done).toBeGreaterThanOrEqual(0);
+  });
+
+  it("resumes deterministically from a saved state snapshot", () => {
+    const a = new Engine(testContent());
+    for (let i = 0; i < 5; i++) a.tick();
+    const snapshot = structuredClone(a.getState()) as GameState;
+    const b = new Engine(testContent(), snapshot);
+    // Both engines resume from the same rngState, so their rng sequences
+    // (and therefore all downstream state) must match tick for tick.
+    for (let i = 0; i < 10; i++) {
+      a.tick();
+      b.tick();
+    }
+    expect(b.getState()).toEqual(a.getState());
   });
 });

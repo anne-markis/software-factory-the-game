@@ -12,6 +12,7 @@ export function log(state: GameState, message: string): void {
 
 // Attribute shipped points FIFO across projects, pay revenue and bonuses.
 // Release 1 always has exactly one project; the FIFO loop already handles many.
+// Shipped points with no project in flight intentionally earn nothing (no contract, no pay).
 function attributeShipped(state: GameState, shippedFlow: number): void {
   let remaining = shippedFlow;
   while (remaining > 0 && state.projects.length > 0) {
@@ -20,7 +21,9 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
     p.remaining -= applied;
     state.stocks.budget += applied * p.payoutPerPoint;
     remaining -= applied;
-    if (p.remaining <= 0) {
+    // Epsilon tolerance: float drift from fractional flows could otherwise
+    // strand a project at a tiny positive remainder forever.
+    if (p.remaining <= 1e-9) {
       state.stocks.budget += p.completionBonus;
       state.completedProjects += 1;
       log(state, `Project complete: ${p.name} (+$${p.completionBonus} bonus)`);
@@ -30,11 +33,20 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
 }
 
 function chargeUpkeep(state: GameState, content: GameContent): void {
+  // Clamp at 0 deliberately per the design spec: budget never goes negative;
+  // insolvency manifests as payroll failure removals, not a negative balance.
   state.stocks.budget = Math.max(0, state.stocks.budget - state.baseBurnPerDay);
-  for (const inst of [...state.decisions]) {
+  const snapshot = [...state.decisions];
+  // Credit ALL income before charging ANY payroll, so income from a
+  // later-purchased decision can rescue an earlier decision's payroll;
+  // otherwise outcomes would depend arbitrarily on purchase order.
+  for (const inst of snapshot) {
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (def?.incomePerDay) state.stocks.budget += def.incomePerDay;
+  }
+  for (const inst of snapshot) {
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
-    if (def.incomePerDay) state.stocks.budget += def.incomePerDay;
     const perDay = def.cost.perDay ?? 0;
     if (perDay === 0) continue;
     if (state.stocks.budget >= perDay) {
