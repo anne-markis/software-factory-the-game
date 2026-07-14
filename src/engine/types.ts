@@ -8,7 +8,7 @@ export interface Stocks {
 }
 
 export type RateId = "pull" | "finish" | "deploy";
-export const RATE_IDS: RateId[] = ["pull", "finish", "deploy"];
+export const RATE_IDS: readonly RateId[] = ["pull", "finish", "deploy"];
 
 export type Effect =
   | { type: "modifyRate"; target: RateId | "all"; op: "add" | "mul"; value: number; durationDays?: number }
@@ -16,10 +16,12 @@ export type Effect =
   | { type: "addToStock"; stock: keyof Stocks; value: number }
   | { type: "sickness"; factor: number; durationDays: number };
 
+export type ModifierTarget = RateId | "allRates" | "debtMultiplier";
+
 export interface Modifier {
   id: string;
   source: string; // decision instanceId or challenge occurrence id
-  target: RateId | "allRates" | "debtMultiplier";
+  target: ModifierTarget;
   op: "add" | "mul";
   value: number;
   expiresDay?: number;
@@ -56,6 +58,9 @@ export interface DecisionInstance {
   instanceId: string;
   defId: string;
   gambleLabel?: string;
+  // Sickness is deliberately tracked per decision instance rather than as a
+  // Modifier: it scales this one instance's contribution instead of a whole
+  // rate. The engine's effectiveRate computation consults these fields.
   sickUntilDay?: number;
   sickFactor?: number;
 }
