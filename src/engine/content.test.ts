@@ -14,4 +14,16 @@ describe("parseStartConfig", () => {
   it("names the file in validation errors", () => {
     expect(() => parseStartConfig({ nope: true })).toThrow(/content\/start\.json/);
   });
+
+  it("rejects contextSwitchFactor above 1", () => {
+    expect(() => parseStartConfig({ ...startJson, contextSwitchFactor: 1.5 })).toThrow(/content\/start\.json/);
+  });
+
+  it("rejects negative debtMultiplier", () => {
+    expect(() => parseStartConfig({ ...startJson, debtMultiplier: -1 })).toThrow(/content\/start\.json/);
+  });
+
+  it("rejects unknown top-level keys", () => {
+    expect(() => parseStartConfig({ ...startJson, typoKey: 1 })).toThrow(/content\/start\.json/);
+  });
 });
