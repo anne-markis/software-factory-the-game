@@ -17,6 +17,23 @@ describe("createRng", () => {
     }
   });
 
+  it("produces different sequences for different seeds", () => {
+    expect(createRng(1).next()).not.toBe(createRng(2).next());
+  });
+
+  it("handles edge seeds (0 and negative) deterministically in [0, 1)", () => {
+    for (const seed of [0, -1]) {
+      const a = createRng(seed);
+      const b = createRng(seed);
+      for (let i = 0; i < 100; i++) {
+        const v = a.next();
+        expect(v).toBe(b.next());
+        expect(v).toBeGreaterThanOrEqual(0);
+        expect(v).toBeLessThan(1);
+      }
+    }
+  });
+
   it("can be resumed from saved state", () => {
     const a = createRng(42);
     a.next();
