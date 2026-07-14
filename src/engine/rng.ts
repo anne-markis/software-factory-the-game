@@ -7,7 +7,7 @@ export interface Rng {
  * mulberry32 PRNG.
  *
  * The isRawState flag has no runtime effect: a fresh seed and a raw internal
- * state are handled identically. It exists to document at call sites that a
+ * state are handled identically. It exists to signal at call sites that a
  * saved internal state, not a fresh seed, is being passed.
  *
  * getState() returns the state after the last next(), so passing it back
