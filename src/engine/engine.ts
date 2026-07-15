@@ -1,6 +1,7 @@
 import type { GameContent, GameState } from "./types";
 import { createRng, type Rng } from "./rng";
 import { tick, type ChallengePhase } from "./tick";
+import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
 
 const noChallenges: ChallengePhase = () => {};
 
@@ -70,5 +71,17 @@ export class Engine {
 
   resume(): void {
     this.state.paused = false;
+  }
+
+  applyDecision(defId: string): void {
+    applyDecision(this.state, this.content, defId, this.rng);
+  }
+
+  removeDecision(instanceId: string): void {
+    removeDecision(this.state, this.content, instanceId);
+  }
+
+  availableDecisions(): Availability[] {
+    return availability(this.state, this.content);
   }
 }
