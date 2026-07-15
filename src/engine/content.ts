@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { StartConfig, DecisionDef } from "./types";
+import type { StartConfig, DecisionDef, ChallengeDef } from "./types";
 
 // Schemas are .strict(): content files are hand-edited, so unknown or
 // typo'd keys must fail loudly instead of being silently stripped.
@@ -125,6 +125,58 @@ export function parseDecisions(json: unknown): DecisionDef[] {
     }
     for (const syn of def.synergies ?? []) {
       if (!ids.has(syn.ifOwned)) throw new Error(`Invalid content in content/decisions.json: "${def.id}" synergy references unknown id "${syn.ifOwned}"`);
+    }
+  }
+  return defs;
+}
+
+const choiceOptionSchema = z.object({ id: z.string(), label: z.string(), effects: z.array(effectSchema) }).strict();
+
+const challengeSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string(),
+    probabilityPerDay: z.number().min(0).max(1),
+    perHumanDev: z.boolean().optional(),
+    condition: z
+      .object({
+        minHumanDevs: z.number().int().min(0).optional(),
+        maxHumanDevs: z.number().int().min(0).optional(),
+        hasTag: z.string().optional(),
+        minTechDebt: z.number().min(0).optional(),
+      })
+      .strict()
+      .optional(),
+    probScaling: z.object({ stat: z.literal("techDebt"), per: z.number().positive(), add: z.number().min(0) }).strict().optional(),
+    effects: z.array(effectSchema),
+    choice: z
+      .object({ expiresInDays: z.number().int().positive(), defaultOptionId: z.string(), options: z.array(choiceOptionSchema).min(1) })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+export function parseChallenges(json: unknown): ChallengeDef[] {
+  const result = z.array(challengeSchema).safeParse(json);
+  if (!result.success) fail("content/challenges.json", result.error);
+  const defs: ChallengeDef[] = result.data;
+  const ids = new Set<string>();
+  for (const def of defs) {
+    if (ids.has(def.id)) {
+      throw new Error(`Invalid content in content/challenges.json: duplicate challenge id "${def.id}"`);
+    }
+    ids.add(def.id);
+    if (def.choice && !def.choice.options.some((o) => o.id === def.choice!.defaultOptionId)) {
+      throw new Error(`Invalid content in content/challenges.json: "${def.id}" default option "${def.choice.defaultOptionId}" not found`);
+    }
+    // the engine queues the choice and never applies top-level effects, so both set = silent content loss
+    if (def.choice && def.effects.length > 0) {
+      throw new Error(`Invalid content in content/challenges.json: "${def.id}" has both a choice and top-level effects; effects would be silently ignored`);
+    }
+    // a sickness effect needs a per-human-dev roll to target an instance; without it the effect no-ops
+    if (def.effects.some((e) => e.type === "sickness") && !def.perHumanDev) {
+      throw new Error(`Invalid content in content/challenges.json: "${def.id}" has a sickness effect but perHumanDev is not true`);
     }
   }
   return defs;

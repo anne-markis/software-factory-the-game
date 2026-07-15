@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { parseStartConfig, parseDecisions } from "./content";
+import { parseStartConfig, parseDecisions, parseChallenges } from "./content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
+import challengesJson from "../../content/challenges.json";
 
 describe("parseStartConfig", () => {
   it("parses the shipped start.json", () => {
@@ -63,6 +64,65 @@ describe("parseDecisions", () => {
       parseDecisions([
         { id: "x", name: "x", description: "x", tags: [], cost: {}, effects: [], removable: true },
         { id: "x", name: "x2", description: "x2", tags: [], cost: {}, effects: [], removable: true },
+      ]),
+    ).toThrow(/duplicate/i);
+  });
+});
+
+describe("parseChallenges", () => {
+  it("parses the shipped challenges.json", () => {
+    const defs = parseChallenges(challengesJson);
+    const ids = defs.map((c) => c.id);
+    expect(ids).toContain("sickness");
+    expect(ids).toContain("ddos");
+    const poached = defs.find((c) => c.id === "key-dev-poached")!;
+    expect(poached.choice!.options.map((o) => o.id)).toContain(poached.choice!.defaultOptionId);
+    const sickness = defs.find((c) => c.id === "sickness")!;
+    expect(sickness.probabilityPerDay).toBe(0.1);
+    expect(sickness.perHumanDev).toBe(true);
+    const incident = defs.find((c) => c.id === "prod-incident")!;
+    expect(incident.probScaling).toEqual({ stat: "techDebt", per: 500, add: 0.01 });
+  });
+
+  it("rejects a choice challenge with top-level effects", () => {
+    expect(() =>
+      parseChallenges([
+        {
+          id: "bad", name: "bad", description: "bad", probabilityPerDay: 0.1,
+          effects: [{ type: "addToStock", stock: "budget", value: -1 }],
+          choice: { expiresInDays: 3, defaultOptionId: "a", options: [{ id: "a", label: "a", effects: [] }] },
+        },
+      ]),
+    ).toThrow(/silently ignored/);
+  });
+
+  it("rejects a sickness effect without perHumanDev", () => {
+    expect(() =>
+      parseChallenges([
+        {
+          id: "bad", name: "bad", description: "bad", probabilityPerDay: 0.1,
+          effects: [{ type: "sickness", factor: 0.7, durationDays: 5 }],
+        },
+      ]),
+    ).toThrow(/perHumanDev/);
+  });
+
+  it("rejects a choice whose default option id does not exist", () => {
+    expect(() =>
+      parseChallenges([
+        {
+          id: "bad", name: "bad", description: "bad", probabilityPerDay: 0.1, effects: [],
+          choice: { expiresInDays: 3, defaultOptionId: "ghost", options: [{ id: "a", label: "a", effects: [] }] },
+        },
+      ]),
+    ).toThrow(/ghost/);
+  });
+
+  it("rejects duplicate challenge ids", () => {
+    expect(() =>
+      parseChallenges([
+        { id: "x", name: "x", description: "x", probabilityPerDay: 0.1, effects: [] },
+        { id: "x", name: "x2", description: "x2", probabilityPerDay: 0.1, effects: [] },
       ]),
     ).toThrow(/duplicate/i);
   });

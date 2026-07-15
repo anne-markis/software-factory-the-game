@@ -1,0 +1,60 @@
+[
+  {
+    "id": "sickness",
+    "name": "Sickness",
+    "description": "A developer is out sick: their contribution drops 30% for 5 days.",
+    "probabilityPerDay": 0.1,
+    "perHumanDev": true,
+    "condition": { "minHumanDevs": 1 },
+    "effects": [{ "type": "sickness", "factor": 0.7, "durationDays": 5 }]
+  },
+  {
+    "id": "ddos",
+    "name": "DDoS attack",
+    "description": "Attackers hammer your endpoints. Mitigation costs $100.",
+    "probabilityPerDay": 0.05,
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": -100 }]
+  },
+  {
+    "id": "scope-creep",
+    "name": "Scope creep",
+    "description": "The client 'just remembered' a few requirements. Backlog +200.",
+    "probabilityPerDay": 0.1,
+    "effects": [{ "type": "addToStock", "stock": "backlog", "value": 200 }]
+  },
+  {
+    "id": "prod-incident",
+    "name": "Production incident",
+    "description": "Something broke in production. More likely the more tech debt you carry. Costs $250 and slows everything 20% for 3 days.",
+    "probabilityPerDay": 0.01,
+    "probScaling": { "stat": "techDebt", "per": 500, "add": 0.01 },
+    "effects": [
+      { "type": "addToStock", "stock": "budget", "value": -250 },
+      { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.8, "durationDays": 3 }
+    ]
+  },
+  {
+    "id": "laptop-dies",
+    "name": "Laptop dies",
+    "description": "Your only machine gives up. Replacement: $1,500.",
+    "probabilityPerDay": 0.03,
+    "condition": { "maxHumanDevs": 0 },
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": -1500 }]
+  },
+  {
+    "id": "key-dev-poached",
+    "name": "Key developer poached",
+    "description": "A competitor made your developer an offer. Match it or lose them.",
+    "probabilityPerDay": 0.02,
+    "condition": { "minHumanDevs": 1 },
+    "effects": [],
+    "choice": {
+      "expiresInDays": 3,
+      "defaultOptionId": "let-them-go",
+      "options": [
+        { "id": "match-offer", "label": "Match the offer ($800)", "effects": [{ "type": "addToStock", "stock": "budget", "value": -800 }] },
+        { "id": "let-them-go", "label": "Let them go (all rates -15% for 10 days)", "effects": [{ "type": "modifyRate", "target": "all", "op": "mul", "value": 0.85, "durationDays": 10 }] }
+      ]
+    }
+  }
+]
