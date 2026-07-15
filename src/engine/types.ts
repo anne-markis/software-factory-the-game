@@ -51,6 +51,7 @@ export interface DecisionDef {
   gamble?: GambleOutcome[];
   requires?: string[];
   removable: boolean;
+  unique?: boolean; // at most one owned instance at a time
   synergies?: Synergy[];
 }
 
@@ -144,5 +145,6 @@ export interface GameState {
   log: LogEntry[];
   pointsPerDay: number;
   nextInstanceId: number;
+  nextModifierId: number;
   rngState: number;
 }
