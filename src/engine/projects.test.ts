@@ -52,6 +52,23 @@ describe("projects", () => {
     expect(s.log.some((l) => l.message.includes("Project complete: First Contract"))).toBe(true);
   });
 
+  it("rejects starting a project already in flight", () => {
+    const e = new Engine(content());
+    e.startProject("small-crm");
+    expect(() => e.startProject("small-crm")).toThrow(/already in flight/);
+  });
+
+  it("allows restarting a project after completion (current policy: projects are repeatable)", () => {
+    const c = content();
+    c.start.initialProject.sizePoints = 2;
+    c.start.stocks.backlog = 2;
+    const e = new Engine(c);
+    for (let i = 0; i < 6; i++) e.tick(); // complete the tiny initial project
+    expect(e.getState().completedProjects).toBe(1);
+    e.startProject("small-crm");
+    e.getState().projects.forEach((p) => expect(p.defId).toBe("small-crm"));
+  });
+
   it("isStalled when pipeline is empty and nothing is affordable", () => {
     const c = content({ backlog: 0, budget: 10 });
     const e = new Engine(c);
