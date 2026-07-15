@@ -1,4 +1,5 @@
 import type { Availability } from "../engine/decisions";
+import { contextSwitchTax } from "../engine/modifiers";
 import type { ProjectAvailability } from "../engine/projects";
 import type { DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
 
@@ -67,17 +68,17 @@ export function renderProjects(
   offers: ProjectAvailability[],
   state: Readonly<GameState>,
 ): string {
-  const taxNow = inFlight.length <= 1 ? 1 : Math.pow(state.contextSwitchFactor, inFlight.length - 1);
+  const taxNow = contextSwitchTax(state);
   const taxNext = Math.pow(state.contextSwitchFactor, inFlight.length);
   const flight = inFlight
-    .map((p) => `<div>${esc(p.name)}: ${fmt(p.remaining)} points left ($${p.payoutPerPoint}/pt, $${fmt(p.completionBonus)} on completion)</div>`)
+    .map((p) => `<div>${esc(p.name)}: ${fmt(p.remaining)} points left ($${fmt(p.payoutPerPoint)}/pt, $${fmt(p.completionBonus)} on completion)</div>`)
     .join("");
   const shop = offers
     .map((o) => {
       const disabled = o.startable ? "" : "disabled";
       const reason = o.reason ? ` (${esc(o.reason)})` : "";
       return `<div><button data-project="${esc(o.def.id)}" ${disabled}>Start</button> <strong>${esc(o.def.name)}</strong>${reason}<br/>
-        <small>${fmt(o.def.sizePoints)} points, costs $${fmt(o.def.upfrontCost)}, pays $${o.def.payoutPerPoint}/pt + $${fmt(o.def.completionBonus)} bonus.
+        <small>${fmt(o.def.sizePoints)} points, costs $${fmt(o.def.upfrontCost)}, pays $${fmt(o.def.payoutPerPoint)}/pt + $${fmt(o.def.completionBonus)} bonus.
         Starting this drops efficiency to ${(taxNext * 100).toFixed(0)}%.</small></div>`;
     })
     .join("");
