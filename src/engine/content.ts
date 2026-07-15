@@ -103,7 +103,8 @@ const decisionSchema = z
 export function parseDecisions(json: unknown): DecisionDef[] {
   const result = z.array(decisionSchema).safeParse(json);
   if (!result.success) fail("content/decisions.json", result.error);
-  const defs = result.data as DecisionDef[];
+  // plain annotation (no cast) so schema/type drift fails compilation here
+  const defs: DecisionDef[] = result.data;
   const ids = new Set<string>();
   for (const def of defs) {
     if (ids.has(def.id)) {

@@ -47,7 +47,7 @@ describe("parseDecisions", () => {
           gamble: [{ probability: 0.5, label: "a", effects: [] }],
         },
       ]),
-    ).toThrow(/content\/decisions\.json/);
+    ).toThrow(/gamble for "x" sums to 0.5/);
   });
 
   it("rejects a requires reference to an unknown decision id", () => {
