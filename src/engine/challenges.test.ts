@@ -24,6 +24,13 @@ function scriptedRng(values: number[]): Rng {
 }
 
 describe("rollChallenges", () => {
+  it("content order matches what the scripted rng sequences assume", () => {
+    // every scripted array below encodes this order; if this fails, fix the scripts too
+    expect(content().challenges.map((c) => c.id)).toEqual([
+      "sickness", "ddos", "scope-creep", "prod-incident", "laptop-dies", "key-dev-poached",
+    ]);
+  });
+
   it("fires an unconditional challenge when the roll is under its probability", () => {
     const c = content();
     const s = initialState(c);
