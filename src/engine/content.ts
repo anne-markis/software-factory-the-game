@@ -90,6 +90,7 @@ const decisionSchema = z
     gamble: z.array(gambleOutcomeSchema).optional(),
     requires: z.array(z.string()).optional(),
     removable: z.boolean(),
+    unique: z.boolean().optional(),
     synergies: z
       .array(
         z

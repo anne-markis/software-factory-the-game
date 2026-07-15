@@ -51,6 +51,7 @@ export interface DecisionDef {
   gamble?: GambleOutcome[];
   requires?: string[];
   removable: boolean;
+  unique?: boolean; // at most one owned instance at a time
   synergies?: Synergy[];
 }
 

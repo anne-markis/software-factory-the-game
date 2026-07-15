@@ -61,6 +61,36 @@ describe("decisions", () => {
     expect(s.modifiers.filter((m) => m.source === inst.instanceId)).toHaveLength(0);
   });
 
+  it("rejects a second purchase of a unique decision", () => {
+    const e = new Engine(content());
+    e.applyDecision("test-suite");
+    expect(() => e.applyDecision("test-suite")).toThrow(/already owned/);
+    const s = e.getState();
+    const instances = s.decisions.filter((d) => d.defId === "test-suite");
+    expect(instances).toHaveLength(1);
+    const debtMods = s.modifiers.filter(
+      (m) => m.target === "debtMultiplier" && m.source === instances[0].instanceId,
+    );
+    expect(debtMods).toHaveLength(1);
+  });
+
+  it("removeDecision rejects non-removable decisions", () => {
+    const e = new Engine(content());
+    e.applyDecision("test-suite");
+    const inst = e.getState().decisions[0];
+    expect(() => e.removeDecision(inst.instanceId)).toThrow(/cannot be removed/);
+  });
+
+  it("applyDecision rejects unknown decision ids", () => {
+    const e = new Engine(content());
+    expect(() => e.applyDecision("nope")).toThrow(/Unknown decision/);
+  });
+
+  it("removeDecision rejects unknown instance ids", () => {
+    const e = new Engine(content());
+    expect(() => e.removeDecision("inst-999")).toThrow(/Unknown instance/);
+  });
+
   it("payroll failure removes the decision permanently during tick", () => {
     const c = content();
     c.start.stocks.budget = 300;

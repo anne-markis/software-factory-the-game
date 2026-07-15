@@ -9,7 +9,8 @@
       { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.5, "durationDays": 5 },
       { "type": "modifyDebtMultiplier", "op": "mul", "value": 0.5 }
     ],
-    "removable": false
+    "removable": false,
+    "unique": true
   },
   {
     "id": "ci-cd",
@@ -22,7 +23,8 @@
       { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.5, "durationDays": 1 },
       { "type": "modifyRate", "target": "deploy", "op": "mul", "value": 1.1 }
     ],
-    "removable": false
+    "removable": false,
+    "unique": true
   },
   {
     "id": "basic-dev",
