@@ -170,6 +170,14 @@ export function parseChallenges(json: unknown): ChallengeDef[] {
     if (def.choice && !def.choice.options.some((o) => o.id === def.choice!.defaultOptionId)) {
       throw new Error(`Invalid content in content/challenges.json: "${def.id}" default option "${def.choice.defaultOptionId}" not found`);
     }
+    // the engine queues the choice and never applies top-level effects, so both set = silent content loss
+    if (def.choice && def.effects.length > 0) {
+      throw new Error(`Invalid content in content/challenges.json: "${def.id}" has both a choice and top-level effects; effects would be silently ignored`);
+    }
+    // a sickness effect needs a per-human-dev roll to target an instance; without it the effect no-ops
+    if (def.effects.some((e) => e.type === "sickness") && !def.perHumanDev) {
+      throw new Error(`Invalid content in content/challenges.json: "${def.id}" has a sickness effect but perHumanDev is not true`);
+    }
   }
   return defs;
 }

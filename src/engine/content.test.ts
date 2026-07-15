@@ -77,6 +77,34 @@ describe("parseChallenges", () => {
     expect(ids).toContain("ddos");
     const poached = defs.find((c) => c.id === "key-dev-poached")!;
     expect(poached.choice!.options.map((o) => o.id)).toContain(poached.choice!.defaultOptionId);
+    const sickness = defs.find((c) => c.id === "sickness")!;
+    expect(sickness.probabilityPerDay).toBe(0.1);
+    expect(sickness.perHumanDev).toBe(true);
+    const incident = defs.find((c) => c.id === "prod-incident")!;
+    expect(incident.probScaling).toEqual({ stat: "techDebt", per: 500, add: 0.01 });
+  });
+
+  it("rejects a choice challenge with top-level effects", () => {
+    expect(() =>
+      parseChallenges([
+        {
+          id: "bad", name: "bad", description: "bad", probabilityPerDay: 0.1,
+          effects: [{ type: "addToStock", stock: "budget", value: -1 }],
+          choice: { expiresInDays: 3, defaultOptionId: "a", options: [{ id: "a", label: "a", effects: [] }] },
+        },
+      ]),
+    ).toThrow(/silently ignored/);
+  });
+
+  it("rejects a sickness effect without perHumanDev", () => {
+    expect(() =>
+      parseChallenges([
+        {
+          id: "bad", name: "bad", description: "bad", probabilityPerDay: 0.1,
+          effects: [{ type: "sickness", factor: 0.7, durationDays: 5 }],
+        },
+      ]),
+    ).toThrow(/perHumanDev/);
   });
 
   it("rejects a choice whose default option id does not exist", () => {
