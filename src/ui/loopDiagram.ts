@@ -1,4 +1,5 @@
-import type { GameState, RateId } from "../engine/types";
+import type { GameState } from "../engine/types";
+import { RATE_IDS } from "../engine/types";
 import { effectiveRate, effectiveDebtMultiplier } from "../engine/modifiers";
 
 const STAGES: { key: "backlog" | "inProgress" | "done" | "shipped"; label: string }[] = [
@@ -7,7 +8,7 @@ const STAGES: { key: "backlog" | "inProgress" | "done" | "shipped"; label: strin
   { key: "done", label: "Done" },
   { key: "shipped", label: "Shipped" },
 ];
-const RATES: RateId[] = ["pull", "finish", "deploy"];
+const RATES = RATE_IDS;
 
 export function loopDiagramSvg(state: Readonly<GameState>): string {
   const boxW = 150;
