@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { esc, renderDecisions, renderLog, renderChoices } from "./render";
-import { parseStartConfig, parseDecisions, parseChallenges } from "../engine/content";
+import { esc, renderDecisions, renderLog, renderChoices, renderProjects, renderStall } from "./render";
+import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
+import projectsJson from "../../content/projects.json";
 import { Engine } from "../engine/engine";
 import type { GameContent } from "../engine/types";
 
@@ -70,5 +71,26 @@ describe("renderChoices", () => {
     expect(html).toContain('data-choice="key-dev-poached" data-option="match-offer"');
     expect(html).toContain("(3 days left)");
     expect(html).toContain("Decision needed");
+  });
+});
+
+describe("renderProjects", () => {
+  it("shows in-flight projects, offers with gating reasons, and the efficiency preview", () => {
+    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const e = new Engine(c);
+    const html = renderProjects([...e.getState().projects], e.availableProjects(), e.getState());
+    expect(html).toContain("Projects (efficiency 100%)");
+    expect(html).toContain("First Contract: 10,000 points left");
+    expect(html).toContain('data-project="small-crm" ');
+    expect(html).toContain('data-project="big-migration" disabled');
+    expect(html).toContain("requires 1 completed project(s)");
+    expect(html).toContain("drops efficiency to 85%");
+  });
+});
+
+describe("renderStall", () => {
+  it("renders the banner only when stalled", () => {
+    expect(renderStall(true)).toContain("stalled");
+    expect(renderStall(false)).toBe("");
   });
 });
