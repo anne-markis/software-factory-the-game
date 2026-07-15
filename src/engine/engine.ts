@@ -2,8 +2,7 @@ import type { GameContent, GameState } from "./types";
 import { createRng, type Rng } from "./rng";
 import { tick, type ChallengePhase } from "./tick";
 import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
-
-const noChallenges: ChallengePhase = () => {};
+import { rollChallenges, resolveChoice } from "./challenges";
 
 export function initialState(content: GameContent): GameState {
   const s = content.start;
@@ -39,7 +38,7 @@ export function initialState(content: GameContent): GameState {
 export class Engine {
   protected state: GameState;
   protected rng: Rng;
-  protected challengePhase: ChallengePhase = noChallenges;
+  protected challengePhase: ChallengePhase = rollChallenges;
 
   constructor(protected content: GameContent, restored?: GameState) {
     if (restored) {
@@ -83,5 +82,9 @@ export class Engine {
 
   availableDecisions(): Availability[] {
     return availability(this.state, this.content);
+  }
+
+  resolveChoice(challengeId: string, optionId: string): void {
+    resolveChoice(this.state, this.content, challengeId, optionId);
   }
 }
