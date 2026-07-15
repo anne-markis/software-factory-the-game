@@ -1,14 +1,15 @@
 import { Engine } from "../engine/engine";
-import { parseStartConfig, parseDecisions } from "../engine/content";
+import { parseStartConfig, parseDecisions, parseChallenges } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
+import challengesJson from "../../content/challenges.json";
 import type { GameContent } from "../engine/types";
-import { renderStats, renderDecisions } from "./render";
+import { renderStats, renderDecisions, renderLog, renderChoices } from "./render";
 
 const content: GameContent = {
   start: parseStartConfig(startJson),
   decisions: parseDecisions(decisionsJson),
-  challenges: [],
+  challenges: parseChallenges(challengesJson),
   projects: [],
 };
 
@@ -21,6 +22,8 @@ function render(): void {
     ${renderStats(state)}
     <button id="pause">${state.paused ? "Resume" : "Pause"}</button>
     ${renderDecisions(engine.availableDecisions(), [...state.decisions], content)}
+    ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
+    ${renderLog(state.log)}
   `;
 }
 
@@ -42,6 +45,8 @@ app.addEventListener("click", (ev) => {
     }
   } else if (target.dataset.remove) {
     engine.removeDecision(target.dataset.remove);
+  } else if (target.dataset.choice && target.dataset.option) {
+    engine.resolveChoice(target.dataset.choice, target.dataset.option);
   } else {
     return; // not one of ours; skip the re-render
   }

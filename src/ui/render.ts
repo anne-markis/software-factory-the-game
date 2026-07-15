@@ -1,5 +1,5 @@
 import type { Availability } from "../engine/decisions";
-import type { DecisionInstance, GameContent, GameState } from "../engine/types";
+import type { DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef } from "../engine/types";
 
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -52,4 +52,26 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
   return `
     <div class="panel"><h3>Alter the loop</h3>${shop}</div>
     <div class="panel"><h3>Owned</h3>${ownedList || "<small>Nothing yet. You are a solo dev.</small>"}</div>`;
+}
+
+export function renderLog(log: readonly LogEntry[]): string {
+  const lines = [...log].slice(-30).reverse()
+    .map((entry) => `<div>Day ${entry.day}: ${esc(entry.message)}</div>`)
+    .join("");
+  return `<div class="panel"><h3>Events</h3><div class="log">${lines || "<small>Quiet so far.</small>"}</div></div>`;
+}
+
+export function renderChoices(pending: readonly PendingChoice[], challenges: ChallengeDef[], day: number): string {
+  if (pending.length === 0) return "";
+  const blocks = pending
+    .map((pc) => {
+      const def = challenges.find((c) => c.id === pc.challengeId);
+      if (!def?.choice) return "";
+      const buttons = def.choice.options
+        .map((o) => `<button data-choice="${esc(def.id)}" data-option="${esc(o.id)}">${esc(o.label)}</button>`)
+        .join(" ");
+      return `<div><strong>${esc(def.name)}</strong>: ${esc(def.description)} <em>(${pc.expiresDay - day} days left)</em><br/>${buttons}</div>`;
+    })
+    .join("");
+  return `<div class="panel" style="border-color:#c00"><h3>Decision needed</h3>${blocks}</div>`;
 }
