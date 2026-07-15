@@ -6,6 +6,7 @@ import challengesJson from "../../content/challenges.json";
 import projectsJson from "../../content/projects.json";
 import type { GameContent } from "../engine/types";
 import { renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall } from "./render";
+import { loopDiagramSvg } from "./loopDiagram";
 
 const content: GameContent = {
   start: parseStartConfig(startJson),
@@ -21,6 +22,7 @@ function render(): void {
   const state = engine.getState();
   app.innerHTML = `
     ${renderStats(state)}
+    ${loopDiagramSvg(state)}
     ${renderStall(engine.isStalled())}
     <button id="pause">${state.paused ? "Resume" : "Pause"}</button>
     ${renderDecisions(engine.availableDecisions(), [...state.decisions], content)}
