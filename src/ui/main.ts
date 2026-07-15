@@ -7,6 +7,7 @@ import projectsJson from "../../content/projects.json";
 import type { GameContent } from "../engine/types";
 import { renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall } from "./render";
 import { loopDiagramSvg } from "./loopDiagram";
+import { saveGame, loadGame, clearSave } from "./storage";
 
 const content: GameContent = {
   start: parseStartConfig(startJson),
@@ -15,7 +16,7 @@ const content: GameContent = {
   projects: parseProjects(projectsJson),
 };
 
-const engine = new Engine(content);
+const engine = new Engine(content, loadGame());
 const app = document.getElementById("app")!;
 
 function render(): void {
@@ -25,6 +26,7 @@ function render(): void {
     ${loopDiagramSvg(state)}
     ${renderStall(engine.isStalled())}
     <button id="pause">${state.paused ? "Resume" : "Pause"}</button>
+    <button id="reset">Reset game</button>
     ${renderDecisions(engine.availableDecisions(), [...state.decisions], content)}
     ${renderProjects([...state.projects], engine.availableProjects(), state)}
     ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
@@ -58,6 +60,11 @@ app.addEventListener("click", (ev) => {
     } catch (err) {
       alert((err as Error).message);
     }
+  } else if (target.id === "reset") {
+    if (confirm("Wipe this factory and start over?")) {
+      clearSave();
+      location.reload();
+    }
   } else {
     return; // not one of ours; skip the re-render
   }
@@ -66,6 +73,7 @@ app.addEventListener("click", (ev) => {
 
 const intervalId = setInterval(() => {
   engine.tick();
+  if (engine.getState().day % 10 === 0) saveGame(engine.getState());
   render();
 }, 1000);
 render();
