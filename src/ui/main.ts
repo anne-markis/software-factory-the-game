@@ -1,16 +1,17 @@
 import { Engine } from "../engine/engine";
-import { parseStartConfig, parseDecisions, parseChallenges } from "../engine/content";
+import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
+import projectsJson from "../../content/projects.json";
 import type { GameContent } from "../engine/types";
-import { renderStats, renderDecisions, renderLog, renderChoices } from "./render";
+import { renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall } from "./render";
 
 const content: GameContent = {
   start: parseStartConfig(startJson),
   decisions: parseDecisions(decisionsJson),
   challenges: parseChallenges(challengesJson),
-  projects: [],
+  projects: parseProjects(projectsJson),
 };
 
 const engine = new Engine(content);
@@ -20,8 +21,10 @@ function render(): void {
   const state = engine.getState();
   app.innerHTML = `
     ${renderStats(state)}
+    ${renderStall(engine.isStalled())}
     <button id="pause">${state.paused ? "Resume" : "Pause"}</button>
     ${renderDecisions(engine.availableDecisions(), [...state.decisions], content)}
+    ${renderProjects([...state.projects], engine.availableProjects(), state)}
     ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
     ${renderLog(state.log)}
   `;
@@ -47,6 +50,12 @@ app.addEventListener("click", (ev) => {
     engine.removeDecision(target.dataset.remove);
   } else if (target.dataset.choice && target.dataset.option) {
     engine.resolveChoice(target.dataset.choice, target.dataset.option);
+  } else if (target.dataset.project) {
+    try {
+      engine.startProject(target.dataset.project);
+    } catch (err) {
+      alert((err as Error).message);
+    }
   } else {
     return; // not one of ours; skip the re-render
   }
