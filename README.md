@@ -36,6 +36,12 @@ Effects use a small typed vocabulary (`modifyRate`, `modifyDebtMultiplier`,
 names. Gamble tables must sum to 1. Choice challenges must not carry
 top-level effects, and sickness effects require `perHumanDev`.
 
+Timing note for `durationDays`: effects applied at purchase time are live
+for `durationDays - 1` ticks (expiry is pruned at the start of the tick the
+duration lands on), while effects applied mid-tick by challenges run for the
+full count. Content that wants a purchase slowdown felt for N days should
+use `durationDays: N + 1`; the shipped decisions already do.
+
 ## Design notes
 
 - One tick = one second = one game day.

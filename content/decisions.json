@@ -3,11 +3,25 @@
     "id": "test-suite",
     "name": "Add test suite",
     "description": "Slows all work 50% for 5 days while you write tests. Permanently halves tech debt accumulation. Unlocks CI/CD.",
-    "tags": ["process"],
-    "cost": { "oneTime": 500 },
+    "tags": [
+      "process"
+    ],
+    "cost": {
+      "oneTime": 500
+    },
     "effects": [
-      { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.5, "durationDays": 5 },
-      { "type": "modifyDebtMultiplier", "op": "mul", "value": 0.5 }
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "mul",
+        "value": 0.5,
+        "durationDays": 6
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 0.5
+      }
     ],
     "removable": false,
     "unique": true
@@ -16,12 +30,29 @@
     "id": "ci-cd",
     "name": "CI/CD pipeline",
     "description": "Slows all work 50% for 1 day to set up. Permanently speeds deploys by 10%.",
-    "tags": ["process"],
-    "cost": { "oneTime": 750 },
-    "requires": ["test-suite"],
+    "tags": [
+      "process"
+    ],
+    "cost": {
+      "oneTime": 750
+    },
+    "requires": [
+      "test-suite"
+    ],
     "effects": [
-      { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.5, "durationDays": 1 },
-      { "type": "modifyRate", "target": "deploy", "op": "mul", "value": 1.1 }
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "mul",
+        "value": 0.5,
+        "durationDays": 2
+      },
+      {
+        "type": "modifyRate",
+        "target": "deploy",
+        "op": "mul",
+        "value": 1.1
+      }
     ],
     "removable": false,
     "unique": true
@@ -30,15 +61,63 @@
     "id": "basic-dev",
     "name": "Hire basic developer",
     "description": "Costs $275/day while employed. Hiring is a gamble: they might be great, or might slow the team down. Removed permanently if payroll fails.",
-    "tags": ["human"],
+    "tags": [
+      "human"
+    ],
     "human": true,
-    "cost": { "perDay": 275 },
+    "cost": {
+      "perDay": 275
+    },
     "effects": [],
     "gamble": [
-      { "probability": 0.5, "label": "Strong hire", "effects": [{ "type": "modifyRate", "target": "all", "op": "add", "value": 1.0 }] },
-      { "probability": 0.25, "label": "Decent hire", "effects": [{ "type": "modifyRate", "target": "all", "op": "add", "value": 0.5 }] },
-      { "probability": 0.2, "label": "Net-negative hire", "effects": [{ "type": "modifyRate", "target": "all", "op": "add", "value": -0.5 }] },
-      { "probability": 0.05, "label": "Disaster hire", "effects": [{ "type": "modifyRate", "target": "all", "op": "add", "value": -1.0 }] }
+      {
+        "probability": 0.5,
+        "label": "Strong hire",
+        "effects": [
+          {
+            "type": "modifyRate",
+            "target": "all",
+            "op": "add",
+            "value": 1.0
+          }
+        ]
+      },
+      {
+        "probability": 0.25,
+        "label": "Decent hire",
+        "effects": [
+          {
+            "type": "modifyRate",
+            "target": "all",
+            "op": "add",
+            "value": 0.5
+          }
+        ]
+      },
+      {
+        "probability": 0.2,
+        "label": "Net-negative hire",
+        "effects": [
+          {
+            "type": "modifyRate",
+            "target": "all",
+            "op": "add",
+            "value": -0.5
+          }
+        ]
+      },
+      {
+        "probability": 0.05,
+        "label": "Disaster hire",
+        "effects": [
+          {
+            "type": "modifyRate",
+            "target": "all",
+            "op": "add",
+            "value": -1.0
+          }
+        ]
+      }
     ],
     "removable": true
   },
@@ -46,18 +125,41 @@
     "id": "agent",
     "name": "Add coding agent",
     "description": "$10 setup, $30/day to run. Speeds In Progress work by 20% but adds 20% more tech debt. A harness tames the debt.",
-    "tags": ["darkfactory"],
-    "cost": { "oneTime": 10, "perDay": 30 },
+    "tags": [
+      "darkfactory"
+    ],
+    "cost": {
+      "oneTime": 10,
+      "perDay": 30
+    },
     "effects": [
-      { "type": "modifyRate", "target": "finish", "op": "mul", "value": 1.2 },
-      { "type": "modifyDebtMultiplier", "op": "mul", "value": 1.2 }
+      {
+        "type": "modifyRate",
+        "target": "finish",
+        "op": "mul",
+        "value": 1.2
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 1.2
+      }
     ],
     "synergies": [
       {
         "ifOwned": "agent-harness",
         "effects": [
-          { "type": "modifyRate", "target": "finish", "op": "mul", "value": 1.2 },
-          { "type": "modifyDebtMultiplier", "op": "mul", "value": 1.1 }
+          {
+            "type": "modifyRate",
+            "target": "finish",
+            "op": "mul",
+            "value": 1.2
+          },
+          {
+            "type": "modifyDebtMultiplier",
+            "op": "mul",
+            "value": 1.1
+          }
         ]
       }
     ],
@@ -67,9 +169,16 @@
     "id": "agent-harness",
     "name": "Agent harness",
     "description": "$400 setup, $5/day. Structured tests and guardrails for agents: agents bought while a harness is present accumulate half the extra debt.",
-    "tags": ["darkfactory"],
-    "cost": { "oneTime": 400, "perDay": 5 },
-    "requires": ["agent"],
+    "tags": [
+      "darkfactory"
+    ],
+    "cost": {
+      "oneTime": 400,
+      "perDay": 5
+    },
+    "requires": [
+      "agent"
+    ],
     "effects": [],
     "removable": true
   }
