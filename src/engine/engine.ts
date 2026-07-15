@@ -3,6 +3,7 @@ import { createRng, type Rng } from "./rng";
 import { tick, type ChallengePhase } from "./tick";
 import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
 import { rollChallenges, resolveChoice } from "./challenges";
+import { startProject, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
 
 export function initialState(content: GameContent): GameState {
   const s = content.start;
@@ -86,5 +87,17 @@ export class Engine {
 
   resolveChoice(challengeId: string, optionId: string): void {
     resolveChoice(this.state, this.content, challengeId, optionId);
+  }
+
+  startProject(defId: string): void {
+    startProject(this.state, this.content, defId);
+  }
+
+  availableProjects(): ProjectAvailability[] {
+    return projectAvailability(this.state, this.content);
+  }
+
+  isStalled(): boolean {
+    return isStalled(this.state, this.content);
   }
 }

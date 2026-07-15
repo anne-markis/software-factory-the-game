@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { StartConfig, DecisionDef, ChallengeDef } from "./types";
+import type { StartConfig, DecisionDef, ChallengeDef, ProjectDef } from "./types";
 
 // Schemas are .strict(): content files are hand-edited, so unknown or
 // typo'd keys must fail loudly instead of being silently stripped.
@@ -178,6 +178,33 @@ export function parseChallenges(json: unknown): ChallengeDef[] {
     if (def.effects.some((e) => e.type === "sickness") && !def.perHumanDev) {
       throw new Error(`Invalid content in content/challenges.json: "${def.id}" has a sickness effect but perHumanDev is not true`);
     }
+  }
+  return defs;
+}
+
+const projectSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    sizePoints: z.number().positive(),
+    upfrontCost: z.number().min(0),
+    payoutPerPoint: z.number().min(0),
+    completionBonus: z.number().min(0),
+    requiresCompleted: z.number().int().min(0).optional(),
+  })
+  .strict();
+
+export function parseProjects(json: unknown): ProjectDef[] {
+  const result = z.array(projectSchema).safeParse(json);
+  if (!result.success) fail("content/projects.json", result.error);
+  // plain annotation (no cast) so schema/type drift fails compilation here
+  const defs: ProjectDef[] = result.data;
+  const ids = new Set<string>();
+  for (const def of defs) {
+    if (ids.has(def.id)) {
+      throw new Error(`Invalid content in content/projects.json: duplicate project id "${def.id}"`);
+    }
+    ids.add(def.id);
   }
   return defs;
 }
