@@ -30,6 +30,7 @@ export function initialState(content: GameContent): GameState {
     log: [],
     pointsPerDay: 0,
     nextInstanceId: 1,
+    nextModifierId: 1,
     rngState: 0,
   };
 }

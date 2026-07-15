@@ -144,5 +144,6 @@ export interface GameState {
   log: LogEntry[];
   pointsPerDay: number;
   nextInstanceId: number;
+  nextModifierId: number;
   rngState: number;
 }
