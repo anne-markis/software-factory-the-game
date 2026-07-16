@@ -55,6 +55,12 @@ describe("simulation", () => {
     }
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
+    // balance probe: under the release-6 economy the greedy bot should be able
+    // to ship a whole contract and stay solvent over a long run, not just
+    // avoid invariant violations. Observed at day 2000: completedProjects 1,
+    // budget ~1050.85.
+    expect(e.getState().completedProjects).toBeGreaterThanOrEqual(1);
+    expect(e.getState().stocks.budget).toBeGreaterThan(0);
   });
 
   it("upgrades matter: test suite reduces tech debt vs idle over 400 days", () => {

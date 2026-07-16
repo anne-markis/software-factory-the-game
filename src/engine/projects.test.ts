@@ -18,7 +18,7 @@ describe("projects", () => {
     e.startProject("small-crm");
     const s = e.getState();
     expect(s.stocks.budget).toBe(8000);
-    expect(s.stocks.backlog).toBe(15000);
+    expect(s.stocks.backlog).toBe(8000); // start backlog 3000 + small-crm sizePoints 5000
     expect(s.projects).toHaveLength(2);
   });
 

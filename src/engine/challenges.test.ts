@@ -34,9 +34,10 @@ describe("rollChallenges", () => {
   it("fires an unconditional challenge when the roll is under its probability", () => {
     const c = content();
     const s = initialState(c);
-    s.day = 1;
-    // challenge order: sickness (skipped: 0 human devs), ddos 0.05, scope-creep 0.1, prod-incident, laptop-dies 0.03, poached (skipped)
-    rollChallenges(s, scriptedRng([0.04]), c); // ddos fires
+    // day 20: past the minDay:15 grace period so ddos/scope-creep/prod-incident/laptop-dies are live
+    s.day = 20;
+    // challenge order: sickness (skipped: 0 human devs), ddos 0.03, scope-creep 0.04, prod-incident, laptop-dies 0.015, poached (skipped)
+    rollChallenges(s, scriptedRng([0.02]), c); // ddos fires
     expect(s.stocks.budget).toBe(9900);
     expect(s.log.some((l) => l.message.includes("DDoS"))).toBe(true);
   });
@@ -52,7 +53,7 @@ describe("rollChallenges", () => {
   it("scales prod-incident probability with tech debt", () => {
     const c = content();
     const s = initialState(c);
-    s.day = 1;
+    s.day = 20; // past the minDay:15 grace period
     s.stocks.techDebt = 2000; // 0.01 base + 4 * 0.01 = 0.05
     // skip ddos (0.99) and scope-creep (0.99), then 0.04 < 0.05 fires incident
     rollChallenges(s, scriptedRng([0.99, 0.99, 0.04]), c);
@@ -63,14 +64,16 @@ describe("rollChallenges", () => {
     const c = content();
     const s = initialState(c);
     s.decisions.push({ instanceId: "i1", defId: "basic-dev" });
-    s.day = 1;
+    // day 20: past the minDay:15 grace period; laptop-dies is gated out here because
+    // its condition requires maxHumanDevs:0 and this scenario has 1 human dev
+    s.day = 20;
     // sickness roll for 1 human dev (0.99: no), ddos no, scope no, incident no, poached yes (0.01 < 0.02)
     rollChallenges(s, scriptedRng([0.99, 0.99, 0.99, 0.99, 0.01]), c);
     expect(s.pendingChoices).toHaveLength(1);
-    expect(s.pendingChoices[0].expiresDay).toBe(4);
+    expect(s.pendingChoices[0].expiresDay).toBe(23); // day 20 + expiresInDays 3
     expect(s.stocks.budget).toBe(10000); // nothing applied yet
 
-    s.day = 4;
+    s.day = 23;
     rollChallenges(s, scriptedRng([]), c); // expiry pass runs first
     expect(s.pendingChoices).toHaveLength(0);
     expect(s.modifiers.some((m) => m.value === 0.85)).toBe(true); // default: let them go
@@ -81,7 +84,7 @@ describe("rollChallenges", () => {
     const s = initialState(c);
     s.pendingChoices.push({ challengeId: "key-dev-poached", expiresDay: 10 });
     resolveChoice(s, c, "key-dev-poached", "match-offer");
-    expect(s.stocks.budget).toBe(9200);
+    expect(s.stocks.budget).toBe(9850); // 10000 - 150
     expect(s.pendingChoices).toHaveLength(0);
   });
 
@@ -89,10 +92,11 @@ describe("rollChallenges", () => {
     const c = content();
     const s = initialState(c);
     s.decisions.push({ instanceId: "i1", defId: "basic-dev" }, { instanceId: "i2", defId: "basic-dev" });
-    s.day = 1;
+    // day 20: past the minDay:15 grace period; laptop-dies is gated out by maxHumanDevs:0 (2 devs here)
+    s.day = 20;
     // per-dev rolls: i1 fires (0.05), i2 does not (0.99); remaining challenges no
     rollChallenges(s, scriptedRng([0.05, 0.99, 0.99, 0.99, 0.99, 0.99]), c);
-    expect(s.decisions[0].sickUntilDay).toBe(6);
+    expect(s.decisions[0].sickUntilDay).toBe(25); // day 20 + durationDays 5
     expect(s.decisions[1].sickUntilDay).toBeUndefined();
   });
 });

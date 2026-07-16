@@ -60,13 +60,13 @@
   {
     "id": "basic-dev",
     "name": "Hire basic developer",
-    "description": "Costs $275/day while employed. Hiring is a gamble: they might be great, or might slow the team down. Removed permanently if payroll fails.",
+    "description": "Costs $10/day while employed. Hiring is a gamble: they might be great, or might slow the team down. Removed permanently if payroll fails.",
     "tags": [
       "human"
     ],
     "human": true,
     "cost": {
-      "perDay": 275
+      "perDay": 10
     },
     "effects": [],
     "gamble": [
@@ -124,13 +124,13 @@
   {
     "id": "agent",
     "name": "Add coding agent",
-    "description": "$10 setup, $30/day to run. Speeds In Progress work by 20% but adds 20% more tech debt. A harness tames the debt.",
+    "description": "$10 setup, $4/day to run. Speeds In Progress work by 20% but adds 20% more tech debt. A harness tames the debt.",
     "tags": [
       "darkfactory"
     ],
     "cost": {
       "oneTime": 10,
-      "perDay": 30
+      "perDay": 4
     },
     "effects": [
       {

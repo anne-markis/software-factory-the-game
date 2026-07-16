@@ -145,6 +145,7 @@ const challengeSchema = z
         maxHumanDevs: z.number().int().min(0).optional(),
         hasTag: z.string().optional(),
         minTechDebt: z.number().min(0).optional(),
+        minDay: z.number().int().min(0).optional(),
       })
       .strict()
       .optional(),
