@@ -71,10 +71,15 @@ app.addEventListener("click", (ev) => {
       clearSave();
       location.reload();
     }
+    return; // reset owns its own persistence (wipe, not save); skip the shared tail
   } else {
     return; // not one of ours; skip the re-render
   }
   render();
+  // Event-driven save: without this, paused/purchase/etc. state only reaches
+  // storage on the 10-day autosave tick, so e.g. pausing then reloading before
+  // the next autosave silently un-pauses the game. Save on every real action.
+  saveGame(engine.getState());
 });
 
 const intervalId = setInterval(() => {

@@ -34,6 +34,29 @@ describe("save/load", () => {
     expect(() => deserialize(bad)).toThrow(/version/);
   });
 
+  // Release-7 bug fix: main.ts only autosaved every 10 days, so the paused
+  // flag (part of saved state) was usually stale on reload and the game
+  // would un-pause itself. The fix is event-driven saving in the UI layer
+  // (src/ui/main.ts), which localStorage-based storage.ts can't be tested
+  // against here without jsdom; this pins the underlying engine-level
+  // contract instead: paused round-trips through serialize/deserialize and a
+  // freshly constructed Engine honors it (tick is a no-op while paused).
+  it("round-trips a paused state and the restored engine stays paused", () => {
+    const c = content();
+    const a = new Engine(c);
+    a.pause();
+    const saved = serialize(a.getState());
+
+    const restoredState = deserialize(saved);
+    expect(restoredState.paused).toBe(true);
+
+    const b = new Engine(c, restoredState);
+    expect(b.getState().paused).toBe(true);
+    const dayBefore = b.getState().day;
+    b.tick();
+    expect(b.getState().day).toBe(dayBefore);
+  });
+
   it("defaults missing id counters from existing ids (legacy save shape)", () => {
     const c = content();
     const a = new Engine(c);

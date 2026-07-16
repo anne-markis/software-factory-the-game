@@ -33,6 +33,32 @@ describe("simulation", () => {
     }
   });
 
+  // Release-7 balance probe: a do-nothing player should feel the burn. With
+  // baseBurnPerDay 8 and the first contract's 1 pt/day idle throughput at
+  // $12/pt, mechanical income is +$4/day, but challenges.json's laptop-dies
+  // (-$1,500, gated on zero human devs -- exactly the idle player's
+  // situation) dominates the long run once its minDay:15 grace period ends.
+  // The rng is seeded, so this trajectory is deterministic; observed at
+  // days 300/600/2000: budget ~5404.40 / 84 / 24 (never actually hits the
+  // zero clamp across the full 2000-day run in this seed).
+  it("idle strategy: budget declines to near-zero over a long run, but has early breathing room", () => {
+    const e = new Engine(fullContent());
+    let budgetAt300 = NaN;
+    let budgetAt600 = NaN;
+    for (let day = 1; day <= 2000; day++) {
+      e.tick();
+      if (day === 300) budgetAt300 = e.getState().stocks.budget;
+      if (day === 600) budgetAt600 = e.getState().stocks.budget;
+    }
+    // Meaningful decline from the starting 10,000 well before the long run.
+    expect(budgetAt300).toBeLessThan(8000);
+    // No instant death: still solvent (not zero-clamped) at day 600.
+    expect(budgetAt600).toBeGreaterThan(0);
+    // "Almost 0" territory by day 2000: idling for years should not be a
+    // viable way to sit on a comfortable budget.
+    expect(e.getState().stocks.budget).toBeLessThan(1500);
+  });
+
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {
     const content = fullContent();
     const e = new Engine(content);
@@ -55,10 +81,10 @@ describe("simulation", () => {
     }
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
-    // balance probe: under the release-6 economy the greedy bot should be able
-    // to ship a whole contract and stay solvent over a long run, not just
-    // avoid invariant violations. Observed at day 2000: completedProjects 1,
-    // budget ~1050.85.
+    // balance probe: under the release-7 economy (baseBurnPerDay 8, tuned for
+    // idle-drain tension) the greedy bot should still be able to ship a whole
+    // contract and stay solvent over a long run, not just avoid invariant
+    // violations. Observed at day 2000: completedProjects 1, budget ~260.37.
     expect(e.getState().completedProjects).toBeGreaterThanOrEqual(1);
     expect(e.getState().stocks.budget).toBeGreaterThan(0);
   });

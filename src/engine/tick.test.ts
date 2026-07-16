@@ -37,11 +37,11 @@ describe("tick", () => {
 
   it("pays revenue per shipped point and charges base burn", () => {
     const e = new Engine(testContent());
-    e.tick(); // no shipping yet: 10000 - 5 burn
-    expect(e.getState().stocks.budget).toBe(9995);
+    e.tick(); // no shipping yet: 10000 - 8 burn (release-7 baseBurnPerDay)
+    expect(e.getState().stocks.budget).toBe(9992);
     e.tick();
     e.tick(); // ships 1 point at $12 (initialProject.payoutPerPoint)
-    expect(e.getState().stocks.budget).toBe(10000 - 15 + 12);
+    expect(e.getState().stocks.budget).toBe(10000 - 24 + 12);
   });
 
   it("does nothing while paused", () => {
