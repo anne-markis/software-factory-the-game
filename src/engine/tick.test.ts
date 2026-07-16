@@ -13,7 +13,7 @@ describe("tick", () => {
     const e = new Engine(testContent());
     e.tick(); // day 1: pull moves 1 point into inProgress
     let s = e.getState();
-    expect(s.stocks.backlog).toBe(9999);
+    expect(s.stocks.backlog).toBe(2999);
     expect(s.stocks.inProgress).toBe(1);
     expect(s.stocks.shipped).toBe(0);
 
@@ -31,7 +31,8 @@ describe("tick", () => {
     e.tick(); // 1 point shipped, debt multiplier 0.5
     const s = e.getState();
     expect(s.stocks.techDebt).toBe(0.5);
-    expect(s.stocks.backlog).toBe(9997 + 0.5);
+    // start backlog 3000, 3 days of pull (-1 each) plus 0.5 debt regen from the 1 shipped point
+    expect(s.stocks.backlog).toBe(2997 + 0.5);
   });
 
   it("pays revenue per shipped point and charges base burn", () => {
@@ -39,8 +40,8 @@ describe("tick", () => {
     e.tick(); // no shipping yet: 10000 - 5 burn
     expect(e.getState().stocks.budget).toBe(9995);
     e.tick();
-    e.tick(); // ships 1 point at $3
-    expect(e.getState().stocks.budget).toBe(10000 - 15 + 3);
+    e.tick(); // ships 1 point at $12 (initialProject.payoutPerPoint)
+    expect(e.getState().stocks.budget).toBe(10000 - 15 + 12);
   });
 
   it("does nothing while paused", () => {

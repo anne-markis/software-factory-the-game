@@ -78,7 +78,7 @@ export interface ChallengeDef {
   description: string;
   probabilityPerDay: number;
   perHumanDev?: boolean;
-  condition?: { minHumanDevs?: number; maxHumanDevs?: number; hasTag?: string; minTechDebt?: number };
+  condition?: { minHumanDevs?: number; maxHumanDevs?: number; hasTag?: string; minTechDebt?: number; minDay?: number };
   probScaling?: { stat: "techDebt"; per: number; add: number };
   effects: Effect[];
   choice?: { expiresInDays: number; defaultOptionId: string; options: ChoiceOption[] };

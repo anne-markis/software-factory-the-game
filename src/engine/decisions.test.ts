@@ -93,11 +93,11 @@ describe("decisions", () => {
 
   it("payroll failure removes the decision permanently during tick", () => {
     const c = content();
-    c.start.stocks.budget = 300;
+    c.start.stocks.budget = 18;
     const e = new Engine(c);
     e.applyDecision("basic-dev"); // no one-time cost
-    e.tick(); // burn 5 then payroll 275: passes day 1 (300-5-275=20)
-    e.tick(); // day 2: cannot pay 275, dev removed
+    e.tick(); // day 1: burn 5 (18->13), pays 10 (13->3)
+    e.tick(); // day 2: burn 5 clamps 3->0, cannot pay 10, dev removed
     const s = e.getState();
     expect(s.decisions).toHaveLength(0);
     expect(s.log.some((l) => l.message.includes("Payroll failed"))).toBe(true);

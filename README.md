@@ -49,3 +49,4 @@ use `durationDays: N + 1`; the shipped decisions already do.
 - Tech debt regenerates backlog per shipped point and scales incident risk.
 - Starting concurrent projects applies a context-switch tax (0.85^(n-1)).
 - If the pipeline is empty and nothing is affordable, the factory stalls.
+- Balance constants were retuned in release 6; the simulation tests double as balance probes (greedy bot must complete a contract and stay solvent).

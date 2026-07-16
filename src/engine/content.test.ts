@@ -7,7 +7,7 @@ import challengesJson from "../../content/challenges.json";
 describe("parseStartConfig", () => {
   it("parses the shipped start.json", () => {
     const cfg = parseStartConfig(startJson);
-    expect(cfg.stocks.backlog).toBe(10000);
+    expect(cfg.stocks.backlog).toBe(3000);
     expect(cfg.stocks.budget).toBe(10000);
     expect(cfg.debtMultiplier).toBe(0.5);
     expect(cfg.baseRates.pull).toBe(1);
@@ -36,7 +36,7 @@ describe("parseDecisions", () => {
     const ids = defs.map((d) => d.id);
     expect(ids).toEqual(["test-suite", "ci-cd", "basic-dev", "agent", "agent-harness"]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
-    expect(dev.cost.perDay).toBe(275);
+    expect(dev.cost.perDay).toBe(10);
     expect(dev.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
   });
 

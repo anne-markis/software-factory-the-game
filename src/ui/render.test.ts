@@ -80,7 +80,7 @@ describe("renderProjects", () => {
     const e = new Engine(c);
     const html = renderProjects([...e.getState().projects], e.availableProjects(), e.getState());
     expect(html).toContain("Projects (efficiency 100%)");
-    expect(html).toContain("First Contract: 10,000 points left");
+    expect(html).toContain("First Contract: 3,000 points left");
     expect(html).toContain('data-project="small-crm" ');
     expect(html).toContain('data-project="big-migration" disabled');
     expect(html).toContain("requires 1 completed project(s)");

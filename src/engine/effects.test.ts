@@ -45,7 +45,7 @@ describe("applyEffects", () => {
     applyEffects(s, [{ type: "addToStock", stock: "techDebt", value: -5 }], "src-1");
     expect(s.stocks.techDebt).toBe(0);
     applyEffects(s, [{ type: "addToStock", stock: "backlog", value: 200 }], "src-1");
-    expect(s.stocks.backlog).toBe(10200);
+    expect(s.stocks.backlog).toBe(3200); // start backlog 3000 + 200
   });
 
   it("sickness marks the instance from context", () => {

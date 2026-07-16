@@ -17,6 +17,7 @@ function conditionMet(def: ChallengeDef, state: GameState, content: GameContent)
   if (cond.minHumanDevs !== undefined && humans < cond.minHumanDevs) return false;
   if (cond.maxHumanDevs !== undefined && humans > cond.maxHumanDevs) return false;
   if (cond.minTechDebt !== undefined && state.stocks.techDebt < cond.minTechDebt) return false;
+  if (cond.minDay !== undefined && state.day < cond.minDay) return false;
   if (cond.hasTag !== undefined) {
     const ownedTags = new Set(
       state.decisions.flatMap((inst) => content.decisions.find((d) => d.id === inst.defId)?.tags ?? []),
