@@ -27,10 +27,16 @@ function render(): void {
     ${renderStall(engine.isStalled())}
     <button id="pause">${state.paused ? "Resume" : "Pause"}</button>
     <button id="reset">Reset game</button>
-    ${renderDecisions(engine.availableDecisions(), [...state.decisions], content)}
-    ${renderProjects([...state.projects], engine.availableProjects(), state)}
-    ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
-    ${renderLog(state.log)}
+    <div class="cols">
+      <div class="main">
+        ${renderDecisions(engine.availableDecisions(), [...state.decisions], content)}
+        ${renderProjects([...state.projects], engine.availableProjects(), state)}
+      </div>
+      <div class="side">
+        ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
+        ${renderLog(state.log)}
+      </div>
+    </div>
   `;
 }
 
