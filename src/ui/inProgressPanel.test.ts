@@ -68,6 +68,18 @@ describe("inProgressPanelSvg", () => {
     const svg = inProgressPanelSvg(s, content());
     expect(svg).toContain("Context switch x0.85");
   });
+
+  it("renders negative contributions with a bare minus, not +-", () => {
+    const e = new Engine(content());
+    e.applyDecision("basic-dev");
+    const s = e.getState() as GameContentMutableState;
+    // force a net-negative outcome shape regardless of the seeded gamble roll
+    const mod = s.modifiers.find((m) => m.source === s.decisions[0].instanceId)!;
+    mod.value = -0.5;
+    const svg = inProgressPanelSvg(s, content());
+    expect(svg).toContain("-0.5/day");
+    expect(svg).not.toContain("+-0.5");
+  });
 });
 
 // Local escape hatch: getState() returns Readonly<GameState>, but these tests
