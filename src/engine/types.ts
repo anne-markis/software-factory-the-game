@@ -14,7 +14,8 @@ export type Effect =
   | { type: "modifyRate"; target: RateId | "all"; op: "add" | "mul"; value: number; durationDays?: number }
   | { type: "modifyDebtMultiplier"; op: "add" | "mul"; value: number; durationDays?: number }
   | { type: "addToStock"; stock: keyof Stocks; value: number }
-  | { type: "sickness"; factor: number; durationDays: number };
+  | { type: "sickness"; factor: number; durationDays: number }
+  | { type: "rampRate"; target: RateId; perDay: number; cap: number };
 
 export type ModifierTarget = RateId | "allRates" | "debtMultiplier";
 
@@ -25,6 +26,11 @@ export interface Modifier {
   op: "add" | "mul";
   value: number;
   expiresDay?: number;
+  // Present together for ramp modifiers created by the rampRate effect: each
+  // tick grows value toward rampCap by rampPerDay (see tick.ts). Absent for
+  // every other modifier.
+  rampPerDay?: number;
+  rampCap?: number;
 }
 
 export interface GambleOutcome {

@@ -67,6 +67,38 @@ describe("parseDecisions", () => {
       ]),
     ).toThrow(/duplicate/i);
   });
+
+  it("parses a valid rampRate effect targeting a single rate", () => {
+    const defs = parseDecisions([
+      {
+        id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+        effects: [{ type: "rampRate", target: "finish", perDay: 0.1, cap: 2 }],
+      },
+    ]);
+    expect(defs[0].effects[0]).toEqual({ type: "rampRate", target: "finish", perDay: 0.1, cap: 2 });
+  });
+
+  it("rejects a rampRate effect targeting \"all\" (a ramp targets exactly one rate)", () => {
+    expect(() =>
+      parseDecisions([
+        {
+          id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+          effects: [{ type: "rampRate", target: "all", perDay: 0.1, cap: 1 }],
+        },
+      ]),
+    ).toThrow(/content\/decisions\.json/);
+  });
+
+  it("rejects a rampRate effect with a negative perDay", () => {
+    expect(() =>
+      parseDecisions([
+        {
+          id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+          effects: [{ type: "rampRate", target: "finish", perDay: -0.1, cap: 1 }],
+        },
+      ]),
+    ).toThrow(/content\/decisions\.json/);
+  });
 });
 
 describe("parseChallenges", () => {

@@ -71,6 +71,15 @@ const effectSchema = z.discriminatedUnion("type", [
     .strict(),
   z.object({ type: z.literal("addToStock"), stock: stockName, value: z.number() }).strict(),
   z.object({ type: z.literal("sickness"), factor: z.number().gt(0).lt(1), durationDays: z.number().positive() }).strict(),
+  // target excludes "all": a ramp grows one rate's own modifier, not a shared one.
+  z
+    .object({
+      type: z.literal("rampRate"),
+      target: z.enum(["pull", "finish", "deploy"]),
+      perDay: z.number().positive(),
+      cap: z.number().positive(),
+    })
+    .strict(),
 ]);
 
 const gambleOutcomeSchema = z

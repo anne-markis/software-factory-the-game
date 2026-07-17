@@ -17,6 +17,7 @@ function pushModifier(
   op: Modifier["op"],
   value: number,
   durationDays?: number,
+  ramp?: { perDay: number; cap: number },
 ): void {
   state.modifiers.push({
     id: `mod-${state.nextModifierId++}`,
@@ -25,6 +26,8 @@ function pushModifier(
     op,
     value,
     expiresDay: durationDays !== undefined ? state.day + durationDays : undefined,
+    rampPerDay: ramp?.perDay,
+    rampCap: ramp?.cap,
   });
 }
 
@@ -53,6 +56,12 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         }
         break;
       }
+      case "rampRate":
+        // Starts at 0 and grows by perDay each tick, capped, via tick.ts's
+        // ramp-growth pass. It is otherwise an ordinary add-op modifier, so
+        // removal-by-source (removeDecision, payroll failure) strips it free.
+        pushModifier(state, source, effect.target, "add", 0, undefined, { perDay: effect.perDay, cap: effect.cap });
+        break;
     }
   }
 }
