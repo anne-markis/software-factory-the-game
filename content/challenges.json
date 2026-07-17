@@ -50,6 +50,7 @@
     "description": "A competitor made your developer an offer. Match it or lose them.",
     "probabilityPerDay": 0.02,
     "condition": { "minHumanDevs": 1 },
+    "cooldownDays": 60,
     "effects": [],
     "choice": {
       "expiresInDays": 3,
@@ -59,5 +60,84 @@
         { "id": "let-them-go", "label": "Let them go (all rates -15% for 10 days)", "effects": [{ "type": "modifyRate", "target": "all", "op": "mul", "value": 0.85, "durationDays": 10 }] }
       ]
     }
+  },
+  {
+    "id": "model-deprecation",
+    "name": "Model deprecation",
+    "description": "Your AI vendor is sunsetting the model your agents run on. Pay to migrate now, or limp along on a degraded fallback.",
+    "probabilityPerDay": 0.015,
+    "condition": { "hasTag": "darkfactory" },
+    "cooldownDays": 90,
+    "effects": [],
+    "choice": {
+      "expiresInDays": 4,
+      "defaultOptionId": "pay-migration",
+      "options": [
+        { "id": "pay-migration", "label": "Pay to migrate ($300)", "effects": [{ "type": "addToStock", "stock": "budget", "value": -300 }] },
+        { "id": "degraded-fallback", "label": "Run on the degraded fallback (finish -30% for 30 days)", "effects": [{ "type": "modifyRate", "target": "finish", "op": "mul", "value": 0.7, "durationDays": 30 }] }
+      ]
+    }
+  },
+  {
+    "id": "api-price-hike",
+    "name": "API price hike",
+    "description": "Your model provider raises prices overnight. Costs $200.",
+    "probabilityPerDay": 0.02,
+    "condition": { "hasTag": "darkfactory" },
+    "cooldownDays": 30,
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": -200 }]
+  },
+  {
+    "id": "runaway-agent-loop",
+    "name": "Runaway agent loop",
+    "description": "An agent gets stuck retrying itself and burns through budget before anyone notices. Costs $350.",
+    "probabilityPerDay": 0.015,
+    "condition": { "hasTag": "darkfactory" },
+    "cooldownDays": 45,
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": -350 }]
+  },
+  {
+    "id": "meeting-creep",
+    "name": "Meeting creep",
+    "description": "The calendar fills up with syncs and status checks. All rates -10% for 60 days.",
+    "probabilityPerDay": 0.02,
+    "condition": { "hasTag": "human" },
+    "cooldownDays": 90,
+    "effects": [{ "type": "modifyRate", "target": "all", "op": "mul", "value": 0.9, "durationDays": 60 }]
+  },
+  {
+    "id": "team-conflict",
+    "name": "Team conflict",
+    "description": "Two developers clash over an approach. Mediate it, or let it fester.",
+    "probabilityPerDay": 0.015,
+    "condition": { "hasTag": "human" },
+    "cooldownDays": 60,
+    "effects": [],
+    "choice": {
+      "expiresInDays": 3,
+      "defaultOptionId": "mediate",
+      "options": [
+        { "id": "mediate", "label": "Mediate it ($120)", "effects": [{ "type": "addToStock", "stock": "budget", "value": -120 }] },
+        { "id": "let-it-fester", "label": "Let it fester (all rates -15% for 15 days)", "effects": [{ "type": "modifyRate", "target": "all", "op": "mul", "value": 0.85, "durationDays": 15 }] }
+      ]
+    }
+  },
+  {
+    "id": "cloud-credits",
+    "name": "Cloud credits",
+    "description": "Your cloud provider grants a surprise credit for your agent workloads. +$250.",
+    "probabilityPerDay": 0.015,
+    "condition": { "hasTag": "darkfactory" },
+    "cooldownDays": 60,
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": 250 }]
+  },
+  {
+    "id": "open-source-windfall",
+    "name": "Open source windfall",
+    "description": "A library you depend on gets a surprise sponsorship windfall that trickles down. +$400.",
+    "probabilityPerDay": 0.01,
+    "condition": { "minDay": 15 },
+    "cooldownDays": 60,
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": 400 }]
   }
 ]

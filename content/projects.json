@@ -24,5 +24,14 @@
     "payoutPerPoint": 24,
     "completionBonus": 25000,
     "requiresCompleted": 2
+  },
+  {
+    "id": "mobile-app",
+    "name": "Mobile app build",
+    "sizePoints": 9000,
+    "upfrontCost": 3000,
+    "payoutPerPoint": 19,
+    "completionBonus": 4000,
+    "requiresCompleted": 1
   }
 ]

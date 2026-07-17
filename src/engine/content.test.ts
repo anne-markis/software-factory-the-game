@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { parseStartConfig, parseDecisions, parseChallenges } from "./content";
+import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "./content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
+import projectsJson from "../../content/projects.json";
 
 describe("parseStartConfig", () => {
   it("parses the shipped start.json", () => {
@@ -156,6 +157,44 @@ describe("parseChallenges", () => {
     expect(sickness.perHumanDev).toBe(true);
     const incident = defs.find((c) => c.id === "prod-incident")!;
     expect(incident.probScaling).toEqual({ stat: "techDebt", per: 500, add: 0.01 });
+  });
+
+  it("pins the content-wave challenge values", () => {
+    const defs = parseChallenges(challengesJson);
+    const ids = defs.map((c) => c.id);
+    expect(ids).toEqual([
+      "sickness", "ddos", "scope-creep", "prod-incident", "laptop-dies", "key-dev-poached",
+      "model-deprecation", "api-price-hike", "runaway-agent-loop", "meeting-creep", "team-conflict",
+      "cloud-credits", "open-source-windfall",
+    ]);
+
+    const deprecation = defs.find((c) => c.id === "model-deprecation")!;
+    expect(deprecation.condition).toEqual({ hasTag: "darkfactory" });
+    expect(deprecation.cooldownDays).toBe(90);
+    const defaultOption = deprecation.choice!.options.find((o) => o.id === deprecation.choice!.defaultOptionId);
+    expect(defaultOption).toBeDefined();
+    expect(defaultOption!.id).toBe("pay-migration");
+
+    const windfall = defs.find((c) => c.id === "open-source-windfall")!;
+    const windfallEffect = windfall.effects.find((e) => e.type === "addToStock")!;
+    expect(windfallEffect).toMatchObject({ stock: "budget", value: 400 });
+    expect(windfallEffect.value).toBeGreaterThan(0);
+
+    const poached = defs.find((c) => c.id === "key-dev-poached")!;
+    expect(poached.cooldownDays).toBe(60);
+  });
+
+  it("pins the mobile-app project gate", () => {
+    const defs = parseProjects(projectsJson);
+    const mobileApp = defs.find((p) => p.id === "mobile-app")!;
+    expect(mobileApp).toMatchObject({
+      name: "Mobile app build",
+      sizePoints: 9000,
+      upfrontCost: 3000,
+      payoutPerPoint: 19,
+      completionBonus: 4000,
+      requiresCompleted: 1,
+    });
   });
 
   it("rejects a choice challenge with top-level effects", () => {

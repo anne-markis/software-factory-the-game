@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rollChallenges, resolveChoice } from "./challenges";
 import { initialState } from "./engine";
+import { applyDecision } from "./decisions";
 import { parseStartConfig, parseChallenges, parseDecisions } from "./content";
 import startJson from "../../content/start.json";
 import challengesJson from "../../content/challenges.json";
@@ -32,9 +33,16 @@ function scriptedRng(values: number[]): Rng {
 
 describe("rollChallenges", () => {
   it("content order matches what the scripted rng sequences assume", () => {
-    // every scripted array below encodes this order; if this fails, fix the scripts too
+    // every scripted array below encodes this order; if this fails, fix the scripts too.
+    // The seven content-wave additions are appended after the original six: all but
+    // open-source-windfall are hasTag-gated (darkfactory/human) so they draw nothing in
+    // these fixtures (no such tags owned); open-source-windfall is placed last so its
+    // one guaranteed draw (day 20 >= its minDay 15) lands after every scripted value and
+    // hits the scriptedRng 0.99 fallback tail harmlessly.
     expect(content().challenges.map((c) => c.id)).toEqual([
       "sickness", "ddos", "scope-creep", "prod-incident", "laptop-dies", "key-dev-poached",
+      "model-deprecation", "api-price-hike", "runaway-agent-loop", "meeting-creep", "team-conflict",
+      "cloud-credits", "open-source-windfall",
     ]);
   });
 
@@ -105,6 +113,52 @@ describe("rollChallenges", () => {
     rollChallenges(s, scriptedRng([0.05, 0.99, 0.99, 0.99, 0.99, 0.99]), c);
     expect(s.decisions[0].sickUntilDay).toBe(25); // day 20 + durationDays 5
     expect(s.decisions[1].sickUntilDay).toBeUndefined();
+  });
+});
+
+describe("model-deprecation (hasTag darkfactory)", () => {
+  it("fires and queues its choice once a darkfactory decision is owned", () => {
+    const c = content();
+    const s = initialState(c);
+    applyDecision(s, c, "agent", scriptedRng([])); // "agent" is tagged darkfactory, no gamble, any rng works
+    s.day = 20;
+    // day 20 draws (in content order, only met conditions draw): ddos, scope-creep, prod-incident,
+    // laptop-dies (0 human devs), model-deprecation, api-price-hike, runaway-agent-loop, cloud-credits
+    // (all darkfactory, now owned), open-source-windfall (minDay 15) = 9 draws; model-deprecation is
+    // 5th and scripted under its 0.015 probability to fire
+    rollChallenges(s, scriptedRng([0.99, 0.99, 0.99, 0.99, 0.01, 0.99, 0.99, 0.99, 0.99]), c);
+    const pending = s.pendingChoices.find((pc) => pc.challengeId === "model-deprecation");
+    expect(pending).toBeDefined();
+    expect(pending!.expiresDay).toBe(24); // day 20 + expiresInDays 4
+  });
+
+  it("never rolls without a darkfactory decision owned (condition-gated, no rng draw consumed)", () => {
+    const challenges = parseChallenges([
+      {
+        id: "model-deprecation",
+        name: "Model deprecation",
+        description: "desc",
+        probabilityPerDay: 1.0, // would always fire if the draw happened
+        condition: { hasTag: "darkfactory" },
+        cooldownDays: 90,
+        effects: [],
+        choice: {
+          expiresInDays: 4,
+          defaultOptionId: "pay-migration",
+          options: [
+            { id: "pay-migration", label: "Pay", effects: [] },
+            { id: "degraded-fallback", label: "Degrade", effects: [] },
+          ],
+        },
+      },
+    ]);
+    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
+    const s = initialState(c);
+    const { rng, calls } = countingRng(0.0);
+    s.day = 20;
+    rollChallenges(s, rng, c);
+    expect(s.pendingChoices).toHaveLength(0);
+    expect(calls()).toBe(0);
   });
 });
 
