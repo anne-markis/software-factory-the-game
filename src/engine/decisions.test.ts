@@ -91,6 +91,45 @@ describe("decisions", () => {
     expect(() => e.removeDecision("inst-999")).toThrow(/Unknown instance/);
   });
 
+  it("tightens the basic-dev gamble table when a manager is owned", () => {
+    // Seed 20260714 (observed): first gamble roll 0.1269, second 0.8411.
+    // eng-manager has no gamble, so buying it consumes no rng draw and both
+    // engines see 0.8411 for their second dev. That roll diverges: base table
+    // (0.5/0.25/0.2/0.05) lands in Net-negative hire (-0.5); tightened table
+    // (0.55/0.30/0.13/0.02) lands in Decent hire (+0.5).
+    const withManager = new Engine(content());
+    withManager.applyDecision("basic-dev"); // roll 1: Strong hire on either table
+    withManager.applyDecision("eng-manager"); // no gamble: no rng draw
+    withManager.applyDecision("basic-dev"); // roll 2 against the tightened table
+    const sA = withManager.getState();
+    const secondDev = sA.decisions.filter((d) => d.defId === "basic-dev")[1];
+    expect(secondDev.gambleLabel).toBe("Decent hire");
+    const tightened = [1.0, 0.5, -0.5, -1.0]; // tightened table outcome values
+    const modA = sA.modifiers.find((m) => m.source === secondDev.instanceId)!;
+    expect(tightened).toContain(modA.value);
+    expect(modA.value).toBe(0.5);
+
+    const control = new Engine(content());
+    control.applyDecision("basic-dev"); // roll 1
+    control.applyDecision("basic-dev"); // roll 2 against the base table
+    const sB = control.getState();
+    const controlSecond = sB.decisions[1];
+    expect(controlSecond.gambleLabel).toBe("Net-negative hire");
+    const modB = sB.modifiers.find((m) => m.source === controlSecond.instanceId)!;
+    expect(modB.value).toBe(-0.5);
+  });
+
+  it("senior-dev requires a basic developer first", () => {
+    const e = new Engine(content());
+    expect(() => e.applyDecision("senior-dev")).toThrow(/requires/);
+  });
+
+  it("contractor is not human, so per-human-dev challenge rolls ignore it", () => {
+    const defs = parseDecisions(decisionsJson);
+    const contractor = defs.find((d) => d.id === "contractor")!;
+    expect(contractor.human).not.toBe(true);
+  });
+
   it("payroll failure removes the decision permanently during tick", () => {
     const c = content();
     c.start.stocks.budget = 30;

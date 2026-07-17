@@ -34,10 +34,52 @@ describe("parseDecisions", () => {
   it("parses the shipped decisions.json", () => {
     const defs = parseDecisions(decisionsJson);
     const ids = defs.map((d) => d.id);
-    expect(ids).toEqual(["test-suite", "ci-cd", "basic-dev", "agent", "agent-harness"]);
+    expect(ids).toEqual([
+      "test-suite",
+      "ci-cd",
+      "basic-dev",
+      "agent",
+      "agent-harness",
+      "better-tooling",
+      "copilot",
+      "senior-dev",
+      "contractor",
+      "eng-manager",
+      "standup",
+      "agent-swarm",
+      "swarm-orchestrator",
+      "self-learning-agents",
+      "support-retainer",
+    ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(7);
     expect(dev.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
+  });
+
+  it("pins the content-wave decision values", () => {
+    const defs = parseDecisions(decisionsJson);
+    // senior-dev: base and manager-tightened gamble tables both sum to 1
+    const senior = defs.find((d) => d.id === "senior-dev")!;
+    expect(senior.gamble!.map((o) => o.probability)).toEqual([0.4, 0.3, 0.2, 0.1]);
+    expect(senior.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
+    expect(senior.synergies![0].ifOwned).toBe("eng-manager");
+    expect(senior.synergies![0].gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
+    // basic-dev gained a manager synergy with a full restated table summing to 1
+    const dev = defs.find((d) => d.id === "basic-dev")!;
+    expect(dev.synergies![0].ifOwned).toBe("eng-manager");
+    expect(dev.synergies![0].gamble!.map((o) => o.probability)).toEqual([0.55, 0.3, 0.13, 0.02]);
+    // support-retainer is the first content use of incomePerDay
+    const retainer = defs.find((d) => d.id === "support-retainer")!;
+    expect(retainer.incomePerDay).toBe(8);
+    expect(retainer.cost.oneTime).toBeUndefined();
+    // self-learning-agents carries the rampRate effect
+    const sla = defs.find((d) => d.id === "self-learning-agents")!;
+    expect(sla.effects).toEqual([{ type: "rampRate", target: "finish", perDay: 0.02, cap: 2.0 }]);
+    // agent-swarm's synergy forward-references swarm-orchestrator, which
+    // appears later in the array; parseDecisions collects ids first, so the
+    // shipped file must parse with the reference intact
+    const swarm = defs.find((d) => d.id === "agent-swarm")!;
+    expect(swarm.synergies![0].ifOwned).toBe("swarm-orchestrator");
   });
 
   it("rejects a gamble table whose probabilities do not sum to 1", () => {
