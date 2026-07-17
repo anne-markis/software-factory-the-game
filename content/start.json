@@ -1,15 +1,15 @@
 {
   "seed": 20260714,
-  "stocks": { "backlog": 3000, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0 },
+  "stocks": { "backlog": 1500, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0 },
   "baseRates": { "pull": 1, "finish": 1, "deploy": 1 },
   "debtMultiplier": 0.5,
-  "baseBurnPerDay": 8,
+  "baseBurnPerDay": 20,
   "contextSwitchFactor": 0.85,
   "initialProject": {
     "id": "first-contract",
     "name": "First Contract",
-    "sizePoints": 3000,
-    "payoutPerPoint": 12,
+    "sizePoints": 1500,
+    "payoutPerPoint": 15,
     "completionBonus": 2000
   }
 }

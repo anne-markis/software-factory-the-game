@@ -36,7 +36,7 @@ describe("rollChallenges", () => {
     const s = initialState(c);
     // day 20: past the minDay:15 grace period so ddos/scope-creep/prod-incident/laptop-dies are live
     s.day = 20;
-    // challenge order: sickness (skipped: 0 human devs), ddos 0.03, scope-creep 0.04, prod-incident, laptop-dies 0.015, poached (skipped)
+    // challenge order: sickness (skipped: 0 human devs), ddos 0.03, scope-creep 0.04, prod-incident, laptop-dies 0.01, poached (skipped)
     rollChallenges(s, scriptedRng([0.02]), c); // ddos fires
     expect(s.stocks.budget).toBe(9900);
     expect(s.log.some((l) => l.message.includes("DDoS"))).toBe(true);
