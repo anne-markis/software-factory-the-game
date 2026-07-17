@@ -88,6 +88,7 @@ export interface ChallengeDef {
   probScaling?: { stat: "techDebt"; per: number; add: number };
   effects: Effect[];
   choice?: { expiresInDays: number; defaultOptionId: string; options: ChoiceOption[] };
+  cooldownDays?: number;
 }
 
 export interface ProjectDef {
@@ -153,4 +154,8 @@ export interface GameState {
   nextInstanceId: number;
   nextModifierId: number;
   rngState: number;
+  // Keyed by ChallengeDef.id; set when a cooldownDays challenge's effects
+  // actually land (fire() for non-choice, resolveChoice, or expiry-default
+  // application for choice challenges). Absent entries mean never fired.
+  challengeLastFired: Record<string, number>;
 }

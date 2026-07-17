@@ -68,4 +68,13 @@ describe("save/load", () => {
     expect(restored.nextModifierId).toBe(2);
     expect(restored.nextInstanceId).toBe(2);
   });
+
+  it("defaults a missing challengeLastFired to {} (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.challengeLastFired;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.challengeLastFired).toEqual({});
+  });
 });

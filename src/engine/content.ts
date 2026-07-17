@@ -164,6 +164,7 @@ const challengeSchema = z
       .object({ expiresInDays: z.number().int().positive(), defaultOptionId: z.string(), options: z.array(choiceOptionSchema).min(1) })
       .strict()
       .optional(),
+    cooldownDays: z.number().int().positive().optional(),
   })
   .strict();
 

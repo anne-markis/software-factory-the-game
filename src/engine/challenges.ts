@@ -40,10 +40,18 @@ function fire(def: ChallengeDef, state: GameState, instanceId?: string): void {
     if (state.pendingChoices.some((pc) => pc.challengeId === def.id)) return; // one at a time
     state.pendingChoices.push({ challengeId: def.id, expiresDay: state.day + def.choice.expiresInDays });
     log(state, `Decision needed: ${def.name} (${def.choice.expiresInDays} days to respond)`);
-    return;
+    return; // queueing does not start the cooldown clock; resolveChoice/expiry-default does
   }
   applyEffects(state, def.effects, `chal-${def.id}-d${state.day}`, { instanceId });
   log(state, `${def.name}: ${def.description}`);
+  if (def.cooldownDays !== undefined) state.challengeLastFired[def.id] = state.day;
+}
+
+function cooldownActive(def: ChallengeDef, state: GameState): boolean {
+  if (def.cooldownDays === undefined) return false;
+  const lastFired = state.challengeLastFired[def.id];
+  if (lastFired === undefined) return false;
+  return state.day < lastFired + def.cooldownDays;
 }
 
 export function resolveChoice(state: GameState, content: GameContent, challengeId: string, optionId: string): void {
@@ -55,6 +63,7 @@ export function resolveChoice(state: GameState, content: GameContent, challengeI
   applyEffects(state, option.effects, `choice-${challengeId}-d${state.day}`);
   log(state, `${def.name}: chose "${option.label}"`);
   state.pendingChoices = state.pendingChoices.filter((pc) => pc.challengeId !== challengeId);
+  if (def.cooldownDays !== undefined) state.challengeLastFired[challengeId] = state.day;
 }
 
 export function rollChallenges(state: GameState, rng: Rng, content: GameContent): void {
@@ -66,6 +75,7 @@ export function rollChallenges(state: GameState, rng: Rng, content: GameContent)
         const fallback = def.choice.options.find((o) => o.id === def.choice!.defaultOptionId)!;
         applyEffects(state, fallback.effects, `choice-${def.id}-d${state.day}`);
         log(state, `${def.name}: expired, defaulted to "${fallback.label}"`);
+        if (def.cooldownDays !== undefined) state.challengeLastFired[def.id] = state.day;
       }
       state.pendingChoices = state.pendingChoices.filter((pc) => pc !== pending);
     }
@@ -73,6 +83,8 @@ export function rollChallenges(state: GameState, rng: Rng, content: GameContent)
 
   for (const def of content.challenges) {
     if (!conditionMet(def, state, content)) continue;
+    // same rule as conditionMet/minDay: skip without consuming an rng draw
+    if (cooldownActive(def, state)) continue;
     if (def.perHumanDev) {
       for (const inst of humanDevInstances(state, content)) {
         if (rng.next() < probability(def, state)) fire(def, state, inst.instanceId);

@@ -8,6 +8,13 @@ import decisionsJson from "../../content/decisions.json";
 import type { GameContent } from "./types";
 import type { Rng } from "./rng";
 
+// counts how many times next() is drawn, always returning `value`; lets tests
+// prove a cooldown-gated def is skipped WITHOUT consuming an rng draw
+function countingRng(value: number): { rng: Rng; calls: () => number } {
+  let n = 0;
+  return { rng: { next: () => { n++; return value; }, getState: () => 0 }, calls: () => n };
+}
+
 function content(): GameContent {
   return {
     start: parseStartConfig(startJson),
@@ -98,5 +105,127 @@ describe("rollChallenges", () => {
     rollChallenges(s, scriptedRng([0.05, 0.99, 0.99, 0.99, 0.99, 0.99]), c);
     expect(s.decisions[0].sickUntilDay).toBe(25); // day 20 + durationDays 5
     expect(s.decisions[1].sickUntilDay).toBeUndefined();
+  });
+});
+
+describe("challenge cooldowns", () => {
+  it("a non-choice challenge fires, then is blocked for the cooldown window without consuming an rng draw, then fires again once it elapses", () => {
+    const challenges = parseChallenges([
+      {
+        id: "test-cooldown",
+        name: "Test Cooldown",
+        description: "desc",
+        probabilityPerDay: 1.0,
+        cooldownDays: 5,
+        effects: [{ type: "addToStock", stock: "budget", value: -10 }],
+      },
+    ]);
+    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
+    const s = initialState(c);
+    const { rng, calls } = countingRng(0.0); // always < probability 1.0, so it fires whenever actually rolled
+
+    s.day = 20;
+    rollChallenges(s, rng, c);
+    expect(s.stocks.budget).toBe(9990);
+    expect(s.challengeLastFired["test-cooldown"]).toBe(20);
+    expect(calls()).toBe(1);
+
+    for (let day = 21; day <= 24; day++) {
+      s.day = day;
+      rollChallenges(s, rng, c);
+      expect(s.stocks.budget).toBe(9990); // unchanged: still cooling down
+      expect(calls()).toBe(1); // no rng draw consumed while cooling, same rule as minDay/condition gates
+    }
+
+    s.day = 25;
+    rollChallenges(s, rng, c);
+    expect(s.stocks.budget).toBe(9980);
+    expect(s.challengeLastFired["test-cooldown"]).toBe(25);
+    expect(calls()).toBe(2);
+  });
+
+  it("a resolved choice challenge cannot re-queue until its cooldown elapses, then re-queues", () => {
+    const challenges = parseChallenges([
+      {
+        id: "test-choice-cooldown",
+        name: "Test Choice Cooldown",
+        description: "desc",
+        probabilityPerDay: 1.0,
+        cooldownDays: 4,
+        effects: [],
+        choice: {
+          expiresInDays: 3,
+          defaultOptionId: "opt-default",
+          options: [
+            { id: "opt-a", label: "Option A", effects: [{ type: "addToStock", stock: "budget", value: -10 }] },
+            { id: "opt-default", label: "Default", effects: [{ type: "addToStock", stock: "budget", value: -20 }] },
+          ],
+        },
+      },
+    ]);
+    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
+    const s = initialState(c);
+    const rng = scriptedRng([]); // fallback 0.99 < probability 1.0, always fires when actually rolled
+
+    s.day = 20;
+    rollChallenges(s, rng, c); // queues the pending choice; queueing alone does not start the clock
+    expect(s.pendingChoices).toHaveLength(1);
+    expect(s.challengeLastFired["test-choice-cooldown"]).toBeUndefined();
+
+    resolveChoice(s, c, "test-choice-cooldown", "opt-a");
+    expect(s.stocks.budget).toBe(9990);
+    expect(s.challengeLastFired["test-choice-cooldown"]).toBe(20); // resolution starts the clock
+
+    for (let day = 21; day <= 23; day++) {
+      s.day = day;
+      rollChallenges(s, rng, c);
+      expect(s.pendingChoices).toHaveLength(0); // still cooling down: no re-queue
+    }
+
+    s.day = 24;
+    rollChallenges(s, rng, c);
+    expect(s.pendingChoices).toHaveLength(1); // cooldown elapsed: re-queues
+  });
+
+  it("an expired choice challenge starts its cooldown clock at the expiry day", () => {
+    const challenges = parseChallenges([
+      {
+        id: "test-choice-expiry-cooldown",
+        name: "Test Choice Expiry Cooldown",
+        description: "desc",
+        probabilityPerDay: 1.0,
+        cooldownDays: 4,
+        effects: [],
+        choice: {
+          expiresInDays: 3,
+          defaultOptionId: "opt-default",
+          options: [
+            { id: "opt-a", label: "Option A", effects: [{ type: "addToStock", stock: "budget", value: -10 }] },
+            { id: "opt-default", label: "Default", effects: [{ type: "addToStock", stock: "budget", value: -20 }] },
+          ],
+        },
+      },
+    ]);
+    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
+    const s = initialState(c);
+    const rng = scriptedRng([]); // fallback 0.99 < probability 1.0, always fires when actually rolled
+
+    s.day = 20;
+    rollChallenges(s, rng, c); // queues; expiresDay = 23
+    expect(s.pendingChoices).toHaveLength(1);
+
+    s.day = 23;
+    rollChallenges(s, rng, c); // expiry pass applies the default, then the per-def loop tries to re-queue but is now cooling down
+    expect(s.pendingChoices).toHaveLength(0);
+    expect(s.stocks.budget).toBe(9980);
+    expect(s.challengeLastFired["test-choice-expiry-cooldown"]).toBe(23); // clock starts at the expiry day
+
+    s.day = 26; // 26 < 23 + 4
+    rollChallenges(s, rng, c);
+    expect(s.pendingChoices).toHaveLength(0); // still cooling down: no re-queue
+
+    s.day = 27; // cooldown elapsed
+    rollChallenges(s, rng, c);
+    expect(s.pendingChoices).toHaveLength(1); // re-queues
   });
 });

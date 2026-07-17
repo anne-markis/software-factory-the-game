@@ -33,6 +33,7 @@ export function initialState(content: GameContent): GameState {
     nextInstanceId: 1,
     nextModifierId: 1,
     rngState: 0,
+    challengeLastFired: {},
   };
 }
 
