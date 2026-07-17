@@ -44,6 +44,14 @@ describe("renderDecisions", () => {
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img");
   });
+
+  it("drops owned unique decisions from the shop list entirely", () => {
+    const e = new Engine(content());
+    e.applyDecision("test-suite");
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(html).not.toContain('data-buy="test-suite"');
+    expect(html).toContain('data-buy="basic-dev"');
+  });
 });
 
 describe("renderLog", () => {

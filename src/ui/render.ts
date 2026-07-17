@@ -35,6 +35,7 @@ function describeCost(a: Availability): string {
 
 export function renderDecisions(avail: Availability[], ownedInstances: DecisionInstance[], content: GameContent): string {
   const shop = avail
+    .filter((a) => a.code !== "already-owned")
     .map((a) => {
       const disabled = a.purchasable ? "" : "disabled";
       const reason = a.reason ? ` (${esc(a.reason)})` : "";

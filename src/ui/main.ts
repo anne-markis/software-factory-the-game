@@ -7,6 +7,7 @@ import projectsJson from "../../content/projects.json";
 import type { GameContent } from "../engine/types";
 import { renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall } from "./render";
 import { loopDiagramSvg } from "./loopDiagram";
+import { inProgressPanelSvg } from "./inProgressPanel";
 import { saveGame, loadGame, clearSave } from "./storage";
 
 const content: GameContent = {
@@ -30,6 +31,7 @@ function render(): void {
     <div class="cols">
       <div class="main">
         ${renderDecisions(engine.availableDecisions(), [...state.decisions], content)}
+        ${inProgressPanelSvg(state, content)}
         ${renderProjects([...state.projects], engine.availableProjects(), state)}
       </div>
       <div class="side">
