@@ -288,13 +288,13 @@
   {
     "id": "senior-dev",
     "name": "Hire senior developer",
-    "description": "Costs $15/day and needs a basic developer on the team. Usually a big boost, occasionally a dud; a manager improves the odds.",
+    "description": "Costs $12/day and needs a basic developer on the team. Usually a big boost, occasionally a dud; a manager improves the odds.",
     "tags": [
       "human"
     ],
     "human": true,
     "cost": {
-      "perDay": 15
+      "perDay": 12
     },
     "requires": [
       "basic-dev"
@@ -435,12 +435,12 @@
   {
     "id": "eng-manager",
     "name": "Hire engineering manager",
-    "description": "Costs $10/day and needs a basic developer. Adds no output directly, but developers hired under a manager gamble with better odds.",
+    "description": "Costs $8/day and needs a basic developer. Adds no output directly, but developers hired under a manager gamble with better odds.",
     "tags": [
       "human"
     ],
     "cost": {
-      "perDay": 10
+      "perDay": 8
     },
     "requires": [
       "basic-dev"
@@ -474,7 +474,7 @@
   {
     "id": "agent-swarm",
     "name": "Agent swarm",
-    "description": "$100 setup, $20/day, needs a harness. Speeds In Progress work by 80% but adds 50% more tech debt; an orchestrator tames the debt.",
+    "description": "$100 setup, $20/day, needs a harness. Agents pick up, build, and ship work themselves: all work speeds up 80%, but tech debt grows 50% faster; an orchestrator tames the debt.",
     "tags": [
       "darkfactory"
     ],
@@ -488,7 +488,7 @@
     "effects": [
       {
         "type": "modifyRate",
-        "target": "finish",
+        "target": "all",
         "op": "mul",
         "value": 1.8
       },
@@ -504,7 +504,7 @@
         "effects": [
           {
             "type": "modifyRate",
-            "target": "finish",
+            "target": "all",
             "op": "mul",
             "value": 1.8
           },
@@ -553,9 +553,21 @@
     "effects": [
       {
         "type": "rampRate",
+        "target": "pull",
+        "perDay": 0.02,
+        "cap": 1.4
+      },
+      {
+        "type": "rampRate",
         "target": "finish",
         "perDay": 0.02,
-        "cap": 2.0
+        "cap": 1.4
+      },
+      {
+        "type": "rampRate",
+        "target": "deploy",
+        "perDay": 0.02,
+        "cap": 1.4
       }
     ],
     "removable": true,

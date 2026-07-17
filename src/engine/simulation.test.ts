@@ -126,18 +126,24 @@ describe("simulation", () => {
   // Measured challenge fires over this run: sickness 96, ddos 27, scope-creep
   // 33, prod-incident 12, poached 6, team-conflict 8, meeting-creep 4.
   //
-  // The narrow build still cannot stay solvent under the full challenge load:
-  // it goes broke (budget first clamps to 0 on day 513) and spends much of the
-  // run near zero, with completion arriving on day 1323 and a real
-  // post-completion breather (peak budget ~1981, budget 370 at day 1000). This
-  // remains a genuine loss of the solvency guarantee this probe once asserted,
-  // and it is still a flag for Task 6 (explicitly scoped to build and prove a
-  // better-resourced "human-heavy" probe -- test-suite, ci-cd, better-tooling,
-  // basic-dev, eng-manager, senior-dev, standup, contractor), not something to
-  // absorb by tuning here. The only solvency-shaped assertion kept below is
-  // completedProjects >= 1; budget checkpoints are pinned as observations (all
-  // trivially >= 0 thanks to the zero-clamp), not as viability guarantees.
-  it("smart strategy: completes the first contract; this narrow build still goes broke under full challenge load (see Task 6)", () => {
+  // RESOLUTION (release-8 Task 6): this probe is deliberately KEPT as a
+  // mid-tier observation probe, not a viability bar. The narrow two-dev build
+  // still cannot stay solvent under the full challenge load: broke (first
+  // zero-clamp) on day 513, completion on day 1323, post-completion peak
+  // ~1981, budget 370 at day 1000 -- values unchanged by the Task 6 tuning
+  // (the small-crm payout bump lands after this build is already pinned to
+  // the zero-clamp treadmill, and none of its purchases changed price). That
+  // insolvency is now design signal rather than an open flag: the two
+  // richer build probes below (human-heavy and automation-heavy) are the
+  // viability bar, and a modest test-suite + ci-cd + two-hires plan being
+  // NOT enough at 2000 days is exactly the "choices matter" pressure the
+  // release-7 economy aimed for. The probe stays because it pins a distinct
+  // mid-tier point on the difficulty curve and exercises hire gambles plus
+  // choice resolution under pinned challenge fire counts (sickness 96,
+  // ddos 27, scope-creep 33, prod-incident 12, poached 6, team-conflict 8,
+  // meeting-creep 4). Only completedProjects >= 1 is solvency-shaped; budget
+  // checkpoints are observations, not guarantees.
+  it("smart strategy (mid-tier observation): completes the first contract; the narrow build goes broke under full challenge load by design", () => {
     const content = fullContent();
     const e = new Engine(content);
     let hires = 0;
@@ -176,6 +182,127 @@ describe("simulation", () => {
     expect(e.getState().stocks.budget).toBeGreaterThanOrEqual(0); // observed 0 at day 2000
   });
 
+  // ---- Release-8 Task 6 viability probes ------------------------------------
+  //
+  // A shared harness for the two "richer build" probes the content-wave spec
+  // (section 2) demands: at least one human-heavy and one automation-heavy
+  // strategy must each complete multiple projects and stay solvent over 2000
+  // days. Structure follows the smart probe: a priority shopping list bought
+  // strictly in order (respecting requires edges -- the list stalls on the
+  // first unowned item until it is purchasable with a cash buffer), pending
+  // choices resolved with their first option, and project continuation
+  // small-crm then mobile-app whenever nothing is in flight and the upfront
+  // cost plus a reserve is affordable. The buffer/reserve are strategy
+  // parameters (a sensible player keeps runway), not engine knobs.
+  //
+  // Deliberately NO cross-probe dominance assertion: track speed is emergent
+  // (spec section 2); these pin viability floors only.
+  function runBuildProbe(shoppingList: string[]): {
+    completedProjects: number;
+    completionDays: number[];
+    budgetAtDay: Record<number, number>;
+    endBudget: number;
+    everBroke: boolean;
+  } {
+    const BUY_BUFFER = 800; // keep this much cash on hand beyond any oneTime cost
+    const PROJECT_RESERVE = 600; // keep this much beyond a project's upfront cost
+    const content = fullContent();
+    const e = new Engine(content);
+    let startedSmallCrm = false;
+    let lastCompleted = 0;
+    let everBroke = false;
+    const completionDays: number[] = [];
+    const budgetAtDay: Record<number, number> = {};
+    for (let day = 1; day <= 2000; day++) {
+      e.tick();
+      const s = e.getState();
+      const owned = (id: string) => s.decisions.some((d) => d.defId === id);
+      for (const id of shoppingList) {
+        if (owned(id)) continue;
+        const a = e.availableDecisions().find((x) => x.def.id === id);
+        if (!a || a.code === "missing-requires") break; // wait for the prerequisite
+        const oneTime = a.def.cost.oneTime ?? 0;
+        if (a.purchasable && s.stocks.budget >= oneTime + BUY_BUFFER) e.applyDecision(id);
+        break; // strict priority: never skip ahead in the list
+      }
+      if (s.projects.length === 0) {
+        const wantId = !startedSmallCrm ? "small-crm" : "mobile-app";
+        const w = e.availableProjects().find((x) => x.def.id === wantId);
+        if (w?.startable && s.stocks.budget >= w.def.upfrontCost + PROJECT_RESERVE) {
+          e.startProject(wantId);
+          if (wantId === "small-crm") startedSmallCrm = true;
+        }
+      }
+      for (const pc of [...s.pendingChoices]) {
+        const def = content.challenges.find((c) => c.id === pc.challengeId)!;
+        e.resolveChoice(pc.challengeId, def.choice!.options[0].id);
+      }
+      if (s.completedProjects > lastCompleted) {
+        completionDays.push(day);
+        lastCompleted = s.completedProjects;
+      }
+      if (s.stocks.budget === 0) everBroke = true;
+      if ([500, 1000, 2000].includes(day)) budgetAtDay[day] = s.stocks.budget;
+      assertInvariants(s, day);
+    }
+    return {
+      completedProjects: e.getState().completedProjects,
+      completionDays,
+      budgetAtDay,
+      endBudget: e.getState().stocks.budget,
+      everBroke,
+    };
+  }
+
+  // Human-heavy build. Observed trajectory under the tuned content: completes
+  // first-contract on day 412 and small-crm on day 1804, is partway through
+  // mobile-app at day 2000; budget 5254 at day 500, 5963 at day 1000, 4332 at
+  // day 2000; never hits the zero-clamp. Challenge exposure is the human set
+  // (sickness 110, meeting-creep 5, team-conflict 5, poached 4) plus the
+  // universal ones; the human tag never triggers the darkfactory pool.
+  it("human-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
+    const r = runBuildProbe([
+      "test-suite",
+      "ci-cd",
+      "better-tooling",
+      "basic-dev",
+      "eng-manager",
+      "senior-dev",
+      "standup",
+      "contractor",
+    ]);
+    expect(r.completedProjects).toBeGreaterThanOrEqual(2);
+    expect(r.endBudget).toBeGreaterThan(0); // observed 4332 -- comfortable margin
+    expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
+    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 412, 1804
+  });
+
+  // Automation-heavy build. Observed trajectory under the tuned content:
+  // completes first-contract on day 396 and small-crm on day 1643, is partway
+  // through mobile-app at day 2000; budget 2198 at day 500, 4219 at day 1000,
+  // 3441 at day 2000; never hits the zero-clamp. The darkfactory tag opens its
+  // own challenge pool (api-price-hike 17, runaway-agent-loop 13,
+  // model-deprecation 8, cloud-credits 9) and, owning no human devs, it eats
+  // laptop-dies (14) but no sickness/poaching -- a materially different risk
+  // profile from the human build at a similar destination, which is the
+  // track-parity design goal (viable, not identical).
+  it("automation-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
+    const r = runBuildProbe([
+      "test-suite",
+      "ci-cd",
+      "agent",
+      "agent-harness",
+      "swarm-orchestrator",
+      "agent-swarm",
+      "self-learning-agents",
+      "support-retainer",
+    ]);
+    expect(r.completedProjects).toBeGreaterThanOrEqual(2);
+    expect(r.endBudget).toBeGreaterThan(0); // observed 3441 -- comfortable margin
+    expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
+    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 396, 1643
+  });
+
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {
     const content = fullContent();
     const e = new Engine(content);
@@ -199,8 +326,21 @@ describe("simulation", () => {
           }
         }
       }
-      for (const p of e.availableProjects()) {
-        if (p.startable) e.startProject(p.def.id);
+      // Same stale-snapshot fix as the decision loop above, now needed for
+      // projects too: under the Task 6 payouts the greedy bot first reaches a
+      // day where two projects are startable in one availableProjects()
+      // snapshot, and paying the first upfront cost makes the second
+      // unaffordable before the loop reaches it.
+      let started = true;
+      while (started) {
+        started = false;
+        for (const p of e.availableProjects()) {
+          if (p.startable) {
+            e.startProject(p.def.id);
+            started = true;
+            break;
+          }
+        }
       }
       // resolve any pending choice with its first option
       for (const pc of [...e.getState().pendingChoices]) {
@@ -211,13 +351,15 @@ describe("simulation", () => {
     }
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
-    // No solvency or completion assertions here, deliberately: under the
-    // release-7 economy, buying everything affordable is NOT a viable
-    // strategy (design intent: choices matter). Observed at day 2000 under the
-    // content-stable hashed-roll draw (task 4.5): completedProjects 2, budget
-    // ~1.00, shipped ~8449. This run exercises engine invariants under maximal
-    // purchasing pressure, not balance; balance is pinned by the
-    // mechanism/idle/smart probes above.
+    // No solvency or completion assertions here, deliberately: even under the
+    // Task 6 economy (small-crm $21/pt, mobile-app $22/pt), buying everything
+    // affordable is NOT a viable strategy (design intent: choices matter).
+    // Observed at day 2000 under the tuned content: completedProjects 2,
+    // budget ~2.95, shipped ~10687 (was 2 / ~1.00 / ~8449 pre-tuning -- richer
+    // payouts ship more but the all-of-everything payroll still eats every
+    // dollar). This run exercises engine invariants under maximal purchasing
+    // pressure, not balance; balance is pinned by the mechanism/idle probes
+    // above and the human-heavy/automation-heavy viability probes.
   });
 
   it("upgrades matter: test suite reduces tech debt vs idle over 400 days", () => {

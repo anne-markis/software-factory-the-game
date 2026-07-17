@@ -73,9 +73,16 @@ describe("parseDecisions", () => {
     const retainer = defs.find((d) => d.id === "support-retainer")!;
     expect(retainer.incomePerDay).toBe(8);
     expect(retainer.cost.oneTime).toBeUndefined();
-    // self-learning-agents carries the rampRate effect
+    // self-learning-agents ramps the whole pipeline (Task 6 balance: a
+    // finish-only ramp left automation builds pull/deploy-bound at ~1 pt/day
+    // and structurally insolvent; per-rate cap 1.4 keeps the matured build
+    // from overwhelming the human track)
     const sla = defs.find((d) => d.id === "self-learning-agents")!;
-    expect(sla.effects).toEqual([{ type: "rampRate", target: "finish", perDay: 0.02, cap: 2.0 }]);
+    expect(sla.effects).toEqual([
+      { type: "rampRate", target: "pull", perDay: 0.02, cap: 1.4 },
+      { type: "rampRate", target: "finish", perDay: 0.02, cap: 1.4 },
+      { type: "rampRate", target: "deploy", perDay: 0.02, cap: 1.4 },
+    ]);
     // agent-swarm's synergy forward-references swarm-orchestrator, which
     // appears later in the array; parseDecisions collects ids first, so the
     // shipped file must parse with the reference intact
@@ -191,7 +198,7 @@ describe("parseChallenges", () => {
       name: "Mobile app build",
       sizePoints: 9000,
       upfrontCost: 3000,
-      payoutPerPoint: 19,
+      payoutPerPoint: 22,
       completionBonus: 4000,
       requiresCompleted: 1,
     });

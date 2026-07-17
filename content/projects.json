@@ -4,7 +4,7 @@
     "name": "Small CRM build",
     "sizePoints": 5000,
     "upfrontCost": 2000,
-    "payoutPerPoint": 18,
+    "payoutPerPoint": 21,
     "completionBonus": 1500
   },
   {
@@ -30,7 +30,7 @@
     "name": "Mobile app build",
     "sizePoints": 9000,
     "upfrontCost": 3000,
-    "payoutPerPoint": 19,
+    "payoutPerPoint": 22,
     "completionBonus": 4000,
     "requiresCompleted": 1
   }
