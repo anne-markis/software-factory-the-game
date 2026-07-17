@@ -63,6 +63,18 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   if (state.paused) return;
   state.day += 1;
   pruneExpired(state);
+
+  // Ramp growth runs after pruneExpired (so a modifier expiring this tick
+  // doesn't grow first) and before challengePhase, so any challenge effect
+  // that reads or stacks on rate modifiers this tick (and the in-progress
+  // panel, which reads state after tick()) sees the ramp's current value,
+  // not last tick's.
+  for (const m of state.modifiers) {
+    if (m.rampPerDay !== undefined && m.rampCap !== undefined) {
+      m.value = Math.min(m.rampCap, m.value + m.rampPerDay);
+    }
+  }
+
   challengePhase(state, rng, content);
 
   const deployRate = effectiveRate(state, "deploy");

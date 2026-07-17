@@ -119,6 +119,61 @@
         ]
       }
     ],
+    "synergies": [
+      {
+        "ifOwned": "eng-manager",
+        "gamble": [
+          {
+            "probability": 0.55,
+            "label": "Strong hire",
+            "effects": [
+              {
+                "type": "modifyRate",
+                "target": "all",
+                "op": "add",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "probability": 0.3,
+            "label": "Decent hire",
+            "effects": [
+              {
+                "type": "modifyRate",
+                "target": "all",
+                "op": "add",
+                "value": 0.5
+              }
+            ]
+          },
+          {
+            "probability": 0.13,
+            "label": "Net-negative hire",
+            "effects": [
+              {
+                "type": "modifyRate",
+                "target": "all",
+                "op": "add",
+                "value": -0.5
+              }
+            ]
+          },
+          {
+            "probability": 0.02,
+            "label": "Disaster hire",
+            "effects": [
+              {
+                "type": "modifyRate",
+                "target": "all",
+                "op": "add",
+                "value": -1.0
+              }
+            ]
+          }
+        ]
+      }
+    ],
     "removable": true
   },
   {
@@ -181,5 +236,361 @@
     ],
     "effects": [],
     "removable": true
+  },
+  {
+    "id": "better-tooling",
+    "name": "Better tooling",
+    "description": "Sharper editors and faster builds permanently speed all work a little.",
+    "tags": [
+      "solo"
+    ],
+    "cost": {
+      "oneTime": 150
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "add",
+        "value": 0.1
+      }
+    ],
+    "removable": false,
+    "unique": true
+  },
+  {
+    "id": "copilot",
+    "name": "Copilot assistant",
+    "description": "Speeds In Progress work by 15% but adds 5% more tech debt.",
+    "tags": [
+      "solo"
+    ],
+    "cost": {
+      "oneTime": 20,
+      "perDay": 2
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "finish",
+        "op": "mul",
+        "value": 1.15
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 1.05
+      }
+    ],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "senior-dev",
+    "name": "Hire senior developer",
+    "description": "Needs a basic developer on the team. Usually a big boost, occasionally a dud; a manager improves the odds.",
+    "tags": [
+      "human"
+    ],
+    "human": true,
+    "cost": {
+      "perDay": 12
+    },
+    "requires": [
+      "basic-dev"
+    ],
+    "effects": [],
+    "gamble": [
+      {
+        "probability": 0.4,
+        "label": "Exceptional hire",
+        "effects": [
+          {
+            "type": "modifyRate",
+            "target": "all",
+            "op": "add",
+            "value": 2.0
+          }
+        ]
+      },
+      {
+        "probability": 0.3,
+        "label": "Strong hire",
+        "effects": [
+          {
+            "type": "modifyRate",
+            "target": "all",
+            "op": "add",
+            "value": 1.0
+          }
+        ]
+      },
+      {
+        "probability": 0.2,
+        "label": "Solid hire",
+        "effects": [
+          {
+            "type": "modifyRate",
+            "target": "all",
+            "op": "add",
+            "value": 0.5
+          }
+        ]
+      },
+      {
+        "probability": 0.1,
+        "label": "Poor fit",
+        "effects": [
+          {
+            "type": "modifyRate",
+            "target": "all",
+            "op": "add",
+            "value": -0.5
+          }
+        ]
+      }
+    ],
+    "synergies": [
+      {
+        "ifOwned": "eng-manager",
+        "gamble": [
+          {
+            "probability": 0.5,
+            "label": "Exceptional hire",
+            "effects": [
+              {
+                "type": "modifyRate",
+                "target": "all",
+                "op": "add",
+                "value": 2.0
+              }
+            ]
+          },
+          {
+            "probability": 0.35,
+            "label": "Strong hire",
+            "effects": [
+              {
+                "type": "modifyRate",
+                "target": "all",
+                "op": "add",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "probability": 0.13,
+            "label": "Solid hire",
+            "effects": [
+              {
+                "type": "modifyRate",
+                "target": "all",
+                "op": "add",
+                "value": 0.5
+              }
+            ]
+          },
+          {
+            "probability": 0.02,
+            "label": "Poor fit",
+            "effects": [
+              {
+                "type": "modifyRate",
+                "target": "all",
+                "op": "add",
+                "value": -0.5
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "removable": true
+  },
+  {
+    "id": "contractor",
+    "name": "Bring in contractor",
+    "description": "A dependable +1 to all work, but their code adds 10% more tech debt; immune to sickness and poaching.",
+    "tags": [
+      "human"
+    ],
+    "cost": {
+      "perDay": 12
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "add",
+        "value": 1.0
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 1.1
+      }
+    ],
+    "removable": true
+  },
+  {
+    "id": "eng-manager",
+    "name": "Hire engineering manager",
+    "description": "Needs a basic developer. Adds no output directly, but developers hired under a manager gamble with better odds.",
+    "tags": [
+      "human"
+    ],
+    "cost": {
+      "perDay": 8
+    },
+    "requires": [
+      "basic-dev"
+    ],
+    "effects": [],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "standup",
+    "name": "Daily standup",
+    "description": "Costs everyone a little time but keeps work moving: pulling new work speeds up 15%.",
+    "tags": [
+      "human",
+      "process"
+    ],
+    "cost": {
+      "perDay": 3
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "pull",
+        "op": "mul",
+        "value": 1.15
+      }
+    ],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "agent-swarm",
+    "name": "Agent swarm",
+    "description": "Needs a harness. Agents pick up, build, and ship work themselves: all work speeds up 80%, but tech debt grows 50% faster; an orchestrator tames the debt.",
+    "tags": [
+      "darkfactory"
+    ],
+    "cost": {
+      "oneTime": 100,
+      "perDay": 20
+    },
+    "requires": [
+      "agent-harness"
+    ],
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "mul",
+        "value": 1.8
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 1.5
+      }
+    ],
+    "synergies": [
+      {
+        "ifOwned": "swarm-orchestrator",
+        "effects": [
+          {
+            "type": "modifyRate",
+            "target": "all",
+            "op": "mul",
+            "value": 1.8
+          },
+          {
+            "type": "modifyDebtMultiplier",
+            "op": "mul",
+            "value": 1.2
+          }
+        ]
+      }
+    ],
+    "removable": true
+  },
+  {
+    "id": "swarm-orchestrator",
+    "name": "Swarm orchestrator",
+    "description": "Needs a harness. No output on its own: swarms bought while it runs accumulate far less debt.",
+    "tags": [
+      "darkfactory"
+    ],
+    "cost": {
+      "oneTime": 250,
+      "perDay": 8
+    },
+    "requires": [
+      "agent-harness"
+    ],
+    "effects": [],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "self-learning-agents",
+    "name": "Self-learning agents",
+    "description": "Needs an agent swarm. Agents improve themselves a little every day, compounding into a large speed boost.",
+    "tags": [
+      "darkfactory"
+    ],
+    "cost": {
+      "oneTime": 500,
+      "perDay": 10
+    },
+    "requires": [
+      "agent-swarm"
+    ],
+    "effects": [
+      {
+        "type": "rampRate",
+        "target": "pull",
+        "perDay": 0.02,
+        "cap": 1.4
+      },
+      {
+        "type": "rampRate",
+        "target": "finish",
+        "perDay": 0.02,
+        "cap": 1.4
+      },
+      {
+        "type": "rampRate",
+        "target": "deploy",
+        "perDay": 0.02,
+        "cap": 1.4
+      }
+    ],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "support-retainer",
+    "name": "Support retainer",
+    "description": "Earns $8/day in support fees, but the interruptions slow all work by 5%.",
+    "tags": [
+      "process"
+    ],
+    "cost": {},
+    "incomePerDay": 8,
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "mul",
+        "value": 0.95
+      }
+    ],
+    "removable": true,
+    "unique": true
   }
 ]

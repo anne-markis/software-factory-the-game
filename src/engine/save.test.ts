@@ -68,4 +68,28 @@ describe("save/load", () => {
     expect(restored.nextModifierId).toBe(2);
     expect(restored.nextInstanceId).toBe(2);
   });
+
+  it("defaults a missing challengeLastFired to {} (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.challengeLastFired;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.challengeLastFired).toEqual({});
+  });
+
+  // gameSeed post-dates challenge cooldowns; deserialize has no content access,
+  // so the Engine constructor backfills it from content.start.seed. Legacy
+  // saves that predate the field must resume with challenge rolls keyed off the
+  // correct seed rather than undefined.
+  it("Engine backfills a missing gameSeed from content (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.gameSeed;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.gameSeed).toBeUndefined(); // deserialize cannot know the seed
+    const b = new Engine(c, restored);
+    expect(b.getState().gameSeed).toBe(c.start.seed);
+  });
 });

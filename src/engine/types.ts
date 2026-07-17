@@ -14,7 +14,8 @@ export type Effect =
   | { type: "modifyRate"; target: RateId | "all"; op: "add" | "mul"; value: number; durationDays?: number }
   | { type: "modifyDebtMultiplier"; op: "add" | "mul"; value: number; durationDays?: number }
   | { type: "addToStock"; stock: keyof Stocks; value: number }
-  | { type: "sickness"; factor: number; durationDays: number };
+  | { type: "sickness"; factor: number; durationDays: number }
+  | { type: "rampRate"; target: RateId; perDay: number; cap: number };
 
 export type ModifierTarget = RateId | "allRates" | "debtMultiplier";
 
@@ -25,6 +26,11 @@ export interface Modifier {
   op: "add" | "mul";
   value: number;
   expiresDay?: number;
+  // Present together for ramp modifiers created by the rampRate effect: each
+  // tick grows value toward rampCap by rampPerDay (see tick.ts). Absent for
+  // every other modifier.
+  rampPerDay?: number;
+  rampCap?: number;
 }
 
 export interface GambleOutcome {
@@ -82,6 +88,7 @@ export interface ChallengeDef {
   probScaling?: { stat: "techDebt"; per: number; add: number };
   effects: Effect[];
   choice?: { expiresInDays: number; defaultOptionId: string; options: ChoiceOption[] };
+  cooldownDays?: number;
 }
 
 export interface ProjectDef {
@@ -147,4 +154,13 @@ export interface GameState {
   nextInstanceId: number;
   nextModifierId: number;
   rngState: number;
+  // The game's content seed, copied from content.start.seed at init. Challenge
+  // rolls hash on (gameSeed, day, challengeId) rather than drawing from the
+  // rngState stream, so they stay stable when content is added or reordered.
+  // Legacy saves predate this field; the Engine constructor backfills it.
+  gameSeed: number;
+  // Keyed by ChallengeDef.id; set when a cooldownDays challenge's effects
+  // actually land (fire() for non-choice, resolveChoice, or expiry-default
+  // application for choice challenges). Absent entries mean never fired.
+  challengeLastFired: Record<string, number>;
 }

@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { parseStartConfig, parseDecisions, parseChallenges } from "./content";
+import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "./content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
+import projectsJson from "../../content/projects.json";
 
 describe("parseStartConfig", () => {
   it("parses the shipped start.json", () => {
@@ -34,10 +35,59 @@ describe("parseDecisions", () => {
   it("parses the shipped decisions.json", () => {
     const defs = parseDecisions(decisionsJson);
     const ids = defs.map((d) => d.id);
-    expect(ids).toEqual(["test-suite", "ci-cd", "basic-dev", "agent", "agent-harness"]);
+    expect(ids).toEqual([
+      "test-suite",
+      "ci-cd",
+      "basic-dev",
+      "agent",
+      "agent-harness",
+      "better-tooling",
+      "copilot",
+      "senior-dev",
+      "contractor",
+      "eng-manager",
+      "standup",
+      "agent-swarm",
+      "swarm-orchestrator",
+      "self-learning-agents",
+      "support-retainer",
+    ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(7);
     expect(dev.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
+  });
+
+  it("pins the content-wave decision values", () => {
+    const defs = parseDecisions(decisionsJson);
+    // senior-dev: base and manager-tightened gamble tables both sum to 1
+    const senior = defs.find((d) => d.id === "senior-dev")!;
+    expect(senior.gamble!.map((o) => o.probability)).toEqual([0.4, 0.3, 0.2, 0.1]);
+    expect(senior.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
+    expect(senior.synergies![0].ifOwned).toBe("eng-manager");
+    expect(senior.synergies![0].gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
+    // basic-dev gained a manager synergy with a full restated table summing to 1
+    const dev = defs.find((d) => d.id === "basic-dev")!;
+    expect(dev.synergies![0].ifOwned).toBe("eng-manager");
+    expect(dev.synergies![0].gamble!.map((o) => o.probability)).toEqual([0.55, 0.3, 0.13, 0.02]);
+    // support-retainer is the first content use of incomePerDay
+    const retainer = defs.find((d) => d.id === "support-retainer")!;
+    expect(retainer.incomePerDay).toBe(8);
+    expect(retainer.cost.oneTime).toBeUndefined();
+    // self-learning-agents ramps the whole pipeline (Task 6 balance: a
+    // finish-only ramp left automation builds pull/deploy-bound at ~1 pt/day
+    // and structurally insolvent; per-rate cap 1.4 keeps the matured build
+    // from overwhelming the human track)
+    const sla = defs.find((d) => d.id === "self-learning-agents")!;
+    expect(sla.effects).toEqual([
+      { type: "rampRate", target: "pull", perDay: 0.02, cap: 1.4 },
+      { type: "rampRate", target: "finish", perDay: 0.02, cap: 1.4 },
+      { type: "rampRate", target: "deploy", perDay: 0.02, cap: 1.4 },
+    ]);
+    // agent-swarm's synergy forward-references swarm-orchestrator, which
+    // appears later in the array; parseDecisions collects ids first, so the
+    // shipped file must parse with the reference intact
+    const swarm = defs.find((d) => d.id === "agent-swarm")!;
+    expect(swarm.synergies![0].ifOwned).toBe("swarm-orchestrator");
   });
 
   it("rejects a gamble table whose probabilities do not sum to 1", () => {
@@ -67,6 +117,38 @@ describe("parseDecisions", () => {
       ]),
     ).toThrow(/duplicate/i);
   });
+
+  it("parses a valid rampRate effect targeting a single rate", () => {
+    const defs = parseDecisions([
+      {
+        id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+        effects: [{ type: "rampRate", target: "finish", perDay: 0.1, cap: 2 }],
+      },
+    ]);
+    expect(defs[0].effects[0]).toEqual({ type: "rampRate", target: "finish", perDay: 0.1, cap: 2 });
+  });
+
+  it("rejects a rampRate effect targeting \"all\" (a ramp targets exactly one rate)", () => {
+    expect(() =>
+      parseDecisions([
+        {
+          id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+          effects: [{ type: "rampRate", target: "all", perDay: 0.1, cap: 1 }],
+        },
+      ]),
+    ).toThrow(/content\/decisions\.json/);
+  });
+
+  it("rejects a rampRate effect with a negative perDay", () => {
+    expect(() =>
+      parseDecisions([
+        {
+          id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+          effects: [{ type: "rampRate", target: "finish", perDay: -0.1, cap: 1 }],
+        },
+      ]),
+    ).toThrow(/content\/decisions\.json/);
+  });
 });
 
 describe("parseChallenges", () => {
@@ -82,6 +164,44 @@ describe("parseChallenges", () => {
     expect(sickness.perHumanDev).toBe(true);
     const incident = defs.find((c) => c.id === "prod-incident")!;
     expect(incident.probScaling).toEqual({ stat: "techDebt", per: 500, add: 0.01 });
+  });
+
+  it("pins the content-wave challenge values", () => {
+    const defs = parseChallenges(challengesJson);
+    const ids = defs.map((c) => c.id);
+    expect(ids).toEqual([
+      "sickness", "ddos", "scope-creep", "prod-incident", "laptop-dies", "key-dev-poached",
+      "model-deprecation", "api-price-hike", "runaway-agent-loop", "meeting-creep", "team-conflict",
+      "cloud-credits", "open-source-windfall",
+    ]);
+
+    const deprecation = defs.find((c) => c.id === "model-deprecation")!;
+    expect(deprecation.condition).toEqual({ hasTag: "darkfactory" });
+    expect(deprecation.cooldownDays).toBe(90);
+    const defaultOption = deprecation.choice!.options.find((o) => o.id === deprecation.choice!.defaultOptionId);
+    expect(defaultOption).toBeDefined();
+    expect(defaultOption!.id).toBe("pay-migration");
+
+    const windfall = defs.find((c) => c.id === "open-source-windfall")!;
+    const windfallEffect = windfall.effects.find((e) => e.type === "addToStock")!;
+    expect(windfallEffect).toMatchObject({ stock: "budget", value: 400 });
+    expect(windfallEffect.value).toBeGreaterThan(0);
+
+    const poached = defs.find((c) => c.id === "key-dev-poached")!;
+    expect(poached.cooldownDays).toBe(60);
+  });
+
+  it("pins the mobile-app project gate", () => {
+    const defs = parseProjects(projectsJson);
+    const mobileApp = defs.find((p) => p.id === "mobile-app")!;
+    expect(mobileApp).toMatchObject({
+      name: "Mobile app build",
+      sizePoints: 9000,
+      upfrontCost: 3000,
+      payoutPerPoint: 22,
+      completionBonus: 4000,
+      requiresCompleted: 1,
+    });
   });
 
   it("rejects a choice challenge with top-level effects", () => {

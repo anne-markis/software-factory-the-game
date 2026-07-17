@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { applyEffects } from "./effects";
+import { serialize, deserialize } from "./save";
 import { initialState } from "./engine";
 import { parseStartConfig } from "./content";
 import startJson from "../../content/start.json";
@@ -82,5 +83,61 @@ describe("applyEffects", () => {
     expect(s.day).toBe(5);
     expect(s.modifiers).toHaveLength(0);
     expect(effectiveRate(s, "pull")).toBe(1);
+  });
+
+  it("rampRate creates a 0-value add modifier and leaves the rate unchanged on the day it is applied", () => {
+    const s = freshState();
+    applyEffects(s, [{ type: "rampRate", target: "finish", perDay: 0.5, cap: 2 }], "src-1");
+    const m = s.modifiers[0];
+    expect(m.op).toBe("add");
+    expect(m.target).toBe("finish");
+    expect(m.value).toBe(0);
+    expect(m.rampPerDay).toBe(0.5);
+    expect(m.rampCap).toBe(2);
+    expect(effectiveRate(s, "finish")).toBe(1); // base rate, unchanged before any tick grows it
+  });
+
+  it("a ramp modifier grows perDay each tick and clamps at cap", () => {
+    const content = freshContent();
+    const s = initialState(content);
+    const rng = createRng(content.start.seed);
+    const noChallenges = () => {};
+    applyEffects(s, [{ type: "rampRate", target: "finish", perDay: 0.5, cap: 2 }], "src-1");
+    for (let i = 0; i < 7; i++) tick(s, rng, content, noChallenges);
+    expect(s.day).toBe(7);
+    // 7 ticks * 0.5/day = 3.5, clamped to cap 2; base finish rate is 1.
+    expect(effectiveRate(s, "finish")).toBe(3);
+  });
+
+  it("removing the source strips the ramp modifier and its progress entirely", () => {
+    const s = freshState();
+    applyEffects(s, [{ type: "rampRate", target: "finish", perDay: 0.5, cap: 2 }], "inst-x");
+    // Mimics removeDecision/payroll-failure removal: strip all modifiers by source.
+    s.modifiers = s.modifiers.filter((m) => m.source !== "inst-x");
+    expect(effectiveRate(s, "finish")).toBe(1);
+  });
+
+  it("a ramp modifier's progress round-trips through a save/restore mid-growth", () => {
+    const content = freshContent();
+    const a = initialState(content);
+    const rngA = createRng(content.start.seed);
+    const noChallenges = () => {};
+    applyEffects(a, [{ type: "rampRate", target: "finish", perDay: 0.5, cap: 2 }], "src-1");
+    for (let i = 0; i < 3; i++) tick(a, rngA, content, noChallenges);
+
+    // real JSON round-trip, not just a deep copy: proves rampPerDay/rampCap
+    // and mid-growth value survive serialize/deserialize
+    const b = deserialize(serialize(a));
+    const ramp = b.modifiers.find((m) => m.rampPerDay !== undefined)!;
+    expect(ramp.rampPerDay).toBe(0.5);
+    expect(ramp.rampCap).toBe(2);
+    expect(ramp.value).toBe(1.5); // 3 ticks * 0.5
+    const rngB = createRng(b.rngState, true);
+
+    for (let i = 0; i < 4; i++) {
+      tick(a, rngA, content, noChallenges);
+      tick(b, rngB, content, noChallenges);
+    }
+    expect(b).toEqual(a);
   });
 });

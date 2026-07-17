@@ -30,17 +30,12 @@ people, agents, and process; survive random challenges; scale points/day.
 
 ## Editing content
 
-Add a decision, challenge, or project by appending to the matching JSON file.
-Effects use a small typed vocabulary (`modifyRate`, `modifyDebtMultiplier`,
-`addToStock`, `sickness`); schema errors are reported with file and entry
-names. Gamble tables must sum to 1. Choice challenges must not carry
-top-level effects, and sickness effects require `perHumanDev`.
-
-Timing note for `durationDays`: effects applied at purchase time are live
-for `durationDays - 1` ticks (expiry is pruned at the start of the tick the
-duration lands on), while effects applied mid-tick by challenges run for the
-full count. Content that wants a purchase slowdown felt for N days should
-use `durationDays: N + 1`; the shipped decisions already do.
+Decisions, challenges, and projects are all hand-editable JSON, validated by
+strict schemas at load (typos and unknown keys fail loudly, naming the file
+and entry), and checked by simulation-based balance probes in the test
+suite. See [`docs/CONTENT-AUTHORING.md`](docs/CONTENT-AUTHORING.md) for the
+full field-by-field guide, the effect vocabulary, and a worked example of
+adding a decision and a challenge.
 
 ## Design notes
 

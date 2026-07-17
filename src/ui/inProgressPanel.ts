@@ -13,8 +13,16 @@ function cleanSourceLabel(source: string): string {
   return source.replace(/^chal-/, "").replace(/-d\d+$/, "");
 }
 
-function contribution(op: "add" | "mul", value: number): string {
-  if (op === "add") return `${value >= 0 ? "+" : ""}${value}/day`; // negatives carry their own sign
+// Ramp modifiers (rampPerDay set) accumulate via repeated += of small float
+// increments (e.g. 0.02/day), so their raw value drifts like 0.39999999999999997.
+// Round those to one decimal for display and flag them as still-growing;
+// non-ramp contributions are shown at full precision as before.
+function contribution(op: "add" | "mul", value: number, ramping = false): string {
+  if (op === "add") {
+    const display = ramping ? value.toFixed(1) : `${value}`;
+    const suffix = ramping ? " (ramping)" : "";
+    return `${value >= 0 ? "+" : ""}${display}/day${suffix}`; // negatives carry their own sign
+  }
   return `x${value}`;
 }
 
@@ -30,7 +38,7 @@ function buildNodes(state: Readonly<GameState>, content: GameContent): Contribut
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
     const sick = inst.sickUntilDay !== undefined && inst.sickUntilDay > state.day;
-    const contributions = mods.map((m) => contribution(m.op, m.value)).join(", ");
+    const contributions = mods.map((m) => contribution(m.op, m.value, m.rampPerDay !== undefined)).join(", ");
     const gamble = inst.gambleLabel ? ` [${inst.gambleLabel}]` : "";
     const sickSuffix = sick ? " (sick)" : "";
     nodes.push({ label: `${def.name}${gamble}: ${contributions}${sickSuffix}`, dim: sick });
@@ -41,7 +49,7 @@ function buildNodes(state: Readonly<GameState>, content: GameContent): Contribut
     if (instanceIds.has(m.source)) continue; // already covered above as an owned-decision node
     const cleaned = cleanSourceLabel(m.source);
     const expiry = m.expiresDay !== undefined ? ` (${m.expiresDay - state.day}d left)` : "";
-    nodes.push({ label: `${cleaned}: ${contribution(m.op, m.value)}${expiry}`, dim: false });
+    nodes.push({ label: `${cleaned}: ${contribution(m.op, m.value, m.rampPerDay !== undefined)}${expiry}`, dim: false });
   }
 
   if (state.projects.length > 1) {

@@ -1,5 +1,6 @@
 import type { ChallengeDef, GameContent, GameState } from "./types";
 import type { Rng } from "./rng";
+import { hashRoll } from "./rng";
 import { applyEffects } from "./effects";
 import { log } from "./tick";
 
@@ -40,10 +41,18 @@ function fire(def: ChallengeDef, state: GameState, instanceId?: string): void {
     if (state.pendingChoices.some((pc) => pc.challengeId === def.id)) return; // one at a time
     state.pendingChoices.push({ challengeId: def.id, expiresDay: state.day + def.choice.expiresInDays });
     log(state, `Decision needed: ${def.name} (${def.choice.expiresInDays} days to respond)`);
-    return;
+    return; // queueing does not start the cooldown clock; resolveChoice/expiry-default does
   }
   applyEffects(state, def.effects, `chal-${def.id}-d${state.day}`, { instanceId });
   log(state, `${def.name}: ${def.description}`);
+  if (def.cooldownDays !== undefined) state.challengeLastFired[def.id] = state.day;
+}
+
+function cooldownActive(def: ChallengeDef, state: GameState): boolean {
+  if (def.cooldownDays === undefined) return false;
+  const lastFired = state.challengeLastFired[def.id];
+  if (lastFired === undefined) return false;
+  return state.day < lastFired + def.cooldownDays;
 }
 
 export function resolveChoice(state: GameState, content: GameContent, challengeId: string, optionId: string): void {
@@ -55,9 +64,16 @@ export function resolveChoice(state: GameState, content: GameContent, challengeI
   applyEffects(state, option.effects, `choice-${challengeId}-d${state.day}`);
   log(state, `${def.name}: chose "${option.label}"`);
   state.pendingChoices = state.pendingChoices.filter((pc) => pc.challengeId !== challengeId);
+  if (def.cooldownDays !== undefined) state.challengeLastFired[challengeId] = state.day;
 }
 
-export function rollChallenges(state: GameState, rng: Rng, content: GameContent): void {
+// The `rng` parameter is retained only to satisfy the ChallengePhase signature
+// that tick.ts calls through; the challenge phase no longer consumes the shared
+// stream at all. Each challenge rolls a stateless hashRoll keyed by its own id
+// (plus the human instance id, for perHumanDev challenges), so adding or
+// reordering content leaves every existing challenge's rolls untouched. Gamble
+// rolls on decision purchases still use the shared stream (see decisions.ts).
+export function rollChallenges(state: GameState, _rng: Rng, content: GameContent): void {
   // expire pending choices first: apply defaults
   for (const pending of [...state.pendingChoices]) {
     if (pending.expiresDay <= state.day) {
@@ -66,6 +82,7 @@ export function rollChallenges(state: GameState, rng: Rng, content: GameContent)
         const fallback = def.choice.options.find((o) => o.id === def.choice!.defaultOptionId)!;
         applyEffects(state, fallback.effects, `choice-${def.id}-d${state.day}`);
         log(state, `${def.name}: expired, defaulted to "${fallback.label}"`);
+        if (def.cooldownDays !== undefined) state.challengeLastFired[def.id] = state.day;
       }
       state.pendingChoices = state.pendingChoices.filter((pc) => pc !== pending);
     }
@@ -73,12 +90,18 @@ export function rollChallenges(state: GameState, rng: Rng, content: GameContent)
 
   for (const def of content.challenges) {
     if (!conditionMet(def, state, content)) continue;
+    if (cooldownActive(def, state)) continue;
     if (def.perHumanDev) {
+      // Per-human rolls are keyed by instanceId as well as def id: independent
+      // per instance, and stable across content edits (instance ids are stable
+      // within a game).
       for (const inst of humanDevInstances(state, content)) {
-        if (rng.next() < probability(def, state)) fire(def, state, inst.instanceId);
+        if (hashRoll(state.gameSeed, state.day, `${def.id}:${inst.instanceId}`) < probability(def, state)) {
+          fire(def, state, inst.instanceId);
+        }
       }
     } else {
-      if (rng.next() < probability(def, state)) fire(def, state);
+      if (hashRoll(state.gameSeed, state.day, def.id) < probability(def, state)) fire(def, state);
     }
   }
 }

@@ -69,6 +69,32 @@ describe("inProgressPanelSvg", () => {
     expect(svg).toContain("Context switch x0.85");
   });
 
+  it("labels a ramping add-op modifier with its rounded current value and a (ramping) suffix", () => {
+    // Real purchase chain for self-learning-agents runs through agent-harness
+    // -> agent-swarm -> self-learning-agents, which is expensive to set up
+    // and would tie this test to gamble rng along the way. Instead, inject
+    // the owned instance and its ramp modifier directly via the mutable-state
+    // escape hatch (same pattern as the sickness and second-project tests
+    // above), matching source to instanceId so it renders through the
+    // owned-decision branch exactly as the real ramp modifier would.
+    const e = new Engine(content());
+    const s = e.getState() as GameContentMutableState;
+    s.decisions.push({ instanceId: "inst-99", defId: "self-learning-agents" });
+    s.modifiers.push({
+      id: "mod-test-ramp",
+      source: "inst-99",
+      target: "finish",
+      op: "add",
+      value: 0.39999999999999997, // 20 accumulated 0.02 increments; float tail is the point
+      rampPerDay: 0.02,
+      rampCap: 2.0,
+    });
+    const svg = inProgressPanelSvg(s, content());
+    expect(svg).toContain("Self-learning agents: +0.4/day (ramping)");
+    expect(svg).not.toContain("0.39999");
+    expect(svg).not.toContain("0.4/day (ramping)/day"); // no double suffix/unit
+  });
+
   it("renders negative contributions with a bare minus, not +-", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");

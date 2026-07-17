@@ -30,5 +30,9 @@ export function deserialize(json: string): GameState {
   if (state.nextInstanceId === undefined) {
     state.nextInstanceId = maxIdSuffix(state.decisions.map((d) => d.instanceId), "inst-") + 1;
   }
+  // defensive default for saves written before challenge cooldowns existed
+  if (state.challengeLastFired === undefined) {
+    state.challengeLastFired = {};
+  }
   return state;
 }
