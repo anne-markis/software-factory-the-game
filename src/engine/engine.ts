@@ -33,6 +33,7 @@ export function initialState(content: GameContent): GameState {
     nextInstanceId: 1,
     nextModifierId: 1,
     rngState: 0,
+    gameSeed: s.seed,
     challengeLastFired: {},
   };
 }
@@ -45,6 +46,10 @@ export class Engine {
   constructor(protected content: GameContent, restored?: GameState) {
     if (restored) {
       this.state = restored;
+      // Legacy saves predate gameSeed; challenge rolls hash on it, so backfill
+      // from content (deserialize has no content access). New games always
+      // carry it via initialState.
+      if (restored.gameSeed === undefined) restored.gameSeed = content.start.seed;
       this.rng = createRng(restored.rngState, true);
     } else {
       this.state = initialState(content);

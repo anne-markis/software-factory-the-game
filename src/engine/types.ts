@@ -154,6 +154,11 @@ export interface GameState {
   nextInstanceId: number;
   nextModifierId: number;
   rngState: number;
+  // The game's content seed, copied from content.start.seed at init. Challenge
+  // rolls hash on (gameSeed, day, challengeId) rather than drawing from the
+  // rngState stream, so they stay stable when content is added or reordered.
+  // Legacy saves predate this field; the Engine constructor backfills it.
+  gameSeed: number;
   // Keyed by ChallengeDef.id; set when a cooldownDays challenge's effects
   // actually land (fire() for non-choice, resolveChoice, or expiry-default
   // application for choice challenges). Absent entries mean never fired.

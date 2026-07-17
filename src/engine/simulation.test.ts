@@ -73,19 +73,23 @@ describe("simulation", () => {
   // and ddos about -$3/day. The idle player owns no decisions at all, so
   // every hasTag-gated content-wave challenge (model-deprecation,
   // api-price-hike, runaway-agent-loop, meeting-creep, team-conflict,
-  // cloud-credits) is condition-gated out and never draws; the only new
+  // cloud-credits) is condition-gated out and never fires; the only new
   // challenge that reaches the idle player is open-source-windfall
-  // (minDay 15, +$400, 1%/day, 60-day cooldown), which is a pure income
-  // boost and meaningfully softens the glide.
+  // (minDay 15, +$400, 1%/day, 60-day cooldown), a pure income boost that
+  // softens the glide.
   //
-  // RE-PINNED for content wave (release 8, task 4): adding open-source-windfall
-  // shifted this from "broke by ~day 716" to "broke by ~day 936" and raised
-  // the day-300/600 checkpoints substantially (day 300: 6393 -> 8152; day
-  // 600: 2234 -> 5252). The rng is still seeded and the trajectory still
-  // deterministic; assertions leave headroom but pin the shape: meaningful
-  // decline off the starting 10,000, no instant death, broke well within
-  // two years, near-empty long-run.
-  it("idle with full content: challenges steepen the glide; broke by ~day 936", () => {
+  // RE-PINNED for content wave (release 8, task 4.5): challenge rolls are now
+  // hashed per challenge (hashRoll on gameSeed/day/id) instead of drawn
+  // positionally from the shared rng stream, and the challenge phase no longer
+  // consumes that stream at all. This deliberately changes which challenge
+  // days land (a fresh, content-stable draw of the same probabilities), so the
+  // trajectory shifted again: broke by ~day 696 (was ~936 under the task-4
+  // positional draws), day 300 = 6693, day 600 = 1757. The point of the
+  // refactor is that these values no longer move when a challenge is added or
+  // reordered in content. Assertions leave headroom but pin the shape:
+  // meaningful decline off the starting 10,000, no instant death, broke well
+  // within two years, near-empty long-run.
+  it("idle with full content: challenges steepen the glide; broke by ~day 696", () => {
     const e = new Engine(fullContent());
     let budgetAt300 = NaN;
     let budgetAt600 = NaN;
@@ -94,9 +98,9 @@ describe("simulation", () => {
       if (day === 300) budgetAt300 = e.getState().stocks.budget;
       if (day === 600) budgetAt600 = e.getState().stocks.budget;
     }
-    expect(budgetAt300).toBeLessThan(8800); // observed 8152: well off the starting 10,000
-    expect(budgetAt600).toBeGreaterThan(0); // observed 5252: breathing room, no instant death
-    expect(e.getState().stocks.budget).toBeLessThan(100); // observed 0 at day 2000 (first clamp day 936)
+    expect(budgetAt300).toBeLessThan(8800); // observed 6693: well off the starting 10,000
+    expect(budgetAt600).toBeGreaterThan(0); // observed 1757: breathing room, no instant death
+    expect(e.getState().stocks.budget).toBeLessThan(100); // observed 0 at day 2000 (first clamp day 696)
   });
 
   // Smart-strategy probe: a modest, sensible plan (test-suite day 1, ci-cd
@@ -111,33 +115,29 @@ describe("simulation", () => {
   // smart bot used to complete it on day 662, roll into small-crm, and stay
   // solvent through day 2000 (budget(2000) observed 14.89).
   //
-  // RE-PINNED for content wave (release 8, task 4). This build owns basic-dev
-  // (tagged "human"), so it also satisfies meeting-creep's and
-  // team-conflict's hasTag conditions from the day it hires -- but those two
-  // challenges only actually fired 1 and 4 times respectively over the whole
-  // run (team-conflict resolved via its first/cheaper option each time,
-  // ~$480 total), which cannot explain the size of the change below. The
-  // real driver: every condition-met content-wave challenge, whether or not
-  // it fires, still consumes one rng.next() draw per day it's checked (same
-  // rule that lets condition-gated challenges skip WITHOUT a draw when the
-  // condition fails -- see challenges.test.ts). Those extra draws shift the
-  // single shared seeded rng stream for every later day, which reshuffles
-  // the unrelated pre-existing challenges' outcomes too. Measured over this
-  // run: sickness fired 127 times before content wave, 28 after; poached 28
-  // before, 2 after; ddos 15 before, 64 after; scope-creep 21 before, 57
-  // after; prod-incident 9 before, 16 after. This is a different, and this
-  // time unlucky, draw of the same probabilities -- not a deliberate
-  // tightening of any single value -- but the practical result is real:
-  // completion is delayed to day 1356 and the build is broke (budget 0) for
-  // most of the run, with only a brief post-completion blip. That is a
-  // genuine loss of the solvency guarantee this probe used to assert, and
-  // it should be treated as a flag for Task 6 (which is explicitly scoped to
-  // build a better-resourced "human-heavy" probe -- test-suite, ci-cd,
-  // better-tooling, basic-dev, eng-manager, senior-dev, standup, contractor
-  // -- and prove viability with that fuller toolkit) rather than something
-  // silently absorbed here. See the content-wave task report for the full
-  // writeup.
-  it("smart strategy: completes the first contract; content-wave rng-reshuffle leaves this narrow build broke by day 2000 (see Task 6)", () => {
+  // RE-PINNED for content wave (release 8, task 4.5). Challenge rolls are now
+  // hashed per challenge (hashRoll on gameSeed/day/id) rather than drawn
+  // positionally from the shared rng stream, and the challenge phase no longer
+  // touches that stream -- so both the challenge outcomes AND the purchase
+  // gambles (which still draw from the stream) fall on a different, now
+  // content-stable, deterministic sequence than under task 4's positional
+  // draws. This build owns basic-dev (tagged "human"), so it also satisfies
+  // meeting-creep's and team-conflict's hasTag conditions once it hires.
+  // Measured challenge fires over this run: sickness 96, ddos 27, scope-creep
+  // 33, prod-incident 12, poached 6, team-conflict 8, meeting-creep 4.
+  //
+  // The narrow build still cannot stay solvent under the full challenge load:
+  // it goes broke (budget first clamps to 0 on day 513) and spends much of the
+  // run near zero, with completion arriving on day 1323 and a real
+  // post-completion breather (peak budget ~1981, budget 370 at day 1000). This
+  // remains a genuine loss of the solvency guarantee this probe once asserted,
+  // and it is still a flag for Task 6 (explicitly scoped to build and prove a
+  // better-resourced "human-heavy" probe -- test-suite, ci-cd, better-tooling,
+  // basic-dev, eng-manager, senior-dev, standup, contractor), not something to
+  // absorb by tuning here. The only solvency-shaped assertion kept below is
+  // completedProjects >= 1; budget checkpoints are pinned as observations (all
+  // trivially >= 0 thanks to the zero-clamp), not as viability guarantees.
+  it("smart strategy: completes the first contract; this narrow build still goes broke under full challenge load (see Task 6)", () => {
     const content = fullContent();
     const e = new Engine(content);
     let hires = 0;
@@ -168,12 +168,12 @@ describe("simulation", () => {
       if (day === 1000) budgetAt1000 = s.stocks.budget;
       assertInvariants(s, day);
     }
-    expect(completionDay).toBeGreaterThan(0); // observed: day 1356 (was day 662 pre content-wave)
+    expect(completionDay).toBeGreaterThan(0); // observed: day 1323
     expect(completionDay).toBeLessThan(1800); // still comfortably within the 2000-day horizon
     expect(e.getState().completedProjects).toBeGreaterThanOrEqual(1);
-    expect(budgetAt1000).toBeGreaterThanOrEqual(0); // observed 0: broke well before completion (was 2306)
-    expect(peakBudgetAfterCompletion).toBeGreaterThan(0); // observed 333.17: completion bonus is a real, if brief, breather
-    expect(e.getState().stocks.budget).toBeGreaterThanOrEqual(0); // observed 0 at day 2000 (was 14.89)
+    expect(budgetAt1000).toBeGreaterThanOrEqual(0); // observed 370 (first clamp to 0 was day 513)
+    expect(peakBudgetAfterCompletion).toBeGreaterThan(0); // observed 1981.44: completion bonus is a real breather
+    expect(e.getState().stocks.budget).toBeGreaterThanOrEqual(0); // observed 0 at day 2000
   });
 
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {
@@ -184,12 +184,10 @@ describe("simulation", () => {
       // Re-check affordability after each purchase rather than looping over
       // one stale availableDecisions() snapshot: buying one item can spend
       // down the budget enough that a later item in the same snapshot,
-      // affordable when the snapshot was taken, no longer is. Content-wave's
-      // extra challenges reshuffle the seeded rng stream (see the
-      // smart-strategy probe's comment above for the mechanism) enough that
-      // this greedy build's budget landed in that exact window on day 494;
-      // the fix belongs here in the purchasing loop, not in any content
-      // value.
+      // affordable when the snapshot was taken, no longer is. This re-check
+      // loop is the correct place for that fix, independent of exactly which
+      // day the budget lands in the affordability window (that day moves with
+      // any change to the challenge/gamble draw sequence).
       let bought = true;
       while (bought) {
         bought = false;
@@ -215,10 +213,11 @@ describe("simulation", () => {
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
     // No solvency or completion assertions here, deliberately: under the
     // release-7 economy, buying everything affordable is NOT a viable
-    // strategy (design intent: choices matter). Observed at day 2000:
-    // completedProjects 0, budget ~1.36, shipped ~2696. This run exercises
-    // engine invariants under maximal purchasing pressure, not balance;
-    // balance is pinned by the mechanism/idle/smart probes above.
+    // strategy (design intent: choices matter). Observed at day 2000 under the
+    // content-stable hashed-roll draw (task 4.5): completedProjects 2, budget
+    // ~1.00, shipped ~8449. This run exercises engine invariants under maximal
+    // purchasing pressure, not balance; balance is pinned by the
+    // mechanism/idle/smart probes above.
   });
 
   it("upgrades matter: test suite reduces tech debt vs idle over 400 days", () => {
