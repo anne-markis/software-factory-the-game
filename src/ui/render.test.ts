@@ -44,6 +44,14 @@ describe("renderDecisions", () => {
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img");
   });
+
+  it("drops owned unique decisions from the shop list entirely", () => {
+    const e = new Engine(content());
+    e.applyDecision("test-suite");
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(html).not.toContain('data-buy="test-suite"');
+    expect(html).toContain('data-buy="basic-dev"');
+  });
 });
 
 describe("renderLog", () => {
@@ -80,7 +88,7 @@ describe("renderProjects", () => {
     const e = new Engine(c);
     const html = renderProjects([...e.getState().projects], e.availableProjects(), e.getState());
     expect(html).toContain("Projects (efficiency 100%)");
-    expect(html).toContain("First Contract: 3,000 points left");
+    expect(html).toContain("First Contract: 1,500 points left");
     expect(html).toContain('data-project="small-crm" ');
     expect(html).toContain('data-project="big-migration" disabled');
     expect(html).toContain("requires 1 completed project(s)");

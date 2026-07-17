@@ -60,13 +60,13 @@
   {
     "id": "basic-dev",
     "name": "Hire basic developer",
-    "description": "Costs $10/day while employed. Hiring is a gamble: they might be great, or might slow the team down. Removed permanently if payroll fails.",
+    "description": "Costs $7/day while employed. Hiring is a gamble: they might be great, or might slow the team down. Removed permanently if payroll fails.",
     "tags": [
       "human"
     ],
     "human": true,
     "cost": {
-      "perDay": 10
+      "perDay": 7
     },
     "effects": [],
     "gamble": [

@@ -39,10 +39,10 @@
   {
     "id": "laptop-dies",
     "name": "Laptop dies",
-    "description": "Your only machine gives up. Replacement: $1,500.",
-    "probabilityPerDay": 0.015,
+    "description": "Your only machine gives up. Replacement: $400.",
+    "probabilityPerDay": 0.01,
     "condition": { "maxHumanDevs": 0, "minDay": 15 },
-    "effects": [{ "type": "addToStock", "stock": "budget", "value": -1500 }]
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": -400 }]
   },
   {
     "id": "key-dev-poached",
