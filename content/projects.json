@@ -12,7 +12,7 @@
     "name": "Legacy platform migration",
     "sizePoints": 20000,
     "upfrontCost": 5000,
-    "payoutPerPoint": 20,
+    "payoutPerPoint": 23,
     "completionBonus": 8000,
     "requiresCompleted": 1
   },
