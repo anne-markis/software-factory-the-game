@@ -240,7 +240,7 @@
   {
     "id": "better-tooling",
     "name": "Better tooling",
-    "description": "$150 once. Sharper editors and faster builds permanently speed all work a little.",
+    "description": "Sharper editors and faster builds permanently speed all work a little.",
     "tags": [
       "solo"
     ],
@@ -261,7 +261,7 @@
   {
     "id": "copilot",
     "name": "Copilot assistant",
-    "description": "$20 setup, $2/day. Speeds In Progress work by 15% but adds 5% more tech debt.",
+    "description": "Speeds In Progress work by 15% but adds 5% more tech debt.",
     "tags": [
       "solo"
     ],
@@ -288,7 +288,7 @@
   {
     "id": "senior-dev",
     "name": "Hire senior developer",
-    "description": "Costs $12/day and needs a basic developer on the team. Usually a big boost, occasionally a dud; a manager improves the odds.",
+    "description": "Needs a basic developer on the team. Usually a big boost, occasionally a dud; a manager improves the odds.",
     "tags": [
       "human"
     ],
@@ -410,7 +410,7 @@
   {
     "id": "contractor",
     "name": "Bring in contractor",
-    "description": "Costs $12/day for a dependable +1 to all work, but their code adds 10% more tech debt; immune to sickness and poaching.",
+    "description": "A dependable +1 to all work, but their code adds 10% more tech debt; immune to sickness and poaching.",
     "tags": [
       "human"
     ],
@@ -435,7 +435,7 @@
   {
     "id": "eng-manager",
     "name": "Hire engineering manager",
-    "description": "Costs $8/day and needs a basic developer. Adds no output directly, but developers hired under a manager gamble with better odds.",
+    "description": "Needs a basic developer. Adds no output directly, but developers hired under a manager gamble with better odds.",
     "tags": [
       "human"
     ],
@@ -452,7 +452,7 @@
   {
     "id": "standup",
     "name": "Daily standup",
-    "description": "Costs $3/day of everyone's time. Keeps work moving: pulling new work speeds up 15%.",
+    "description": "Costs everyone a little time but keeps work moving: pulling new work speeds up 15%.",
     "tags": [
       "human",
       "process"
@@ -474,7 +474,7 @@
   {
     "id": "agent-swarm",
     "name": "Agent swarm",
-    "description": "$100 setup, $20/day, needs a harness. Agents pick up, build, and ship work themselves: all work speeds up 80%, but tech debt grows 50% faster; an orchestrator tames the debt.",
+    "description": "Needs a harness. Agents pick up, build, and ship work themselves: all work speeds up 80%, but tech debt grows 50% faster; an orchestrator tames the debt.",
     "tags": [
       "darkfactory"
     ],
@@ -521,7 +521,7 @@
   {
     "id": "swarm-orchestrator",
     "name": "Swarm orchestrator",
-    "description": "$250 setup, $8/day, needs a harness. No output on its own: swarms bought while it runs accumulate far less debt.",
+    "description": "Needs a harness. No output on its own: swarms bought while it runs accumulate far less debt.",
     "tags": [
       "darkfactory"
     ],
@@ -539,7 +539,7 @@
   {
     "id": "self-learning-agents",
     "name": "Self-learning agents",
-    "description": "$500 setup, $10/day, needs an agent swarm. Agents improve themselves a little every day, compounding into a large speed boost.",
+    "description": "Needs an agent swarm. Agents improve themselves a little every day, compounding into a large speed boost.",
     "tags": [
       "darkfactory"
     ],
