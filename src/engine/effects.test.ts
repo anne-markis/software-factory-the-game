@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { applyEffects } from "./effects";
+import { serialize, deserialize } from "./save";
 import { initialState } from "./engine";
 import { parseStartConfig } from "./content";
 import startJson from "../../content/start.json";
@@ -124,7 +125,13 @@ describe("applyEffects", () => {
     applyEffects(a, [{ type: "rampRate", target: "finish", perDay: 0.5, cap: 2 }], "src-1");
     for (let i = 0; i < 3; i++) tick(a, rngA, content, noChallenges);
 
-    const b = structuredClone(a);
+    // real JSON round-trip, not just a deep copy: proves rampPerDay/rampCap
+    // and mid-growth value survive serialize/deserialize
+    const b = deserialize(serialize(a));
+    const ramp = b.modifiers.find((m) => m.rampPerDay !== undefined)!;
+    expect(ramp.rampPerDay).toBe(0.5);
+    expect(ramp.rampCap).toBe(2);
+    expect(ramp.value).toBe(1.5); // 3 ticks * 0.5
     const rngB = createRng(b.rngState, true);
 
     for (let i = 0; i < 4; i++) {

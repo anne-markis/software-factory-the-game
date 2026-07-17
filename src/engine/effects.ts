@@ -60,6 +60,10 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // Starts at 0 and grows by perDay each tick, capped, via tick.ts's
         // ramp-growth pass. It is otherwise an ordinary add-op modifier, so
         // removal-by-source (removeDecision, payroll failure) strips it free.
+        // Note: add-op modifiers are scaled by their source instance's
+        // sickFactor (modifiers.ts). Today no ramp source is sick-able
+        // (self-learning agents are not human); a future sick-able ramp
+        // source would have its ramped contribution scaled while sick.
         pushModifier(state, source, effect.target, "add", 0, undefined, { perDay: effect.perDay, cap: effect.cap });
         break;
     }
