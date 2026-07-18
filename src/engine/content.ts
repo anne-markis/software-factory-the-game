@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { StartConfig, DecisionDef, ChallengeDef, ProjectDef } from "./types";
+import type { StartConfig, DecisionDef, ChallengeDef, ProjectDef, GameContent } from "./types";
 
 // Schemas are .strict(): content files are hand-edited, so unknown or
 // typo'd keys must fail loudly instead of being silently stripped.
@@ -34,6 +34,7 @@ const startSchema = z
         completionBonus: z.number().min(0),
       })
       .strict(),
+    challengeSpacingDays: z.number().int().min(0),
   })
   .strict();
 
@@ -155,6 +156,7 @@ const challengeSchema = z
         hasTag: z.string().optional(),
         minTechDebt: z.number().min(0).optional(),
         minDay: z.number().int().min(0).optional(),
+        lacksDecision: z.string().optional(),
       })
       .strict()
       .optional(),
@@ -218,4 +220,22 @@ export function parseProjects(json: unknown): ProjectDef[] {
     ids.add(def.id);
   }
   return defs;
+}
+
+// Cross-file integrity check that parseChallenges cannot perform on its own
+// (it has no access to content.decisions): every challenge whose condition
+// sets lacksDecision must reference a real decision id. Called once at
+// content load time by the UI (src/ui/main.ts) after all four parse* calls
+// have assembled a GameContent, and directly by tests against both the
+// shipped content and fixtures.
+export function validateContentGraph(content: GameContent): void {
+  const decisionIds = new Set(content.decisions.map((d) => d.id));
+  for (const def of content.challenges) {
+    const lacksDecision = def.condition?.lacksDecision;
+    if (lacksDecision !== undefined && !decisionIds.has(lacksDecision)) {
+      throw new Error(
+        `Invalid content in content/challenges.json: "${def.id}" condition.lacksDecision references unknown decision id "${lacksDecision}"`,
+      );
+    }
+  }
 }

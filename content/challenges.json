@@ -11,10 +11,11 @@
   {
     "id": "ddos",
     "name": "DDoS attack",
-    "description": "Attackers hammer your endpoints. Mitigation costs $100.",
-    "probabilityPerDay": 0.03,
-    "condition": { "minDay": 15 },
-    "effects": [{ "type": "addToStock", "stock": "budget", "value": -100 }]
+    "description": "Attackers hammer your endpoints. Mitigation costs $75, preventable with DDoS protection.",
+    "probabilityPerDay": 0.005,
+    "cooldownDays": 60,
+    "condition": { "minDay": 15, "lacksDecision": "ddos-protection" },
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": -75 }]
   },
   {
     "id": "scope-creep",
@@ -27,22 +28,22 @@
   {
     "id": "prod-incident",
     "name": "Production incident",
-    "description": "Something broke in production. More likely the more tech debt you carry. Costs $250 and slows everything 20% for 3 days.",
-    "probabilityPerDay": 0.01,
+    "description": "Something broke in production. More likely the more tech debt you carry. Costs $150 and slows everything 20% for 3 days.",
+    "probabilityPerDay": 0.005,
     "probScaling": { "stat": "techDebt", "per": 500, "add": 0.01 },
     "condition": { "minDay": 15 },
     "effects": [
-      { "type": "addToStock", "stock": "budget", "value": -250 },
+      { "type": "addToStock", "stock": "budget", "value": -150 },
       { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.8, "durationDays": 3 }
     ]
   },
   {
     "id": "laptop-dies",
     "name": "Laptop dies",
-    "description": "Your only machine gives up. Replacement: $400.",
+    "description": "Your only machine gives up. Replacement: $300.",
     "probabilityPerDay": 0.01,
     "condition": { "maxHumanDevs": 0, "minDay": 15 },
-    "effects": [{ "type": "addToStock", "stock": "budget", "value": -400 }]
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": -300 }]
   },
   {
     "id": "key-dev-poached",
@@ -81,20 +82,20 @@
   {
     "id": "api-price-hike",
     "name": "API price hike",
-    "description": "Your model provider raises prices overnight. Costs $200.",
-    "probabilityPerDay": 0.02,
+    "description": "Your model provider raises prices overnight. Happens rarely, but costs $100 when it does.",
+    "probabilityPerDay": 0.0025,
     "condition": { "hasTag": "darkfactory" },
-    "cooldownDays": 30,
-    "effects": [{ "type": "addToStock", "stock": "budget", "value": -200 }]
+    "cooldownDays": 365,
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": -100 }]
   },
   {
     "id": "runaway-agent-loop",
     "name": "Runaway agent loop",
-    "description": "An agent gets stuck retrying itself and burns through budget before anyone notices. Costs $350.",
-    "probabilityPerDay": 0.015,
+    "description": "An agent gets stuck retrying itself and burns through budget before anyone notices. Costs $200.",
+    "probabilityPerDay": 0.008,
     "condition": { "hasTag": "darkfactory" },
     "cooldownDays": 45,
-    "effects": [{ "type": "addToStock", "stock": "budget", "value": -350 }]
+    "effects": [{ "type": "addToStock", "stock": "budget", "value": -200 }]
   },
   {
     "id": "meeting-creep",

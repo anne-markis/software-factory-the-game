@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "./content";
+import { parseStartConfig, parseDecisions, parseChallenges, parseProjects, validateContentGraph } from "./content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
 import projectsJson from "../../content/projects.json";
+import type { GameContent } from "./types";
 
 describe("parseStartConfig", () => {
   it("parses the shipped start.json", () => {
@@ -12,6 +13,7 @@ describe("parseStartConfig", () => {
     expect(cfg.stocks.budget).toBe(10000);
     expect(cfg.debtMultiplier).toBe(0.5);
     expect(cfg.baseRates.pull).toBe(1);
+    expect(cfg.challengeSpacingDays).toBe(50);
   });
 
   it("names the file in validation errors", () => {
@@ -51,6 +53,7 @@ describe("parseDecisions", () => {
       "swarm-orchestrator",
       "self-learning-agents",
       "support-retainer",
+      "ddos-protection",
     ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(7);
@@ -245,5 +248,44 @@ describe("parseChallenges", () => {
         { id: "x", name: "x2", description: "x2", probabilityPerDay: 0.1, effects: [] },
       ]),
     ).toThrow(/duplicate/i);
+  });
+
+  it("parses a lacksDecision condition", () => {
+    const defs = parseChallenges([
+      {
+        id: "x", name: "x", description: "x", probabilityPerDay: 0.1, effects: [],
+        condition: { lacksDecision: "agent" },
+      },
+    ]);
+    expect(defs[0].condition).toEqual({ lacksDecision: "agent" });
+  });
+});
+
+describe("validateContentGraph", () => {
+  it("passes for the shipped content (every lacksDecision reference is a real decision id)", () => {
+    const content: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: parseDecisions(decisionsJson),
+      challenges: parseChallenges(challengesJson),
+      projects: parseProjects(projectsJson),
+    };
+    expect(() => validateContentGraph(content)).not.toThrow();
+  });
+
+  it("throws, naming the challenge and the file, for a lacksDecision referencing an unknown decision id", () => {
+    const content: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: parseDecisions(decisionsJson),
+      challenges: parseChallenges([
+        {
+          id: "ghost-check", name: "Ghost Check", description: "d", probabilityPerDay: 0.1, effects: [],
+          condition: { lacksDecision: "no-such-decision" },
+        },
+      ]),
+      projects: [],
+    };
+    expect(() => validateContentGraph(content)).toThrow(/ghost-check/);
+    expect(() => validateContentGraph(content)).toThrow(/content\/challenges\.json/);
+    expect(() => validateContentGraph(content)).toThrow(/no-such-decision/);
   });
 });

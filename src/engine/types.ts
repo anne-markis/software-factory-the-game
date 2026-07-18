@@ -84,7 +84,17 @@ export interface ChallengeDef {
   description: string;
   probabilityPerDay: number;
   perHumanDev?: boolean;
-  condition?: { minHumanDevs?: number; maxHumanDevs?: number; hasTag?: string; minTechDebt?: number; minDay?: number };
+  condition?: {
+    minHumanDevs?: number;
+    maxHumanDevs?: number;
+    hasTag?: string;
+    minTechDebt?: number;
+    minDay?: number;
+    // A decision def id: the challenge only fires while NO owned instance has
+    // this defId. Cross-checked against content.decisions by
+    // validateContentGraph (parseChallenges alone has no access to decisions).
+    lacksDecision?: string;
+  };
   probScaling?: { stat: "techDebt"; per: number; add: number };
   effects: Effect[];
   choice?: { expiresInDays: number; defaultOptionId: string; options: ChoiceOption[] };
@@ -127,6 +137,10 @@ export interface StartConfig {
   baseBurnPerDay: number;
   contextSwitchFactor: number;
   initialProject: { id: string; name: string; sizePoints: number; payoutPerPoint: number; completionBonus: number };
+  // Global minimum gap, in days, between any two challenges firing (effects
+  // applied OR a choice queued -- either counts as "firing"). 0 disables
+  // spacing entirely. See GameState.lastChallengeDay and rollChallenges.
+  challengeSpacingDays: number;
 }
 
 export interface GameContent {
@@ -163,4 +177,12 @@ export interface GameState {
   // actually land (fire() for non-choice, resolveChoice, or expiry-default
   // application for choice challenges). Absent entries mean never fired.
   challengeLastFired: Record<string, number>;
+  // Day the most recent challenge fired or queued a choice (either counts).
+  // Absent until the first challenge event of the game. Drives the global
+  // challengeSpacingDays gap in rollChallenges; expiry-default application
+  // deliberately does NOT update this (it resolves existing business, not a
+  // new event). Legacy saves predate this field; it stays undefined on load,
+  // which is the correct "no gap active yet" state -- no defensive default
+  // needed in save.ts.
+  lastChallengeDay?: number;
 }

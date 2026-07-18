@@ -256,6 +256,21 @@ A challenge (`content/challenges.json`) is an object with:
     least this.
   - `minDay` (int >= 0) - `state.day` must be at least this (used to keep
     early days quieter; most shipped challenges gate on `minDay: 15`).
+  - `lacksDecision` (string) - a decision def id: the challenge only fires
+    while no currently-owned instance has this def id (evaluated live,
+    same as `hasTag`). This is the counterpart to `hasTag`/`minHumanDevs`,
+    which all gate on *owning* something - `lacksDecision` gates on
+    *not* owning something, for content that lets the player buy their way
+    out of a challenge entirely. `ddos` uses it today:
+    `"condition": { "minDay": 15, "lacksDecision": "ddos-protection" }`,
+    paired with a `ddos-protection` decision (`content/decisions.json`)
+    that has no direct rate or debt effects - its only job is to make this
+    condition false once owned, permanently removing `ddos` from the
+    challenge pool for the rest of that game. The referenced id must name
+    a real decision in `content/decisions.json`; this is checked by
+    `validateContentGraph` (see section 5) rather than by `parseChallenges`
+    itself, since challenge parsing alone has no access to the decisions
+    file to cross-reference against.
 - `probScaling` (optional) - `{ stat: "techDebt", per, add }` (only
   `"techDebt"` is supported today). Adds
   `floor(techDebt / per) * add` to `probabilityPerDay`, capped at 1
@@ -305,6 +320,31 @@ adding a decision can shift later purchase-gamble outcomes if it's bought
 before them in the same playthrough - but that's about play order, not
 content-file order.)
 
+### Global event spacing (`challengeSpacingDays`)
+
+`challengeSpacingDays` (int >= 0, `content/start.json`, not
+`challenges.json`) is a single global pacing knob, not a per-challenge
+setting: once *any* challenge fires (effects applied, or a choice queued),
+*no* challenge may fire again until `challengeSpacingDays` days have
+passed, regardless of which challenge fired or which one would fire next.
+The clock is `state.lastChallengeDay`, updated on every fire; the gap check
+runs once per tick, before the roll loop, so a tick either rolls nothing
+(gap active) or rolls challenges in array order until the first one fires
+and then stops (`rollChallenges` in `src/engine/challenges.ts`) - at most
+one event per day either way, and the shipped value of `50` spaces
+distinct events out by roughly 50 days on average, not per day. An
+expiry-default (a pending choice that times out unresolved) still applies
+during the gap - it is not itself a new roll, so it does not extend or
+reset the gap - and a fresh game's first ever fire is never blocked, since
+`lastChallengeDay` starts undefined. Setting `challengeSpacingDays: 0`
+disables the gap entirely and restores the pre-Release-9 behavior where
+multiple challenges can fire on the same day, which is what the
+per-challenge `cooldownDays` and roll-independence tests in
+`src/engine/challenges.test.ts` use to isolate cooldown behavior from
+spacing. Raising or lowering this one number is the fastest way to make
+the whole game's event cadence gentler or busier without touching any
+individual challenge's `probabilityPerDay`.
+
 ## 5. Integrity rules the loader enforces
 
 From `parseDecisions` (`content/decisions.json`):
@@ -328,6 +368,11 @@ From `parseChallenges` (`content/challenges.json`):
 - `rampRate` effects (wherever they appear, decisions or challenges)
   cannot target `"all"` - only `"pull"`, `"finish"`, `"deploy"` are
   accepted by the schema.
+- Every `condition.lacksDecision` id is checked against the decisions file
+  by `validateContentGraph`, a separate pass that runs after all four
+  files are parsed (not inside `parseChallenges` itself, since challenge
+  parsing alone has no access to `content/decisions.json`). An unknown id
+  throws, naming both the offending challenge and `content/challenges.json`.
 
 From `parseProjects` (`content/projects.json`):
 

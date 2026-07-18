@@ -223,12 +223,12 @@
   {
     "id": "agent-harness",
     "name": "Agent harness",
-    "description": "$400 setup, $5/day. Structured tests and guardrails for agents: agents bought while a harness is present accumulate half the extra debt.",
+    "description": "$250 setup, $5/day. Structured tests and guardrails for agents: agents bought while a harness is present accumulate half the extra debt.",
     "tags": [
       "darkfactory"
     ],
     "cost": {
-      "oneTime": 400,
+      "oneTime": 250,
       "perDay": 5
     },
     "requires": [
@@ -526,7 +526,7 @@
       "darkfactory"
     ],
     "cost": {
-      "oneTime": 250,
+      "oneTime": 150,
       "perDay": 8
     },
     "requires": [
@@ -544,7 +544,7 @@
       "darkfactory"
     ],
     "cost": {
-      "oneTime": 500,
+      "oneTime": 350,
       "perDay": 10
     },
     "requires": [
@@ -590,6 +590,21 @@
         "value": 0.95
       }
     ],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "ddos-protection",
+    "name": "DDoS protection",
+    "description": "Prevents DDoS attacks entirely.",
+    "tags": [
+      "process"
+    ],
+    "cost": {
+      "oneTime": 200,
+      "perDay": 2
+    },
+    "effects": [],
     "removable": true,
     "unique": true
   }

@@ -39,16 +39,18 @@ describe("rollChallenges", () => {
   it("fires a challenge on a day whose hashed roll lands under its probability", () => {
     const c = content();
     const s = initialState(c);
-    // Day 92 is the pinned day on which, among the idle player's eligible
-    // challenges, only ddos rolls under its probability:
-    //   hashRoll(SEED, 92, "ddos") = 0.0137 < 0.03, and day 92 >= its minDay 15.
+    // RE-PINNED for Release 9 (ddos retune: 0.03 -> 0.005 probability). Day
+    // 155 is the pinned day on which, among the idle player's eligible
+    // challenges, only ddos rolls under its new probability:
+    //   hashRoll(SEED, 155, "ddos") = 0.0003 < 0.005, day 155 >= its minDay 15,
+    //   and lacksDecision "ddos-protection" holds (the idle player owns none).
     // sickness/poached are gated out (0 human devs) and every darkfactory/human
     // challenge is gated out (no decisions owned), so budget moves by exactly
-    // ddos's -$100.
-    s.day = 92;
-    expect(hashRoll(SEED, 92, "ddos")).toBeLessThan(0.03);
+    // ddos's -$75.
+    s.day = 155;
+    expect(hashRoll(SEED, 155, "ddos")).toBeLessThan(0.005);
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9900);
+    expect(s.stocks.budget).toBe(9925);
     expect(s.log.some((l) => l.message.includes("DDoS"))).toBe(true);
   });
 
@@ -188,7 +190,18 @@ describe("rollChallenges", () => {
     };
 
     const run = (defs: unknown[]) => {
-      const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges: parseChallenges(defs), projects: [] };
+      // challengeSpacingDays: 0 -- this test is about per-challenge hash
+      // stability, not the global spacing gap (Release 9); at the shipped
+      // spacing of 50 days, chalExtra firing first would break out of the
+      // roll loop before chalX's turn, which is a different (also correct)
+      // behavior this test doesn't intend to exercise. See the "global event
+      // spacing" describe block below for that.
+      const c: GameContent = {
+        start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 },
+        decisions: [],
+        challenges: parseChallenges(defs),
+        projects: [],
+      };
       const s = initialState(c);
       // Day 1: hashRoll(SEED, 1, "chalX") = 0.055 < 0.5, so chalX fires in both runs.
       s.day = 1;
@@ -264,7 +277,10 @@ describe("challenge cooldowns", () => {
         effects: [{ type: "addToStock", stock: "budget", value: -10 }],
       },
     ]);
-    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
+    // challengeSpacingDays: 0 -- this test is about cooldownDays (5 days),
+    // orthogonal to the global spacing gap (Release 9), which at the shipped
+    // 50 days would swallow this challenge's whole re-fire window.
+    const c: GameContent = { start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 }, decisions: [], challenges, projects: [] };
     const s = initialState(c);
 
     s.day = 20;
@@ -303,7 +319,10 @@ describe("challenge cooldowns", () => {
         },
       },
     ]);
-    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
+    // challengeSpacingDays: 0 -- isolates cooldownDays (4 days) from the
+    // global spacing gap; see the "KEY REGRESSION" test above for the
+    // rationale.
+    const c: GameContent = { start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 }, decisions: [], challenges, projects: [] };
     const s = initialState(c);
 
     s.day = 20;
@@ -345,7 +364,10 @@ describe("challenge cooldowns", () => {
         },
       },
     ]);
-    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
+    // challengeSpacingDays: 0 -- isolates cooldownDays (4 days) from the
+    // global spacing gap; see the "KEY REGRESSION" test above for the
+    // rationale.
+    const c: GameContent = { start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 }, decisions: [], challenges, projects: [] };
     const s = initialState(c);
 
     s.day = 20;
@@ -365,5 +387,178 @@ describe("challenge cooldowns", () => {
     s.day = 27; // cooldown elapsed
     rollChallenges(s, noRng, c);
     expect(s.pendingChoices).toHaveLength(1); // re-queues
+  });
+});
+
+describe("global event spacing (challengeSpacingDays)", () => {
+  // Two always-fire (probabilityPerDay 1.0), no-cooldown challenges with
+  // distinct effects (budget vs. backlog) so we can tell which one, if
+  // either, actually fired. challengeA is first in the array, so on any day
+  // both are eligible it wins the roll and (with spacing > 0) the same-tick
+  // break stops challengeB from ever getting a turn -- that IS the feature
+  // under test, not a gap in the fixture.
+  function spacingChallenges() {
+    return parseChallenges([
+      {
+        id: "challengeA",
+        name: "A",
+        description: "d",
+        probabilityPerDay: 1.0,
+        effects: [{ type: "addToStock", stock: "budget", value: -100 }],
+      },
+      {
+        id: "challengeB",
+        name: "B",
+        description: "d",
+        probabilityPerDay: 1.0,
+        effects: [{ type: "addToStock", stock: "backlog", value: 50 }],
+      },
+    ]);
+  }
+
+  it("day 20 first challenge fires and breaks the tick; the gap blocks everything through day 29; day 30 fires again", () => {
+    const challenges = spacingChallenges();
+    const c: GameContent = {
+      start: { ...parseStartConfig(startJson), challengeSpacingDays: 10 },
+      decisions: [],
+      challenges,
+      projects: [],
+    };
+    const s = initialState(c);
+
+    s.day = 20;
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.budget).toBe(9900); // challengeA fired
+    expect(s.stocks.backlog).toBe(1500); // challengeB never got a turn: same-tick break
+    expect(s.lastChallengeDay).toBe(20);
+
+    for (let day = 21; day <= 29; day++) {
+      s.day = day;
+      rollChallenges(s, noRng, c);
+      expect(s.stocks.budget).toBe(9900); // gap active: no challenge rolled at all
+      expect(s.stocks.backlog).toBe(1500);
+      expect(s.lastChallengeDay).toBe(20); // untouched while the gap holds
+    }
+
+    s.day = 30;
+    rollChallenges(s, noRng, c); // day 30 >= lastChallengeDay(20) + spacingDays(10): gap clears
+    expect(s.stocks.budget).toBe(9800); // challengeA fires again
+    expect(s.lastChallengeDay).toBe(30);
+  });
+
+  it("expiry-default application during the gap still applies and does not reset the gap", () => {
+    const challenges = parseChallenges([
+      {
+        id: "gap-choice",
+        name: "Gap Choice",
+        description: "d",
+        probabilityPerDay: 1.0,
+        effects: [],
+        choice: {
+          expiresInDays: 3,
+          defaultOptionId: "default-opt",
+          options: [
+            { id: "pay", label: "Pay", effects: [{ type: "addToStock", stock: "budget", value: -150 }] },
+            { id: "default-opt", label: "Default", effects: [{ type: "addToStock", stock: "budget", value: -300 }] },
+          ],
+        },
+      },
+    ]);
+    const c: GameContent = {
+      start: { ...parseStartConfig(startJson), challengeSpacingDays: 10 },
+      decisions: [],
+      challenges,
+      projects: [],
+    };
+    const s = initialState(c);
+
+    s.day = 20;
+    rollChallenges(s, noRng, c); // queues; expiresDay = 23; queueing starts the gap
+    expect(s.pendingChoices).toHaveLength(1);
+    expect(s.lastChallengeDay).toBe(20);
+
+    s.day = 23; // inside the gap (23 < 20 + 10)
+    rollChallenges(s, noRng, c); // expiry pass runs regardless of the gap
+    expect(s.pendingChoices).toHaveLength(0);
+    expect(s.stocks.budget).toBe(9700); // default applied: -300
+    expect(s.lastChallengeDay).toBe(20); // expiry-default does NOT reset the gap
+
+    for (let day = 24; day <= 29; day++) {
+      s.day = day;
+      rollChallenges(s, noRng, c);
+      expect(s.pendingChoices).toHaveLength(0); // gap still active: no re-queue
+    }
+
+    s.day = 30; // gap clears: fresh fire
+    rollChallenges(s, noRng, c);
+    expect(s.pendingChoices).toHaveLength(1);
+    expect(s.lastChallengeDay).toBe(30);
+  });
+
+  it("challengeSpacingDays: 0 disables the gap and preserves legacy same-tick multi-fire", () => {
+    const challenges = spacingChallenges();
+    const c: GameContent = {
+      start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 },
+      decisions: [],
+      challenges,
+      projects: [],
+    };
+    const s = initialState(c);
+
+    s.day = 20;
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.budget).toBe(9900); // challengeA fired
+    expect(s.stocks.backlog).toBe(1550); // challengeB ALSO fired: no break when spacing is 0
+    expect(s.lastChallengeDay).toBe(20); // still tracked even though it's inert at spacing 0
+
+    s.day = 21; // day after a fire: would be blocked at spacing > 0, but 0 disables the gap
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.budget).toBe(9800); // fires again immediately, same as pre-Release-9 behavior
+  });
+});
+
+describe("lacksDecision condition", () => {
+  function lacksDecisionChallenge() {
+    // "agent" is a real shipped decision id (content/decisions.json); reusing
+    // it here avoids inventing shipped content for a fixture-only check
+    // (Task 34 adds a real content use). probabilityPerDay 1.0 makes the
+    // condition gate the only variable.
+    return parseChallenges([
+      {
+        id: "no-agent-yet",
+        name: "No Agent Yet",
+        description: "d",
+        probabilityPerDay: 1.0,
+        condition: { lacksDecision: "agent" },
+        effects: [{ type: "addToStock", stock: "budget", value: -50 }],
+      },
+    ]);
+  }
+
+  it("fires while the decision is unowned", () => {
+    const c: GameContent = {
+      start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 },
+      decisions: parseDecisions(decisionsJson),
+      challenges: lacksDecisionChallenge(),
+      projects: [],
+    };
+    const s = initialState(c);
+    s.day = 20;
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.budget).toBe(9950);
+  });
+
+  it("never rolls once the decision is owned", () => {
+    const c: GameContent = {
+      start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 },
+      decisions: parseDecisions(decisionsJson),
+      challenges: lacksDecisionChallenge(),
+      projects: [],
+    };
+    const s = initialState(c);
+    applyDecision(s, c, "agent", createRng(1)); // $10 oneTime cost: budget -> 9990
+    s.day = 20;
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.budget).toBe(9990); // unchanged by the challenge: condition gates it out entirely
   });
 });

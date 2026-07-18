@@ -9,7 +9,8 @@
     "id": "first-contract",
     "name": "First Contract",
     "sizePoints": 1500,
-    "payoutPerPoint": 15,
+    "payoutPerPoint": 17,
     "completionBonus": 2000
-  }
+  },
+  "challengeSpacingDays": 50
 }
