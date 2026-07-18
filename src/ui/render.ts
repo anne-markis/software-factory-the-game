@@ -34,14 +34,19 @@ function describeCost(a: Availability): string {
 }
 
 export function renderDecisions(avail: Availability[], ownedInstances: DecisionInstance[], content: GameContent): string {
+  const hiddenCount = avail.filter((a) => a.code === "missing-requires").length;
   const shop = avail
-    .filter((a) => a.code !== "already-owned")
+    .filter((a) => a.code !== "already-owned" && a.code !== "missing-requires")
     .map((a) => {
       const disabled = a.purchasable ? "" : "disabled";
       const reason = a.reason ? ` (${esc(a.reason)})` : "";
       return `<div><button data-buy="${esc(a.def.id)}" ${disabled}>Buy</button> <strong>${esc(a.def.name)}</strong>${reason}<br/><small>${describeCost(a)}</small></div>`;
     })
     .join("");
+  const hiddenHint =
+    hiddenCount > 0
+      ? `<small>${hiddenCount} more alteration${hiddenCount === 1 ? "" : "s"} unlock as your factory grows.</small>`
+      : "";
   const ownedList = ownedInstances
     .map((inst) => {
       const def = content.decisions.find((d) => d.id === inst.defId);
@@ -53,7 +58,7 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
     })
     .join("");
   return `
-    <div class="panel"><h3>Alter the loop</h3>${shop}</div>
+    <div class="panel"><h3>Alter the loop</h3>${shop}${hiddenHint}</div>
     <div class="panel"><h3>Owned</h3>${ownedList || "<small>Nothing yet. You are a solo dev.</small>"}</div>`;
 }
 

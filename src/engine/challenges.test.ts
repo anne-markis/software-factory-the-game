@@ -39,16 +39,18 @@ describe("rollChallenges", () => {
   it("fires a challenge on a day whose hashed roll lands under its probability", () => {
     const c = content();
     const s = initialState(c);
-    // Day 92 is the pinned day on which, among the idle player's eligible
-    // challenges, only ddos rolls under its probability:
-    //   hashRoll(SEED, 92, "ddos") = 0.0137 < 0.03, and day 92 >= its minDay 15.
+    // RE-PINNED for Release 9 (ddos retune: 0.03 -> 0.005 probability). Day
+    // 155 is the pinned day on which, among the idle player's eligible
+    // challenges, only ddos rolls under its new probability:
+    //   hashRoll(SEED, 155, "ddos") = 0.0003 < 0.005, day 155 >= its minDay 15,
+    //   and lacksDecision "ddos-protection" holds (the idle player owns none).
     // sickness/poached are gated out (0 human devs) and every darkfactory/human
     // challenge is gated out (no decisions owned), so budget moves by exactly
-    // ddos's -$100.
-    s.day = 92;
-    expect(hashRoll(SEED, 92, "ddos")).toBeLessThan(0.03);
+    // ddos's -$75.
+    s.day = 155;
+    expect(hashRoll(SEED, 155, "ddos")).toBeLessThan(0.005);
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9900);
+    expect(s.stocks.budget).toBe(9925);
     expect(s.log.some((l) => l.message.includes("DDoS"))).toBe(true);
   });
 

@@ -40,8 +40,8 @@ describe("tick", () => {
     e.tick(); // no shipping yet: 10000 - 20 burn (release-7 baseBurnPerDay)
     expect(e.getState().stocks.budget).toBe(9980);
     e.tick();
-    e.tick(); // ships 1 point at $15 (initialProject.payoutPerPoint): 10000 - 3*20 burn + 15
-    expect(e.getState().stocks.budget).toBe(10000 - 60 + 15);
+    e.tick(); // ships 1 point at $17 (initialProject.payoutPerPoint): 10000 - 3*20 burn + 17
+    expect(e.getState().stocks.budget).toBe(10000 - 60 + 17);
   });
 
   it("does nothing while paused", () => {

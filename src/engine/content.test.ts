@@ -53,6 +53,7 @@ describe("parseDecisions", () => {
       "swarm-orchestrator",
       "self-learning-agents",
       "support-retainer",
+      "ddos-protection",
     ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(7);

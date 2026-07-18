@@ -35,48 +35,56 @@ describe("simulation", () => {
 
   // Release-7 idle-drain mechanism probe. The structural requirement: doing
   // nothing must lose money on NET, not merely be exposed to challenge
-  // events. With baseBurnPerDay 20 and the first contract at $15/pt on the
-  // 1 pt/day idle throughput, steady idle cashflow is 15 - 20 = -$5/day.
-  // Challenges are stripped here to pin that mechanism in isolation (the
-  // full-content trajectory is probed separately below).
+  // events. With baseBurnPerDay 20 and the first contract at $17/pt (Release
+  // 9 economy-slack retune, was $15/pt) on the 1 pt/day idle throughput,
+  // steady idle cashflow is 17 - 20 = -$3/day (was -$5/day). Challenges are
+  // stripped here to pin that mechanism in isolation (the full-content
+  // trajectory is probed separately below).
   //
-  // Exact arithmetic (all integer flows, so toBe is safe): the first point
-  // ships on day 3, so while the 1500-pt contract is in flight (2 <= d < 1502):
-  //   budget(d) = 10000 - 20d + 15(d - 2) = 9970 - 5d
-  // Day 1000: 4970. Day 1500: 2470. The 1500th point ships on day 1502:
-  // 2465 (day 1501) + 15 payout + 2000 completion bonus - 20 burn = 4460.
-  // After that the contract is gone, payouts stop, and the drain steepens
-  // to the full -$20/day: budget(d) = 4460 - 20(d - 1502), so day 1700 =
-  // 500, day 1724 = 20, and day 1725 is the first zero-clamp; it stays 0
-  // through day 2000. The backlog never runs dry in this window (1500
-  // start, net drain 0.5/day after debt regen: 748 left at completion).
-  it("idle mechanism: -$5/day glide, completion bonus blip at day 1502, then -$20/day to zero", () => {
+  // RE-PINNED for Release 9 (payoutPerPoint 15 -> 17). Exact arithmetic (all
+  // integer flows, so toBe is safe): the first point ships on day 3
+  // (unaffected by the payout change), so while the 1500-pt contract is in
+  // flight (2 <= d < 1502):
+  //   budget(d) = 10000 - 20d + 17(d - 2) = 9966 - 3d
+  // Day 1000: 6966. Day 1500: 5466. The 1500th point ships on day 1502:
+  // 5463 (day 1501: 9966 - 3*1501) + 17 payout + 2000 completion bonus - 20
+  // burn = 7460. After that the contract is gone, payouts stop, and the
+  // drain steepens to the full -$20/day: budget(d) = 7460 - 20(d - 1502), so
+  // day 1700 = 3500, day 1874 = 20 (the last day before the clamp), and day
+  // 1875 is the first zero-clamp (7460 / 20 = 373 exactly); it stays 0
+  // through day 2000. The much wider margin (clamp day 1875 vs. the
+  // pre-retune 1725) is the direct effect of trimming the idle burn from
+  // -$5/day to -$3/day. The backlog never runs dry in this window (1500
+  // start, net drain 0.5/day after debt regen, unaffected by the payout
+  // change).
+  it("idle mechanism: -$3/day glide, completion bonus blip at day 1502, then -$20/day to zero", () => {
     const c = fullContent();
     c.challenges = [];
     const e = new Engine(c);
     const at: Record<number, number> = {};
     for (let day = 1; day <= 2000; day++) {
       e.tick();
-      if ([1000, 1500, 1502, 1700, 1724].includes(day)) at[day] = e.getState().stocks.budget;
+      if ([1000, 1500, 1502, 1700, 1874].includes(day)) at[day] = e.getState().stocks.budget;
     }
-    expect(at[1000]).toBe(4970); // 9970 - 5 * 1000
-    expect(at[1500]).toBe(2470); // 9970 - 5 * 1500
-    expect(at[1502]).toBe(4460); // completion: 2465 + 15 + 2000 - 20
-    expect(at[1700]).toBe(500); // 4460 - 20 * 198
-    expect(at[1724]).toBe(20); // 4460 - 20 * 222
-    expect(e.getState().stocks.budget).toBe(0); // clamped from day 1725 on
+    expect(at[1000]).toBe(6966); // 9966 - 3 * 1000
+    expect(at[1500]).toBe(5466); // 9966 - 3 * 1500
+    expect(at[1502]).toBe(7460); // completion: 5463 + 17 + 2000 - 20
+    expect(at[1700]).toBe(3500); // 7460 - 20 * 198
+    expect(at[1874]).toBe(20); // 7460 - 20 * 372
+    expect(e.getState().stocks.budget).toBe(0); // clamped from day 1875 on
   });
 
   // Full-content idle probe: same do-nothing player, challenges on. Events
-  // steepen the mechanism's -$5/day: laptop-dies (-$400 at 1%/day, gated on
-  // zero human devs -- exactly the idle player) adds about -$4/day expected
-  // and ddos about -$3/day. The idle player owns no decisions at all, so
-  // every hasTag-gated content-wave challenge (model-deprecation,
-  // api-price-hike, runaway-agent-loop, meeting-creep, team-conflict,
-  // cloud-credits) is condition-gated out and never fires; the only new
-  // challenge that reaches the idle player is open-source-windfall
-  // (minDay 15, +$400, 1%/day, 60-day cooldown), a pure income boost that
-  // softens the glide.
+  // steepen the mechanism's -$3/day (Release 9 baseline; see the mechanism
+  // probe above). The idle player owns no decisions at all, so every
+  // hasTag-gated content-wave challenge (model-deprecation, api-price-hike,
+  // runaway-agent-loop, meeting-creep, team-conflict, cloud-credits) is
+  // condition-gated out and never fires; the only new challenge that reaches
+  // the idle player is open-source-windfall (minDay 15, +$400, 1%/day,
+  // 60-day cooldown), a pure income boost that softens the glide. ddos is
+  // additionally gated by lacksDecision "ddos-protection" (Release 9), which
+  // the idle player also satisfies (owns nothing) so it still fires, just far
+  // less often at its retuned 0.005 probability.
   //
   // RE-PINNED for content wave (release 8, task 4.5): challenge rolls are now
   // hashed per challenge (hashRoll on gameSeed/day/id) instead of drawn
@@ -86,18 +94,22 @@ describe("simulation", () => {
   // point of the refactor is that these values no longer move when a
   // challenge is added or reordered in content.
   //
-  // RE-PINNED again for Release 9 (global event spacing, challengeSpacingDays
-  // 50 in content/start.json): after any challenge fires, no challenge may
-  // fire again for 50 days, so the idle player now sees roughly one event per
-  // 50-day stretch instead of whatever the raw per-day probabilities produced
-  // (measured over this run: 10 scope-creep, 14 ddos, 6 prod-incident, 2
-  // laptop-dies, 2 open-source-windfall -- about 34 total events across 2000
-  // days, versus dozens more before spacing). The glide is visibly gentler as
-  // a result: broke by ~day 1633 (was ~696 pre-spacing), day 300 = 8111 (was
-  // 6693), day 600 = 5952 (was 1757). Assertions leave headroom but pin the
-  // shape: meaningful decline off the starting 10,000, no instant death,
-  // broke well within the horizon, near-empty long-run.
-  it("idle with full content: challenges steepen the glide; broke by ~day 1633", () => {
+  // RE-PINNED again for Release 9 (challenge retune: ddos 0.03->0.005 with a
+  // 60-day cooldown and the new lacksDecision "ddos-protection" gate,
+  // api-price-hike 0.02->0.0025 with a 365-day cooldown, prod-incident base
+  // 0.01->0.005, laptop-dies value -400->-300, runaway-agent-loop
+  // 0.015->0.008; plus the economy-slack retune, payoutPerPoint 15->17 --
+  // see the mechanism probe above). Both changes push the glide gentler and
+  // the margin wider. Measured over this run: 19 scope-creep, 2 ddos, 6
+  // prod-incident, 3 laptop-dies, 2 open-source-windfall, plus the
+  // first-contract completion -- about 32 events across 2000 days (similar
+  // count to the spacing-only baseline, but ddos collapses from 14 fires to
+  // 2 thanks to its much lower probability and 60-day cooldown). The glide is
+  // visibly gentler as a result: broke by ~day 1826 (was ~1633 pre-retune),
+  // day 300 = 8766 (was 8111), day 600 = 7491 (was 5952). Assertions leave
+  // headroom but pin the shape: meaningful decline off the starting 10,000,
+  // no instant death, broke well within the horizon, near-empty long-run.
+  it("idle with full content: challenges steepen the glide; broke by ~day 1826", () => {
     const e = new Engine(fullContent());
     let budgetAt300 = NaN;
     let budgetAt600 = NaN;
@@ -106,9 +118,9 @@ describe("simulation", () => {
       if (day === 300) budgetAt300 = e.getState().stocks.budget;
       if (day === 600) budgetAt600 = e.getState().stocks.budget;
     }
-    expect(budgetAt300).toBeLessThan(8800); // observed 8111: well off the starting 10,000
-    expect(budgetAt600).toBeGreaterThan(0); // observed 5952: breathing room, no instant death
-    expect(e.getState().stocks.budget).toBeLessThan(100); // observed 0 at day 2000 (first clamp day 1633)
+    expect(budgetAt300).toBeLessThan(9200); // observed 8766: well off the starting 10,000
+    expect(budgetAt600).toBeGreaterThan(0); // observed 7491: breathing room, no instant death
+    expect(e.getState().stocks.budget).toBeLessThan(100); // observed 0 at day 2000 (first clamp day 1826)
   });
 
   // Smart-strategy probe: a modest, sensible plan (test-suite day 1, ci-cd
@@ -143,23 +155,29 @@ describe("simulation", () => {
   // a chance).
   //
   // RESOLUTION (release-8 Task 6): this probe is deliberately KEPT as a
-  // mid-tier observation probe, not a viability bar. The narrow two-dev build
-  // still cannot stay solvent under the full challenge load, though the
-  // margin moved with spacing: broke (first zero-clamp) on day 735 (was
-  // 513), completion on day 1145 (was 1323, now AFTER the zero-clamp: it
-  // ships the contract while already broke), post-completion peak ~1983
-  // (was ~1981, essentially unchanged), budget 0 at day 1000 (was 370 -- the
-  // completion-bonus breather in this run lands after day 1000, so the
-  // day-1000 checkpoint no longer catches it). That insolvency is now design
-  // signal rather than an open flag: the two richer build probes below
-  // (human-heavy and automation-heavy) are the viability bar, and a modest
-  // test-suite + ci-cd + two-hires plan being NOT enough at 2000 days is
-  // exactly the "choices matter" pressure the release-7 economy aimed for.
-  // The probe stays because it pins a distinct mid-tier point on the
-  // difficulty curve and exercises hire gambles plus choice resolution.
-  // Only completedProjects >= 1 is solvency-shaped; budget checkpoints are
-  // observations, not guarantees.
-  it("smart strategy (mid-tier observation): completes the first contract; the narrow build goes broke under full challenge load by design", () => {
+  // mid-tier observation probe, not a viability bar. [Superseded below --
+  // Release 9 changes the outcome, not just the margin.]
+  //
+  // RE-PINNED again for Release 9 (challenge retune -- lower probabilities and
+  // smaller values on ddos/api-price-hike/prod-incident/laptop-dies/
+  // runaway-agent-loop -- plus the economy-slack retune, payoutPerPoint
+  // 15->17 and cheaper agent-harness/swarm-orchestrator/self-learning-agents).
+  // FLAG for whoever owns the difficulty curve: this probe's original point
+  // was that a modest two-dev build is NOT enough to stay solvent under full
+  // challenge load ("choices matter"). That is no longer true. Observed this
+  // run: completion day 1010 (was 1145), budget at day 1000 is 287.67, not 0
+  // (was 0 -- first clamp used to land at day 735; this build now never hits
+  // the zero-clamp at all, firstZero -1 across the full 2000 days),
+  // post-completion peak/end budget 12203.70 (was ~1983). The retune widened
+  // margins enough that even the narrow build now clears the bar the two
+  // richer probes below (human-heavy, automation-heavy) were meant to be the
+  // exclusive gate for. The assertions below are left as loose,
+  // still-satisfied observations (they do not assert insolvency and did not
+  // need to change), but the comment is corrected to stop claiming a design
+  // outcome ("goes broke by design") that the current content no longer
+  // produces. Only completedProjects >= 1 is solvency-shaped; budget
+  // checkpoints are observations, not guarantees.
+  it("smart strategy (mid-tier observation): completes the first contract; under Release 9's retune this narrow build now stays solvent throughout", () => {
     const content = fullContent();
     const e = new Engine(content);
     let hires = 0;
@@ -190,12 +208,12 @@ describe("simulation", () => {
       if (day === 1000) budgetAt1000 = s.stocks.budget;
       assertInvariants(s, day);
     }
-    expect(completionDay).toBeGreaterThan(0); // observed: day 1145
+    expect(completionDay).toBeGreaterThan(0); // observed: day 1010
     expect(completionDay).toBeLessThan(1800); // still comfortably within the 2000-day horizon
     expect(e.getState().completedProjects).toBeGreaterThanOrEqual(1);
-    expect(budgetAt1000).toBeGreaterThanOrEqual(0); // observed 0 (first clamp to 0 was day 735)
-    expect(peakBudgetAfterCompletion).toBeGreaterThan(0); // observed 1982.62: completion bonus is a real breather
-    expect(e.getState().stocks.budget).toBeGreaterThanOrEqual(0); // observed 0 at day 2000
+    expect(budgetAt1000).toBeGreaterThanOrEqual(0); // observed 287.67 -- never clamped to 0 this run
+    expect(peakBudgetAfterCompletion).toBeGreaterThan(0); // observed 12203.70: a much wider breather post-retune
+    expect(e.getState().stocks.budget).toBeGreaterThanOrEqual(0); // observed 12203.70 at day 2000
   });
 
   // ---- Release-8 Task 6 viability probes ------------------------------------
@@ -285,6 +303,22 @@ describe("simulation", () => {
   // (roughly 8-10x the pre-spacing margin); still never hits the zero-clamp.
   // Measured fires: sickness 19, scope-creep 6, prod-incident 4, meeting-creep
   // 4, ddos 3, team-conflict 2, key-dev-poached 2, open-source-windfall 1.
+  //
+  // RE-PINNED again for Release 9 (challenge retune + economy slack:
+  // payoutPerPoint 15->17, ddos/api-price-hike/prod-incident/laptop-dies/
+  // runaway-agent-loop all less frequent and/or cheaper -- see
+  // content/challenges.json). The margin widens again, further: completes
+  // first-contract on day 387 (unchanged) and small-crm on day 1625
+  // (essentially unchanged -- the human track's speed is governed by hires,
+  // not challenge drag); budget 12917.04 at day 500, 24802.35 at day 1000,
+  // 47313.99 at day 2000 (roughly 8-10% wider than the spacing-only figures
+  // above, on top of that 8-10x jump). Measured fires: sickness 23,
+  // scope-creep 6, meeting-creep 4, prod-incident 2, key-dev-poached 1,
+  // team-conflict 1, open-source-windfall 1 -- ddos and laptop-dies did not
+  // get a turn in this run (ddos's own probability dropped to 0.005; the
+  // human build carries devs the whole time so laptop-dies, gated on zero
+  // human devs, was never eligible). Still never hits the zero-clamp, with
+  // headroom to spare.
   it("human-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -297,9 +331,9 @@ describe("simulation", () => {
       "contractor",
     ]);
     expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 43375.16 -- comfortable margin, wider than pre-spacing
+    expect(r.endBudget).toBeGreaterThan(0); // observed 47313.99 -- comfortable margin, wider still after the retune
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 387, 1624
+    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 387, 1625
   });
 
   // Automation-heavy build. Observed trajectory under the tuned content:
@@ -323,6 +357,24 @@ describe("simulation", () => {
   // laptop-dies (no human devs) still dominate, sickness/poaching still
   // absent, so the risk-profile contrast with the human-heavy build (the
   // track-parity design goal) survives the spacing change.
+  //
+  // RE-PINNED again for Release 9 (challenge retune + economy slack:
+  // payoutPerPoint 15->17, cheaper agent-harness 400->250, swarm-orchestrator
+  // 250->150, self-learning-agents 500->350, on top of the challenge
+  // probability/value cuts). Completes first-contract on day 394 (unchanged)
+  // and small-crm on day 1616 (essentially unchanged -- cheaper darkfactory
+  // decisions front-load spending sooner but the shopping-list gating on
+  // requires/budget dominates timing more than one day's difference); budget
+  // 13073.50 at day 500, 26185.37 at day 1000, 52016.90 at day 2000 (wider
+  // still than the spacing-only figures above). Measured fires:
+  // model-deprecation 3, cloud-credits 3, open-source-windfall 3, scope-creep
+  // 12, laptop-dies 2, ddos 1, prod-incident 10, runaway-agent-loop 2 --
+  // notably prod-incident fires far more here than in the human-heavy build
+  // (2 there vs. 10 here) because this build's tech debt is much higher
+  // (agents/swarm compound debt faster than test-suite alone offsets), and
+  // prod-incident's probScaling adds probability per 500 debt carried; that
+  // debt-exposure contrast is a real, intentional difference between the two
+  // tracks, not an artifact. Still never hits the zero-clamp.
   it("automation-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -335,9 +387,9 @@ describe("simulation", () => {
       "support-retainer",
     ]);
     expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 45548.88 -- comfortable margin, wider than pre-spacing
+    expect(r.endBudget).toBeGreaterThan(0); // observed 52016.90 -- comfortable margin, wider still after the retune
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 394, 1615
+    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 394, 1616
   });
 
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {
@@ -408,6 +460,14 @@ describe("simulation", () => {
     // is pinned by the mechanism/idle probes above and the
     // human-heavy/automation-heavy viability probes; this test remains
     // invariants-only by design.
+    //
+    // RE-PINNED again for Release 9 (challenge retune + economy slack):
+    // observed at day 2000, completedProjects 2, shipped ~12545, budget
+    // ~44926 -- essentially unchanged from the spacing-only figures directly
+    // above (shipped -13, budget -2307, both within noise of a 2000-day
+    // greedy run). The "choices matter" claim was already broken by the
+    // spacing change; this retune does not meaningfully move it further in
+    // either direction. Same invariants-only scope as above.
   });
 
   it("upgrades matter: test suite reduces tech debt vs idle over 400 days", () => {

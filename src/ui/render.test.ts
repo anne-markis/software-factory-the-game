@@ -19,12 +19,33 @@ describe("esc", () => {
 });
 
 describe("renderDecisions", () => {
-  it("disables non-purchasable entries with their reason", () => {
+  it("hides missing-requires entries from a fresh shop and shows the unlock hint with a count", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(html).toContain('data-buy="ci-cd" disabled');
-    expect(html).toContain("requires Add test suite");
+    expect(html).not.toContain('data-buy="ci-cd"');
+    expect(html).not.toContain("requires Add test suite");
+    // 7 shipped decisions gate on requires (ci-cd, agent-harness, senior-dev,
+    // eng-manager, agent-swarm, swarm-orchestrator, self-learning-agents),
+    // all unmet on a fresh game.
+    expect(html).toContain("7 more alterations unlock as your factory grows.");
     expect(html).toContain("Nothing yet. You are a solo dev.");
+  });
+
+  it("buying test-suite unlocks ci-cd in the shop and drops the hidden count by one", () => {
+    const e = new Engine(content());
+    e.applyDecision("test-suite");
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(html).toContain('data-buy="ci-cd"');
+    expect(html).toContain("6 more alterations unlock as your factory grows.");
+  });
+
+  it("keeps cannot-afford entries visible and disabled, distinct from hidden missing-requires entries", () => {
+    const c = content();
+    c.start.stocks.budget = 0;
+    const e = new Engine(c);
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], c);
+    expect(html).toContain('data-buy="ddos-protection" disabled');
+    expect(html).toContain("cannot afford");
   });
 
   it("shows owned instances with gamble outcome and remove button", () => {
