@@ -15,7 +15,12 @@ export type Effect =
   | { type: "modifyDebtMultiplier"; op: "add" | "mul"; value: number; durationDays?: number }
   | { type: "addToStock"; stock: keyof Stocks; value: number }
   | { type: "sickness"; factor: number; durationDays: number }
-  | { type: "rampRate"; target: RateId; perDay: number; cap: number };
+  | { type: "rampRate"; target: RateId; perDay: number; cap: number }
+  // Marker effect: no parameters, creates no modifier (see applyEffects).
+  // Activation is derived from ownership -- see continuousDeployActive in
+  // continuousDeploy.ts -- so this variant exists purely to be present or
+  // absent in a decision def's effects list.
+  | { type: "continuousDeploy" };
 
 export type ModifierTarget = RateId | "allRates" | "debtMultiplier";
 

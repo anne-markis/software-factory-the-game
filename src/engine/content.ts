@@ -81,6 +81,8 @@ const effectSchema = z.discriminatedUnion("type", [
       cap: z.number().positive(),
     })
     .strict(),
+  // No parameters: presence in a def's effects list is the whole signal.
+  z.object({ type: z.literal("continuousDeploy") }).strict(),
 ]);
 
 const gambleOutcomeSchema = z

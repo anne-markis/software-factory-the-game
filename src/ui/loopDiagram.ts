@@ -1,51 +1,105 @@
-import type { GameState } from "../engine/types";
+import type { GameContent, GameState } from "../engine/types";
 import { RATE_IDS } from "../engine/types";
 import { effectiveRate, effectiveDebtMultiplier } from "../engine/modifiers";
+import { continuousDeployActive } from "../engine/continuousDeploy";
 
-const STAGES: { key: "backlog" | "inProgress" | "done" | "shipped"; label: string }[] = [
+const FULL_STAGES: { key: "backlog" | "inProgress" | "done" | "shipped"; label: string }[] = [
   { key: "backlog", label: "Backlog" },
   { key: "inProgress", label: "In Progress" },
   { key: "done", label: "Done" },
   { key: "shipped", label: "Shipped" },
 ];
-const RATES = RATE_IDS;
 
-export function loopDiagramSvg(state: Readonly<GameState>): string {
-  const boxW = 150;
-  const boxH = 60;
-  const gap = 60;
-  const y = 30;
-  const boxes = STAGES.map((stage, i) => {
-    const x = 10 + i * (boxW + gap);
-    const value = state.stocks[stage.key].toLocaleString("en-US", { maximumFractionDigits: 1 });
-    return `
-      <rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" fill="none" stroke="currentColor"/>
-      <text x="${x + boxW / 2}" y="${y + 24}" text-anchor="middle" font-size="13">${stage.label}</text>
-      <text x="${x + boxW / 2}" y="${y + 46}" text-anchor="middle" font-size="15" font-weight="bold">${value}</text>`;
-  }).join("");
+// Continuous-deploy layout: Done is dropped -- once ci-cd is owned it always
+// pins at 0 (tick.ts ships the whole done stock every tick), so a box for it
+// would only ever read 0 and add nothing.
+const CD_STAGES: { key: "backlog" | "inProgress" | "shipped"; label: string }[] = [
+  { key: "backlog", label: "Backlog" },
+  { key: "inProgress", label: "In Progress" },
+  { key: "shipped", label: "Shipped" },
+];
 
-  const arrows = RATES.map((rate, i) => {
-    const x1 = 10 + boxW + i * (boxW + gap);
-    const x2 = x1 + gap;
-    const mid = y + boxH / 2;
-    const value = effectiveRate(state, rate).toFixed(1);
-    return `
+const BOX_W = 150;
+const BOX_H = 60;
+const GAP = 60;
+const Y = 30;
+const VIEW_W = 860;
+const VIEW_H = 170;
+
+function box(x: number, label: string, value: number): string {
+  const text = value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  return `
+      <rect x="${x}" y="${Y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"/>
+      <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="13">${label}</text>
+      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="15" font-weight="bold">${text}</text>`;
+}
+
+function arrow(x1: number, x2: number, label: string): string {
+  const mid = Y + BOX_H / 2;
+  return `
       <line x1="${x1}" y1="${mid}" x2="${x2 - 8}" y2="${mid}" stroke="currentColor" marker-end="url(#arrow)"/>
-      <text x="${(x1 + x2) / 2}" y="${mid - 8}" text-anchor="middle" font-size="11">${value}/day</text>`;
+      <text x="${(x1 + x2) / 2}" y="${mid - 8}" text-anchor="middle" font-size="11">${label}</text>`;
+}
+
+function debtRegenLoop(startX: number, endX: number, debt: string): string {
+  const loopY = Y + BOX_H + 40;
+  return `
+    <path d="M ${startX} ${Y + BOX_H} V ${loopY} H ${endX} V ${Y + BOX_H + 8}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+    <text x="${(startX + endX) / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11">debt +${debt}/pt</text>`;
+}
+
+const DEFS = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`;
+
+function fourBoxLoop(state: Readonly<GameState>): string {
+  const boxes = FULL_STAGES.map((stage, i) => box(10 + i * (BOX_W + GAP), stage.label, state.stocks[stage.key])).join("");
+
+  const arrows = RATE_IDS.map((rate, i) => {
+    const x1 = 10 + BOX_W + i * (BOX_W + GAP);
+    const x2 = x1 + GAP;
+    return arrow(x1, x2, `${effectiveRate(state, rate).toFixed(1)}/day`);
   }).join("");
 
   // tech debt regeneration: shipped back to backlog underneath
-  const debt = effectiveDebtMultiplier(state).toFixed(1);
-  const startX = 10 + 3 * (boxW + gap) + boxW / 2;
-  const endX = 10 + boxW / 2;
-  const loopY = y + boxH + 40;
-  const regen = `
-    <path d="M ${startX} ${y + boxH} V ${loopY} H ${endX} V ${y + boxH + 8}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
-    <text x="${(startX + endX) / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11">debt +${debt}/pt</text>`;
+  const startX = 10 + 3 * (BOX_W + GAP) + BOX_W / 2;
+  const endX = 10 + BOX_W / 2;
+  const regen = debtRegenLoop(startX, endX, effectiveDebtMultiplier(state).toFixed(1));
 
   return `
-    <svg viewBox="0 0 860 170" width="100%" role="img" aria-label="Delivery loop">
-      <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" width="100%" role="img" aria-label="Delivery loop">
+      ${DEFS}
       ${boxes}${arrows}${regen}
     </svg>`;
+}
+
+function continuousDeployLoop(state: Readonly<GameState>): string {
+  // Re-centered for 3 boxes instead of left-aligned like the 4-box layout,
+  // so the diagram doesn't read as truncated with empty space on the right.
+  const contentWidth = CD_STAGES.length * BOX_W + (CD_STAGES.length - 1) * GAP;
+  const x0 = (VIEW_W - contentWidth) / 2;
+
+  const boxes = CD_STAGES.map((stage, i) => box(x0 + i * (BOX_W + GAP), stage.label, state.stocks[stage.key])).join("");
+
+  const pullX1 = x0 + BOX_W;
+  const pullArrow = arrow(pullX1, pullX1 + GAP, `${effectiveRate(state, "pull").toFixed(1)}/day`);
+
+  const finishArrowX1 = x0 + BOX_W + GAP + BOX_W; // right edge of the inProgress box
+  const finishArrowX2 = finishArrowX1 + GAP;
+  const finishArrow = arrow(finishArrowX1, finishArrowX2, `${effectiveRate(state, "finish").toFixed(1)}/day`);
+  const caption = `
+      <text x="${(finishArrowX1 + finishArrowX2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic">continuous deploy</text>`;
+
+  // tech debt regeneration: shipped (last box) back to backlog (first box)
+  const startX = x0 + 2 * (BOX_W + GAP) + BOX_W / 2;
+  const endX = x0 + BOX_W / 2;
+  const regen = debtRegenLoop(startX, endX, effectiveDebtMultiplier(state).toFixed(1));
+
+  return `
+    <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" width="100%" role="img" aria-label="Delivery loop">
+      ${DEFS}
+      ${boxes}${pullArrow}${finishArrow}${caption}${regen}
+    </svg>`;
+}
+
+export function loopDiagramSvg(state: Readonly<GameState>, content: GameContent): string {
+  return continuousDeployActive(state, content) ? continuousDeployLoop(state) : fourBoxLoop(state);
 }

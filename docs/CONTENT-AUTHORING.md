@@ -137,7 +137,7 @@ apply the synergy to instances already owned.
 
 ## 3. The effect vocabulary
 
-All five effect types live in one discriminated union
+All six effect types live in one discriminated union
 (`src/engine/effects.ts` + the `effectSchema` in `content.ts`). Every
 effect object is `.strict()`, so extra or misspelled keys are rejected.
 
@@ -237,6 +237,43 @@ instance is owned. It behaves as an ordinary `add`-op modifier once
 created, so removing the instance (manual remove or payroll failure)
 strips the modifier by source id immediately - the accumulated bonus
 drops to zero on removal, it does not decay gradually or persist.
+
+### `continuousDeploy`
+
+```json
+{ "type": "continuousDeploy" }
+```
+
+No parameters - the schema variant is `.strict()` with only `type`, so any
+extra key is rejected. This is a **marker effect**, not a numeric one:
+`applyEffects` has a no-op case for it (see the comment there) and it
+creates no `Modifier`. Instead, `src/engine/continuousDeploy.ts` exports a
+pure `continuousDeployActive(state, content)` that returns true once any
+owned decision instance's definition carries a `continuousDeploy` effect in
+its base `effects` array (a synergy-selected effects array is deliberately
+not consulted - this is meant to be a structural, definition-level
+property, not something a purchase-time synergy swap can toggle).
+
+This is a **stage-structure change**, not a rate or stock tweak: when
+active, `tick.ts` ships the *entire* `done` stock every tick instead of
+throttling it by the `deploy` rate, so nothing queues in Done once it's
+live. The `deploy` rate itself still exists and is still computed (other
+content could still target it with `modifyRate`), it is simply no longer
+consulted for the ship step while continuous deploy is active. The
+downstream-first ordering is unchanged: the ship step still runs before
+the finish step refills `done`, so a point that finishes into `done` this
+same tick ships on the *next* tick, not this one - a point still takes a
+full tick to cross each remaining stage.
+
+The shipped example is `ci-cd`: it keeps its temporary
+`{ "target": "all", "op": "mul", "value": 0.5, "durationDays": 2 }` setup
+slowdown, but its old permanent `{ "target": "deploy", "op": "mul", "value":
+1.1 }` speedup is replaced outright by `{ "type": "continuousDeploy" }`.
+Because `ci-cd` is `unique: true` and `removable: false`, activation is
+permanent in practice once bought - but the engine still derives it from
+ownership on every tick rather than caching a flag, so a future
+`removable` continuous-deploy-granting decision would correctly toggle
+the Done stage structure on removal.
 
 ## 4. Anatomy of a challenge
 

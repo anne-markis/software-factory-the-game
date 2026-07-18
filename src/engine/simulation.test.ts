@@ -177,6 +177,15 @@ describe("simulation", () => {
   // outcome ("goes broke by design") that the current content no longer
   // produces. Only completedProjects >= 1 is solvency-shaped; budget
   // checkpoints are observations, not guarantees.
+  //
+  // RE-CHECKED for Release 11 (continuousDeploy replaces ci-cd's old
+  // deploy x1.1 modifyRate): re-run bit-for-bit identical -- completion day
+  // 1010, budgetAt1000 287.67, peak/end budget 12203.70, all unchanged. This
+  // build's finish rate (base 1.0 plus two additive dev hires) never
+  // exceeded ci-cd's old 1.1/day deploy cap, so removing that cap in favor
+  // of shipping the whole done stock every tick doesn't change anything
+  // observable here -- deploy was never this build's bottleneck. See the
+  // greedy-strategy probe below for a build where it was.
   it("smart strategy (mid-tier observation): completes the first contract; under Release 9's retune this narrow build now stays solvent throughout", () => {
     const content = fullContent();
     const e = new Engine(content);
@@ -319,6 +328,13 @@ describe("simulation", () => {
   // human build carries devs the whole time so laptop-dies, gated on zero
   // human devs, was never eligible). Still never hits the zero-clamp, with
   // headroom to spare.
+  //
+  // RE-CHECKED for Release 11 (continuousDeploy replaces ci-cd's old deploy
+  // x1.1 modifyRate): re-run bit-for-bit identical -- completion days 387
+  // and 1625, budget 12917.04/24802.35/47313.99 at day 500/1000/2000, still
+  // never zero-clamped. This build's human-hire rate stacking never pushed
+  // finish rate above the old 1.1/day deploy cap either, so the structural
+  // change is invisible to this probe.
   it("human-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -375,6 +391,14 @@ describe("simulation", () => {
   // prod-incident's probScaling adds probability per 500 debt carried; that
   // debt-exposure contrast is a real, intentional difference between the two
   // tracks, not an artifact. Still never hits the zero-clamp.
+  //
+  // RE-CHECKED for Release 11 (continuousDeploy replaces ci-cd's old deploy
+  // x1.1 modifyRate): re-run bit-for-bit identical -- completion days 394
+  // and 1616, budget 13073.50/26185.37/52016.90 at day 500/1000/2000, still
+  // never zero-clamped. Like the human-heavy build, this track's finish
+  // rate (agent/swarm additive contributions, self-learning-agents' ramp
+  // capped at 1.4/day) never actually exceeded the old 1.1/day deploy cap,
+  // so the structural change is invisible to this probe too.
   it("automation-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -468,6 +492,19 @@ describe("simulation", () => {
     // greedy run). The "choices matter" claim was already broken by the
     // spacing change; this retune does not meaningfully move it further in
     // either direction. Same invariants-only scope as above.
+    //
+    // RE-PINNED for Release 11 (continuousDeploy replaces ci-cd's old
+    // deploy x1.1 modifyRate): observed at day 2000, completedProjects 2,
+    // shipped ~13063 (was ~12545, +4%), budget ~56826 (was ~44926, +26%).
+    // Unlike the smart/human-heavy/automation-heavy probes above, THIS
+    // build's throughput was actually deploy-bound: buying everything
+    // stacks many devs' additive pull/finish contributions (and
+    // self-learning-agents' ramp) well past the old ci-cd deploy cap of
+    // 1.1/day, so done used to queue up behind that cap. Continuous deploy
+    // removes the cap entirely (ships the whole done stock every tick), so
+    // this is the one probe where the mechanism change is actually visible
+    // -- more points ship, more budget accrues. Still invariants-only by
+    // design; no solvency/completion assertions changed.
   });
 
   it("upgrades matter: test suite reduces tech debt vs idle over 400 days", () => {

@@ -117,6 +117,13 @@ describe("applyEffects", () => {
     expect(effectiveRate(s, "finish")).toBe(1);
   });
 
+  it("continuousDeploy is a marker effect: it creates no modifier", () => {
+    const s = freshState();
+    applyEffects(s, [{ type: "continuousDeploy" }], "src-1");
+    expect(s.modifiers).toHaveLength(0);
+    expect(s.nextModifierId).toBe(1); // untouched: no modifier was ever pushed
+  });
+
   it("a ramp modifier's progress round-trips through a save/restore mid-growth", () => {
     const content = freshContent();
     const a = initialState(content);

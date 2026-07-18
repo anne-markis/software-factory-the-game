@@ -25,7 +25,7 @@ function render(): void {
   const state = engine.getState();
   app.innerHTML = `
     ${renderStats(state)}
-    ${loopDiagramSvg(state)}
+    ${loopDiagramSvg(state, content)}
     ${inProgressPanelSvg(state, content)}
     ${renderStall(engine.isStalled())}
     <button id="pause">${state.paused ? "Resume" : "Pause"}</button>

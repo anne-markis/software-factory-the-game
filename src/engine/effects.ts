@@ -66,6 +66,11 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // source would have its ramped contribution scaled while sick.
         pushModifier(state, source, effect.target, "add", 0, undefined, { perDay: effect.perDay, cap: effect.cap });
         break;
+      case "continuousDeploy":
+        // Marker effect only: it carries no numeric parameters and creates
+        // no modifier. tick.ts derives activation directly from ownership
+        // via continuousDeployActive, so there is nothing to apply here.
+        break;
     }
   }
 }

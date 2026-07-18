@@ -91,6 +91,14 @@ describe("parseDecisions", () => {
     // shipped file must parse with the reference intact
     const swarm = defs.find((d) => d.id === "agent-swarm")!;
     expect(swarm.synergies![0].ifOwned).toBe("swarm-orchestrator");
+    // Release 11: ci-cd's permanent deploy speedup (modifyRate mul 1.1) is
+    // replaced by the structural continuousDeploy marker; the temporary
+    // setup slowdown is unchanged.
+    const cicd = defs.find((d) => d.id === "ci-cd")!;
+    expect(cicd.effects).toEqual([
+      { type: "modifyRate", target: "all", op: "mul", value: 0.5, durationDays: 2 },
+      { type: "continuousDeploy" },
+    ]);
   });
 
   it("rejects a gamble table whose probabilities do not sum to 1", () => {
@@ -148,6 +156,24 @@ describe("parseDecisions", () => {
         {
           id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
           effects: [{ type: "rampRate", target: "finish", perDay: -0.1, cap: 1 }],
+        },
+      ]),
+    ).toThrow(/content\/decisions\.json/);
+  });
+
+  it("parses a continuousDeploy effect (no parameters)", () => {
+    const defs = parseDecisions([
+      { id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true, effects: [{ type: "continuousDeploy" }] },
+    ]);
+    expect(defs[0].effects[0]).toEqual({ type: "continuousDeploy" });
+  });
+
+  it("rejects a continuousDeploy effect with an unknown extra key (strict)", () => {
+    expect(() =>
+      parseDecisions([
+        {
+          id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+          effects: [{ type: "continuousDeploy", value: 1 }],
         },
       ]),
     ).toThrow(/content\/decisions\.json/);
