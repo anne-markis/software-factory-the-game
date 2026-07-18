@@ -82,14 +82,22 @@ describe("simulation", () => {
   // hashed per challenge (hashRoll on gameSeed/day/id) instead of drawn
   // positionally from the shared rng stream, and the challenge phase no longer
   // consumes that stream at all. This deliberately changes which challenge
-  // days land (a fresh, content-stable draw of the same probabilities), so the
-  // trajectory shifted again: broke by ~day 696 (was ~936 under the task-4
-  // positional draws), day 300 = 6693, day 600 = 1757. The point of the
-  // refactor is that these values no longer move when a challenge is added or
-  // reordered in content. Assertions leave headroom but pin the shape:
-  // meaningful decline off the starting 10,000, no instant death, broke well
-  // within two years, near-empty long-run.
-  it("idle with full content: challenges steepen the glide; broke by ~day 696", () => {
+  // days land (a fresh, content-stable draw of the same probabilities). The
+  // point of the refactor is that these values no longer move when a
+  // challenge is added or reordered in content.
+  //
+  // RE-PINNED again for Release 9 (global event spacing, challengeSpacingDays
+  // 50 in content/start.json): after any challenge fires, no challenge may
+  // fire again for 50 days, so the idle player now sees roughly one event per
+  // 50-day stretch instead of whatever the raw per-day probabilities produced
+  // (measured over this run: 10 scope-creep, 14 ddos, 6 prod-incident, 2
+  // laptop-dies, 2 open-source-windfall -- about 34 total events across 2000
+  // days, versus dozens more before spacing). The glide is visibly gentler as
+  // a result: broke by ~day 1633 (was ~696 pre-spacing), day 300 = 8111 (was
+  // 6693), day 600 = 5952 (was 1757). Assertions leave headroom but pin the
+  // shape: meaningful decline off the starting 10,000, no instant death,
+  // broke well within the horizon, near-empty long-run.
+  it("idle with full content: challenges steepen the glide; broke by ~day 1633", () => {
     const e = new Engine(fullContent());
     let budgetAt300 = NaN;
     let budgetAt600 = NaN;
@@ -98,9 +106,9 @@ describe("simulation", () => {
       if (day === 300) budgetAt300 = e.getState().stocks.budget;
       if (day === 600) budgetAt600 = e.getState().stocks.budget;
     }
-    expect(budgetAt300).toBeLessThan(8800); // observed 6693: well off the starting 10,000
-    expect(budgetAt600).toBeGreaterThan(0); // observed 1757: breathing room, no instant death
-    expect(e.getState().stocks.budget).toBeLessThan(100); // observed 0 at day 2000 (first clamp day 696)
+    expect(budgetAt300).toBeLessThan(8800); // observed 8111: well off the starting 10,000
+    expect(budgetAt600).toBeGreaterThan(0); // observed 5952: breathing room, no instant death
+    expect(e.getState().stocks.budget).toBeLessThan(100); // observed 0 at day 2000 (first clamp day 1633)
   });
 
   // Smart-strategy probe: a modest, sensible plan (test-suite day 1, ci-cd
@@ -123,26 +131,34 @@ describe("simulation", () => {
   // content-stable, deterministic sequence than under task 4's positional
   // draws. This build owns basic-dev (tagged "human"), so it also satisfies
   // meeting-creep's and team-conflict's hasTag conditions once it hires.
-  // Measured challenge fires over this run: sickness 96, ddos 27, scope-creep
-  // 33, prod-incident 12, poached 6, team-conflict 8, meeting-creep 4.
+  //
+  // RE-PINNED again for Release 9 (global event spacing, challengeSpacingDays
+  // 50): with a 50-day floor between fires, the total event count over 2000
+  // days drops sharply and shifts every subsequent number. Measured challenge
+  // fires over this run: sickness 13, scope-creep 10, ddos 7, prod-incident
+  // 4, key-dev-poached 2, laptop-dies 1, open-source-windfall 1 (team-conflict
+  // and meeting-creep did not get a turn at all in this run -- with ~40
+  // spacing-gated windows total, the earlier-indexed, more probable
+  // challenges tend to win the same-tick break before less probable ones get
+  // a chance).
   //
   // RESOLUTION (release-8 Task 6): this probe is deliberately KEPT as a
   // mid-tier observation probe, not a viability bar. The narrow two-dev build
-  // still cannot stay solvent under the full challenge load: broke (first
-  // zero-clamp) on day 513, completion on day 1323, post-completion peak
-  // ~1981, budget 370 at day 1000 -- values unchanged by the Task 6 tuning
-  // (the small-crm payout bump lands after this build is already pinned to
-  // the zero-clamp treadmill, and none of its purchases changed price). That
-  // insolvency is now design signal rather than an open flag: the two
-  // richer build probes below (human-heavy and automation-heavy) are the
-  // viability bar, and a modest test-suite + ci-cd + two-hires plan being
-  // NOT enough at 2000 days is exactly the "choices matter" pressure the
-  // release-7 economy aimed for. The probe stays because it pins a distinct
-  // mid-tier point on the difficulty curve and exercises hire gambles plus
-  // choice resolution under pinned challenge fire counts (sickness 96,
-  // ddos 27, scope-creep 33, prod-incident 12, poached 6, team-conflict 8,
-  // meeting-creep 4). Only completedProjects >= 1 is solvency-shaped; budget
-  // checkpoints are observations, not guarantees.
+  // still cannot stay solvent under the full challenge load, though the
+  // margin moved with spacing: broke (first zero-clamp) on day 735 (was
+  // 513), completion on day 1145 (was 1323, now AFTER the zero-clamp: it
+  // ships the contract while already broke), post-completion peak ~1983
+  // (was ~1981, essentially unchanged), budget 0 at day 1000 (was 370 -- the
+  // completion-bonus breather in this run lands after day 1000, so the
+  // day-1000 checkpoint no longer catches it). That insolvency is now design
+  // signal rather than an open flag: the two richer build probes below
+  // (human-heavy and automation-heavy) are the viability bar, and a modest
+  // test-suite + ci-cd + two-hires plan being NOT enough at 2000 days is
+  // exactly the "choices matter" pressure the release-7 economy aimed for.
+  // The probe stays because it pins a distinct mid-tier point on the
+  // difficulty curve and exercises hire gambles plus choice resolution.
+  // Only completedProjects >= 1 is solvency-shaped; budget checkpoints are
+  // observations, not guarantees.
   it("smart strategy (mid-tier observation): completes the first contract; the narrow build goes broke under full challenge load by design", () => {
     const content = fullContent();
     const e = new Engine(content);
@@ -174,11 +190,11 @@ describe("simulation", () => {
       if (day === 1000) budgetAt1000 = s.stocks.budget;
       assertInvariants(s, day);
     }
-    expect(completionDay).toBeGreaterThan(0); // observed: day 1323
+    expect(completionDay).toBeGreaterThan(0); // observed: day 1145
     expect(completionDay).toBeLessThan(1800); // still comfortably within the 2000-day horizon
     expect(e.getState().completedProjects).toBeGreaterThanOrEqual(1);
-    expect(budgetAt1000).toBeGreaterThanOrEqual(0); // observed 370 (first clamp to 0 was day 513)
-    expect(peakBudgetAfterCompletion).toBeGreaterThan(0); // observed 1981.44: completion bonus is a real breather
+    expect(budgetAt1000).toBeGreaterThanOrEqual(0); // observed 0 (first clamp to 0 was day 735)
+    expect(peakBudgetAfterCompletion).toBeGreaterThan(0); // observed 1982.62: completion bonus is a real breather
     expect(e.getState().stocks.budget).toBeGreaterThanOrEqual(0); // observed 0 at day 2000
   });
 
@@ -260,6 +276,15 @@ describe("simulation", () => {
   // day 2000; never hits the zero-clamp. Challenge exposure is the human set
   // (sickness 110, meeting-creep 5, team-conflict 5, poached 4) plus the
   // universal ones; the human tag never triggers the darkfactory pool.
+  //
+  // RE-PINNED for Release 9 (global event spacing, challengeSpacingDays 50).
+  // Fewer, less frequent challenges mean a materially wider margin: completes
+  // first-contract on day 387 and small-crm on day 1624 (both slightly
+  // earlier -- fewer drains let cash accumulate toward the next purchase
+  // sooner); budget 9817 at day 500, 21702 at day 1000, 43375 at day 2000
+  // (roughly 8-10x the pre-spacing margin); still never hits the zero-clamp.
+  // Measured fires: sickness 19, scope-creep 6, prod-incident 4, meeting-creep
+  // 4, ddos 3, team-conflict 2, key-dev-poached 2, open-source-windfall 1.
   it("human-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -272,9 +297,9 @@ describe("simulation", () => {
       "contractor",
     ]);
     expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 4332 -- comfortable margin
+    expect(r.endBudget).toBeGreaterThan(0); // observed 43375.16 -- comfortable margin, wider than pre-spacing
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 412, 1804
+    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 387, 1624
   });
 
   // Automation-heavy build. Observed trajectory under the tuned content:
@@ -286,6 +311,18 @@ describe("simulation", () => {
   // laptop-dies (14) but no sickness/poaching -- a materially different risk
   // profile from the human build at a similar destination, which is the
   // track-parity design goal (viable, not identical).
+  //
+  // RE-PINNED for Release 9 (global event spacing, challengeSpacingDays 50).
+  // Same widening effect as the human-heavy build: completes first-contract
+  // on day 394 and small-crm on day 1615 (essentially unchanged from
+  // pre-spacing); budget 8623 at day 500, 20465 at day 1000, 45548 at day
+  // 2000 (again roughly an order of magnitude more margin); still never hits
+  // the zero-clamp. Measured fires: api-price-hike 7, scope-creep 7, ddos 6,
+  // model-deprecation 4, runaway-agent-loop 4, prod-incident 4, laptop-dies
+  // 3, cloud-credits 2, open-source-windfall 2 -- the darkfactory pool and
+  // laptop-dies (no human devs) still dominate, sickness/poaching still
+  // absent, so the risk-profile contrast with the human-heavy build (the
+  // track-parity design goal) survives the spacing change.
   it("automation-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -298,9 +335,9 @@ describe("simulation", () => {
       "support-retainer",
     ]);
     expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 3441 -- comfortable margin
+    expect(r.endBudget).toBeGreaterThan(0); // observed 45548.88 -- comfortable margin, wider than pre-spacing
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 396, 1643
+    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 394, 1615
   });
 
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {
@@ -351,15 +388,26 @@ describe("simulation", () => {
     }
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
-    // No solvency or completion assertions here, deliberately: even under the
-    // Task 6 economy (small-crm $21/pt, mobile-app $22/pt), buying everything
-    // affordable is NOT a viable strategy (design intent: choices matter).
-    // Observed at day 2000 under the tuned content: completedProjects 2,
-    // budget ~2.95, shipped ~10687 (was 2 / ~1.00 / ~8449 pre-tuning -- richer
-    // payouts ship more but the all-of-everything payroll still eats every
-    // dollar). This run exercises engine invariants under maximal purchasing
-    // pressure, not balance; balance is pinned by the mechanism/idle probes
-    // above and the human-heavy/automation-heavy viability probes.
+    // No solvency or completion assertions here, deliberately -- this test
+    // exercises engine invariants under maximal purchasing pressure, not
+    // balance.
+    //
+    // RE-PINNED for Release 9 (global event spacing, challengeSpacingDays
+    // 50): observed at day 2000, completedProjects 2, shipped ~12598, budget
+    // ~47233. This is a marked shift from the pre-spacing observation
+    // (budget ~2.95, shipped ~10687) that the comment here used to cite as
+    // evidence for "buying everything is NOT a viable strategy" -- under the
+    // spaced-out challenge load, the all-of-everything payroll no longer eats
+    // every dollar; challenge-driven drains now land roughly 8-10x less
+    // often (see the human-heavy/automation-heavy probes above), so greedy
+    // purchasing comes out comfortably solvent within this 2000-day window
+    // instead of near-zero. That design claim ("choices matter" because
+    // greedy is punished) no longer holds as stated at the shipped 50-day
+    // spacing; flagging this as a balance question for whoever owns the
+    // difficulty curve, not silently re-asserting the old narrative. Balance
+    // is pinned by the mechanism/idle probes above and the
+    // human-heavy/automation-heavy viability probes; this test remains
+    // invariants-only by design.
   });
 
   it("upgrades matter: test suite reduces tech debt vs idle over 400 days", () => {

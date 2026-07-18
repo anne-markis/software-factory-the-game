@@ -1,5 +1,5 @@
 import { Engine } from "../engine/engine";
-import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
+import { parseStartConfig, parseDecisions, parseChallenges, parseProjects, validateContentGraph } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
@@ -16,6 +16,7 @@ const content: GameContent = {
   challenges: parseChallenges(challengesJson),
   projects: parseProjects(projectsJson),
 };
+validateContentGraph(content);
 
 const engine = new Engine(content, loadGame());
 const app = document.getElementById("app")!;

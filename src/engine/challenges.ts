@@ -25,6 +25,9 @@ function conditionMet(def: ChallengeDef, state: GameState, content: GameContent)
     );
     if (!ownedTags.has(cond.hasTag)) return false;
   }
+  if (cond.lacksDecision !== undefined) {
+    if (state.decisions.some((inst) => inst.defId === cond.lacksDecision)) return false;
+  }
   return true;
 }
 
@@ -36,16 +39,20 @@ function probability(def: ChallengeDef, state: GameState): number {
   return Math.min(1, p);
 }
 
-function fire(def: ChallengeDef, state: GameState, instanceId?: string): void {
+// Returns whether the challenge actually fired (effects applied or a new
+// choice queued). False for the "already pending" no-op so callers -- the
+// global spacing gap in rollChallenges -- don't treat a no-op as an event.
+function fire(def: ChallengeDef, state: GameState, instanceId?: string): boolean {
   if (def.choice) {
-    if (state.pendingChoices.some((pc) => pc.challengeId === def.id)) return; // one at a time
+    if (state.pendingChoices.some((pc) => pc.challengeId === def.id)) return false; // one at a time
     state.pendingChoices.push({ challengeId: def.id, expiresDay: state.day + def.choice.expiresInDays });
     log(state, `Decision needed: ${def.name} (${def.choice.expiresInDays} days to respond)`);
-    return; // queueing does not start the cooldown clock; resolveChoice/expiry-default does
+    return true; // queueing does not start the cooldown clock; resolveChoice/expiry-default does
   }
   applyEffects(state, def.effects, `chal-${def.id}-d${state.day}`, { instanceId });
   log(state, `${def.name}: ${def.description}`);
   if (def.cooldownDays !== undefined) state.challengeLastFired[def.id] = state.day;
+  return true;
 }
 
 function cooldownActive(def: ChallengeDef, state: GameState): boolean {
@@ -88,7 +95,20 @@ export function rollChallenges(state: GameState, _rng: Rng, content: GameContent
     }
   }
 
-  for (const def of content.challenges) {
+  // Global event spacing: after any challenge fires (effects applied or a
+  // choice queued -- either counts, the player is already dealing with it),
+  // no challenge may fire until challengeSpacingDays elapses. lastChallengeDay
+  // is undefined until the first-ever fire, so the spacing gap never blocks
+  // the opening days of a game. spacingDays 0 disables the gap (the
+  // inequality below can then never hold, since lastChallengeDay is always <=
+  // state.day by the time it's read). Note this is checked once per tick,
+  // before the roll loop -- it does not re-check mid-loop -- so it composes
+  // with the same-tick break below rather than duplicating it.
+  const spacingDays = content.start.challengeSpacingDays;
+  const spacingActive = state.lastChallengeDay !== undefined && state.day < state.lastChallengeDay + spacingDays;
+  if (spacingActive) return;
+
+  outer: for (const def of content.challenges) {
     if (!conditionMet(def, state, content)) continue;
     if (cooldownActive(def, state)) continue;
     if (def.perHumanDev) {
@@ -97,11 +117,22 @@ export function rollChallenges(state: GameState, _rng: Rng, content: GameContent
       // within a game).
       for (const inst of humanDevInstances(state, content)) {
         if (hashRoll(state.gameSeed, state.day, `${def.id}:${inst.instanceId}`) < probability(def, state)) {
-          fire(def, state, inst.instanceId);
+          if (fire(def, state, inst.instanceId)) {
+            state.lastChallengeDay = state.day;
+            // One event at a time: stop rolling further challenges this tick.
+            // Gated on spacingDays > 0 so spacing-disabled games keep the
+            // legacy same-tick multi-fire behavior existing tests pin.
+            if (spacingDays > 0) break outer;
+          }
         }
       }
     } else {
-      if (hashRoll(state.gameSeed, state.day, def.id) < probability(def, state)) fire(def, state);
+      if (hashRoll(state.gameSeed, state.day, def.id) < probability(def, state)) {
+        if (fire(def, state)) {
+          state.lastChallengeDay = state.day;
+          if (spacingDays > 0) break outer;
+        }
+      }
     }
   }
 }

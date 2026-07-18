@@ -11,5 +11,6 @@
     "sizePoints": 1500,
     "payoutPerPoint": 15,
     "completionBonus": 2000
-  }
+  },
+  "challengeSpacingDays": 50
 }

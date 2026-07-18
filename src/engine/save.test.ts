@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { serialize, deserialize, SAVE_VERSION } from "./save";
-import { Engine } from "./engine";
+import { Engine, initialState } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
@@ -91,5 +91,31 @@ describe("save/load", () => {
     expect(restored.gameSeed).toBeUndefined(); // deserialize cannot know the seed
     const b = new Engine(c, restored);
     expect(b.getState().gameSeed).toBe(c.start.seed);
+  });
+
+  // lastChallengeDay (Release 9, global event spacing) is a plain optional
+  // field, unlike nextModifierId/nextInstanceId/challengeLastFired above: it
+  // is absent until the first challenge ever fires, and "absent" is already
+  // the correct value for a legacy save, so deserialize needs no defensive
+  // default -- JSON.parse/stringify round-trips it (or its absence) as-is.
+  it("round-trips a populated lastChallengeDay", () => {
+    const c = content();
+    const state = initialState(c);
+    state.lastChallengeDay = 42;
+    const saved = serialize(state);
+    const restored = deserialize(saved);
+    expect(restored.lastChallengeDay).toBe(42);
+  });
+
+  it("loads a legacy save without lastChallengeDay fine (stays undefined, no default needed)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.lastChallengeDay;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.lastChallengeDay).toBeUndefined();
+    // and the restored engine still runs: absence just means "no gap active yet"
+    const b = new Engine(c, restored);
+    expect(() => b.tick()).not.toThrow();
   });
 });
