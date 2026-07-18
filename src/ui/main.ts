@@ -26,13 +26,13 @@ function render(): void {
   app.innerHTML = `
     ${renderStats(state)}
     ${loopDiagramSvg(state)}
+    ${inProgressPanelSvg(state, content)}
     ${renderStall(engine.isStalled())}
     <button id="pause">${state.paused ? "Resume" : "Pause"}</button>
     <button id="reset">Reset game</button>
     <div class="cols">
       <div class="main">
         ${renderDecisions(engine.availableDecisions(), [...state.decisions], content)}
-        ${inProgressPanelSvg(state, content)}
         ${renderProjects([...state.projects], engine.availableProjects(), state)}
       </div>
       <div class="side">
