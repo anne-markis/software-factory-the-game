@@ -1,11 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
-import { parseStartConfig } from "./content";
+import { parseStartConfig, parseDecisions } from "./content";
 import startJson from "../../content/start.json";
+import decisionsJson from "../../content/decisions.json";
+import { effectiveRate } from "./modifiers";
 import type { GameContent, GameState } from "./types";
 
 export function testContent(): GameContent {
   return { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [] };
+}
+
+// Real decisions (for ci-cd/test-suite), no challenges/projects so the
+// continuous-deploy probes below are isolated from random events.
+function ciCdContent(): GameContent {
+  return { start: parseStartConfig(startJson), decisions: parseDecisions(decisionsJson), challenges: [], projects: [] };
 }
 
 describe("tick", () => {
@@ -77,5 +85,62 @@ describe("tick", () => {
       b.tick();
     }
     expect(b.getState()).toEqual(a.getState());
+  });
+
+  describe("continuous deploy (ci-cd owned)", () => {
+    it("ships the entire done stock every tick once active, so done never queues beyond the current tick's finish output", () => {
+      const content = ciCdContent();
+      const e = new Engine(content);
+      e.applyDecision("test-suite");
+      e.applyDecision("ci-cd");
+      // Runs through both temporary setup slowdowns (test-suite expires day
+      // 6, ci-cd's expires day 2) and into the settled, unmodified-rate
+      // regime, checking the invariant holds throughout, not just at steady
+      // state. effectiveRate is an independent oracle here (it is exercised
+      // directly elsewhere) for what finishRate/pullRate are -- unaffected
+      // by this feature -- so the only thing genuinely under test is
+      // tick.ts's continuous-deploy branch: shippedFlow == the pre-tick
+      // done stock (ignoring deployRate), and this same tick's finish
+      // output is NOT included in that same ship (it lands in done, to
+      // ship next tick instead).
+      for (let day = 1; day <= 20; day++) {
+        const before = e.getState();
+        const inProgressBefore = before.stocks.inProgress;
+        const doneBefore = before.stocks.done;
+        const shippedBefore = before.stocks.shipped;
+        const finishRate = effectiveRate(before, "finish");
+        e.tick();
+        const after = e.getState();
+        const expectedFinishFlow = Math.min(inProgressBefore, finishRate);
+        expect(after.stocks.shipped, `day ${day}`).toBeCloseTo(shippedBefore + doneBefore, 10);
+        expect(after.stocks.done, `day ${day}`).toBeCloseTo(expectedFinishFlow, 10);
+      }
+    });
+
+    // Pins the exact same-tick ordering for a done stock that already had
+    // work queued up before continuous deploy's first tick under it (e.g.
+    // work that finished the same day ci-cd was bought, before it flows
+    // through as "owned at tick time"). Manufactures that state directly
+    // via the mutable escape hatch (getState()'s Readonly is shallow and
+    // compile-time only -- see engine.ts) rather than deriving it from many
+    // ticks, to isolate the ordering guarantee from unrelated arithmetic.
+    it("ships a pre-existing done stock in full immediately; that same tick's finish output waits until next tick", () => {
+      const content = ciCdContent();
+      const e = new Engine(content);
+      e.applyDecision("test-suite"); // budget 10000 -> 9500
+      e.applyDecision("ci-cd"); // budget 9500 -> 8750
+      const state = e.getState() as GameState;
+      state.stocks.done = 5;
+      state.stocks.inProgress = 1000; // guarantee finishFlow is rate-limited, not stock-limited
+      const shippedBefore = state.stocks.shipped;
+
+      e.tick(); // day 1: both temp slowdowns still active (expire day 6 and day 2)
+      const s = e.getState();
+      // finishRate this tick: base 1.0 * test-suite's 0.5 (mul, expires day
+      // 6) * ci-cd's temporary 0.5 setup slowdown (mul, expires day 2) = 0.25.
+      expect(s.stocks.shipped - shippedBefore).toBe(5); // the entire pre-existing done stock, exactly
+      expect(s.stocks.done).toBe(0.25); // this tick's finish output only -- not shipped this tick
+      expect(s.pointsPerDay).toBe(5); // pointsPerDay reads shippedFlow, not finishFlow
+    });
   });
 });

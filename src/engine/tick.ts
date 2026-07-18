@@ -1,6 +1,7 @@
 import type { GameContent, GameState } from "./types";
 import type { Rng } from "./rng";
 import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
+import { continuousDeployActive } from "./continuousDeploy";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -82,7 +83,18 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   const pullRate = effectiveRate(state, "pull");
 
   // Downstream first so a point cannot cross the whole pipeline in one day.
-  const shippedFlow = Math.min(state.stocks.done, deployRate);
+  // Once continuous deploy is active (an owned decision's def carries a
+  // continuousDeploy effect -- see continuousDeployActive), the Done stage
+  // no longer queues: the entire done stock ships this tick, ignoring
+  // deployRate entirely. This still runs BEFORE finish refills done below,
+  // so a point that finishes into done later in this same tick ships next
+  // tick, not this one -- a point still takes a full tick to cross each
+  // remaining stage, the same ordering guarantee the throttled case relies
+  // on. Everything downstream (FIFO project attribution, debt regen,
+  // pointsPerDay) reads shippedFlow unchanged either way.
+  const shippedFlow = continuousDeployActive(state, content)
+    ? state.stocks.done
+    : Math.min(state.stocks.done, deployRate);
   state.stocks.done -= shippedFlow;
   state.stocks.shipped += shippedFlow;
 

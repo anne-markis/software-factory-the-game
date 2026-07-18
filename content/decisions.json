@@ -29,7 +29,7 @@
   {
     "id": "ci-cd",
     "name": "CI/CD pipeline",
-    "description": "Slows all work 50% for 1 day to set up. Permanently speeds deploys by 10%.",
+    "description": "Slows all work 50% for 1 day to set up. Once live, finished work deploys continuously: nothing waits in Done.",
     "tags": [
       "process"
     ],
@@ -48,10 +48,7 @@
         "durationDays": 2
       },
       {
-        "type": "modifyRate",
-        "target": "deploy",
-        "op": "mul",
-        "value": 1.1
+        "type": "continuousDeploy"
       }
     ],
     "removable": false,
