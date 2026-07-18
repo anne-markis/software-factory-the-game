@@ -16,7 +16,7 @@ describe("inProgressPanelSvg", () => {
     const svg = inProgressPanelSvg(e.getState(), content());
     expect(svg).toContain("Base 1.0/day");
     expect(svg).toContain("1.0/day");
-    expect(svg).toContain("Inside In Progress");
+    expect(svg).toContain("Progress loop");
     expect(svg).not.toContain("Hire basic developer");
   });
 

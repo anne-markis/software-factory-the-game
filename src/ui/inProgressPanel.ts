@@ -79,12 +79,12 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
     .join("");
 
   const svg = `
-    <svg viewBox="0 0 860 ${height}" width="100%" role="img" aria-label="Inside In Progress">
+    <svg viewBox="0 0 860 ${height}" width="100%" role="img" aria-label="Progress loop">
       ${lines}
       <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" fill="none" stroke="currentColor"/>
       <text x="${boxX + boxW / 2}" y="${boxY + 20}" text-anchor="middle" font-size="12">In Progress -&gt; Done</text>
       <text x="${boxX + boxW / 2}" y="${boxY + 38}" text-anchor="middle" font-size="14" font-weight="bold">${rate}</text>
     </svg>`;
 
-  return `<div class="panel"><h3>Inside In Progress</h3>${svg}</div>`;
+  return `<div class="panel"><h3>Progress loop</h3>${svg}</div>`;
 }
