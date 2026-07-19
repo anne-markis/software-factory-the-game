@@ -89,12 +89,15 @@ const gambleOutcomeSchema = z
   .object({ probability: z.number().gt(0).lte(1), label: z.string(), effects: z.array(effectSchema) })
   .strict();
 
+const decisionCategory = z.enum(["ship-faster", "earn-income", "tame-debt", "prevent-trouble", "change-structure"]);
+
 const decisionSchema = z
   .object({
     id: z.string(),
     name: z.string(),
     description: z.string(),
     tags: z.array(z.string()),
+    category: decisionCategory,
     human: z.boolean().optional(),
     cost: z.object({ oneTime: z.number().min(0).optional(), perDay: z.number().min(0).optional() }).strict(),
     incomePerDay: z.number().min(0).optional(),

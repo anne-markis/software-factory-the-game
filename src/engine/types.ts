@@ -50,11 +50,17 @@ export interface Synergy {
   gamble?: GambleOutcome[]; // replaces base gamble when owned
 }
 
+// Which shop section a decision renders under (see renderDecisions in
+// src/ui/render.ts). Required on every decision so the shop can always
+// group visible entries -- there is no "uncategorized" fallback.
+export type DecisionCategory = "ship-faster" | "earn-income" | "tame-debt" | "prevent-trouble" | "change-structure";
+
 export interface DecisionDef {
   id: string;
   name: string;
   description: string;
   tags: string[];
+  category: DecisionCategory;
   human?: boolean;
   cost: { oneTime?: number; perDay?: number };
   incomePerDay?: number;
