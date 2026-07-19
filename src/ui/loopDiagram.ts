@@ -26,12 +26,16 @@ const Y = 30;
 const VIEW_W = 860;
 const VIEW_H = 170;
 
+// Font sizes bumped from 13/15 to 16/18: since release 14 this diagram
+// renders at half page width (side by side with the progress loop), so the
+// same viewBox now scales down further -- the larger source sizes keep the
+// scaled-down text legible.
 function box(x: number, label: string, value: number): string {
   const text = value.toLocaleString("en-US", { maximumFractionDigits: 1 });
   return `
       <rect x="${x}" y="${Y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"/>
-      <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="13">${label}</text>
-      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="15" font-weight="bold">${text}</text>`;
+      <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="16">${label}</text>
+      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold">${text}</text>`;
 }
 
 function arrow(x1: number, x2: number, label: string): string {

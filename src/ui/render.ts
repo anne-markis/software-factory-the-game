@@ -11,17 +11,25 @@ export function fmt(n: number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
+// Each stat is a fixed label + tabular-nums value slot (see index.html's
+// .stat-value width classes) so a value changing width on tick -- Day
+// ticking up, Budget crossing a comma boundary, etc -- never reflows the
+// single-line bar and shifts the buttons below it.
+function stat(label: string, value: string, widthClass: string): string {
+  return `<span class="stat"><span class="stat-label">${label}</span> <span class="stat-value ${widthClass}">${value}</span></span>`;
+}
+
 export function renderStats(state: Readonly<GameState>): string {
   return `
     <div class="stats">
-      <span>Day ${state.day}</span>
-      <span>Backlog: ${fmt(state.stocks.backlog)}</span>
-      <span>In Progress: ${fmt(state.stocks.inProgress)}</span>
-      <span>Done: ${fmt(state.stocks.done)}</span>
-      <span>Shipped: ${fmt(state.stocks.shipped)}</span>
-      <span>Budget: $${fmt(state.stocks.budget)}</span>
-      <span>Tech Debt: ${fmt(state.stocks.techDebt)}</span>
-      <span>Points/Day: ${fmt(state.pointsPerDay)}</span>
+      ${stat("Day", String(state.day), "v-day")}
+      ${stat("Backlog", fmt(state.stocks.backlog), "v-flow")}
+      ${stat("In Progress", fmt(state.stocks.inProgress), "v-count")}
+      ${stat("Done", fmt(state.stocks.done), "v-count")}
+      ${stat("Shipped", fmt(state.stocks.shipped), "v-flow")}
+      ${stat("Budget", `$${fmt(state.stocks.budget)}`, "v-budget")}
+      ${stat("Tech Debt", fmt(state.stocks.techDebt), "v-debt")}
+      ${stat("Points/Day", fmt(state.pointsPerDay), "v-rate")}
     </div>`;
 }
 

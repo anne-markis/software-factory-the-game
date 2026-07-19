@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { esc, renderDecisions, renderLog, renderChoices, renderProjects, renderStall } from "./render";
+import { esc, renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall } from "./render";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
@@ -15,6 +15,24 @@ function content(): GameContent {
 describe("esc", () => {
   it("escapes html-significant characters", () => {
     expect(esc(`<b>&"x"</b>`)).toBe("&lt;b&gt;&amp;&quot;x&quot;&lt;/b&gt;");
+  });
+});
+
+describe("renderStats", () => {
+  it("renders each stat as a label span plus a width-classed, tabular-nums value span (single-line, non-reflowing bar)", () => {
+    const e = new Engine(content());
+    const html = renderStats(e.getState());
+    expect(html).toContain('<div class="stats">');
+    expect(html).toContain(
+      '<span class="stat"><span class="stat-label">Day</span> <span class="stat-value v-day">0</span></span>',
+    );
+    expect(html).toContain('<span class="stat-label">Backlog</span> <span class="stat-value v-flow">');
+    expect(html).toContain('<span class="stat-label">Shipped</span> <span class="stat-value v-flow">');
+    expect(html).toContain('<span class="stat-label">In Progress</span> <span class="stat-value v-count">');
+    expect(html).toContain('<span class="stat-label">Done</span> <span class="stat-value v-count">');
+    expect(html).toContain('<span class="stat-label">Budget</span> <span class="stat-value v-budget">$');
+    expect(html).toContain('<span class="stat-label">Tech Debt</span> <span class="stat-value v-debt">');
+    expect(html).toContain('<span class="stat-label">Points/Day</span> <span class="stat-value v-rate">');
   });
 });
 

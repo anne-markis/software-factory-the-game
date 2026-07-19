@@ -25,8 +25,10 @@ function render(): void {
   const state = engine.getState();
   app.innerHTML = `
     ${renderStats(state)}
-    ${loopDiagramSvg(state, content)}
-    ${inProgressPanelSvg(state, content)}
+    <div class="loops">
+      <div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>
+      ${inProgressPanelSvg(state, content)}
+    </div>
     ${renderStall(engine.isStalled())}
     <button id="pause">${state.paused ? "Resume" : "Pause"}</button>
     <button id="reset">Reset game</button>
