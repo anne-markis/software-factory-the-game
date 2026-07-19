@@ -141,12 +141,12 @@ function renderStack(
   header: string,
   nodes: readonly ContributorNode[],
 ): { svg: string; midY: number; bottom: number } {
-  const headerSvg = `<text x="${x}" y="${top}" font-size="12" font-weight="bold">${esc(header)}</text>`;
+  const headerSvg = `<text x="${x}" y="${top}" font-size="16" font-weight="bold">${esc(header)}</text>`;
   const itemsSvg = nodes
     .map((n, i) => {
       const y = top + HEADER_GAP + i * ROW_H;
       const opacity = n.dim ? ` opacity="0.5"` : "";
-      return `<text x="${x}" y="${y}" font-size="11"${opacity}>${esc(n.label)}</text>`;
+      return `<text x="${x}" y="${y}" font-size="13"${opacity}>${esc(n.label)}</text>`;
     })
     .join("");
   const count = nodes.length;
@@ -174,6 +174,27 @@ const EXIT_BOX_W = 150;
 const EXIT_BOX_H = 54;
 const EXIT_GAP = 65;
 const FOOTER_GAP = 34;
+
+// A group (Cycle speed, Friction, Leak size) gaining or losing rows -- most
+// visibly friction appearing/disappearing as decisions are bought -- used to
+// grow or shrink the whole viewBox height, shifting every element below the
+// panel on the page. Reserve enough vertical space for 6 rows in each group
+// (a generous ceiling for how many contributor lines realistically stack up)
+// so the common case never resizes the panel; only a rarer, larger stack
+// grows past the reserve. Derived from the same top-stack/loop/friction math
+// used below, evaluated at RESERVE_ROWS instead of the real node counts, so
+// this isn't a hardcoded pixel guess.
+const RESERVE_ROWS = 6;
+const RESERVE_HEIGHT = (() => {
+  const topStacksBottom = TOP_MARGIN + HEADER_GAP + RESERVE_ROWS * ROW_H;
+  const loopTopY = topStacksBottom + STACK_LOOP_GAP;
+  const loopCy = loopTopY + LOOP_RY;
+  const loopBottomY = loopCy + LOOP_RY;
+  const frictionTop = loopBottomY + STACK_LOOP_GAP;
+  const frictionBottom = frictionTop + HEADER_GAP + RESERVE_ROWS * ROW_H;
+  const leakEndY = loopBottomY + 110; // mirrors the real leakEndY formula below (loopBottomY + 110)
+  return Math.max(frictionBottom, leakEndY + 50, loopCy + EXIT_BOX_H / 2 + 40) + FOOTER_GAP;
+})();
 
 export function inProgressPanelSvg(state: Readonly<GameState>, content: GameContent): string {
   const speedNodes = buildRateGroupNodes(state, content, "speed");
@@ -206,8 +227,10 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
   const c2x = leakEndX - 90;
   const c2y = leakEndY - 50;
 
-  const totalHeight =
-    Math.max(friction.bottom, leakEndY + 50, loopCy + EXIT_BOX_H / 2 + 40) + FOOTER_GAP;
+  const totalHeight = Math.max(
+    Math.max(friction.bottom, leakEndY + 50, loopCy + EXIT_BOX_H / 2 + 40) + FOOTER_GAP,
+    RESERVE_HEIGHT,
+  );
 
   // Exit flow: solid arrow from the loop's right edge to the throughput box,
   // vertically centered on the loop.
@@ -227,20 +250,20 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       ${loopFlowArrow(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, -70)}
       ${loopFlowArrow(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, 50)}
       ${loopFlowArrow(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, 170)}
-      <text x="${LOOP_CX}" y="${loopCy - 4}" text-anchor="middle" font-size="12">work cycling</text>
-      <text x="${LOOP_CX}" y="${loopCy + 12}" text-anchor="middle" font-size="12">inside In Progress</text>`;
+      <text x="${LOOP_CX}" y="${loopCy - 4}" text-anchor="middle" font-size="14">work cycling</text>
+      <text x="${LOOP_CX}" y="${loopCy + 12}" text-anchor="middle" font-size="14">inside In Progress</text>`;
 
   const exit = `
       <line x1="${exitStartX.toFixed(1)}" y1="${exitStartY.toFixed(1)}" x2="${exitBoxX - 8}" y2="${loopCy}" stroke="currentColor" marker-end="url(#ipArrow)"/>
       <rect x="${exitBoxX}" y="${exitBoxY}" width="${EXIT_BOX_W}" height="${EXIT_BOX_H}" fill="none" stroke="currentColor"/>
-      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 22}" text-anchor="middle" font-size="14" font-weight="bold">${esc(finishRate)}</text>
-      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 40}" text-anchor="middle" font-size="11">${esc(exitCaption)}</text>
-      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + EXIT_BOX_H + 16}" text-anchor="middle" font-size="10">= outer loop throughput</text>`;
+      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 22}" text-anchor="middle" font-size="16" font-weight="bold">${esc(finishRate)}</text>
+      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 40}" text-anchor="middle" font-size="13">${esc(exitCaption)}</text>
+      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + EXIT_BOX_H + 16}" text-anchor="middle" font-size="12">= outer loop throughput</text>`;
 
   const leak = `
       <path d="M ${leakStartX.toFixed(1)} ${leakStartY.toFixed(1)} C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${leakEndX.toFixed(1)} ${leakEndY.toFixed(1)}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#ipArrow)"/>
-      <text x="${leakEndX}" y="${leakEndY + 18}" text-anchor="end" font-size="11">${esc(`rework leak x${debtLabel} per shipped point`)}</text>
-      <text x="${leakEndX}" y="${leakEndY + 34}" text-anchor="end" font-size="10">refills the outer loop's Backlog</text>`;
+      <text x="${leakEndX}" y="${leakEndY + 18}" text-anchor="end" font-size="13">${esc(`rework leak x${debtLabel} per shipped point`)}</text>
+      <text x="${leakEndX}" y="${leakEndY + 34}" text-anchor="end" font-size="12">refills the outer loop's Backlog</text>`;
 
   const speedConnectorTarget = ellipsePoint(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, -120);
   const frictionConnectorTarget = ellipsePoint(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, 120);
@@ -262,7 +285,7 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       ${leakTmp.svg}
       ${connector(RIGHT_CONNECTOR_X, leakTmp.midY, leakStartX, leakStartY, true)}`;
 
-  const footer = `<text x="${LEFT_X}" y="${totalHeight - 10}" font-size="10">The inner loop's pace sets outer throughput; its leak feeds outer backlog.</text>`;
+  const footer = `<text x="${LEFT_X}" y="${totalHeight - 10}" font-size="12">The inner loop's pace sets outer throughput; its leak feeds outer backlog.</text>`;
 
   const svg = `
     <svg viewBox="0 0 ${VIEW_W} ${totalHeight}" width="100%" role="img" aria-label="Progress loop">

@@ -175,6 +175,33 @@ describe("inProgressPanelSvg", () => {
     expect(inFrictionGroup(svg, "Context switch x0.85")).toBe(true);
   });
 
+  it("keeps the viewBox height identical whether Friction has 0 or 3 rows (release 14: reserved vertical space)", () => {
+    const extractHeight = (svg: string) => svg.match(/viewBox="0 0 \d+ (\d+(?:\.\d+)?)"/)?.[1];
+
+    const e0 = new Engine(content());
+    const svg0 = inProgressPanelSvg(e0.getState(), content());
+    expect(svg0).not.toContain("Friction"); // fresh engine has no drag, group omitted
+
+    const e3 = new Engine(content());
+    const s3 = e3.getState() as MutableState;
+    for (let i = 0; i < 3; i++) {
+      s3.modifiers.push({
+        id: `mod-friction-${i}`,
+        source: `chal-test-friction-${i}`,
+        target: "allRates",
+        op: "mul",
+        value: 0.9,
+      });
+    }
+    const svg3 = inProgressPanelSvg(s3, content());
+    expect(svg3).toContain("Friction"); // now populated, 3 rows
+
+    const height0 = extractHeight(svg0);
+    const height3 = extractHeight(svg3);
+    expect(height0).toBeDefined();
+    expect(height3).toBe(height0);
+  });
+
   it("renders negative contributions with a bare minus, not +-", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
