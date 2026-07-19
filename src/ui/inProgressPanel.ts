@@ -249,7 +249,12 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       ${speedTmp.svg}
       ${connector(LEFT_CONNECTOR_X, speedTmp.midY, speedConnectorTarget[0], speedConnectorTarget[1], false)}`;
 
-  const frictionSvg = `
+  // No drags at all: skip the header and its connector rather than pointing
+  // an arrow at an empty stack.
+  const frictionSvg =
+    frictionNodes.length === 0
+      ? ""
+      : `
       ${friction.svg}
       ${connector(LEFT_CONNECTOR_X, friction.midY, frictionConnectorTarget[0], frictionConnectorTarget[1], true)}`;
 
