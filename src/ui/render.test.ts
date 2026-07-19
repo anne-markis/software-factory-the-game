@@ -73,6 +73,35 @@ describe("renderDecisions", () => {
     expect(html).not.toContain('data-buy="test-suite"');
     expect(html).toContain('data-buy="basic-dev"');
   });
+
+  it("groups a fresh shop into category sections, ordered Ship faster before Earn income, with test-suite under Tame tech debt", () => {
+    const e = new Engine(content());
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(html).toContain("Ship faster");
+    expect(html).toContain("Earn income");
+    expect(html.indexOf("Ship faster")).toBeLessThan(html.indexOf("Earn income"));
+    const tameDebtIdx = html.indexOf("Tame tech debt");
+    const testSuiteIdx = html.indexOf('data-buy="test-suite"');
+    expect(tameDebtIdx).toBeGreaterThan(-1);
+    expect(testSuiteIdx).toBeGreaterThan(tameDebtIdx);
+  });
+
+  it("hides the Change the loop section on a fresh game (ci-cd hidden by missing-requires) and shows it after buying test-suite", () => {
+    const e = new Engine(content());
+    const freshHtml = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(freshHtml).not.toContain("Change the loop");
+
+    e.applyDecision("test-suite");
+    const afterHtml = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(afterHtml).toContain("Change the loop");
+    expect(afterHtml).toContain('data-buy="ci-cd"');
+  });
+
+  it("still shows the unlock-count hint alongside the sectioned shop", () => {
+    const e = new Engine(content());
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(html).toContain("7 more alterations unlock as your factory grows.");
+  });
 });
 
 describe("renderLog", () => {

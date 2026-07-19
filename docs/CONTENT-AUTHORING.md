@@ -50,6 +50,33 @@ A decision (`content/decisions.json`) is an object with these fields:
   `"human"`, `"solo"`, `"darkfactory"` are the ones shipped today). Tags
   drive challenges' `hasTag` condition (section 4) - a tag only "counts"
   while at least one owned decision instance carries it.
+- `category` (string, required) - one of five fixed values (`DecisionCategory`
+  in `src/engine/types.ts`), unlike `tags` this is a closed enum, not
+  free-form, and the loader rejects an unknown value or a missing field
+  outright. It controls which section of the "Alter the loop" shop
+  (`renderDecisions` in `src/ui/render.ts`) the decision renders under, so
+  players can find levers for the stock they care about instead of reading
+  every entry in one flat list. The five values, in shop display order,
+  and their player-facing meaning:
+  - `"ship-faster"` ("Ship faster (points/day)") - speeds up `pull`,
+    `finish`, or `deploy` (hires, tooling, agents, process tweaks).
+  - `"earn-income"` ("Earn income (budget)") - adds `incomePerDay` or
+    otherwise grows budget directly (`support-retainer` today).
+  - `"tame-debt"` ("Tame tech debt (debt and incident risk)") - reduces
+    `modifyDebtMultiplier` or otherwise manages tech-debt growth
+    (`test-suite`, `agent-harness`, `swarm-orchestrator`).
+  - `"prevent-trouble"` ("Prevent trouble (events and gambles)") - improves
+    gamble odds or closes off a challenge's `condition` (`eng-manager`,
+    `ddos-protection`).
+  - `"change-structure"` ("Change the loop (structure)") - alters the
+    pipeline's stage structure itself, not just a rate (`ci-cd`'s
+    `continuousDeploy` marker effect).
+  A section only renders when at least one of its decisions is currently
+  visible in the shop (owned-unique and missing-`requires` entries are
+  filtered out first, same as before categorization); an empty category
+  produces no header. Pick the category by what the decision *does*, not
+  its `tags` - the two are independent and serve different UI surfaces
+  (tags gate challenge conditions; category only affects shop layout).
 - `human` (boolean, optional) - marks the decision as a human developer.
   This is what challenges' `minHumanDevs`/`maxHumanDevs`/`perHumanDev`
   count against (see `humanDevInstances` in `src/engine/challenges.ts`).
@@ -387,6 +414,9 @@ individual challenge's `probabilityPerDay`.
 From `parseDecisions` (`content/decisions.json`):
 
 - Schema is strict: unknown/misspelled keys fail the whole file.
+- `category` is required and must be one of the five `DecisionCategory`
+  values (section 2) - missing it, or a typo'd value, fails the whole
+  file, the same as any other strict-schema violation.
 - Duplicate `id` across entries is rejected.
 - A `gamble` table's probabilities must sum to `1` (tolerance `1e-9`).
 - Every `requires` id must name another decision id present in the file.
@@ -484,6 +514,7 @@ N days needs `durationDays: N + 1`.
   "name": "Refactoring sprint",
   "description": "Slows all work 40% for 4 days while the team pays down structure. Permanently cuts tech debt accumulation by 20%.",
   "tags": ["process"],
+  "category": "tame-debt",
   "cost": { "oneTime": 350 },
   "effects": [
     { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.6, "durationDays": 5 },
@@ -505,6 +536,9 @@ Walking through it:
   investment" framing of the description.
 - No `requires`, so it's available to every build from day one; no
   `gamble` or `synergies`, since it's a flat, deterministic purchase.
+- `category: "tame-debt"` puts it in the "Tame tech debt" shop section
+  alongside `test-suite`, `agent-harness`, and `swarm-orchestrator` -
+  matching what it does (cuts debt accumulation), not its `"process"` tag.
 
 To add it for real, you'd append this object to the array in
 `content/decisions.json` (mind the comma with the preceding entry), then

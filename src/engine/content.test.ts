@@ -58,6 +58,16 @@ describe("parseDecisions", () => {
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(7);
     expect(dev.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
+    // Release 13: every shipped decision must carry a required category so
+    // the shop can group them into sections.
+    expect(defs.every((d) => d.category)).toBe(true);
+  });
+
+  it("categorizes every shipped decision for the shop's sectioned layout (Release 13)", () => {
+    const defs = parseDecisions(decisionsJson);
+    expect(defs.find((d) => d.id === "test-suite")!.category).toBe("tame-debt");
+    expect(defs.find((d) => d.id === "support-retainer")!.category).toBe("earn-income");
+    expect(defs.find((d) => d.id === "ci-cd")!.category).toBe("change-structure");
   });
 
   it("pins the content-wave decision values", () => {
@@ -105,7 +115,7 @@ describe("parseDecisions", () => {
     expect(() =>
       parseDecisions([
         {
-          id: "x", name: "x", description: "x", tags: [], cost: {}, effects: [], removable: true,
+          id: "x", name: "x", description: "x", tags: [], category: "ship-faster", cost: {}, effects: [], removable: true,
           gamble: [{ probability: 0.5, label: "a", effects: [] }],
         },
       ]),
@@ -115,7 +125,7 @@ describe("parseDecisions", () => {
   it("rejects a requires reference to an unknown decision id", () => {
     expect(() =>
       parseDecisions([
-        { id: "x", name: "x", description: "x", tags: [], cost: {}, effects: [], removable: true, requires: ["ghost"] },
+        { id: "x", name: "x", description: "x", tags: [], category: "ship-faster", cost: {}, effects: [], removable: true, requires: ["ghost"] },
       ]),
     ).toThrow(/ghost/);
   });
@@ -123,8 +133,8 @@ describe("parseDecisions", () => {
   it("rejects duplicate decision ids", () => {
     expect(() =>
       parseDecisions([
-        { id: "x", name: "x", description: "x", tags: [], cost: {}, effects: [], removable: true },
-        { id: "x", name: "x2", description: "x2", tags: [], cost: {}, effects: [], removable: true },
+        { id: "x", name: "x", description: "x", tags: [], category: "ship-faster", cost: {}, effects: [], removable: true },
+        { id: "x", name: "x2", description: "x2", tags: [], category: "ship-faster", cost: {}, effects: [], removable: true },
       ]),
     ).toThrow(/duplicate/i);
   });
@@ -132,7 +142,7 @@ describe("parseDecisions", () => {
   it("parses a valid rampRate effect targeting a single rate", () => {
     const defs = parseDecisions([
       {
-        id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+        id: "x", name: "x", description: "x", tags: [], category: "ship-faster", cost: {}, removable: true,
         effects: [{ type: "rampRate", target: "finish", perDay: 0.1, cap: 2 }],
       },
     ]);
@@ -143,7 +153,7 @@ describe("parseDecisions", () => {
     expect(() =>
       parseDecisions([
         {
-          id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+          id: "x", name: "x", description: "x", tags: [], category: "ship-faster", cost: {}, removable: true,
           effects: [{ type: "rampRate", target: "all", perDay: 0.1, cap: 1 }],
         },
       ]),
@@ -154,7 +164,7 @@ describe("parseDecisions", () => {
     expect(() =>
       parseDecisions([
         {
-          id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+          id: "x", name: "x", description: "x", tags: [], category: "ship-faster", cost: {}, removable: true,
           effects: [{ type: "rampRate", target: "finish", perDay: -0.1, cap: 1 }],
         },
       ]),
@@ -163,7 +173,7 @@ describe("parseDecisions", () => {
 
   it("parses a continuousDeploy effect (no parameters)", () => {
     const defs = parseDecisions([
-      { id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true, effects: [{ type: "continuousDeploy" }] },
+      { id: "x", name: "x", description: "x", tags: [], category: "change-structure", cost: {}, removable: true, effects: [{ type: "continuousDeploy" }] },
     ]);
     expect(defs[0].effects[0]).toEqual({ type: "continuousDeploy" });
   });
@@ -172,11 +182,27 @@ describe("parseDecisions", () => {
     expect(() =>
       parseDecisions([
         {
-          id: "x", name: "x", description: "x", tags: [], cost: {}, removable: true,
+          id: "x", name: "x", description: "x", tags: [], category: "change-structure", cost: {}, removable: true,
           effects: [{ type: "continuousDeploy", value: 1 }],
         },
       ]),
     ).toThrow(/content\/decisions\.json/);
+  });
+
+  it("rejects a decision missing the required category field", () => {
+    expect(() =>
+      parseDecisions([
+        { id: "x", name: "x", description: "x", tags: [], cost: {}, effects: [], removable: true },
+      ]),
+    ).toThrow(/category/);
+  });
+
+  it("rejects a decision with an unknown category value", () => {
+    expect(() =>
+      parseDecisions([
+        { id: "x", name: "x", description: "x", tags: [], category: "totally-not-a-category", cost: {}, effects: [], removable: true },
+      ]),
+    ).toThrow(/category/);
   });
 });
 

@@ -6,6 +6,7 @@
     "tags": [
       "process"
     ],
+    "category": "tame-debt",
     "cost": {
       "oneTime": 500
     },
@@ -33,6 +34,7 @@
     "tags": [
       "process"
     ],
+    "category": "change-structure",
     "cost": {
       "oneTime": 750
     },
@@ -61,6 +63,7 @@
     "tags": [
       "human"
     ],
+    "category": "ship-faster",
     "human": true,
     "cost": {
       "perDay": 7
@@ -180,6 +183,7 @@
     "tags": [
       "darkfactory"
     ],
+    "category": "ship-faster",
     "cost": {
       "oneTime": 10,
       "perDay": 4
@@ -224,6 +228,7 @@
     "tags": [
       "darkfactory"
     ],
+    "category": "tame-debt",
     "cost": {
       "oneTime": 250,
       "perDay": 5
@@ -241,6 +246,7 @@
     "tags": [
       "solo"
     ],
+    "category": "ship-faster",
     "cost": {
       "oneTime": 150
     },
@@ -262,6 +268,7 @@
     "tags": [
       "solo"
     ],
+    "category": "ship-faster",
     "cost": {
       "oneTime": 20,
       "perDay": 2
@@ -289,6 +296,7 @@
     "tags": [
       "human"
     ],
+    "category": "ship-faster",
     "human": true,
     "cost": {
       "perDay": 12
@@ -411,6 +419,7 @@
     "tags": [
       "human"
     ],
+    "category": "ship-faster",
     "cost": {
       "perDay": 12
     },
@@ -436,6 +445,7 @@
     "tags": [
       "human"
     ],
+    "category": "prevent-trouble",
     "cost": {
       "perDay": 8
     },
@@ -454,6 +464,7 @@
       "human",
       "process"
     ],
+    "category": "ship-faster",
     "cost": {
       "perDay": 3
     },
@@ -475,6 +486,7 @@
     "tags": [
       "darkfactory"
     ],
+    "category": "ship-faster",
     "cost": {
       "oneTime": 100,
       "perDay": 20
@@ -522,6 +534,7 @@
     "tags": [
       "darkfactory"
     ],
+    "category": "tame-debt",
     "cost": {
       "oneTime": 150,
       "perDay": 8
@@ -540,6 +553,7 @@
     "tags": [
       "darkfactory"
     ],
+    "category": "ship-faster",
     "cost": {
       "oneTime": 350,
       "perDay": 10
@@ -577,6 +591,7 @@
     "tags": [
       "process"
     ],
+    "category": "earn-income",
     "cost": {},
     "incomePerDay": 8,
     "effects": [
@@ -597,6 +612,7 @@
     "tags": [
       "process"
     ],
+    "category": "prevent-trouble",
     "cost": {
       "oneTime": 200,
       "perDay": 2

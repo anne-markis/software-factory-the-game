@@ -1,7 +1,7 @@
 import type { Availability } from "../engine/decisions";
 import { contextSwitchTax } from "../engine/modifiers";
 import type { ProjectAvailability } from "../engine/projects";
-import type { DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
+import type { DecisionCategory, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
 
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -33,14 +33,32 @@ function describeCost(a: Availability): string {
   return `${cost}. ${esc(a.def.description)}`;
 }
 
+// Fixed shop section order and headers. Every shipped decision carries a
+// required category (see DecisionDef in ../engine/types), so this list is
+// exhaustive over DecisionCategory -- a section simply doesn't render when
+// it has no visible entries (see renderDecisions below).
+const CATEGORY_SECTIONS: { id: DecisionCategory; header: string; hint: string }[] = [
+  { id: "ship-faster", header: "Ship faster", hint: "(points/day)" },
+  { id: "earn-income", header: "Earn income", hint: "(budget)" },
+  { id: "tame-debt", header: "Tame tech debt", hint: "(debt and incident risk)" },
+  { id: "prevent-trouble", header: "Prevent trouble", hint: "(events and gambles)" },
+  { id: "change-structure", header: "Change the loop", hint: "(structure)" },
+];
+
+function renderShopEntry(a: Availability): string {
+  const disabled = a.purchasable ? "" : "disabled";
+  const reason = a.reason ? ` (${esc(a.reason)})` : "";
+  return `<div><button data-buy="${esc(a.def.id)}" ${disabled}>Buy</button> <strong>${esc(a.def.name)}</strong>${reason}<br/><small>${describeCost(a)}</small></div>`;
+}
+
 export function renderDecisions(avail: Availability[], ownedInstances: DecisionInstance[], content: GameContent): string {
   const hiddenCount = avail.filter((a) => a.code === "missing-requires").length;
-  const shop = avail
-    .filter((a) => a.code !== "already-owned" && a.code !== "missing-requires")
-    .map((a) => {
-      const disabled = a.purchasable ? "" : "disabled";
-      const reason = a.reason ? ` (${esc(a.reason)})` : "";
-      return `<div><button data-buy="${esc(a.def.id)}" ${disabled}>Buy</button> <strong>${esc(a.def.name)}</strong>${reason}<br/><small>${describeCost(a)}</small></div>`;
+  const visible = avail.filter((a) => a.code !== "already-owned" && a.code !== "missing-requires");
+  const shop = CATEGORY_SECTIONS
+    .map(({ id, header, hint }) => {
+      const entries = visible.filter((a) => a.def.category === id);
+      if (entries.length === 0) return "";
+      return `<h4>${esc(header)} <small>${esc(hint)}</small></h4>${entries.map(renderShopEntry).join("")}`;
     })
     .join("");
   const hiddenHint =
