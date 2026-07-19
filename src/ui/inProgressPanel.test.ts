@@ -27,7 +27,12 @@ function indexBetween(svg: string, needle: string, afterHeader: string, beforeHe
 }
 
 function inSpeedGroup(svg: string, needle: string): boolean {
-  return indexBetween(svg, needle, "Cycle speed", "Friction");
+  // Friction's header is omitted when the group is empty; bound the speed
+  // group at whichever next header actually rendered so the search never
+  // silently degrades to "anywhere after Cycle speed" (a fault-injection
+  // review found that gap could mask a dropped speed-group node).
+  const nextHeader = svg.includes("Friction") ? "Friction" : "Leak size";
+  return indexBetween(svg, needle, "Cycle speed", nextHeader);
 }
 
 function inFrictionGroup(svg: string, needle: string): boolean {
