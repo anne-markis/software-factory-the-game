@@ -25,6 +25,15 @@ const startSchema = z
     debtMultiplier: z.number().min(0),
     baseBurnPerDay: z.number().min(0),
     contextSwitchFactor: z.number().gt(0).lte(1),
+    // freeDebt >= 0 (grace band), dragPerPoint > 0 (drag must actually bite),
+    // maxDrag in (0, 1) (a cap that neither vanishes nor stalls throughput).
+    debtDrag: z
+      .object({
+        freeDebt: z.number().min(0),
+        dragPerPoint: z.number().gt(0),
+        maxDrag: z.number().gt(0).lt(1),
+      })
+      .strict(),
     initialProject: z
       .object({
         id: z.string(),

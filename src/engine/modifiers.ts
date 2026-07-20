@@ -27,6 +27,17 @@ export function contextSwitchTax(state: GameState): number {
   return n <= 1 ? 1 : Math.pow(state.contextSwitchFactor, n - 1);
 }
 
+// Tech-debt drag (Release 15, Limits to Growth): the debt stock pushes back on
+// throughput. Debt at or below debtDragFreeDebt costs nothing; every point of
+// excess above it slows all rates by debtDragPerPoint, and the total slowdown
+// is capped at debtDragMaxDrag. Returns a multiplier in [1 - maxDrag, 1] that
+// effectiveRate applies to every rate alongside the context-switch tax. Pure.
+export function debtDragMultiplier(state: GameState): number {
+  const excess = Math.max(0, state.stocks.techDebt - state.debtDragFreeDebt);
+  const drag = Math.min(state.debtDragMaxDrag, excess * state.debtDragPerPoint);
+  return 1 - drag;
+}
+
 export function effectiveRate(state: GameState, rate: RateId): number {
   let value = state.baseRates[rate];
   // Sickness deliberately scales only add-op modifiers (an instance's additive
@@ -39,6 +50,7 @@ export function effectiveRate(state: GameState, rate: RateId): number {
     if (m.op === "mul" && applies(m, rate)) value *= m.value;
   }
   value *= contextSwitchTax(state);
+  value *= debtDragMultiplier(state);
   return Math.max(0, value);
 }
 

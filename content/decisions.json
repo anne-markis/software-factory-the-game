@@ -74,48 +74,32 @@
         "probability": 0.5,
         "label": "Strong hire",
         "effects": [
-          {
-            "type": "modifyRate",
-            "target": "all",
-            "op": "add",
-            "value": 1.0
-          }
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 }
         ]
       },
       {
         "probability": 0.25,
         "label": "Decent hire",
         "effects": [
-          {
-            "type": "modifyRate",
-            "target": "all",
-            "op": "add",
-            "value": 0.5
-          }
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": 0.5 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": 0.5 }
         ]
       },
       {
         "probability": 0.2,
         "label": "Net-negative hire",
         "effects": [
-          {
-            "type": "modifyRate",
-            "target": "all",
-            "op": "add",
-            "value": -0.5
-          }
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": -0.5 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": -0.5 }
         ]
       },
       {
         "probability": 0.05,
         "label": "Disaster hire",
         "effects": [
-          {
-            "type": "modifyRate",
-            "target": "all",
-            "op": "add",
-            "value": -1.0
-          }
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": -1.0 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": -1.0 }
         ]
       }
     ],
@@ -127,48 +111,32 @@
             "probability": 0.55,
             "label": "Strong hire",
             "effects": [
-              {
-                "type": "modifyRate",
-                "target": "all",
-                "op": "add",
-                "value": 1.0
-              }
+              { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
+              { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 }
             ]
           },
           {
             "probability": 0.3,
             "label": "Decent hire",
             "effects": [
-              {
-                "type": "modifyRate",
-                "target": "all",
-                "op": "add",
-                "value": 0.5
-              }
+              { "type": "modifyRate", "target": "pull", "op": "add", "value": 0.5 },
+              { "type": "modifyRate", "target": "finish", "op": "add", "value": 0.5 }
             ]
           },
           {
             "probability": 0.13,
             "label": "Net-negative hire",
             "effects": [
-              {
-                "type": "modifyRate",
-                "target": "all",
-                "op": "add",
-                "value": -0.5
-              }
+              { "type": "modifyRate", "target": "pull", "op": "add", "value": -0.5 },
+              { "type": "modifyRate", "target": "finish", "op": "add", "value": -0.5 }
             ]
           },
           {
             "probability": 0.02,
             "label": "Disaster hire",
             "effects": [
-              {
-                "type": "modifyRate",
-                "target": "all",
-                "op": "add",
-                "value": -1.0
-              }
+              { "type": "modifyRate", "target": "pull", "op": "add", "value": -1.0 },
+              { "type": "modifyRate", "target": "finish", "op": "add", "value": -1.0 }
             ]
           }
         ]
@@ -310,48 +278,32 @@
         "probability": 0.4,
         "label": "Exceptional hire",
         "effects": [
-          {
-            "type": "modifyRate",
-            "target": "all",
-            "op": "add",
-            "value": 2.0
-          }
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": 2.0 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": 2.0 }
         ]
       },
       {
         "probability": 0.3,
         "label": "Strong hire",
         "effects": [
-          {
-            "type": "modifyRate",
-            "target": "all",
-            "op": "add",
-            "value": 1.0
-          }
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 }
         ]
       },
       {
         "probability": 0.2,
         "label": "Solid hire",
         "effects": [
-          {
-            "type": "modifyRate",
-            "target": "all",
-            "op": "add",
-            "value": 0.5
-          }
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": 0.5 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": 0.5 }
         ]
       },
       {
         "probability": 0.1,
         "label": "Poor fit",
         "effects": [
-          {
-            "type": "modifyRate",
-            "target": "all",
-            "op": "add",
-            "value": -0.5
-          }
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": -0.5 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": -0.5 }
         ]
       }
     ],
@@ -363,48 +315,32 @@
             "probability": 0.5,
             "label": "Exceptional hire",
             "effects": [
-              {
-                "type": "modifyRate",
-                "target": "all",
-                "op": "add",
-                "value": 2.0
-              }
+              { "type": "modifyRate", "target": "pull", "op": "add", "value": 2.0 },
+              { "type": "modifyRate", "target": "finish", "op": "add", "value": 2.0 }
             ]
           },
           {
             "probability": 0.35,
             "label": "Strong hire",
             "effects": [
-              {
-                "type": "modifyRate",
-                "target": "all",
-                "op": "add",
-                "value": 1.0
-              }
+              { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
+              { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 }
             ]
           },
           {
             "probability": 0.13,
             "label": "Solid hire",
             "effects": [
-              {
-                "type": "modifyRate",
-                "target": "all",
-                "op": "add",
-                "value": 0.5
-              }
+              { "type": "modifyRate", "target": "pull", "op": "add", "value": 0.5 },
+              { "type": "modifyRate", "target": "finish", "op": "add", "value": 0.5 }
             ]
           },
           {
             "probability": 0.02,
             "label": "Poor fit",
             "effects": [
-              {
-                "type": "modifyRate",
-                "target": "all",
-                "op": "add",
-                "value": -0.5
-              }
+              { "type": "modifyRate", "target": "pull", "op": "add", "value": -0.5 },
+              { "type": "modifyRate", "target": "finish", "op": "add", "value": -0.5 }
             ]
           }
         ]
@@ -415,7 +351,7 @@
   {
     "id": "contractor",
     "name": "Bring in contractor",
-    "description": "A dependable +1 to all work, but their code adds 10% more tech debt; immune to sickness and poaching.",
+    "description": "A dependable +1 to pulling and finishing work, but their code adds 10% more tech debt; immune to sickness and poaching.",
     "tags": [
       "human"
     ],
@@ -424,12 +360,8 @@
       "perDay": 12
     },
     "effects": [
-      {
-        "type": "modifyRate",
-        "target": "all",
-        "op": "add",
-        "value": 1.0
-      },
+      { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
+      { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 },
       {
         "type": "modifyDebtMultiplier",
         "op": "mul",

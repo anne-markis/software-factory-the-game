@@ -36,41 +36,71 @@ describe("simulation", () => {
   // Release-7 idle-drain mechanism probe. The structural requirement: doing
   // nothing must lose money on NET, not merely be exposed to challenge
   // events. With baseBurnPerDay 20 and the first contract at $17/pt (Release
-  // 9 economy-slack retune, was $15/pt) on the 1 pt/day idle throughput,
-  // steady idle cashflow is 17 - 20 = -$3/day (was -$5/day). Challenges are
-  // stripped here to pin that mechanism in isolation (the full-content
-  // trajectory is probed separately below).
+  // 9 economy-slack retune) on the 1 pt/day idle throughput, steady idle
+  // cashflow is 17 - 20 = -$3/day. Challenges are stripped here to pin that
+  // mechanism in isolation (the full-content trajectory is probed below).
   //
-  // RE-PINNED for Release 9 (payoutPerPoint 15 -> 17). Exact arithmetic (all
-  // integer flows, so toBe is safe): the first point ships on day 3
-  // (unaffected by the payout change), so while the 1500-pt contract is in
-  // flight (2 <= d < 1502):
+  // RE-PINNED for Release 15 (tech-debt drag, debtDrag = freeDebt 400,
+  // dragPerPoint 0.00015, maxDrag 0.4). The probe is NO LONGER closed-form
+  // linear once drag engages, so it now pins the clean pre-drag region
+  // exactly and the drag/tail region against observed checkpoints, with the
+  // mechanism explained (per CONTENT-AUTHORING section 8: closed-form where
+  // the arithmetic stays clean, observed-with-comment where drag makes it
+  // unwieldy).
+  //
+  // PHASE 1 -- pre-drag, still exactly linear. The idle player ships exactly
+  // 1 pt/day and grows techDebt 0.5/day (debtMultiplier 0.5). techDebt only
+  // crosses freeDebt (400) at ~day 803, so while 2 <= d <~ 803 the old
+  // formula holds exactly (integer flows, toBe is safe):
   //   budget(d) = 10000 - 20d + 17(d - 2) = 9966 - 3d
-  // Day 1000: 6966. Day 1500: 5466. The 1500th point ships on day 1502:
-  // 5463 (day 1501: 9966 - 3*1501) + 17 payout + 2000 completion bonus - 20
-  // burn = 7460. After that the contract is gone, payouts stop, and the
-  // drain steepens to the full -$20/day: budget(d) = 7460 - 20(d - 1502), so
-  // day 1700 = 3500, day 1874 = 20 (the last day before the clamp), and day
-  // 1875 is the first zero-clamp (7460 / 20 = 373 exactly); it stays 0
-  // through day 2000. The much wider margin (clamp day 1875 vs. the
-  // pre-retune 1725) is the direct effect of trimming the idle burn from
-  // -$5/day to -$3/day. The backlog never runs dry in this window (1500
-  // start, net drain 0.5/day after debt regen, unaffected by the payout
-  // change).
-  it("idle mechanism: -$3/day glide, completion bonus blip at day 1502, then -$20/day to zero", () => {
+  // Day 500: 8466. Day 800: 7566. (Day 803 is still 7557 -- the drag on that
+  // first day past the grace band is ~0.00015, far too small to move an
+  // integer payout yet.)
+  //
+  // PHASE 2 -- drag engaged. Once techDebt > 400 the drag multiplier drops
+  // below 1 and idle ships < 1 pt/day, so every subsequent day earns slightly
+  // less payout than the -$3/day line would predict; the glide steepens. This
+  // region is a feedback loop (less shipping -> less debt growth -> less
+  // drag), so it is pinned against observed values, not a closed form. Day
+  // 1000 is 6941.26 (BELOW the no-drag line's 6966 -- that gap is the drag
+  // biting) and day 1500 is 5161.18 (below the no-drag 5466 -- a wider gap as
+  // the drag deepens). The 1500-pt contract, which used to complete on day
+  // 1502 at a clean 1 pt/day, now completes ~20 days later (day 1522) because
+  // the last stretch ships slower than 1/day.
+  //
+  // PHASE 3 -- post-completion tail. Idle starts no new project, so after the
+  // contract completes (budget ~7060 at day 1522, including the $2000 bonus)
+  // there is no payout at all and the drain is the clean full -$20/day again,
+  // independent of drag: budget(d) = 7060 - 20(d - 1522). Day 1700 = 3500,
+  // day 1874 = 20 (last day before the clamp), day 1875 is the first zero and
+  // it stays 0 through day 2000.
+  it("idle mechanism: -$3/day pre-drag glide, tech-debt drag steepens it, then -$20/day tail to zero", () => {
     const c = fullContent();
     c.challenges = [];
     const e = new Engine(c);
     const at: Record<number, number> = {};
+    let completionDay = 0;
     for (let day = 1; day <= 2000; day++) {
       e.tick();
-      if ([1000, 1500, 1502, 1700, 1874].includes(day)) at[day] = e.getState().stocks.budget;
+      const s = e.getState();
+      if (completionDay === 0 && s.completedProjects >= 1) completionDay = day;
+      if ([500, 800, 1000, 1500, 1700, 1874].includes(day)) at[day] = s.stocks.budget;
     }
-    expect(at[1000]).toBe(6966); // 9966 - 3 * 1000
-    expect(at[1500]).toBe(5466); // 9966 - 3 * 1500
-    expect(at[1502]).toBe(7460); // completion: 5463 + 17 + 2000 - 20
-    expect(at[1700]).toBe(3500); // 7460 - 20 * 198
-    expect(at[1874]).toBe(20); // 7460 - 20 * 372
+    // Phase 1: exactly linear before the drag engages.
+    expect(at[500]).toBe(8466); // 9966 - 3 * 500
+    expect(at[800]).toBe(7566); // 9966 - 3 * 800
+    // Phase 2: drag has engaged; budget is below the no-drag line and falling
+    // further behind it. These are observed values (feedback loop, no closed
+    // form) but the < assertions pin the mechanism, not just the number.
+    expect(at[1000]).toBeCloseTo(6941.26, 1);
+    expect(at[1000]).toBeLessThan(6966); // strictly below the no-drag -$3/day line
+    expect(at[1500]).toBeCloseTo(5161.18, 1);
+    expect(at[1500]).toBeLessThan(5466); // the gap widens as the drag deepens
+    // Drag delayed the first-contract completion past the old day-1502.
+    expect(completionDay).toBe(1522);
+    // Phase 3: clean -$20/day tail from ~7060 at completion.
+    expect(at[1700]).toBeCloseTo(3500, 0); // 7060 - 20 * 178
+    expect(at[1874]).toBeCloseTo(20, 0); // 7060 - 20 * 352
     expect(e.getState().stocks.budget).toBe(0); // clamped from day 1875 on
   });
 
@@ -186,6 +216,14 @@ describe("simulation", () => {
   // of shipping the whole done stock every tick doesn't change anything
   // observable here -- deploy was never this build's bottleneck. See the
   // greedy-strategy probe below for a build where it was.
+  //
+  // RE-PINNED for Release 15 (tech-debt drag). Completion day (1010) and
+  // budgetAt1000 (287.67) are unchanged -- this modest build's debt stays low
+  // enough early that the drag is negligible through day 1000 -- but its
+  // longer-run peak/end budget slips from 12203.70 to 10967.90 as the drag
+  // engages late. It does not narrate an archetype (its drag never reaches the
+  // limits-to-growth threshold of 0.8). Still solvency-shaped only on
+  // completedProjects >= 1; the budget checkpoints remain observations.
   it("smart strategy (mid-tier observation): completes the first contract; under Release 9's retune this narrow build now stays solvent throughout", () => {
     const content = fullContent();
     const e = new Engine(content);
@@ -221,8 +259,8 @@ describe("simulation", () => {
     expect(completionDay).toBeLessThan(1800); // still comfortably within the 2000-day horizon
     expect(e.getState().completedProjects).toBeGreaterThanOrEqual(1);
     expect(budgetAt1000).toBeGreaterThanOrEqual(0); // observed 287.67 -- never clamped to 0 this run
-    expect(peakBudgetAfterCompletion).toBeGreaterThan(0); // observed 12203.70: a much wider breather post-retune
-    expect(e.getState().stocks.budget).toBeGreaterThanOrEqual(0); // observed 12203.70 at day 2000
+    expect(peakBudgetAfterCompletion).toBeGreaterThan(0); // observed 10967.90 (was 12203.70: tech-debt drag trims the late breather)
+    expect(e.getState().stocks.budget).toBeGreaterThanOrEqual(0); // observed 10967.90 at day 2000
   });
 
   // ---- Release-8 Task 6 viability probes ------------------------------------
@@ -335,6 +373,19 @@ describe("simulation", () => {
   // never zero-clamped. This build's human-hire rate stacking never pushed
   // finish rate above the old 1.1/day deploy cap either, so the structural
   // change is invisible to this probe.
+  //
+  // RE-PINNED for Release 15 (tech-debt drag + deploy-bottleneck rework: hires
+  // now boost pull+finish only, not deploy). This build owns test-suite (halves
+  // debt growth) and does no agent work, but contractor's +10% debt and the
+  // sheer volume it ships still push techDebt to ~1985 by day 2000, so the
+  // drag bites -- but mildly: the multiplier bottoms out at ~0.76 (24% of
+  // capacity cancelled at worst), and the "limits-to-growth" archetype narrates
+  // around day 1713. The system pushing back visibly narrows the margin
+  // (end budget 29275.94, was 47313.99) and pushes small-crm's completion out
+  // to day 1774 (was 1625), but the build stays comfortably viable: completes
+  // 2 projects (days 387, 1774), budget 12812/22148/29275 at day 500/1000/2000,
+  // never zero-clamped. The deploy-rework is invisible here (this build's finish
+  // rate was never deploy-bound; continuous deploy via ci-cd ships Done anyway).
   it("human-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -347,9 +398,9 @@ describe("simulation", () => {
       "contractor",
     ]);
     expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 47313.99 -- comfortable margin, wider still after the retune
+    expect(r.endBudget).toBeGreaterThan(0); // observed 29275.94 -- narrower than pre-drag but comfortable
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 387, 1625
+    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 387, 1774
   });
 
   // Automation-heavy build. Observed trajectory under the tuned content:
@@ -399,6 +450,18 @@ describe("simulation", () => {
   // rate (agent/swarm additive contributions, self-learning-agents' ramp
   // capped at 1.4/day) never actually exceeded the old 1.1/day deploy cap,
   // so the structural change is invisible to this probe too.
+  //
+  // RE-PINNED for Release 15 (tech-debt drag). This build ships the most and
+  // carries the most debt-raising capacity (agent + agent-swarm), so even with
+  // its full mitigation stack (test-suite, agent-harness, swarm-orchestrator)
+  // its techDebt reaches ~2489 by day 2000 -- the highest of any viable probe
+  // -- and the drag multiplier bottoms out near 0.69 (31% cancelled), with the
+  // "limits-to-growth" archetype narrating earlier, around day 1308. As with
+  // the human build this narrows the margin (end budget 26562.84, was 52016.90)
+  // and delays small-crm to day 1856 (was 1616), but the mitigation keeps the
+  // drag off its 0.6 floor and the build stays solvent: completes 2 projects
+  // (days 395, 1856), budget 12698/21770/26562 at day 500/1000/2000, never
+  // zero-clamped.
   it("automation-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -411,16 +474,18 @@ describe("simulation", () => {
       "support-retainer",
     ]);
     expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 52016.90 -- comfortable margin, wider still after the retune
+    expect(r.endBudget).toBeGreaterThan(0); // observed 26562.84 -- narrower than pre-drag but comfortable
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 394, 1616
+    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 395, 1856
   });
 
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {
     const content = fullContent();
     const e = new Engine(content);
+    let peakPointsPerDay = 0;
     for (let day = 1; day <= 2000; day++) {
       e.tick();
+      peakPointsPerDay = Math.max(peakPointsPerDay, e.getState().pointsPerDay);
       // Re-check affordability after each purchase rather than looping over
       // one stale availableDecisions() snapshot: buying one item can spend
       // down the budget enough that a later item in the same snapshot,
@@ -464,6 +529,21 @@ describe("simulation", () => {
     }
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
+
+    // Release 15 -- Limits to Growth made visible. Greedy buys every decision
+    // affordable each day, which stacks debt-raising capacity (agents, swarm,
+    // contractor) far faster than the mitigation it also buys can offset, so
+    // its tech debt balloons and the tech-debt drag deepens over the run. Its
+    // throughput therefore PEAKS early (observed ~8.36 pt/day around day 73,
+    // before the debt has piled up) and is a fraction of that by day 2000
+    // (observed ~1.94 pt/day). This is the "limits-to-growth" archetype the
+    // engine also narrates into the log around day 501 for this build: the
+    // faster it shipped, the more debt it grew; the more debt, the slower it
+    // ships. Pinned as a margin, not an exact value (the exact peak/end move
+    // with any challenge/gamble-draw change), so it captures the lesson
+    // without over-constraining.
+    expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay * 0.5);
+    expect(peakPointsPerDay).toBeGreaterThan(5); // the early peak really was high
     // No solvency or completion assertions here, deliberately -- this test
     // exercises engine invariants under maximal purchasing pressure, not
     // balance.

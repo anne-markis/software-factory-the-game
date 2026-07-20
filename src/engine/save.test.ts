@@ -60,12 +60,14 @@ describe("save/load", () => {
   it("defaults missing id counters from existing ids (legacy save shape)", () => {
     const c = content();
     const a = new Engine(c);
-    a.applyDecision("basic-dev"); // creates inst-1 and mod-1
+    a.applyDecision("basic-dev"); // creates inst-1 and mod-1 + mod-2 (pull, finish)
     const raw = JSON.parse(serialize(a.getState()));
     delete raw.state.nextModifierId;
     delete raw.state.nextInstanceId;
     const restored = deserialize(JSON.stringify(raw));
-    expect(restored.nextModifierId).toBe(2);
+    // basic-dev's hire outcome is two add modifiers (pull and finish) since
+    // Release 15's deploy-bottleneck rework, so the highest mod suffix is 2.
+    expect(restored.nextModifierId).toBe(3);
     expect(restored.nextInstanceId).toBe(2);
   });
 
@@ -91,6 +93,36 @@ describe("save/load", () => {
     expect(restored.gameSeed).toBeUndefined(); // deserialize cannot know the seed
     const b = new Engine(c, restored);
     expect(b.getState().gameSeed).toBe(c.start.seed);
+  });
+
+  // debtDrag config (Release 15) is copied into state at init like the
+  // contextSwitchFactor pattern; deserialize has no content access, so the
+  // Engine constructor backfills all three fields from content.start.debtDrag,
+  // mirroring the gameSeed backfill. Legacy saves predate the fields.
+  it("Engine backfills missing debtDrag config from content (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.debtDragFreeDebt;
+    delete raw.state.debtDragPerPoint;
+    delete raw.state.debtDragMaxDrag;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.debtDragFreeDebt).toBeUndefined(); // deserialize cannot know it
+    const b = new Engine(c, restored);
+    expect(b.getState().debtDragFreeDebt).toBe(c.start.debtDrag.freeDebt);
+    expect(b.getState().debtDragPerPoint).toBe(c.start.debtDrag.dragPerPoint);
+    expect(b.getState().debtDragMaxDrag).toBe(c.start.debtDrag.maxDrag);
+  });
+
+  // archetypesSeen (Release 15) defaults to [] and is content-free, so unlike
+  // debtDrag it is defaulted in deserialize itself (like challengeLastFired).
+  it("defaults a missing archetypesSeen to [] (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.archetypesSeen;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.archetypesSeen).toEqual([]);
   });
 
   // lastChallengeDay (Release 9, global event spacing) is a plain optional

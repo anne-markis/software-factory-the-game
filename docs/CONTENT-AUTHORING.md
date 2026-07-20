@@ -452,6 +452,71 @@ From `parseProjects` (`content/projects.json`):
 duplicate-id or cross-reference concern there, just the field types and
 minimums (e.g. `contextSwitchFactor` must be `> 0` and `<= 1`).
 
+### The `debtDrag` config (tech-debt drag)
+
+`start.json` carries a `debtDrag` block (Release 15) that makes the
+tech-debt stock push back on throughput -- the "Limits to Growth" loop:
+the faster you ship, the more debt you accumulate; the more debt you
+carry, the slower you ship.
+
+```json
+"debtDrag": { "freeDebt": 400, "dragPerPoint": 0.00015, "maxDrag": 0.4 }
+```
+
+- `freeDebt` (>= 0) - a grace band. Tech debt at or below this value
+  costs nothing; the drag multiplier is exactly `1`.
+- `dragPerPoint` (> 0) - how much each point of debt *above* `freeDebt`
+  slows every rate.
+- `maxDrag` (in the open interval `(0, 1)`) - the hard cap on the
+  slowdown, so the drag can never zero out (or reverse) throughput.
+
+The multiplier (`debtDragMultiplier` in `src/engine/modifiers.ts`, a
+pure function) is:
+
+```
+1 - min(maxDrag, max(0, techDebt - freeDebt) * dragPerPoint)
+```
+
+`effectiveRate` applies it to all three rates, multiplying alongside the
+context-switch tax, so it is felt on `pull`, `finish`, and `deploy`
+simultaneously (and therefore in the outer Delivery loop via those
+rates). The felt curve with the shipped values: no drag until debt
+passes 400; then a gentle linear slide -- at ~2000 debt the multiplier
+is ~0.76 (24% of capacity cancelled); the slowdown never exceeds 40%
+(`maxDrag`), reached around 3067 debt. Because `techDebt` only ever
+grows in the current model (shipped points regenerate it, nothing pays
+the stock down -- decisions like `test-suite` slow the *rate* of growth,
+not the stock), the drag is a slow, one-way tightening that a
+high-volume build eventually feels no matter what; debt mitigation buys
+time and a gentler slope, not immunity.
+
+The Progress loop panel (`src/ui/inProgressPanel.ts`) surfaces the drag
+as a Friction node (`Tech debt drag x0.76`) once the multiplier drops
+below 1, next to the context-switch tax, so the player can see the
+pushback as it engages.
+
+Tuning: raising `freeDebt` widens the no-drag window; lowering
+`dragPerPoint` flattens the slope; lowering `maxDrag` caps the worst
+case. The shipped values keep both viability-bar strategy probes
+(human-heavy, automation-heavy) completing multiple projects and solvent
+across 2000 days while making the debt-blind greedy build visibly
+degrade -- see the probes in `src/engine/simulation.test.ts`.
+
+### Archetype narration is engine-side, not content
+
+The systems-thinking narration lines the game logs -- "Limits to
+growth..." and "Shifting the burden..." (`src/engine/archetypes.ts`) --
+are detected by the engine from state and the debtDrag config, not
+authored in any content file. They fire at most once per game, their
+thresholds derive from the same `debtDrag` numbers above (e.g. the
+limits-to-growth line fires when the drag passes halfway to `maxDrag`),
+and their decision classifications are derived from decision effects
+(which decisions raise vs. lower the debt multiplier), so new content is
+picked up automatically. There is no content hook to add or reword these
+today; treat them as an engine feature. If a future release wants
+content-authored archetype lines, that's a deliberate extension, not a
+gap in this guide.
+
 ## 6. Adding a project
 
 A project (`content/projects.json`) is:

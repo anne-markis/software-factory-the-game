@@ -15,6 +15,10 @@ export function initialState(content: GameContent): GameState {
     debtMultiplierBase: s.debtMultiplier,
     baseBurnPerDay: s.baseBurnPerDay,
     contextSwitchFactor: s.contextSwitchFactor,
+    debtDragFreeDebt: s.debtDrag.freeDebt,
+    debtDragPerPoint: s.debtDrag.dragPerPoint,
+    debtDragMaxDrag: s.debtDrag.maxDrag,
+    archetypesSeen: [],
     modifiers: [],
     decisions: [],
     projects: [
@@ -50,6 +54,15 @@ export class Engine {
       // from content (deserialize has no content access). New games always
       // carry it via initialState.
       if (restored.gameSeed === undefined) restored.gameSeed = content.start.seed;
+      // Legacy saves predate the tech-debt drag config (Release 15). Backfill
+      // all three from content (deserialize has no content access), mirroring
+      // the gameSeed backfill just above. Checking one field is enough: they
+      // are always written together by initialState.
+      if (restored.debtDragFreeDebt === undefined) {
+        restored.debtDragFreeDebt = content.start.debtDrag.freeDebt;
+        restored.debtDragPerPoint = content.start.debtDrag.dragPerPoint;
+        restored.debtDragMaxDrag = content.start.debtDrag.maxDrag;
+      }
       this.rng = createRng(restored.rngState, true);
     } else {
       this.state = initialState(content);

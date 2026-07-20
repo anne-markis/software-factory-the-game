@@ -143,4 +143,53 @@ describe("tick", () => {
       expect(s.pointsPerDay).toBe(5); // pointsPerDay reads shippedFlow, not finishFlow
     });
   });
+
+  // Release 15 deploy-bottleneck rework: dev/contractor hires boost pull and
+  // finish only, no longer deploy. So a strong human build without ci-cd
+  // outruns its own deploy stage -- Done piles up and shipping stays pinned at
+  // the base deploy rate -- and ci-cd (continuous deploy) becomes the scaling
+  // unlock. Injects a "strong dev" (pull+finish +2 each, rates 3/3/1) directly
+  // via the mutable-state escape hatch so the probe is isolated from gamble rng
+  // and purchase-time setup slowdowns.
+  describe("deploy bottleneck without ci-cd (Release 15 rework)", () => {
+    function injectStrongDev(e: Engine): GameState {
+      const s = e.getState() as GameState;
+      s.decisions.push({ instanceId: "inst-dev", defId: "basic-dev" });
+      s.modifiers.push(
+        { id: "m-pull", source: "inst-dev", target: "pull", op: "add", value: 2 },
+        { id: "m-fin", source: "inst-dev", target: "finish", op: "add", value: 2 },
+      );
+      return s;
+    }
+
+    it("caps shipping at the base deploy rate while Done piles up when ci-cd is not owned", () => {
+      const e = new Engine(ciCdContent());
+      injectStrongDev(e); // rates: pull 3, finish 3, deploy 1
+      for (let i = 0; i < 5; i++) e.tick(); // warm the pipeline
+      const doneStart = e.getState().stocks.done;
+      let shippedDelta = 0;
+      for (let i = 0; i < 10; i++) {
+        const before = e.getState().stocks.shipped;
+        e.tick();
+        shippedDelta += e.getState().stocks.shipped - before;
+        expect(e.getState().pointsPerDay).toBeCloseTo(1, 10); // deploy-bound at base 1/day
+      }
+      const s = e.getState();
+      expect(shippedDelta).toBeCloseTo(10, 10); // ~1 pt/day over the window
+      // finish 3 vs ship 1 => Done grows ~2/day; it strictly piled up.
+      expect(s.stocks.done).toBeGreaterThan(doneStart + 15);
+    });
+
+    it("ships at the finish rate once ci-cd (continuous deploy) is owned", () => {
+      const e = new Engine(ciCdContent());
+      const s = injectStrongDev(e);
+      s.decisions.push({ instanceId: "inst-cicd", defId: "ci-cd" }); // continuousDeploy active
+      for (let i = 0; i < 6; i++) e.tick(); // warm up
+      for (let i = 0; i < 5; i++) {
+        e.tick();
+        expect(e.getState().pointsPerDay).toBeCloseTo(3, 10); // tracks finish, not the deploy cap
+      }
+      expect(e.getState().stocks.done).toBeCloseTo(3, 10); // only the latest tick's finish output waits
+    });
+  });
 });

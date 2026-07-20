@@ -2,6 +2,7 @@ import type { GameContent, GameState } from "./types";
 import type { Rng } from "./rng";
 import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
 import { continuousDeployActive } from "./continuousDeploy";
+import { detectArchetypes } from "./archetypes";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -111,6 +112,12 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   const debtGain = shippedFlow * effectiveDebtMultiplier(state);
   state.stocks.techDebt += debtGain;
   state.stocks.backlog += debtGain;
+
+  // Archetype narration reads this tick's settled techDebt (drag) and the
+  // owned decision set; each fires at most once per game. Runs before
+  // chargeUpkeep so a payroll-failure removal later this tick does not race
+  // the ownership counts, matching the pre-flow reads elsewhere.
+  detectArchetypes(state, content, log);
 
   chargeUpkeep(state, content);
 

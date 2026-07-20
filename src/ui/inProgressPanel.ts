@@ -1,5 +1,5 @@
 import type { GameContent, GameState, Modifier } from "../engine/types";
-import { effectiveRate, effectiveDebtMultiplier, contextSwitchTax } from "../engine/modifiers";
+import { effectiveRate, effectiveDebtMultiplier, contextSwitchTax, debtDragMultiplier } from "../engine/modifiers";
 import { continuousDeployActive } from "../engine/continuousDeploy";
 import { esc } from "./render";
 
@@ -77,6 +77,15 @@ function buildRateGroupNodes(state: Readonly<GameState>, content: GameContent, g
 
   if (group === "friction" && state.projects.length > 1) {
     nodes.push({ label: `Context switch x${contextSwitchTax(state).toFixed(2)}`, dim: false });
+  }
+
+  // Tech-debt drag (Release 15): once the debt stock climbs past its grace
+  // band the multiplier drops below 1 and shows here as friction. It scales
+  // all rates (effectiveRate), so it feeds the outer Delivery loop implicitly
+  // via the rates -- no separate node is needed there.
+  if (group === "friction") {
+    const drag = debtDragMultiplier(state);
+    if (drag < 1) nodes.push({ label: `Tech debt drag x${drag.toFixed(2)}`, dim: false });
   }
 
   return nodes;

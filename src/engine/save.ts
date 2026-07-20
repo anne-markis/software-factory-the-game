@@ -34,5 +34,11 @@ export function deserialize(json: string): GameState {
   if (state.challengeLastFired === undefined) {
     state.challengeLastFired = {};
   }
+  // defensive default for saves written before archetype narration (Release 15).
+  // Unlike the debtDrag config (backfilled from content in the Engine
+  // constructor), [] is content-free, so it defaults here like challengeLastFired.
+  if (state.archetypesSeen === undefined) {
+    state.archetypesSeen = [];
+  }
   return state;
 }
