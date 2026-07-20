@@ -84,7 +84,9 @@ describe("inProgressPanelSvg", () => {
     e.applyDecision("basic-dev");
     const s = e.getState() as MutableState;
     const inst = s.decisions[0];
-    const mod = s.modifiers.find((m) => m.source === inst.instanceId)!;
+    // A hire now contributes two add modifiers (pull and finish, Release 15);
+    // the panel only surfaces the finish/allRates one, so target that.
+    const mod = s.modifiers.find((m) => m.source === inst.instanceId && m.target === "finish")!;
     expect(mod.value).toBeGreaterThan(0); // this seed rolls a positive hire
 
     const svgPositive = inProgressPanelSvg(s, content());
@@ -167,6 +169,18 @@ describe("inProgressPanelSvg", () => {
     expect(inFrictionGroup(svg, "prod-incident: x0.8 (2d left)")).toBe(true);
   });
 
+  it("shows the tech-debt drag node under Friction once debt passes the grace band", () => {
+    const e = new Engine(content());
+    const s = e.getState() as MutableState;
+    // Below the grace band (freeDebt 400 in shipped start.json): no drag node.
+    s.stocks.techDebt = 100;
+    expect(inProgressPanelSvg(s, content())).not.toContain("Tech debt drag");
+    // Past the band: excess 1600 * 0.00015 = 0.24 drag -> multiplier 0.76.
+    s.stocks.techDebt = 2000;
+    const svg = inProgressPanelSvg(s, content());
+    expect(inFrictionGroup(svg, "Tech debt drag x0.76")).toBe(true);
+  });
+
   it("shows the context-switch tax node under Friction when more than one project is active", () => {
     const e = new Engine(content());
     const s = e.getState() as MutableState;
@@ -206,7 +220,9 @@ describe("inProgressPanelSvg", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
     const s = e.getState() as MutableState;
-    const mod = s.modifiers.find((m) => m.source === s.decisions[0].instanceId)!;
+    // Target the finish modifier -- the one the panel surfaces (Release 15
+    // hires now split into pull + finish add modifiers).
+    const mod = s.modifiers.find((m) => m.source === s.decisions[0].instanceId && m.target === "finish")!;
     mod.value = -0.5;
     const svg = inProgressPanelSvg(s, content());
     expect(svg).toContain("-0.5/day");

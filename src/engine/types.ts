@@ -147,6 +147,11 @@ export interface StartConfig {
   debtMultiplier: number;
   baseBurnPerDay: number;
   contextSwitchFactor: number;
+  // Tech-debt drag (Release 15, Limits to Growth): the debt stock pushes back
+  // on throughput. freeDebt is the grace band (no drag at or below it),
+  // dragPerPoint is the per-excess-point slowdown, maxDrag caps how much
+  // capacity the drag can ever cancel. See debtDragMultiplier in modifiers.ts.
+  debtDrag: { freeDebt: number; dragPerPoint: number; maxDrag: number };
   initialProject: { id: string; name: string; sizePoints: number; payoutPerPoint: number; completionBonus: number };
   // Global minimum gap, in days, between any two challenges firing (effects
   // applied OR a choice queued -- either counts as "firing"). 0 disables
@@ -169,6 +174,12 @@ export interface GameState {
   debtMultiplierBase: number;
   baseBurnPerDay: number;
   contextSwitchFactor: number;
+  // Tech-debt drag config, copied from content.start.debtDrag at init (the
+  // contextSwitchFactor pattern). Legacy saves predate these three fields; the
+  // Engine constructor backfills them from content. See debtDragMultiplier.
+  debtDragFreeDebt: number;
+  debtDragPerPoint: number;
+  debtDragMaxDrag: number;
   modifiers: Modifier[];
   decisions: DecisionInstance[];
   projects: ActiveProject[];
@@ -188,6 +199,12 @@ export interface GameState {
   // actually land (fire() for non-choice, resolveChoice, or expiry-default
   // application for choice challenges). Absent entries mean never fired.
   challengeLastFired: Record<string, number>;
+  // Systems-thinking archetypes the engine has already narrated this game
+  // (Release 15). Each id (e.g. "limits-to-growth", "shifting-the-burden")
+  // is appended once, the first tick its condition holds, so the log entry
+  // fires exactly once per game. initialState seeds this to []; legacy saves
+  // predate it and are backfilled to [] on load. See archetypes.ts.
+  archetypesSeen: string[];
   // Day the most recent challenge fired or queued a choice (either counts).
   // Absent until the first challenge event of the game. Drives the global
   // challengeSpacingDays gap in rollChallenges; expiry-default application

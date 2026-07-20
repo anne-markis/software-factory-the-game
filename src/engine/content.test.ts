@@ -28,6 +28,29 @@ describe("parseStartConfig", () => {
     expect(() => parseStartConfig({ ...startJson, debtMultiplier: -1 })).toThrow(/content\/start\.json/);
   });
 
+  it("parses the Release 15 debtDrag config", () => {
+    const cfg = parseStartConfig(startJson);
+    expect(cfg.debtDrag).toEqual({ freeDebt: 400, dragPerPoint: 0.00015, maxDrag: 0.4 });
+  });
+
+  it("rejects a debtDrag with maxDrag at or above 1", () => {
+    expect(() =>
+      parseStartConfig({ ...startJson, debtDrag: { freeDebt: 200, dragPerPoint: 0.0004, maxDrag: 1 } }),
+    ).toThrow(/content\/start\.json/);
+  });
+
+  it("rejects a debtDrag with a non-positive dragPerPoint", () => {
+    expect(() =>
+      parseStartConfig({ ...startJson, debtDrag: { freeDebt: 200, dragPerPoint: 0, maxDrag: 0.5 } }),
+    ).toThrow(/content\/start\.json/);
+  });
+
+  it("rejects a debtDrag with an unknown key (strict schema)", () => {
+    expect(() =>
+      parseStartConfig({ ...startJson, debtDrag: { freeDebt: 200, dragPerPoint: 0.0004, maxDrag: 0.5, typo: 1 } }),
+    ).toThrow(/content\/start\.json/);
+  });
+
   it("rejects unknown top-level keys", () => {
     expect(() => parseStartConfig({ ...startJson, typoKey: 1 })).toThrow(/content\/start\.json/);
   });
@@ -108,6 +131,45 @@ describe("parseDecisions", () => {
     expect(cicd.effects).toEqual([
       { type: "modifyRate", target: "all", op: "mul", value: 0.5, durationDays: 2 },
       { type: "continuousDeploy" },
+    ]);
+  });
+
+  it("pins the Release 15 deploy-bottleneck split: dev/senior/contractor boost pull+finish, not deploy", () => {
+    const defs = parseDecisions(decisionsJson);
+    // A hire's every rate-boosting outcome now targets pull and finish with
+    // the same value (human capacity no longer speeds deploy). No "all"
+    // modifyRate survives on these three; deploy is left to ci-cd's scaling.
+    const splitTargets = (effects: { type: string; target?: string }[]) =>
+      effects.filter((e) => e.type === "modifyRate").map((e) => e.target).sort();
+
+    const dev = defs.find((d) => d.id === "basic-dev")!;
+    // base Strong hire: pull +1 and finish +1
+    expect(dev.gamble![0].effects).toEqual([
+      { type: "modifyRate", target: "pull", op: "add", value: 1.0 },
+      { type: "modifyRate", target: "finish", op: "add", value: 1.0 },
+    ]);
+    for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "pull"]);
+    for (const o of dev.synergies![0].gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "pull"]);
+
+    const senior = defs.find((d) => d.id === "senior-dev")!;
+    for (const o of senior.gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "pull"]);
+    for (const o of senior.synergies![0].gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "pull"]);
+
+    // contractor: base effects split, debt modifier retained
+    const contractor = defs.find((d) => d.id === "contractor")!;
+    expect(contractor.effects).toEqual([
+      { type: "modifyRate", target: "pull", op: "add", value: 1.0 },
+      { type: "modifyRate", target: "finish", op: "add", value: 1.0 },
+      { type: "modifyDebtMultiplier", op: "mul", value: 1.1 },
+    ]);
+
+    // better-tooling deliberately KEEPS "all" (tooling plausibly speeds
+    // releases too); support-retainer's slowdown likewise stays "all".
+    expect(defs.find((d) => d.id === "better-tooling")!.effects).toEqual([
+      { type: "modifyRate", target: "all", op: "add", value: 0.1 },
+    ]);
+    expect(defs.find((d) => d.id === "support-retainer")!.effects).toEqual([
+      { type: "modifyRate", target: "all", op: "mul", value: 0.95 },
     ]);
   });
 

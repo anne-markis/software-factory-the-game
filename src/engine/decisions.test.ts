@@ -35,10 +35,14 @@ describe("decisions", () => {
     const s = e.getState();
     expect(s.decisions).toHaveLength(1);
     expect(s.decisions[0].gambleLabel).toBeDefined();
-    // whatever the outcome, exactly one add-modifier exists for it
+    // Since Release 15's deploy-bottleneck rework a hire's outcome is two
+    // add-modifiers -- one on pull, one on finish -- with the same value
+    // (human capacity no longer boosts deploy).
     const mods = s.modifiers.filter((m) => m.source === s.decisions[0].instanceId);
-    expect(mods).toHaveLength(1);
+    expect(mods).toHaveLength(2);
+    expect(mods.map((m) => m.target).sort()).toEqual(["finish", "pull"]);
     expect([1.0, 0.5, -0.5, -1.0]).toContain(mods[0].value);
+    expect(mods[0].value).toBe(mods[1].value);
   });
 
   it("uses the synergy variant when the synergy decision is owned", () => {

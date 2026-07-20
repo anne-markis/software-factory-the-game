@@ -5,6 +5,7 @@
   "debtMultiplier": 0.5,
   "baseBurnPerDay": 20,
   "contextSwitchFactor": 0.85,
+  "debtDrag": { "freeDebt": 400, "dragPerPoint": 0.00015, "maxDrag": 0.4 },
   "initialProject": {
     "id": "first-contract",
     "name": "First Contract",
