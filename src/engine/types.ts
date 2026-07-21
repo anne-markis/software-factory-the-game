@@ -14,6 +14,7 @@ export type Effect =
   | { type: "modifyRate"; target: RateId | "all"; op: "add" | "mul"; value: number; durationDays?: number }
   | { type: "modifyDebtMultiplier"; op: "add" | "mul"; value: number; durationDays?: number }
   | { type: "addToStock"; stock: keyof Stocks; value: number }
+  | { type: "scaleStock"; stock: keyof Stocks; factor: number }
   | { type: "sickness"; factor: number; durationDays: number }
   | { type: "rampRate"; target: RateId; perDay: number; cap: number }
   // Marker effect: no parameters, creates no modifier (see applyEffects).

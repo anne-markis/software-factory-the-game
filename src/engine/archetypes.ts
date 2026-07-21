@@ -32,19 +32,37 @@ function debtMulProduct(effects: readonly { type: string; op?: string; value?: n
 }
 
 // The set of decision ids that "lower the debt multiplier" -- either directly
-// (a base effect multiplies debt below 1, e.g. test-suite) or structurally, by
-// being the ifOwned provider of a synergy that reduces some decision's debt
-// below its base (agent-harness for agent, swarm-orchestrator for agent-swarm).
-// Derived entirely from content so the two archetypes stay data-driven.
+// (a base effect multiplies debt below 1, e.g. test-suite; or a base effect
+// shrinks the techDebt stock via scaleStock with factor < 1, e.g.
+// refactoring-sprint/redesign-rebuild, Release 16) or structurally, by being
+// the ifOwned provider of a synergy that reduces some decision's debt below
+// its base (agent-harness for agent, swarm-orchestrator for agent-swarm).
+// Derived entirely from content so the archetypes stay data-driven.
 function debtLowererIds(content: GameContent): Set<string> {
   const ids = new Set<string>();
   for (const def of content.decisions) {
     if (def.effects.some((e) => e.type === "modifyDebtMultiplier" && e.op === "mul" && e.value < 1)) {
       ids.add(def.id);
     }
+    if (def.effects.some((e) => e.type === "scaleStock" && e.stock === "techDebt" && e.factor < 1)) {
+      ids.add(def.id);
+    }
     const baseDebt = debtMulProduct(def.effects);
     for (const syn of def.synergies ?? []) {
-      if (syn.effects && debtMulProduct(syn.effects) < baseDebt) ids.add(syn.ifOwned);
+      // Guard (Release 15 final review): only compare debt products when the
+      // synergy's effects actually contain a modifyDebtMultiplier term. A
+      // rate-only synergy (e.g. a bonus-speed swap on a debt-raiser) would
+      // otherwise default its debt product to 1 via debtMulProduct's
+      // no-matching-terms fallback, which reads as "lower than any raiser's
+      // baseDebt > 1" and misclassifies the provider as a mitigator even
+      // though it never touches the debt multiplier at all.
+      if (
+        syn.effects &&
+        syn.effects.some((e) => e.type === "modifyDebtMultiplier") &&
+        debtMulProduct(syn.effects) < baseDebt
+      ) {
+        ids.add(syn.ifOwned);
+      }
     }
   }
   return ids;

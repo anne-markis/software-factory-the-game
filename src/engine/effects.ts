@@ -45,6 +45,16 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
       case "addToStock":
         state.stocks[effect.stock] = Math.max(0, state.stocks[effect.stock] + effect.value);
         break;
+      case "scaleStock":
+        // Immediate, like addToStock: no modifier is created, so a scaled
+        // stock does not show up as a Friction/Cycle-speed/Leak-size
+        // contributor in the Progress loop panel -- only a paired
+        // modifyRate effect in the same purchase (as refactoring-sprint and
+        // redesign-rebuild both do) would surface there. factor 0 wipes the
+        // stock entirely; factor > 1 (a future challenge doubling backlog,
+        // say) is schema-legal too. Clamped at 0 like every other stock write.
+        state.stocks[effect.stock] = Math.max(0, state.stocks[effect.stock] * effect.factor);
+        break;
       case "sickness": {
         const inst = state.decisions.find((d) => d.instanceId === ctx.instanceId);
         // Silently no-ops when the instance is gone; the challenge roller only

@@ -79,6 +79,22 @@ describe("inProgressPanelSvg", () => {
     expect(svg).toContain("x0.25");
   });
 
+  it("shows only refactoring-sprint's temporary slowdown under Friction (scaleStock creates no modifier, Release 16)", () => {
+    const e = new Engine(content());
+    e.applyDecision("refactoring-sprint");
+    const s = e.getState();
+    const svg = inProgressPanelSvg(s, content());
+    // The paired modifyRate all-mul-0.6 effect is drag (mul < 1), so it lands
+    // under Friction as an instance-sourced contributor.
+    expect(inFrictionGroup(svg, "Refactoring sprint: x0.6")).toBe(true);
+    // scaleStock has no rate/debt-multiplier target, so it contributes no
+    // Friction, Cycle-speed, or Leak-size row of its own -- techDebt isn't
+    // surfaced as a rate contributor at all, so there is nothing else to see.
+    const instanceModifiers = s.modifiers.filter((m) => m.source === s.decisions[0].instanceId);
+    expect(instanceModifiers).toHaveLength(1);
+    expect(instanceModifiers[0]).toMatchObject({ target: "allRates", op: "mul", value: 0.6 });
+  });
+
   it("shows an owned dev's gamble contribution under Cycle speed, and moves it to Friction if forced negative", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");

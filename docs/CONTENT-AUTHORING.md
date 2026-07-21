@@ -161,10 +161,20 @@ apply the synergy to instances already owned.
   (not just paused) and its modifiers are stripped - regardless of its
   `removable` flag. This is the game's only insolvency mechanism; budget
   itself is clamped at 0 rather than going negative.
+- A repeatable, `unique: false` (or `unique` omitted) "action" purchase -
+  one whose effects are a temporary slowdown plus an immediate stock
+  change, like `refactoring-sprint` and `redesign-rebuild` (Release 16) -
+  keeps every instance in the "Owned" list forever, even after its
+  temporary `modifyRate` effect expires and it has nothing left to show in
+  the Progress loop panel. There is no mechanism today for an instance to
+  remove itself once its temporary effect lapses; a finished instance just
+  reads as history ("you did this, twice") rather than being pruned. This
+  is accepted behavior, not a bug to work around when authoring similar
+  content.
 
 ## 3. The effect vocabulary
 
-All six effect types live in one discriminated union
+All seven effect types live in one discriminated union
 (`src/engine/effects.ts` + the `effectSchema` in `content.ts`). Every
 effect object is `.strict()`, so extra or misspelled keys are rejected.
 
@@ -223,6 +233,34 @@ temporary `modifyRate` slowdown in the same `effects` array.
 hit) or positive (a windfall, like `scope-creep`'s `+75` backlog or
 `cloud-credits`'s `+250` budget). The result is clamped at a minimum of 0
 (`Math.max(0, ...)`), so you cannot drive a stock negative.
+
+### `scaleStock`
+
+```json
+{ "type": "scaleStock", "stock": "techDebt", "factor": 0.7 }
+```
+
+`stock` is the same closed enum as `addToStock`. `factor` is a
+multiplier, not a delta: the stock becomes `stock * factor`, clamped at a
+minimum of 0 (same `Math.max(0, ...)` as `addToStock`). It applies
+**immediately, at purchase**, exactly like `addToStock` - there is no
+`durationDays`, and it creates no `Modifier`, so it never shows up as a
+Friction/Cycle-speed/Leak-size contributor in the Progress loop panel; only
+a paired `modifyRate` or `modifyDebtMultiplier` effect in the same purchase
+would surface there. `factor` must be `>= 0` (`.min(0)` in the schema):
+`0` wipes the stock entirely; values above `1` are schema-legal too, for
+future content that *grows* a stock proportionally (a challenge doubling
+backlog, say), not just content that shrinks one.
+
+The shipped example is `refactoring-sprint`:
+
+```json
+{ "type": "scaleStock", "stock": "techDebt", "factor": 0.7 }
+```
+
+paying down 30% of current tech debt in one shot, alongside a paired
+temporary `modifyRate` slowdown in the same `effects` array (see the
+worked example in section 7 for the full entry).
 
 ### `sickness`
 
@@ -563,11 +601,17 @@ trades raw throughput for parallel income streams.
 The two examples below are for illustration only - **do not add them to
 the actual `content/` files.** They are not part of the shipped game.
 
-### Example decision: "Refactoring sprint"
+### Example decision: "Structure cleanup"
 
 Say you want a one-time-cost decision that temporarily slows all work
 while paying down structure, then permanently reduces tech-debt growth -
-the same shape as the shipped `test-suite`, at a smaller scale.
+the same shape as the shipped `test-suite`, at a smaller scale. (This is
+distinct from the shipped `refactoring-sprint`/`redesign-rebuild`
+decisions, section 3's `scaleStock` example - those pay down the
+techDebt *stock* directly instead of touching the accumulation *rate*.
+Either shape is legitimate; pick `modifyDebtMultiplier` for a permanent
+change to how fast debt regrows, `scaleStock` for a one-shot paydown of
+debt already on the books.)
 
 Write the description in terms of the *felt* duration (4 days), then
 remember the purchase-time-timing note from section 3: a felt duration of
@@ -575,8 +619,8 @@ N days needs `durationDays: N + 1`.
 
 ```json
 {
-  "id": "refactoring-sprint",
-  "name": "Refactoring sprint",
+  "id": "structure-cleanup",
+  "name": "Structure cleanup",
   "description": "Slows all work 40% for 4 days while the team pays down structure. Permanently cuts tech debt accumulation by 20%.",
   "tags": ["process"],
   "category": "tame-debt",
@@ -602,8 +646,9 @@ Walking through it:
 - No `requires`, so it's available to every build from day one; no
   `gamble` or `synergies`, since it's a flat, deterministic purchase.
 - `category: "tame-debt"` puts it in the "Tame tech debt" shop section
-  alongside `test-suite`, `agent-harness`, and `swarm-orchestrator` -
-  matching what it does (cuts debt accumulation), not its `"process"` tag.
+  alongside `test-suite`, `agent-harness`, `swarm-orchestrator`,
+  `refactoring-sprint`, and `redesign-rebuild` - matching what it does
+  (cuts debt accumulation), not its `"process"` tag.
 
 To add it for real, you'd append this object to the array in
 `content/decisions.json` (mind the comma with the preceding entry), then

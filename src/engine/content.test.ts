@@ -77,6 +77,8 @@ describe("parseDecisions", () => {
       "self-learning-agents",
       "support-retainer",
       "ddos-protection",
+      "refactoring-sprint",
+      "redesign-rebuild",
     ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(7);
@@ -171,6 +173,53 @@ describe("parseDecisions", () => {
     expect(defs.find((d) => d.id === "support-retainer")!.effects).toEqual([
       { type: "modifyRate", target: "all", op: "mul", value: 0.95 },
     ]);
+  });
+
+  it("pins the Release 16 debt-recovery decisions (refactoring-sprint, redesign-rebuild)", () => {
+    const defs = parseDecisions(decisionsJson);
+
+    const sprint = defs.find((d) => d.id === "refactoring-sprint")!;
+    expect(sprint.category).toBe("tame-debt");
+    expect(sprint.unique).toBeUndefined(); // repeat purchases are the point: debt regrows
+    expect(sprint.removable).toBe(true);
+    expect(sprint.cost).toEqual({ oneTime: 400 });
+    expect(sprint.effects).toEqual([
+      { type: "modifyRate", target: "all", op: "mul", value: 0.6, durationDays: 8 },
+      { type: "scaleStock", stock: "techDebt", factor: 0.7 },
+    ]);
+    expect(sprint.requires).toBeUndefined(); // purchasable anytime
+
+    const rebuild = defs.find((d) => d.id === "redesign-rebuild")!;
+    expect(rebuild.category).toBe("tame-debt");
+    expect(rebuild.unique).toBeUndefined();
+    expect(rebuild.removable).toBe(true);
+    expect(rebuild.cost).toEqual({ oneTime: 1200 });
+    expect(rebuild.effects).toEqual([
+      { type: "modifyRate", target: "all", op: "mul", value: 0.4, durationDays: 25 },
+      { type: "scaleStock", stock: "techDebt", factor: 0.1 },
+    ]);
+    expect(rebuild.requires).toBeUndefined();
+  });
+
+  it("parses a valid scaleStock effect", () => {
+    const defs = parseDecisions([
+      {
+        id: "x", name: "x", description: "x", tags: [], category: "tame-debt", cost: {}, removable: true,
+        effects: [{ type: "scaleStock", stock: "techDebt", factor: 0.5 }],
+      },
+    ]);
+    expect(defs[0].effects[0]).toEqual({ type: "scaleStock", stock: "techDebt", factor: 0.5 });
+  });
+
+  it("rejects a scaleStock effect with a negative factor", () => {
+    expect(() =>
+      parseDecisions([
+        {
+          id: "x", name: "x", description: "x", tags: [], category: "tame-debt", cost: {}, removable: true,
+          effects: [{ type: "scaleStock", stock: "techDebt", factor: -0.1 }],
+        },
+      ]),
+    ).toThrow(/content\/decisions\.json/);
   });
 
   it("rejects a gamble table whose probabilities do not sum to 1", () => {
