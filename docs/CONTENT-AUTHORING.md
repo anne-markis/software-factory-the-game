@@ -229,10 +229,15 @@ temporary `modifyRate` slowdown in the same `effects` array.
 ```
 
 `stock` is one of `backlog`, `inProgress`, `done`, `shipped`, `budget`,
-`techDebt`. `value` can be negative (a cost, like `ddos`'s `-100` budget
-hit) or positive (a windfall, like `scope-creep`'s `+75` backlog or
-`cloud-credits`'s `+250` budget). The result is clamped at a minimum of 0
-(`Math.max(0, ...)`), so you cannot drive a stock negative.
+`techDebt`, `reputation`. `value` can be negative (a cost, like `ddos`'s
+`-100` budget hit, or a reputation hit like `prod-incident`'s `-2` or
+`security-breach`'s `-5`) or positive (a windfall, like `scope-creep`'s
+`+75` backlog or `cloud-credits`'s `+250` budget). The result is clamped
+at a minimum of 0 (`Math.max(0, ...)`), so you cannot drive a stock
+negative - reputation floors at 0 exactly like every other stock, it does
+not go negative under a bad enough run of incidents. See section 7 for
+reputation specifically: how it's earned, spent, and used to gate
+content.
 
 ### `scaleStock`
 
@@ -260,7 +265,7 @@ The shipped example is `refactoring-sprint`:
 
 paying down 30% of current tech debt in one shot, alongside a paired
 temporary `modifyRate` slowdown in the same `effects` array (see the
-worked example in section 7 for the full entry).
+worked example in section 8 for the full entry).
 
 ### `sickness`
 
@@ -555,6 +560,61 @@ today; treat them as an engine feature. If a future release wants
 content-authored archetype lines, that's a deliberate extension, not a
 gap in this guide.
 
+### `stocks.reputation` and the `milestones` array (Release 17)
+
+`stocks.reputation` is the starting value of the reputation stock, same
+shape as every other entry in `stocks` (`stocksSchema` in `content.ts`):
+a plain number, `>= 0`. The shipped value is `0` - a new build starts
+with no reputation and earns its way up via completed contracts (section
+7 covers the full loop).
+
+`milestones` is a sibling array (not nested under `stocks`) of named
+reputation thresholds that produce one-time narrative log lines as the
+player crosses them - nothing mechanical hangs off a milestone, only a
+log entry. Each entry is:
+
+```json
+{ "id": "trusted", "reputation": 5, "name": "Trusted vendor", "message": "Milestone: Trusted vendor. Bigger contracts are opening up." }
+```
+
+- `id` (string, required) - unique key; `parseStartConfig` rejects a
+  duplicate id across the array, the same set `detectMilestones` (section
+  below) uses to track which milestones have already fired.
+- `reputation` (number >= 0, required) - the threshold. `parseStartConfig`
+  also rejects a non-strictly-ascending sequence: each entry's
+  `reputation` must be strictly greater than the previous entry's, so
+  `milestones` must be written in threshold order. The shipped four -
+  `trusted` at 5, `established` at 15, `leader` at 35, `titan` at 70 -
+  already are, and line up with the `requiresReputation` tiers on
+  `big-migration`/`mobile-app` (5) and `enterprise-replatform` (15) in
+  `content/projects.json`.
+- `name` (string, required) - a short label for the milestone.
+- `message` (string, required) - the full line written to the event log
+  the first tick reputation reaches `reputation`.
+
+Milestones are sticky, one-time banners: once reached, `detectMilestones`
+(`src/engine/milestones.ts`) records the id in `state.milestonesSeen` and
+never logs it again, even if reputation later drops back below the
+threshold (from a `prod-incident` or `security-breach` hit, say) and
+re-crosses it a second time going up. They mark "ever reached," not
+"currently above" - unlike `ProjectDef.requiresReputation` (section 7),
+which is a live, re-checked gate that re-locks on a downward recross,
+milestones only ever fire once and then stay silent for the rest of that
+game. They are purely narrative: a milestone never grants an effect,
+never gates a purchase or a project, and never ends the game.
+
+### Milestone narration is engine-side, not content
+
+Like the archetype narration above, milestone detection itself is not
+something you author beyond the thresholds and copy in `start.json`.
+`detectMilestones` runs every tick, checking every not-yet-seen milestone
+against `state.stocks.reputation` and logging + recording the first one
+whose threshold is met; there is no separate "milestone" effect type in
+the effect vocabulary (section 3), and no content hook to make a
+milestone do anything beyond writing its `message` to the log. Adding a
+new milestone is exactly one array entry in `start.json` - `id`,
+`reputation`, `name`, `message` - with nothing to wire up in code.
+
 ## 6. Adding a project
 
 A project (`content/projects.json`) is:
@@ -567,7 +627,7 @@ A project (`content/projects.json`) is:
   "upfrontCost": 2000,
   "payoutPerPoint": 21,
   "completionBonus": 1500,
-  "requiresCompleted": 1
+  "reputationReward": 5
 }
 ```
 
@@ -586,17 +646,80 @@ A project (`content/projects.json`) is:
   `requiresCompleted: 1` and both become available as soon as any one
   project finishes (`big-migration` and `mobile-app` both do this
   today).
+- `reputationReward` (required, >= 0) - reputation credited once, in
+  addition to the completion bonus, when the project's `remaining` reaches
+  (approximately) zero (`attributeShipped` in `src/engine/tick.ts`). Every
+  project must set this - the schema has no default - though `0` is legal
+  for a project that shouldn't move the reputation stock at all.
+- `requiresReputation` (optional, >= 0) - a reputation floor gating this
+  project's availability, on top of `requiresCompleted` when both are set
+  (both must hold). Checked by `projectAvailability`
+  (`src/engine/projects.ts`) right after the `requiresCompleted` check and
+  before the affordability check. See section 7 for why this is
+  live-recomputed on every call rather than a one-time unlock.
 
-The shipped ladder increases `upfrontCost`, `payoutPerPoint`, and
-`completionBonus` together as `requiresCompleted` rises (`small-crm` at
-tier 0, `big-migration`/`mobile-app` at tier 1, `enterprise-replatform` at
-tier 2), so later contracts pay noticeably better per point once the
-player has proven they can finish one. Multiple projects can be in flight
-at once; starting an additional one applies the context-switch tax
+The shipped ladder increases `upfrontCost`, `payoutPerPoint`,
+`completionBonus`, and `reputationReward` together as `requiresCompleted`
+rises (`small-crm` at tier 0 with no reputation requirement;
+`big-migration`/`mobile-app` at tier 1, both `requiresReputation: 5`;
+`enterprise-replatform` at tier 2, `requiresReputation: 15`), so later
+contracts pay noticeably better per point - and reward more reputation -
+once the player has proven they can finish one and hasn't burned their
+standing back down. Multiple projects can be in flight at once; starting
+an additional one applies the context-switch tax
 (`contextSwitchFactor ^ (n - 1)`) to all rates, so stacking projects
 trades raw throughput for parallel income streams.
 
-## 7. Worked example
+## 7. Reputation: a second reinforcing loop
+
+Reputation (`stocks.reputation` in `start.json`, `Stocks.reputation` in
+`src/engine/types.ts`) is a stock like any other in the `addToStock`/
+`scaleStock` sense (section 3), but it isn't part of the backlog to
+delivery pipeline - nothing in the loop diagram feeds it directly. Three
+content-authored pieces make up its loop:
+
+- Earned via `ProjectDef.reputationReward` (section 6, required on
+  every project), paid once when a project completes, alongside the
+  completion bonus: `state.stocks.reputation += p.reputationReward` in
+  `attributeShipped` (`src/engine/tick.ts`). `start.json`'s
+  `initialProject` (`first-contract`) also carries a `reputationReward`
+  (`1` shipped) for the same reason - it is a project like any other for
+  payout purposes.
+- Spent the same way any stock is damaged: an `addToStock` effect with
+  a negative `value` on the `reputation` stock. Two shipped challenges do
+  this today - `prod-incident` (`-2`, alongside a budget hit and a 3-day
+  rate slowdown) and `security-breach` (`-5`, alongside a `-300` budget
+  hit, gated on `condition.minTechDebt: 800`). Like every stock, it's
+  clamped at a minimum of 0, so a bad enough run of incidents flattens it
+  rather than driving it negative.
+- Gates contracts via `ProjectDef.requiresReputation` (section 6,
+  optional): `projectAvailability` (`src/engine/projects.ts`) checks it
+  alongside `requiresCompleted` - both conditions must hold when both are
+  set - after the completed-projects check and before the affordability
+  check. This check is live-recomputed on every call, not cached at the
+  moment a tier first unlocks: if reputation later drops back below a
+  project's `requiresReputation` threshold (from a `prod-incident` or
+  `security-breach` hit), that project disappears from the startable list
+  again immediately, with no extra mechanism required to re-lock it.
+
+Put together, this is a reinforcing loop with a downward spiral built in:
+completing projects raises reputation, which unlocks higher-paying,
+higher-`reputationReward` contracts (section 6's ladder), whose
+completion raises reputation further. But the same tech debt that
+`debtDrag` (section 5) already uses to slow throughput also feeds this
+loop's dark side: `prod-incident`'s `probScaling` makes it fire more often
+as debt climbs, and `security-breach` doesn't even enter the challenge
+pool until `techDebt` passes 800 (`condition.minTechDebt: 800`), scaling
+up from there via its own `probScaling`. `security-breach` is the sharper
+worked example of the spiral: a debt-heavy build is simultaneously the
+one climbing fastest toward the reputation tiers that unlock the biggest
+contracts, and the one most exposed to a hit that can knock it back below
+`requiresReputation` and re-lock the very contract it was relying on -
+the reputation loop mirrors the tech-debt "limits to growth"/"shifting
+the burden" dynamic (section 5) one level up, on the contracts layer
+instead of the raw-throughput layer.
+
+## 8. Worked example
 
 The two examples below are for illustration only - **do not add them to
 the actual `content/` files.** They are not part of the shipped game.
@@ -706,7 +829,7 @@ silently into the event log (`renderLog`) with its name and description,
 the same way `ddos` does today - there's no UI action needed for a
 non-choice challenge, it just happens.
 
-## 8. Balance guardrails
+## 9. Balance guardrails
 
 `npm run test` includes simulation probes in `src/engine/simulation.test.ts`
 that play the full, real content files (`content/*.json`, not fixtures)
