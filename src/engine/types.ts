@@ -5,6 +5,13 @@ export interface Stocks {
   shipped: number;
   budget: number;
   techDebt: number;
+  // Reputation (Release 17): a second reinforcing loop. Earned via
+  // ProjectDef.reputationReward on completion, spent by the existing
+  // addToStock effect (incident-class challenges), gates contract tiers via
+  // ProjectDef.requiresReputation. Not a pipeline stage, so the loop diagram
+  // (named stage keys only) is unaffected. Clamped at 0 like every other
+  // stock (applyEffects' addToStock/scaleStock already do this generically).
+  reputation: number;
 }
 
 export type RateId = "pull" | "finish" | "deploy";
@@ -121,6 +128,15 @@ export interface ProjectDef {
   payoutPerPoint: number;
   completionBonus: number;
   requiresCompleted?: number;
+  // Reputation earned on completion (Release 17), paid in tick.ts's
+  // attributeShipped alongside the completion bonus.
+  reputationReward: number;
+  // Optional reputation floor gating this project's availability, ON TOP OF
+  // requiresCompleted (both must hold when both are set). Checked by
+  // projectAvailability after requiresCompleted, before affordability.
+  // Live-recomputed each call, so a reputation drop re-locks a tier with no
+  // extra mechanism needed.
+  requiresReputation?: number;
 }
 
 export interface ActiveProject {
@@ -129,6 +145,7 @@ export interface ActiveProject {
   remaining: number;
   payoutPerPoint: number;
   completionBonus: number;
+  reputationReward: number;
 }
 
 export interface PendingChoice {
@@ -153,11 +170,21 @@ export interface StartConfig {
   // dragPerPoint is the per-excess-point slowdown, maxDrag caps how much
   // capacity the drag can ever cancel. See debtDragMultiplier in modifiers.ts.
   debtDrag: { freeDebt: number; dragPerPoint: number; maxDrag: number };
-  initialProject: { id: string; name: string; sizePoints: number; payoutPerPoint: number; completionBonus: number };
+  initialProject: {
+    id: string;
+    name: string;
+    sizePoints: number;
+    payoutPerPoint: number;
+    completionBonus: number;
+    reputationReward: number;
+  };
   // Global minimum gap, in days, between any two challenges firing (effects
   // applied OR a choice queued -- either counts as "firing"). 0 disables
   // spacing entirely. See GameState.lastChallengeDay and rollChallenges.
   challengeSpacingDays: number;
+  // Named reputation thresholds (Release 17), sorted ascending by
+  // parseStartConfig's integrity check. See milestones.ts for detection.
+  milestones: { id: string; reputation: number; name: string; message: string }[];
 }
 
 export interface GameContent {
@@ -206,6 +233,14 @@ export interface GameState {
   // fires exactly once per game. initialState seeds this to []; legacy saves
   // predate it and are backfilled to [] on load. See archetypes.ts.
   archetypesSeen: string[];
+  // Named reputation thresholds (Release 17) the engine has already narrated
+  // this game, mirroring archetypesSeen's once-only sticky pattern: each
+  // milestone id is appended the first tick reputation reaches its
+  // threshold and never un-fires on a later downward recross. initialState
+  // seeds this to []; legacy saves predate it and are backfilled to [] in
+  // save.ts's deserialize (content-free, like archetypesSeen). See
+  // milestones.ts.
+  milestonesSeen: string[];
   // Day the most recent challenge fired or queued a choice (either counts).
   // Absent until the first challenge event of the game. Drives the global
   // challengeSpacingDays gap in rollChallenges; expiry-default application

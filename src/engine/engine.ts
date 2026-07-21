@@ -19,6 +19,7 @@ export function initialState(content: GameContent): GameState {
     debtDragPerPoint: s.debtDrag.dragPerPoint,
     debtDragMaxDrag: s.debtDrag.maxDrag,
     archetypesSeen: [],
+    milestonesSeen: [],
     modifiers: [],
     decisions: [],
     projects: [
@@ -28,6 +29,7 @@ export function initialState(content: GameContent): GameState {
         remaining: s.initialProject.sizePoints,
         payoutPerPoint: s.initialProject.payoutPerPoint,
         completionBonus: s.initialProject.completionBonus,
+        reputationReward: s.initialProject.reputationReward,
       },
     ],
     completedProjects: 0,
@@ -62,6 +64,14 @@ export class Engine {
         restored.debtDragFreeDebt = content.start.debtDrag.freeDebt;
         restored.debtDragPerPoint = content.start.debtDrag.dragPerPoint;
         restored.debtDragMaxDrag = content.start.debtDrag.maxDrag;
+      }
+      // Legacy saves predate reputation (Release 17); stocks is a plain
+      // object round-tripped through JSON with no per-field defaulting, so
+      // (like gameSeed/debtDrag) the Engine constructor backfills it from
+      // content rather than save.ts's deserialize, which has no content
+      // access.
+      if (restored.stocks.reputation === undefined) {
+        restored.stocks.reputation = content.start.stocks.reputation;
       }
       this.rng = createRng(restored.rngState, true);
     } else {

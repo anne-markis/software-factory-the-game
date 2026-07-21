@@ -13,6 +13,9 @@ export function projectAvailability(state: GameState, content: GameContent): Pro
     if (state.projects.some((p) => p.defId === def.id)) return { def, startable: false, reason: "already in flight" };
     const needed = def.requiresCompleted ?? 0;
     if (state.completedProjects < needed) return { def, startable: false, reason: `requires ${needed} completed project(s)` };
+    if (def.requiresReputation !== undefined && state.stocks.reputation < def.requiresReputation) {
+      return { def, startable: false, reason: `requires ${def.requiresReputation} reputation` };
+    }
     if (state.stocks.budget < def.upfrontCost) return { def, startable: false, reason: "cannot afford" };
     return { def, startable: true };
   });
@@ -33,6 +36,7 @@ export function startProject(state: GameState, content: GameContent, defId: stri
     remaining: def.sizePoints,
     payoutPerPoint: def.payoutPerPoint,
     completionBonus: def.completionBonus,
+    reputationReward: def.reputationReward,
   });
   log(state, `Started project: ${def.name} (+${def.sizePoints} points, -$${def.upfrontCost})`);
 }

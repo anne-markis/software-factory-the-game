@@ -54,6 +54,63 @@ describe("parseStartConfig", () => {
   it("rejects unknown top-level keys", () => {
     expect(() => parseStartConfig({ ...startJson, typoKey: 1 })).toThrow(/content\/start\.json/);
   });
+
+  it("parses the Release 17 reputation stock and milestones", () => {
+    const cfg = parseStartConfig(startJson);
+    expect(cfg.stocks.reputation).toBe(0);
+    expect(cfg.initialProject.reputationReward).toBe(1);
+    expect(cfg.milestones.map((m) => m.id)).toEqual(["trusted", "established"]);
+    expect(cfg.milestones.map((m) => m.reputation)).toEqual([5, 15]);
+  });
+
+  it("rejects a negative reputation stock", () => {
+    expect(() =>
+      parseStartConfig({ ...startJson, stocks: { ...startJson.stocks, reputation: -1 } }),
+    ).toThrow(/content\/start\.json/);
+  });
+
+  it("rejects a negative initialProject.reputationReward", () => {
+    expect(() =>
+      parseStartConfig({ ...startJson, initialProject: { ...startJson.initialProject, reputationReward: -1 } }),
+    ).toThrow(/content\/start\.json/);
+  });
+
+  it("rejects duplicate milestone ids", () => {
+    expect(() =>
+      parseStartConfig({
+        ...startJson,
+        milestones: [
+          { id: "dup", reputation: 5, name: "A", message: "a" },
+          { id: "dup", reputation: 10, name: "B", message: "b" },
+        ],
+      }),
+    ).toThrow(/duplicate milestone id "dup"/);
+  });
+
+  it("rejects milestone thresholds that are not strictly ascending", () => {
+    expect(() =>
+      parseStartConfig({
+        ...startJson,
+        milestones: [
+          { id: "a", reputation: 10, name: "A", message: "a" },
+          { id: "b", reputation: 10, name: "B", message: "b" },
+        ],
+      }),
+    ).toThrow(/not strictly ascending/);
+    expect(() =>
+      parseStartConfig({
+        ...startJson,
+        milestones: [
+          { id: "a", reputation: 10, name: "A", message: "a" },
+          { id: "b", reputation: 5, name: "B", message: "b" },
+        ],
+      }),
+    ).toThrow(/content\/start\.json/);
+  });
+
+  it("accepts an empty milestones array", () => {
+    expect(() => parseStartConfig({ ...startJson, milestones: [] })).not.toThrow();
+  });
 });
 
 describe("parseDecisions", () => {
@@ -421,6 +478,40 @@ describe("parseChallenges", () => {
       },
     ]);
     expect(defs[0].condition).toEqual({ lacksDecision: "agent" });
+  });
+});
+
+describe("parseProjects", () => {
+  it("parses the Release 17 reputationReward on every shipped project", () => {
+    const defs = parseProjects(projectsJson);
+    expect(defs.every((p) => typeof p.reputationReward === "number")).toBe(true);
+    expect(defs.find((p) => p.id === "small-crm")!.reputationReward).toBe(2);
+  });
+
+  it("rejects a negative reputationReward", () => {
+    expect(() =>
+      parseProjects([
+        { id: "x", name: "x", sizePoints: 1, upfrontCost: 0, payoutPerPoint: 1, completionBonus: 0, reputationReward: -1 },
+      ]),
+    ).toThrow(/content\/projects\.json/);
+  });
+
+  it("parses an optional requiresReputation and rejects a negative one", () => {
+    const defs = parseProjects([
+      {
+        id: "x", name: "x", sizePoints: 1, upfrontCost: 0, payoutPerPoint: 1, completionBonus: 0,
+        reputationReward: 0, requiresReputation: 5,
+      },
+    ]);
+    expect(defs[0].requiresReputation).toBe(5);
+    expect(() =>
+      parseProjects([
+        {
+          id: "x", name: "x", sizePoints: 1, upfrontCost: 0, payoutPerPoint: 1, completionBonus: 0,
+          reputationReward: 0, requiresReputation: -1,
+        },
+      ]),
+    ).toThrow(/content\/projects\.json/);
   });
 });
 
