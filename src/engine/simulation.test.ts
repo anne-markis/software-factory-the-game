@@ -437,9 +437,11 @@ describe("simulation", () => {
     expect(r.endBudget).toBeGreaterThan(0); // observed 28975.94 -- one $300 breach below the pre-reputation 29275.94
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
     expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 387, 1774
-    // The reinforcing loop is exercised: completing lower contracts earns the
-    // reputation that crosses the first milestone (observed endReputation 5).
-    expect(r.endReputation).toBeGreaterThanOrEqual(5);
+    // The reinforcing loop is exercised: completing lower contracts earns
+    // reputation (observed end 5). Assert only that reputation was earned at
+    // all; the exact end value is knife-edge on incident timing relative to the
+    // last completion, so the sticky milestone below is the robust loop proof.
+    expect(r.endReputation).toBeGreaterThanOrEqual(1);
     expect(r.milestonesSeen).toContain("trusted"); // crossed the first milestone by day 2000
   });
 
@@ -531,9 +533,10 @@ describe("simulation", () => {
     expect(r.endBudget).toBeGreaterThan(0); // observed 25187.30 -- four $300 breaches below the pre-reputation 26562.84
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
     expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 395, 1856
-    // Reinforcing loop exercised even under the heaviest breach load: reputation
-    // still reaches the first milestone (observed endReputation 5).
-    expect(r.endReputation).toBeGreaterThanOrEqual(5);
+    // Reinforcing loop exercised even under the heaviest breach load
+    // (observed end 5). Knife-edge on breach timing, so assert only that
+    // reputation was earned; the sticky milestone below is the robust proof.
+    expect(r.endReputation).toBeGreaterThanOrEqual(1);
     expect(r.milestonesSeen).toContain("trusted"); // crossed the first milestone by day 2000
   });
 
