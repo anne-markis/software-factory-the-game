@@ -80,6 +80,9 @@ const effectSchema = z.discriminatedUnion("type", [
     })
     .strict(),
   z.object({ type: z.literal("addToStock"), stock: stockName, value: z.number() }).strict(),
+  // factor >= 0: 0 wipes the stock entirely; > 1 is allowed for future
+  // content (e.g. a challenge doubling backlog), not just reductions.
+  z.object({ type: z.literal("scaleStock"), stock: stockName, factor: z.number().min(0) }).strict(),
   z.object({ type: z.literal("sickness"), factor: z.number().gt(0).lt(1), durationDays: z.number().positive() }).strict(),
   // target excludes "all": a ramp grows one rate's own modifier, not a shared one.
   z

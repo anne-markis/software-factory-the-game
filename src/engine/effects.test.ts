@@ -49,6 +49,22 @@ describe("applyEffects", () => {
     expect(s.stocks.backlog).toBe(1700); // start backlog 1500 + 200
   });
 
+  it("scaleStock multiplies the target stock immediately, clamped at zero, leaving siblings untouched", () => {
+    const s = freshState();
+    s.stocks.techDebt = 1000;
+    applyEffects(s, [{ type: "scaleStock", stock: "techDebt", factor: 0.7 }], "src-1");
+    expect(s.stocks.techDebt).toBe(700); // reduction
+    expect(s.stocks.backlog).toBe(1500); // sibling stock unaffected
+
+    applyEffects(s, [{ type: "scaleStock", stock: "techDebt", factor: 0 }], "src-1");
+    expect(s.stocks.techDebt).toBe(0); // factor 0 wipes it entirely
+
+    s.stocks.techDebt = 200;
+    applyEffects(s, [{ type: "scaleStock", stock: "techDebt", factor: 1.5 }], "src-1");
+    expect(s.stocks.techDebt).toBe(300); // factor > 1 grows the stock
+    expect(s.stocks.budget).toBe(10000); // still untouched throughout
+  });
+
   it("sickness marks the instance from context", () => {
     const s = freshState();
     s.decisions.push({ instanceId: "i1", defId: "basic-dev" });

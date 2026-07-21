@@ -55,6 +55,51 @@ describe("decisions", () => {
     expect(debtMods).toEqual([1.1, 1.2]);
   });
 
+  it("buying refactoring-sprint pays down 30% of tech debt and slows all rates 40% for 8 days", () => {
+    const c = content();
+    c.start.stocks.techDebt = 1000;
+    const e = new Engine(c);
+    e.applyDecision("refactoring-sprint");
+    const s = e.getState();
+    expect(s.stocks.techDebt).toBe(700);
+    expect(s.stocks.budget).toBe(9600); // 10000 - 400
+    // Note: effectiveRate(s, "pull") is NOT 0.6 here -- techDebt 700 is past
+    // freeDebt (400), so the debtDrag multiplier also bites on top of this
+    // modifier (a separate, already-tested mechanism). Assert the modifier
+    // itself instead of the drag-entangled effective rate.
+    const mod = s.modifiers.find((m) => m.source === s.decisions[0].instanceId && m.target === "allRates")!;
+    expect(mod).toMatchObject({ op: "mul", value: 0.6, expiresDay: 8 }); // day 0 + 8
+    // scaleStock creates no modifier of its own -- only the paired modifyRate does.
+    expect(s.modifiers.filter((m) => m.source === s.decisions[0].instanceId)).toHaveLength(1);
+  });
+
+  it("buying redesign-rebuild wipes 90% of tech debt and slows all rates 60% for 25 days", () => {
+    const c = content();
+    c.start.stocks.techDebt = 1000;
+    const e = new Engine(c);
+    e.applyDecision("redesign-rebuild");
+    const s = e.getState();
+    expect(s.stocks.techDebt).toBe(100);
+    expect(s.stocks.budget).toBe(8800); // 10000 - 1200
+    expect(effectiveRate(s, "pull")).toBe(0.4);
+    const mod = s.modifiers.find((m) => m.source === s.decisions[0].instanceId && m.target === "allRates")!;
+    expect(mod).toMatchObject({ op: "mul", value: 0.4, expiresDay: 25 }); // day 0 + 25
+    expect(s.modifiers.filter((m) => m.source === s.decisions[0].instanceId)).toHaveLength(1);
+  });
+
+  it("refactoring-sprint is not unique: it can be bought repeatedly as debt regrows", () => {
+    const c = content();
+    c.start.stocks.techDebt = 1000;
+    const e = new Engine(c);
+    e.applyDecision("refactoring-sprint");
+    expect(() => e.applyDecision("refactoring-sprint")).not.toThrow();
+    const s = e.getState();
+    expect(s.decisions.filter((d) => d.defId === "refactoring-sprint")).toHaveLength(2);
+    // 1000 -> 700 (first) -> 490 (second, factor 0.7 applied again). Float
+    // multiplication lands at 489.99999999999994, not exactly 490.
+    expect(s.stocks.techDebt).toBeCloseTo(490);
+  });
+
   it("removeDecision drops effects and upkeep", () => {
     const e = new Engine(content());
     e.applyDecision("agent");

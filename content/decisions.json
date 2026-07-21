@@ -552,5 +552,59 @@
     "effects": [],
     "removable": true,
     "unique": true
+  },
+  {
+    "id": "refactoring-sprint",
+    "name": "Refactoring sprint",
+    "description": "Stop and clean up: all work slows 40% for about a week, and 30% of your tech debt is paid down.",
+    "tags": [
+      "process"
+    ],
+    "category": "tame-debt",
+    "cost": {
+      "oneTime": 400
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "mul",
+        "value": 0.6,
+        "durationDays": 8
+      },
+      {
+        "type": "scaleStock",
+        "stock": "techDebt",
+        "factor": 0.7
+      }
+    ],
+    "removable": true
+  },
+  {
+    "id": "redesign-rebuild",
+    "name": "Redesign and rebuild",
+    "description": "Tear it down and rebuild it right: work crawls for over three weeks, but 90% of your tech debt is wiped.",
+    "tags": [
+      "process"
+    ],
+    "category": "tame-debt",
+    "cost": {
+      "oneTime": 1200
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "mul",
+        "value": 0.4,
+        "durationDays": 25
+      },
+      {
+        "type": "scaleStock",
+        "stock": "techDebt",
+        "factor": 0.1
+      }
+    ],
+    "removable": true
   }
 ]
