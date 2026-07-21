@@ -16,7 +16,9 @@
   },
   "challengeSpacingDays": 50,
   "milestones": [
-    { "id": "trusted", "reputation": 5, "name": "Trusted vendor", "message": "Milestone: trusted vendor. Bigger contracts are opening up." },
-    { "id": "established", "reputation": 15, "name": "Established shop", "message": "Milestone: established shop. The pipeline is filling with better work." }
+    { "id": "trusted", "reputation": 5, "name": "Trusted vendor", "message": "Milestone: Trusted vendor. Bigger contracts are opening up." },
+    { "id": "established", "reputation": 15, "name": "Established shop", "message": "Milestone: Established shop. Enterprise clients will take your calls now." },
+    { "id": "leader", "reputation": 35, "name": "Industry leader", "message": "Milestone: Industry leader. Your name carries the deal into the room." },
+    { "id": "titan", "reputation": 70, "name": "Industry titan", "message": "Milestone: Industry titan. The whole market watches what you ship next." }
   ]
 }

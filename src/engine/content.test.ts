@@ -59,8 +59,14 @@ describe("parseStartConfig", () => {
     const cfg = parseStartConfig(startJson);
     expect(cfg.stocks.reputation).toBe(0);
     expect(cfg.initialProject.reputationReward).toBe(1);
-    expect(cfg.milestones.map((m) => m.id)).toEqual(["trusted", "established"]);
-    expect(cfg.milestones.map((m) => m.reputation)).toEqual([5, 15]);
+    // Four ascending milestones, tuned in the balance sweep. trusted (5) and
+    // established (15) key exactly to the mid- and top-tier reputation gates
+    // (mobile-app/big-migration require 5, enterprise-replatform requires 15),
+    // so a milestone banner and the tier it opens fire together.
+    expect(cfg.milestones.map((m) => m.id)).toEqual(["trusted", "established", "leader", "titan"]);
+    expect(cfg.milestones.map((m) => m.reputation)).toEqual([5, 15, 35, 70]);
+    // Every milestone carries a player-facing name and a banner message.
+    expect(cfg.milestones.every((m) => m.name.length > 0 && m.message.length > 0)).toBe(true);
   });
 
   it("rejects a negative reputation stock", () => {
@@ -387,13 +393,36 @@ describe("parseChallenges", () => {
     expect(sickness.perHumanDev).toBe(true);
     const incident = defs.find((c) => c.id === "prod-incident")!;
     expect(incident.probScaling).toEqual({ stat: "techDebt", per: 500, add: 0.01 });
+    // Release 17: prod-incident now also bleeds reputation alongside its
+    // budget hit and rate slowdown.
+    const incidentRep = incident.effects.find((e) => e.type === "addToStock" && e.stock === "reputation")!;
+    expect(incidentRep).toMatchObject({ stock: "reputation", value: -2 });
+  });
+
+  it("pins the Release 17 security-breach challenge (the spiral's teeth)", () => {
+    const defs = parseChallenges(challengesJson);
+    const breach = defs.find((c) => c.id === "security-breach")!;
+    // Debt-gated: only high-debt builds are exposed (minTechDebt 800), with a
+    // day-15 grace band. Probability scales with tech debt, so the reinforcing
+    // loop's governor is the debt drag already in play.
+    expect(breach.condition).toEqual({ minTechDebt: 800, minDay: 15 });
+    expect(breach.probScaling).toEqual({ stat: "techDebt", per: 500, add: 0.008 });
+    expect(breach.cooldownDays).toBe(120);
+    // A plain (non-choice) event: no choice, effects apply directly.
+    expect(breach.choice).toBeUndefined();
+    // Budget hit AND a 5-point reputation hit -- the largest reputation loss
+    // in content, enough to drop a mid-tier build back below the 5 gate.
+    expect(breach.effects.find((e) => e.type === "addToStock" && e.stock === "budget")).toMatchObject({ value: -300 });
+    expect(breach.effects.find((e) => e.type === "addToStock" && e.stock === "reputation")).toMatchObject({ value: -5 });
+    // Description names the reputation cost.
+    expect(breach.description).toMatch(/reputation/i);
   });
 
   it("pins the content-wave challenge values", () => {
     const defs = parseChallenges(challengesJson);
     const ids = defs.map((c) => c.id);
     expect(ids).toEqual([
-      "sickness", "ddos", "scope-creep", "prod-incident", "laptop-dies", "key-dev-poached",
+      "sickness", "ddos", "scope-creep", "prod-incident", "security-breach", "laptop-dies", "key-dev-poached",
       "model-deprecation", "api-price-hike", "runaway-agent-loop", "meeting-creep", "team-conflict",
       "cloud-credits", "open-source-windfall",
     ]);
@@ -485,7 +514,32 @@ describe("parseProjects", () => {
   it("parses the Release 17 reputationReward on every shipped project", () => {
     const defs = parseProjects(projectsJson);
     expect(defs.every((p) => typeof p.reputationReward === "number")).toBe(true);
-    expect(defs.find((p) => p.id === "small-crm")!.reputationReward).toBe(2);
+    // Rewards scale with contract size (1500/5000/9000/20000/50000 pts):
+    // first-contract 1, small-crm 5, mobile-app 6, big-migration 12,
+    // enterprise 20. first (start.json) + small-crm = 6, clearing the
+    // mid-tier gate of 5 the moment the entry contract completes.
+    expect(defs.find((p) => p.id === "small-crm")!.reputationReward).toBe(5);
+    expect(defs.find((p) => p.id === "mobile-app")!.reputationReward).toBe(6);
+    expect(defs.find((p) => p.id === "big-migration")!.reputationReward).toBe(12);
+    expect(defs.find((p) => p.id === "enterprise-replatform")!.reputationReward).toBe(20);
+  });
+
+  it("gates the top three tiers on reputation ALONGSIDE their completed-count floor (Release 17)", () => {
+    const defs = parseProjects(projectsJson);
+    // small-crm is the entry contract: no reputation gate, no completion floor.
+    const crm = defs.find((p) => p.id === "small-crm")!;
+    expect(crm.requiresReputation).toBeUndefined();
+    // big-migration & mobile-app: 1 completion AND 5 reputation. enterprise:
+    // 2 completions AND 15 reputation (the binding top-tier gate).
+    const big = defs.find((p) => p.id === "big-migration")!;
+    expect(big.requiresCompleted).toBe(1);
+    expect(big.requiresReputation).toBe(5);
+    const mobile = defs.find((p) => p.id === "mobile-app")!;
+    expect(mobile.requiresCompleted).toBe(1);
+    expect(mobile.requiresReputation).toBe(5);
+    const ent = defs.find((p) => p.id === "enterprise-replatform")!;
+    expect(ent.requiresCompleted).toBe(2);
+    expect(ent.requiresReputation).toBe(15);
   });
 
   it("rejects a negative reputationReward", () => {

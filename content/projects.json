@@ -6,7 +6,7 @@
     "upfrontCost": 2000,
     "payoutPerPoint": 21,
     "completionBonus": 1500,
-    "reputationReward": 2
+    "reputationReward": 5
   },
   {
     "id": "big-migration",
@@ -16,7 +16,8 @@
     "payoutPerPoint": 23,
     "completionBonus": 8000,
     "requiresCompleted": 1,
-    "reputationReward": 5
+    "requiresReputation": 5,
+    "reputationReward": 12
   },
   {
     "id": "enterprise-replatform",
@@ -26,7 +27,8 @@
     "payoutPerPoint": 24,
     "completionBonus": 25000,
     "requiresCompleted": 2,
-    "reputationReward": 10
+    "requiresReputation": 15,
+    "reputationReward": 20
   },
   {
     "id": "mobile-app",
@@ -36,6 +38,7 @@
     "payoutPerPoint": 22,
     "completionBonus": 4000,
     "requiresCompleted": 1,
-    "reputationReward": 4
+    "requiresReputation": 5,
+    "reputationReward": 6
   }
 ]
