@@ -37,24 +37,23 @@ describe("renderStats", () => {
 });
 
 describe("renderDecisions", () => {
-  it("hides missing-requires entries from a fresh shop and shows the unlock hint with a count", () => {
+  it("shows a prerequisite-locked node (ci-cd on a fresh game) visibly, dimmed, with its requirement", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(html).not.toContain('data-buy="ci-cd"');
-    expect(html).not.toContain("requires Add test suite");
-    // 7 shipped decisions gate on requires (ci-cd, agent-harness, senior-dev,
-    // eng-manager, agent-swarm, swarm-orchestrator, self-learning-agents),
-    // all unmet on a fresh game.
-    expect(html).toContain("7 more alterations unlock as your factory grows.");
+    // ci-cd is present (not hidden) but its Buy button is disabled and it
+    // carries the human-readable requirement.
+    expect(html).toContain('data-buy="ci-cd" disabled');
+    expect(html).toContain("requires Add test suite");
+    expect(html).toContain("tt-locked");
     expect(html).toContain("Nothing yet. You are a solo dev.");
   });
 
-  it("buying test-suite unlocks ci-cd in the shop and drops the hidden count by one", () => {
+  it("buying test-suite unlocks ci-cd (Buy enabled, no longer locked)", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(html).toContain('data-buy="ci-cd"');
-    expect(html).toContain("6 more alterations unlock as your factory grows.");
+    expect(html).toContain('data-buy="ci-cd" ');
+    expect(html).not.toContain('data-buy="ci-cd" disabled');
   });
 
   it("keeps cannot-afford entries visible and disabled, distinct from hidden missing-requires entries", () => {
@@ -84,41 +83,46 @@ describe("renderDecisions", () => {
     expect(html).toContain("&lt;img");
   });
 
-  it("drops owned unique decisions from the shop list entirely", () => {
+  it("shows an owned unique decision as owned instead of vanishing from the tree", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    // test-suite is unique and owned: still present, no Buy button, marked owned.
     expect(html).not.toContain('data-buy="test-suite"');
+    expect(html).toContain("Add test suite");
+    expect(html).toContain("tt-owned");
+    expect(html).toContain("owned");
+    // basic-dev (repeatable, not owned yet) stays buyable.
     expect(html).toContain('data-buy="basic-dev"');
   });
 
-  it("groups a fresh shop into category sections, ordered Ship faster before Earn income, with test-suite under Tame tech debt", () => {
+  it("shows a repeatable decision's owned count while keeping the Buy button live", () => {
     const e = new Engine(content());
+    e.applyDecision("contractor");
+    e.applyDecision("contractor");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(html).toContain("Ship faster");
-    expect(html).toContain("Earn income");
-    expect(html.indexOf("Ship faster")).toBeLessThan(html.indexOf("Earn income"));
-    const tameDebtIdx = html.indexOf("Tame tech debt");
-    const testSuiteIdx = html.indexOf('data-buy="test-suite"');
-    expect(tameDebtIdx).toBeGreaterThan(-1);
-    expect(testSuiteIdx).toBeGreaterThan(tameDebtIdx);
+    expect(html).toContain("owned x2");
+    expect(html).toContain('data-buy="contractor"');
   });
 
-  it("hides the Change the loop section on a fresh game (ci-cd hidden by missing-requires) and shows it after buying test-suite", () => {
-    const e = new Engine(content());
-    const freshHtml = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(freshHtml).not.toContain("Change the loop");
-
-    e.applyDecision("test-suite");
-    const afterHtml = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(afterHtml).toContain("Change the loop");
-    expect(afterHtml).toContain('data-buy="ci-cd"');
-  });
-
-  it("still shows the unlock-count hint alongside the sectioned shop", () => {
+  it("renders each node's chain (or standalone) placement and a short category tag", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(html).toContain("7 more alterations unlock as your factory grows.");
+    // Chain headers, named after each chain's root.
+    expect(html).toContain("Add test suite");
+    expect(html).toContain("Hire basic developer");
+    expect(html).toContain("Add coding agent");
+    expect(html).toContain("Standalone");
+    expect(html).toContain("&rarr;");
+    // Category tags (mapped from DecisionCategory to short labels).
+    expect(html).toContain('<span class="tt-cat">speed</span>');
+    expect(html).toContain('<span class="tt-cat">debt</span>');
+  });
+
+  it("no longer renders the retired unlock-count hint", () => {
+    const e = new Engine(content());
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(html).not.toContain("more alterations unlock");
   });
 });
 

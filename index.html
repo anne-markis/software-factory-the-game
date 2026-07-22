@@ -26,9 +26,38 @@
       .panel h4:first-of-type { margin-top: 0.25rem; }
       .panel h4 small { font-weight: normal; color: #666; }
       .log { max-height: 160px; overflow-y: auto; font-size: 0.85rem; }
+      /* Tech tree (Alter the loop). Each chain is a left-to-right row of tier
+         columns joined by an arrow glyph; nodes stack vertically within a
+         column. Node card sizes are fixed by their own static content (cost,
+         category, description are constant per node once rendered) so ticking
+         numbers elsewhere on the page never reflow this panel -- see the R14
+         layout-stability guarantee referenced in render.ts. */
+      .tt-chain { margin-bottom: 1rem; }
+      .tt-chain-row { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; }
+      .tt-tier { display: flex; flex-direction: column; gap: 0.5rem; min-width: 190px; }
+      .tt-arrow { flex: none; align-self: center; padding: 0 0.5rem; color: #666; font-size: 1.1rem; }
+      .tt-standalone-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .tt-standalone-grid .tt-node, .tt-tier .tt-node { width: 190px; }
+      .tt-node { border: 1px solid #999; padding: 0.4rem 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
+      .tt-node-name { font-weight: bold; }
+      .tt-node-meta { color: #666; display: flex; justify-content: space-between; gap: 0.5rem; margin: 0.15rem 0; }
+      .tt-node-desc { color: #444; margin-bottom: 0.25rem; }
+      .tt-node-state { margin-bottom: 0.25rem; }
+      .tt-reason { color: #a60; }
+      .tt-node.tt-locked { opacity: 0.5; }
+      .tt-node.tt-owned { opacity: 0.6; }
+      .tt-node.tt-owned .tt-tag-state { font-weight: bold; }
+      .tt-node.tt-cannot-afford .tt-reason { color: #c00; }
       .stall { background: #fdd; padding: 0.5rem; font-weight: bold; }
       .loops { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
       .cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; align-items: start; }
+      /* minmax(0, 1fr) on the track alone isn't enough: a grid item's default
+         min-width is auto (its content's min-content size), so the tech
+         tree's fixed-width tier columns would still overflow the .main
+         column and drag the whole page into horizontal scroll. min-width: 0
+         lets .main shrink to the track and defer overflow handling to
+         .tt-chain-row's own overflow-x: auto instead. */
+      .main { min-width: 0; }
       .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
       .side .log { max-height: 50vh; }
       @media (max-width: 900px) {
