@@ -5,7 +5,8 @@ import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
 import projectsJson from "../../content/projects.json";
-import { Engine } from "../engine/engine";
+import { Engine, initialState } from "../engine/engine";
+import { projectAvailability } from "../engine/projects";
 import type { GameContent } from "../engine/types";
 
 function content(): GameContent {
@@ -32,6 +33,7 @@ describe("renderStats", () => {
     expect(html).toContain('<span class="stat-label">Done</span> <span class="stat-value v-count">');
     expect(html).toContain('<span class="stat-label">Budget</span> <span class="stat-value v-budget">$');
     expect(html).toContain('<span class="stat-label">Tech Debt</span> <span class="stat-value v-debt">');
+    expect(html).toContain('<span class="stat-label">Reputation</span> <span class="stat-value v-rep">');
     expect(html).toContain('<span class="stat-label">Points/Day</span> <span class="stat-value v-rate">');
   });
 });
@@ -161,6 +163,19 @@ describe("renderProjects", () => {
     expect(html).toContain('data-project="big-migration" disabled');
     expect(html).toContain("requires 1 completed project(s)");
     expect(html).toContain("drops efficiency to 85%");
+  });
+
+  it("shows the reputation gate reason once the completed-count floor is already met (reputation reasons flow through the same reason field as completions/afford)", () => {
+    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const s = initialState(c);
+    // big-migration requires 1 completed project AND 5 reputation. Satisfy
+    // the completion floor but leave reputation below its gate so the
+    // reputation reason -- not the completion reason -- is what renders.
+    s.completedProjects = 1;
+    s.stocks.reputation = 1;
+    const html = renderProjects([...s.projects], projectAvailability(s, c), s);
+    expect(html).toContain('data-project="big-migration" disabled');
+    expect(html).toContain("requires 5 reputation");
   });
 });
 

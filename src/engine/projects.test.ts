@@ -4,7 +4,8 @@ import { parseStartConfig, parseProjects } from "./content";
 import startJson from "../../content/start.json";
 import projectsJson from "../../content/projects.json";
 import { effectiveRate, contextSwitchTax } from "./modifiers";
-import type { GameContent } from "./types";
+import { applyEffects } from "./effects";
+import type { GameContent, GameState, ProjectDef } from "./types";
 
 function content(overrides: Partial<GameContent["start"]["stocks"]> = {}): GameContent {
   const start = parseStartConfig(startJson);
@@ -67,6 +68,53 @@ describe("projects", () => {
     expect(e.getState().completedProjects).toBe(1);
     e.startProject("small-crm");
     e.getState().projects.forEach((p) => expect(p.defId).toBe("small-crm"));
+  });
+
+  // Release 17: requiresReputation gates a tier ON TOP OF requiresCompleted
+  // and affordability. Task 2 owns the shipped content's actual gated tiers
+  // (big-migration/enterprise/mobile), so this uses an inline fixture project
+  // rather than editing content/projects.json for a Task-1-only contract.
+  it("gates a project on requiresReputation: locked below threshold, startable at threshold, re-locked after a reputation loss", () => {
+    const fixture: ProjectDef = {
+      id: "rep-gated",
+      name: "Reputation Gated Contract",
+      sizePoints: 1000,
+      upfrontCost: 100,
+      payoutPerPoint: 10,
+      completionBonus: 500,
+      reputationReward: 3,
+      requiresReputation: 5,
+    };
+    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [fixture] };
+    const e = new Engine(c);
+
+    // Not startable at baseline reputation (shipped start.json: 0).
+    expect(e.getState().stocks.reputation).toBe(0);
+    let entry = e.availableProjects().find((p) => p.def.id === "rep-gated")!;
+    expect(entry.startable).toBe(false);
+    expect(entry.reason).toBe("requires 5 reputation");
+    expect(() => e.startProject("rep-gated")).toThrow(/requires 5 reputation/);
+
+    // Startable once reputation reaches the threshold.
+    const s = e.getState() as GameState;
+    s.stocks.reputation = 5;
+    entry = e.availableProjects().find((p) => p.def.id === "rep-gated")!;
+    expect(entry.startable).toBe(true);
+
+    // Re-locked after a reputation loss (applyEffects' addToStock, the same
+    // mechanism incident-class challenges use) drops it back below the
+    // threshold -- live recompute, no extra mechanism (see
+    // projectAvailability). Uses a fresh engine so "already in flight" from
+    // starting rep-gated above cannot mask the reputation reason.
+    const c2: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [fixture] };
+    const e2 = new Engine(c2);
+    const s2 = e2.getState() as GameState;
+    s2.stocks.reputation = 5;
+    applyEffects(s2, [{ type: "addToStock", stock: "reputation", value: -5 }], "test");
+    expect(e2.getState().stocks.reputation).toBe(0);
+    entry = e2.availableProjects().find((p) => p.def.id === "rep-gated")!;
+    expect(entry.startable).toBe(false);
+    expect(entry.reason).toBe("requires 5 reputation");
   });
 
   it("isStalled when pipeline is empty and nothing is affordable", () => {

@@ -139,6 +139,32 @@ describe("save/load", () => {
     expect(restored.lastChallengeDay).toBe(42);
   });
 
+  // reputation (Release 17) lives in stocks, a plain object round-tripped
+  // through JSON with no per-field defaulting; like gameSeed/debtDrag,
+  // deserialize has no content access, so the Engine constructor backfills
+  // it from content.start.stocks.reputation.
+  it("Engine backfills a missing stocks.reputation from content (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.stocks.reputation;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.stocks.reputation).toBeUndefined(); // deserialize cannot know the baseline
+    const b = new Engine(c, restored);
+    expect(b.getState().stocks.reputation).toBe(c.start.stocks.reputation);
+  });
+
+  // milestonesSeen (Release 17) is content-free like archetypesSeen, so it
+  // defaults in deserialize itself rather than the Engine constructor.
+  it("defaults a missing milestonesSeen to [] (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.milestonesSeen;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.milestonesSeen).toEqual([]);
+  });
+
   it("loads a legacy save without lastChallengeDay fine (stays undefined, no default needed)", () => {
     const c = content();
     const a = new Engine(c);

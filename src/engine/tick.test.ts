@@ -52,6 +52,24 @@ describe("tick", () => {
     expect(e.getState().stocks.budget).toBe(10000 - 60 + 17);
   });
 
+  // Release 17: reputation is paid at the same completion point as the
+  // budget bonus (attributeShipped's completion branch), from
+  // ActiveProject.reputationReward (seeded from initialProject.reputationReward
+  // for the starting project). Shrinks the initial project to complete fast,
+  // matching the existing FIFO-completion tests' pattern (see projects.test.ts).
+  it("earns reputation on project completion, alongside the completion bonus", () => {
+    const content = testContent();
+    content.start.initialProject.sizePoints = 2;
+    content.start.stocks.backlog = 2;
+    const e = new Engine(content);
+    expect(e.getState().stocks.reputation).toBe(0); // shipped start.json baseline
+    for (let i = 0; i < 6; i++) e.tick(); // completes the tiny initial project
+    const s = e.getState();
+    expect(s.completedProjects).toBe(1);
+    expect(s.stocks.reputation).toBe(content.start.initialProject.reputationReward);
+    expect(s.log.some((l) => l.message.includes("reputation"))).toBe(true);
+  });
+
   it("does nothing while paused", () => {
     const e = new Engine(testContent());
     e.pause();

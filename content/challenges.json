@@ -28,13 +28,27 @@
   {
     "id": "prod-incident",
     "name": "Production incident",
-    "description": "Something broke in production. More likely the more tech debt you carry. Costs $150 and slows everything 20% for 3 days.",
+    "description": "Something broke in production. More likely the more tech debt you carry. Costs $150, dents your reputation, and slows everything 20% for 3 days.",
     "probabilityPerDay": 0.005,
     "probScaling": { "stat": "techDebt", "per": 500, "add": 0.01 },
     "condition": { "minDay": 15 },
     "effects": [
       { "type": "addToStock", "stock": "budget", "value": -150 },
+      { "type": "addToStock", "stock": "reputation", "value": -2 },
       { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.8, "durationDays": 3 }
+    ]
+  },
+  {
+    "id": "security-breach",
+    "name": "Security breach",
+    "description": "Attackers exploit a gap your debt-laden, under-tested codebase left open. Disclosure costs $300 and burns 5 reputation with your clients. The more tech debt you carry, the more likely it is.",
+    "probabilityPerDay": 0.003,
+    "probScaling": { "stat": "techDebt", "per": 500, "add": 0.008 },
+    "condition": { "minTechDebt": 800, "minDay": 15 },
+    "cooldownDays": 120,
+    "effects": [
+      { "type": "addToStock", "stock": "budget", "value": -300 },
+      { "type": "addToStock", "stock": "reputation", "value": -5 }
     ]
   },
   {

@@ -29,6 +29,7 @@ export function renderStats(state: Readonly<GameState>): string {
       ${stat("Shipped", fmt(state.stocks.shipped), "v-flow")}
       ${stat("Budget", `$${fmt(state.stocks.budget)}`, "v-budget")}
       ${stat("Tech Debt", fmt(state.stocks.techDebt), "v-debt")}
+      ${stat("Reputation", fmt(state.stocks.reputation), "v-rep")}
       ${stat("Points/Day", fmt(state.pointsPerDay), "v-rate")}
     </div>`;
 }
