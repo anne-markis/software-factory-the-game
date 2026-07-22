@@ -3,6 +3,7 @@ import type { Rng } from "./rng";
 import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
 import { continuousDeployActive } from "./continuousDeploy";
 import { detectArchetypes } from "./archetypes";
+import { detectMilestones } from "./milestones";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -27,8 +28,9 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
     // strand a project at a tiny positive remainder forever.
     if (p.remaining <= 1e-9) {
       state.stocks.budget += p.completionBonus;
+      state.stocks.reputation += p.reputationReward;
       state.completedProjects += 1;
-      log(state, `Project complete: ${p.name} (+$${p.completionBonus} bonus)`);
+      log(state, `Project complete: ${p.name} (+$${p.completionBonus} bonus, +${p.reputationReward} reputation)`);
       state.projects.shift();
     }
   }
@@ -118,6 +120,7 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   // chargeUpkeep so a payroll-failure removal later this tick does not race
   // the ownership counts, matching the pre-flow reads elsewhere.
   detectArchetypes(state, content, log);
+  detectMilestones(state, content, log);
 
   chargeUpkeep(state, content);
 

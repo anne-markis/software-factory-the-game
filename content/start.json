@@ -1,6 +1,6 @@
 {
   "seed": 20260714,
-  "stocks": { "backlog": 1500, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0 },
+  "stocks": { "backlog": 1500, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0, "reputation": 0 },
   "baseRates": { "pull": 1, "finish": 1, "deploy": 1 },
   "debtMultiplier": 0.5,
   "baseBurnPerDay": 20,
@@ -11,7 +11,14 @@
     "name": "First Contract",
     "sizePoints": 1500,
     "payoutPerPoint": 17,
-    "completionBonus": 2000
+    "completionBonus": 2000,
+    "reputationReward": 1
   },
-  "challengeSpacingDays": 50
+  "challengeSpacingDays": 50,
+  "milestones": [
+    { "id": "trusted", "reputation": 5, "name": "Trusted vendor", "message": "Milestone: Trusted vendor. Bigger contracts are opening up." },
+    { "id": "established", "reputation": 15, "name": "Established shop", "message": "Milestone: Established shop. Enterprise clients will take your calls now." },
+    { "id": "leader", "reputation": 35, "name": "Industry leader", "message": "Milestone: Industry leader. Your name carries the deal into the room." },
+    { "id": "titan", "reputation": 70, "name": "Industry titan", "message": "Milestone: Industry titan. The whole market watches what you ship next." }
+  ]
 }

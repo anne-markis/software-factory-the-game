@@ -40,5 +40,12 @@ export function deserialize(json: string): GameState {
   if (state.archetypesSeen === undefined) {
     state.archetypesSeen = [];
   }
+  // defensive default for saves written before milestone narration (Release
+  // 17). Content-free like archetypesSeen, so it defaults here rather than
+  // in the Engine constructor (which backfills content-derived fields like
+  // gameSeed/debtDrag/stocks.reputation).
+  if (state.milestonesSeen === undefined) {
+    state.milestonesSeen = [];
+  }
   return state;
 }

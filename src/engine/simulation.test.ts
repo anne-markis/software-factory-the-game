@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
+import { applyEffects } from "./effects";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "./content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
@@ -80,12 +81,30 @@ describe("simulation", () => {
     const e = new Engine(c);
     const at: Record<number, number> = {};
     let completionDay = 0;
+    // Reputation pins (Release 17): with challenges stripped there is no
+    // reputation loss anywhere, so reputation is a pure step function -- 0 until
+    // the initial contract completes, then exactly its reputationReward forever
+    // (idle starts no new project, so nothing else earns). Capture it either
+    // side of the completion day to pin that the ONLY reputation event here is
+    // the initialProject reward landing at completion.
+    let repBeforeCompletion = NaN;
+    let repAfterCompletion = NaN;
     for (let day = 1; day <= 2000; day++) {
       e.tick();
       const s = e.getState();
-      if (completionDay === 0 && s.completedProjects >= 1) completionDay = day;
+      if (completionDay === 0 && s.completedProjects >= 1) {
+        completionDay = day;
+        repAfterCompletion = s.stocks.reputation;
+      }
+      if (day === 1521) repBeforeCompletion = s.stocks.reputation; // one day before completion
       if ([500, 800, 1000, 1500, 1700, 1874].includes(day)) at[day] = s.stocks.budget;
     }
+    // Reputation stays 0 through the whole pre-completion glide, then steps to
+    // exactly initialProject.reputationReward (1) the moment the contract
+    // completes and holds there -- no drift from the new field.
+    expect(repBeforeCompletion).toBe(0);
+    expect(repAfterCompletion).toBe(c.start.initialProject.reputationReward); // 1
+    expect(e.getState().stocks.reputation).toBe(1); // unchanged from completion (day 1522) through day 2000
     // Phase 1: exactly linear before the drag engages.
     expect(at[500]).toBe(8466); // 9966 - 3 * 500
     expect(at[800]).toBe(7566); // 9966 - 3 * 800
@@ -284,6 +303,8 @@ describe("simulation", () => {
     budgetAtDay: Record<number, number>;
     endBudget: number;
     everBroke: boolean;
+    endReputation: number;
+    milestonesSeen: string[];
   } {
     const BUY_BUFFER = 800; // keep this much cash on hand beyond any oneTime cost
     const PROJECT_RESERVE = 600; // keep this much beyond a project's upfront cost
@@ -332,6 +353,8 @@ describe("simulation", () => {
       budgetAtDay,
       endBudget: e.getState().stocks.budget,
       everBroke,
+      endReputation: e.getState().stocks.reputation,
+      milestonesSeen: [...e.getState().milestonesSeen],
     };
   }
 
@@ -386,6 +409,19 @@ describe("simulation", () => {
   // 2 projects (days 387, 1774), budget 12812/22148/29275 at day 500/1000/2000,
   // never zero-clamped. The deploy-rework is invisible here (this build's finish
   // rate was never deploy-bound; continuous deploy via ci-cd ships Done anyway).
+  //
+  // RE-PINNED for Release 17 (reputation). The build earns reputation on
+  // completion (first-contract +1, small-crm +5) and loses it to incidents
+  // (prod-incident -2, security-breach -5). Its techDebt (~1985) crosses
+  // security-breach's minTechDebt 800 gate only late, so it takes exactly ONE
+  // breach, at day 1746 -- shaving end budget by that breach's $300 (29275.94
+  // -> 28975.94) and nothing else; day 500/1000 budgets are bit-identical to
+  // Release 15 (12812.28 / 22148.66) and both completion days are unchanged
+  // (387, 1774). Incident reputation losses eat the +1 from first-contract, so
+  // reputation lands at exactly small-crm's +5 by day 2000 -- precisely the
+  // "trusted" milestone threshold. The reputation gate does NOT wall this build
+  // off any contract it reached pre-reputation: it completes small-crm (ungated)
+  // and rolls into mobile-app (gate 5) with reputation exactly 5.
   it("human-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -398,9 +434,15 @@ describe("simulation", () => {
       "contractor",
     ]);
     expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 29275.94 -- narrower than pre-drag but comfortable
+    expect(r.endBudget).toBeGreaterThan(0); // observed 28975.94 -- one $300 breach below the pre-reputation 29275.94
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
     expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 387, 1774
+    // The reinforcing loop is exercised: completing lower contracts earns
+    // reputation (observed end 5). Assert only that reputation was earned at
+    // all; the exact end value is knife-edge on incident timing relative to the
+    // last completion, so the sticky milestone below is the robust loop proof.
+    expect(r.endReputation).toBeGreaterThanOrEqual(1);
+    expect(r.milestonesSeen).toContain("trusted"); // crossed the first milestone by day 2000
   });
 
   // Automation-heavy build. Observed trajectory under the tuned content:
@@ -462,6 +504,20 @@ describe("simulation", () => {
   // drag off its 0.6 floor and the build stays solvent: completes 2 projects
   // (days 395, 1856), budget 12698/21770/26562 at day 500/1000/2000, never
   // zero-clamped.
+  //
+  // RE-PINNED for Release 17 (reputation). This build carries the highest
+  // techDebt of any viable probe (~2490), so it is the most breach-exposed: it
+  // takes FOUR security breaches (days 607, 1124, 1633, 1845), each -$300 and
+  // -5 reputation. Those four $300 hits (plus their earlier timing dragging on
+  // compounding) pull end budget from 26562.84 to 25187.30 and day-1000 budget
+  // from 21770 to 21470.89; day 500 (12698.68) and both completion days (395,
+  // 1856) are unchanged (debt only reaches the 800 breach gate after day 500).
+  // Despite the breach reputation bleed, completing first-contract (+1) and
+  // small-crm (+5) lands reputation at exactly 5 by day 2000 -- the "trusted"
+  // milestone -- so the reinforcing loop is exercised and the build is not
+  // walled off the mobile-app tier (gate 5) it rolls into. This is the spiral
+  // held at a survivable amplitude for a well-mitigated build: real cost, no
+  // collapse (contrast the greedy build below, where it does bite hard).
   it("automation-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -474,9 +530,14 @@ describe("simulation", () => {
       "support-retainer",
     ]);
     expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 26562.84 -- narrower than pre-drag but comfortable
+    expect(r.endBudget).toBeGreaterThan(0); // observed 25187.30 -- four $300 breaches below the pre-reputation 26562.84
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
     expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 395, 1856
+    // Reinforcing loop exercised even under the heaviest breach load
+    // (observed end 5). Knife-edge on breach timing, so assert only that
+    // reputation was earned; the sticky milestone below is the robust proof.
+    expect(r.endReputation).toBeGreaterThanOrEqual(1);
+    expect(r.milestonesSeen).toContain("trusted"); // crossed the first milestone by day 2000
   });
 
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {
@@ -548,6 +609,25 @@ describe("simulation", () => {
     // exercises engine invariants under maximal purchasing pressure, not
     // balance.
     //
+    // RE-PINNED for Release 17 (reputation) -- and the one probe where the
+    // downward spiral bites HARD, which is the intended lesson. Greedy stacks
+    // every debt-raiser it can afford, so its techDebt balloons (~5790 by day
+    // 2000) and it eats security breaches repeatedly; those (plus prod-incident)
+    // strip reputation faster than its two completions (first-contract +1,
+    // small-crm +5) can build it, so reputation reaches "trusted" (5) briefly
+    // -- milestonesSeen does contain "trusted" -- then collapses back to 0,
+    // RE-LOCKING the big-migration/mobile-app/enterprise tiers behind their
+    // reputation gates. Locked out of the big contracts it used to grab on
+    // completion-count alone, greedy ships far less than pre-reputation
+    // (shipped ~11140, was ~13063) and ends far poorer (budget ~13679, was
+    // ~56826): success-to-the-successful running in reverse. The early peak is
+    // actually HIGHER now (~9.27, was ~8.36 pt/day) because the reputation gate
+    // keeps the big tiers from starting early, so fewer concurrent projects
+    // means less context-switch tax on the opening sprint. The two margin
+    // assertions above still hold (end ~4.26 < peak*0.5 ~4.63; peak ~9.27 > 5),
+    // and the test stays invariants-only by design. Reputation invariants
+    // (>= 0, finite) hold throughout via assertInvariants over every stock.
+    //
     // RE-PINNED for Release 9 (global event spacing, challengeSpacingDays
     // 50): observed at day 2000, completedProjects 2, shipped ~12598, budget
     // ~47233. This is a marked shift from the pre-spacing observation
@@ -585,6 +665,54 @@ describe("simulation", () => {
     // this is the one probe where the mechanism change is actually visible
     // -- more points ship, more budget accrues. Still invariants-only by
     // design; no solvency/completion assertions changed.
+  });
+
+  // SPIRAL probe (Release 17): the headline systems behavior -- "success to the
+  // successful" running in reverse, a real downward spiral. Manufacture a build
+  // that has climbed to the top tier's reputation gate (enterprise-replatform:
+  // 2 completions AND 15 reputation, the two floors it stacks), confirm the
+  // contract is startable, then apply ONE security-breach's reputation hit and
+  // assert the tier re-locks -- projectAvailability flips it to not-startable
+  // with the reputation reason, live, no un-start mechanism needed. This is the
+  // income you needed to recover becoming unreachable precisely because an
+  // incident cost you the standing that unlocked it.
+  it("downward spiral: a security-breach reputation hit re-locks a tier the build had unlocked", () => {
+    const content = fullContent();
+    const e = new Engine(content);
+    // Cast past the Readonly view to stage a build sitting exactly on the top
+    // tier's gate: 2 completed projects, reputation 15 (enterprise's floor),
+    // and plenty of budget so affordability is never the binding reason.
+    const s = e.getState() as GameState;
+    s.completedProjects = 2;
+    s.stocks.reputation = 15;
+    s.stocks.budget = 100000;
+
+    const enterpriseAt = () => e.availableProjects().find((p) => p.def.id === "enterprise-replatform")!;
+    // Both floors satisfied AND affordable -> startable, no reason.
+    expect(enterpriseAt().startable).toBe(true);
+    expect(enterpriseAt().reason).toBeUndefined();
+
+    // Apply the real security-breach effects (budget -300, reputation -5). The
+    // -5 drops reputation from 15 to 10, below enterprise's 15 gate.
+    const breach = content.challenges.find((c) => c.id === "security-breach")!;
+    applyEffects(s, breach.effects, "spiral-test");
+    expect(s.stocks.reputation).toBe(10);
+
+    // The tier re-locks live, and the reason names the reputation shortfall
+    // (not affordability -- budget is still ample). This is the spiral: the
+    // breach cost the access, not just the cash.
+    const relocked = enterpriseAt();
+    expect(relocked.startable).toBe(false);
+    expect(relocked.reason).toBe("requires 15 reputation");
+
+    // A second breach digs deeper (10 -> 5) and it stays locked -- recovery
+    // requires re-earning reputation through completions, which the breach loop
+    // also threatens. The trap is real (by design); the balance sweep keeps it
+    // survivable for a mitigated build (see the automation-heavy probe).
+    applyEffects(s, breach.effects, "spiral-test-2");
+    expect(s.stocks.reputation).toBe(5);
+    expect(enterpriseAt().startable).toBe(false);
+    expect(enterpriseAt().reason).toBe("requires 15 reputation");
   });
 
   it("upgrades matter: test suite reduces tech debt vs idle over 400 days", () => {

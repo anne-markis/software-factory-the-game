@@ -12,6 +12,16 @@ const stocksSchema = z
     // budget: unconstrained here; runtime clamping is the engine's job.
     budget: z.number(),
     techDebt: z.number().min(0),
+    reputation: z.number().min(0),
+  })
+  .strict();
+
+const milestoneSchema = z
+  .object({
+    id: z.string(),
+    reputation: z.number().min(0),
+    name: z.string(),
+    message: z.string(),
   })
   .strict();
 
@@ -41,9 +51,11 @@ const startSchema = z
         sizePoints: z.number().positive(),
         payoutPerPoint: z.number().min(0),
         completionBonus: z.number().min(0),
+        reputationReward: z.number().min(0),
       })
       .strict(),
     challengeSpacingDays: z.number().int().min(0),
+    milestones: z.array(milestoneSchema),
   })
   .strict();
 
@@ -55,11 +67,31 @@ function fail(file: string, error: z.ZodError): never {
 export function parseStartConfig(json: unknown): StartConfig {
   const result = startSchema.safeParse(json);
   if (!result.success) fail("content/start.json", result.error);
-  return result.data;
+  const cfg = result.data;
+  // Integrity checks the schema alone cannot express: milestone ids must be
+  // unique (detectMilestones' seen-set keys on id) and thresholds must be
+  // strictly ascending (milestones.ts relies on no ordering assumption today,
+  // but ascending, non-duplicate thresholds are the only sane authoring
+  // shape -- catch a mis-ordered or duplicated content edit at load time).
+  const seenIds = new Set<string>();
+  let prevReputation = -Infinity;
+  for (const m of cfg.milestones) {
+    if (seenIds.has(m.id)) {
+      throw new Error(`Invalid content in content/start.json: duplicate milestone id "${m.id}"`);
+    }
+    seenIds.add(m.id);
+    if (m.reputation <= prevReputation) {
+      throw new Error(
+        `Invalid content in content/start.json: milestone "${m.id}" reputation ${m.reputation} is not strictly ascending`,
+      );
+    }
+    prevReputation = m.reputation;
+  }
+  return cfg;
 }
 
 const rateTarget = z.enum(["pull", "finish", "deploy", "all"]);
-const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt"]);
+const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt", "reputation"]);
 
 const effectSchema = z.discriminatedUnion("type", [
   z
@@ -221,6 +253,8 @@ const projectSchema = z
     payoutPerPoint: z.number().min(0),
     completionBonus: z.number().min(0),
     requiresCompleted: z.number().int().min(0).optional(),
+    reputationReward: z.number().min(0),
+    requiresReputation: z.number().min(0).optional(),
   })
   .strict();
 
