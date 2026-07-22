@@ -1,7 +1,8 @@
 import type { Availability } from "../engine/decisions";
 import { contextSwitchTax } from "../engine/modifiers";
 import type { ProjectAvailability } from "../engine/projects";
-import type { DecisionCategory, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
+import type { DecisionCategory, DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
+import { buildTechTree, type TechChain } from "./techTree";
 
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -34,46 +35,90 @@ export function renderStats(state: Readonly<GameState>): string {
     </div>`;
 }
 
-function describeCost(a: Availability): string {
-  const cost = [
-    a.def.cost.oneTime ? `$${a.def.cost.oneTime} once` : "",
-    a.def.cost.perDay ? `$${a.def.cost.perDay}/day` : "",
-  ].filter(Boolean).join(" + ") || "free";
-  return `${cost}. ${esc(a.def.description)}`;
+// Short player-facing labels for the tech-tree node tags. Every shipped
+// decision carries a required category (see DecisionDef in ../engine/types),
+// so this map is exhaustive over DecisionCategory.
+const CATEGORY_LABELS: Record<DecisionCategory, string> = {
+  "ship-faster": "speed",
+  "earn-income": "income",
+  "tame-debt": "debt",
+  "prevent-trouble": "safety",
+  "change-structure": "structure",
+};
+
+function costLine(def: DecisionDef): string {
+  return (
+    [def.cost.oneTime ? `$${def.cost.oneTime} once` : "", def.cost.perDay ? `$${def.cost.perDay}/day` : ""]
+      .filter(Boolean)
+      .join(" + ") || "free"
+  );
 }
 
-// Fixed shop section order and headers. Every shipped decision carries a
-// required category (see DecisionDef in ../engine/types), so this list is
-// exhaustive over DecisionCategory -- a section simply doesn't render when
-// it has no visible entries (see renderDecisions below).
-const CATEGORY_SECTIONS: { id: DecisionCategory; header: string; hint: string }[] = [
-  { id: "ship-faster", header: "Ship faster", hint: "(points/day)" },
-  { id: "earn-income", header: "Earn income", hint: "(budget)" },
-  { id: "tame-debt", header: "Tame tech debt", hint: "(debt and incident risk)" },
-  { id: "prevent-trouble", header: "Prevent trouble", hint: "(events and gambles)" },
-  { id: "change-structure", header: "Change the loop", hint: "(structure)" },
-];
+// A short, single-line summary of a node's description -- the tree favors
+// scannability over completeness (see the tech-tree design notes). Full
+// description text is still available via the "Owned" panel's log entries.
+function shortDesc(def: DecisionDef): string {
+  const firstSentence = def.description.split(/(?<=\.)\s/)[0];
+  return firstSentence.length > 90 ? `${firstSentence.slice(0, 87)}...` : firstSentence;
+}
 
-function renderShopEntry(a: Availability): string {
-  const disabled = a.purchasable ? "" : "disabled";
-  const reason = a.reason ? ` (${esc(a.reason)})` : "";
-  return `<div><button data-buy="${esc(a.def.id)}" ${disabled}>Buy</button> <strong>${esc(a.def.name)}</strong>${reason}<br/><small>${describeCost(a)}</small></div>`;
+// Renders one tech-tree node card. States (mutually exclusive):
+//  - owned unique: dimmed, no Buy button, marked "owned"
+//  - owned repeatable: not dimmed, keeps the Buy button, shows "owned xN"
+//  - missing-requires: dimmed but VISIBLE (reverses the old hide-until-
+//    unlocked behavior so the ladder ahead is visible), Buy disabled
+//  - cannot-afford: Buy disabled, reason shown
+//  - purchasable: Buy enabled
+function renderTechNode(a: Availability, ownedCount: number): string {
+  const def = a.def;
+  const ownedUnique = a.code === "already-owned";
+  const ownedRepeatable = !ownedUnique && ownedCount > 0;
+  const stateClass = ownedUnique ? "tt-owned" : a.code === "missing-requires" ? "tt-locked" : a.code === "cannot-afford" ? "tt-cannot-afford" : "tt-buyable";
+
+  let stateLine = "";
+  let button = "";
+  if (ownedUnique) {
+    stateLine = `<span class="tt-tag-state">owned</span>`;
+  } else {
+    if (ownedRepeatable) stateLine += `<span class="tt-tag-state">owned x${ownedCount}</span>`;
+    if (a.reason) stateLine += `${stateLine ? " " : ""}<span class="tt-reason">${esc(a.reason)}</span>`;
+    const disabled = a.purchasable ? "" : "disabled";
+    button = `<button data-buy="${esc(def.id)}" ${disabled}>Buy</button>`;
+  }
+
+  return `<div class="tt-node ${stateClass}">
+    <div class="tt-node-name">${esc(def.name)}</div>
+    <div class="tt-node-meta"><span class="tt-cat">${esc(CATEGORY_LABELS[def.category])}</span> <span class="tt-cost">${esc(costLine(def))}</span></div>
+    <div class="tt-node-desc">${esc(shortDesc(def))}</div>
+    ${stateLine ? `<div class="tt-node-state">${stateLine}</div>` : ""}
+    ${button}
+  </div>`;
+}
+
+function renderChain(chain: TechChain, availById: Map<string, Availability>, ownedCounts: Map<string, number>): string {
+  const columns = chain.tiers
+    .map((tier) => {
+      const nodes = tier.map((def) => renderTechNode(availById.get(def.id)!, ownedCounts.get(def.id) ?? 0)).join("");
+      return `<div class="tt-tier">${nodes}</div>`;
+    })
+    .join(`<div class="tt-arrow">&rarr;</div>`);
+  return `<div class="tt-chain"><h4>${esc(chain.name)}</h4><div class="tt-chain-row">${columns}</div></div>`;
+}
+
+function renderStandalone(defs: DecisionDef[], availById: Map<string, Availability>, ownedCounts: Map<string, number>): string {
+  if (defs.length === 0) return "";
+  const nodes = defs.map((def) => renderTechNode(availById.get(def.id)!, ownedCounts.get(def.id) ?? 0)).join("");
+  return `<div class="tt-standalone"><h4>Standalone</h4><div class="tt-standalone-grid">${nodes}</div></div>`;
 }
 
 export function renderDecisions(avail: Availability[], ownedInstances: DecisionInstance[], content: GameContent): string {
-  const hiddenCount = avail.filter((a) => a.code === "missing-requires").length;
-  const visible = avail.filter((a) => a.code !== "already-owned" && a.code !== "missing-requires");
-  const shop = CATEGORY_SECTIONS
-    .map(({ id, header, hint }) => {
-      const entries = visible.filter((a) => a.def.category === id);
-      if (entries.length === 0) return "";
-      return `<h4>${esc(header)} <small>${esc(hint)}</small></h4>${entries.map(renderShopEntry).join("")}`;
-    })
-    .join("");
-  const hiddenHint =
-    hiddenCount > 0
-      ? `<small>${hiddenCount} more alteration${hiddenCount === 1 ? "" : "s"} unlock as your factory grows.</small>`
-      : "";
+  const availById = new Map(avail.map((a) => [a.def.id, a]));
+  const ownedCounts = new Map<string, number>();
+  for (const inst of ownedInstances) ownedCounts.set(inst.defId, (ownedCounts.get(inst.defId) ?? 0) + 1);
+  const tree = buildTechTree(content);
+  const shop =
+    tree.chains.map((chain) => renderChain(chain, availById, ownedCounts)).join("") +
+    renderStandalone(tree.standalone, availById, ownedCounts);
   const ownedList = ownedInstances
     .map((inst) => {
       const def = content.decisions.find((d) => d.id === inst.defId);
@@ -85,7 +130,7 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
     })
     .join("");
   return `
-    <div class="panel"><h3>Alter the loop</h3>${shop}${hiddenHint}</div>
+    <div class="panel"><h3>Alter the loop</h3>${shop}</div>
     <div class="panel"><h3>Owned</h3>${ownedList || "<small>Nothing yet. You are a solo dev.</small>"}</div>`;
 }
 
