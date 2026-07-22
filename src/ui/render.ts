@@ -163,6 +163,27 @@ export function renderProjects(
   return `<div class="panel"><h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}<hr/>${shop}</div>`;
 }
 
+// The time-control group (design doc section 8): Pause/Resume plus one
+// button per available speed, replacing the old bare Pause button. Routed
+// through the existing #app click delegation via data-speed, matching
+// data-buy/data-project. All buttons are fixed-width (see .tc-btn in
+// index.html) so the group's size never changes -- preserves the R14
+// no-reflow guarantee even as the active marker or the Pause/Resume label
+// changes width.
+export function renderTimeControls(paused: boolean, speed: number, options: readonly number[]): string {
+  const pauseLabel = paused ? "Resume" : "Pause";
+  const speedButtons = options
+    .map((opt) => {
+      const active = opt === speed ? " tc-active" : "";
+      return `<button class="tc-btn${active}" data-speed="${opt}">${opt}x</button>`;
+    })
+    .join("");
+  return `<div class="time-controls">
+    <button class="tc-btn" id="pause">${pauseLabel}</button>
+    ${speedButtons}
+  </div>`;
+}
+
 export function renderStall(stalled: boolean): string {
   return stalled
     ? `<div class="stall">The factory is stalled: no work in the pipeline and nothing affordable. Income may still accrue; otherwise this factory is dead.</div>`
