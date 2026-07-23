@@ -3,6 +3,7 @@ import { contextSwitchTax } from "../engine/modifiers";
 import type { ProjectAvailability } from "../engine/projects";
 import type { DecisionCategory, DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
 import { buildTechTree, type TechChain } from "./techTree";
+import { summarizeDecisionEffects } from "./effectSummary";
 
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -54,12 +55,11 @@ function costLine(def: DecisionDef): string {
   );
 }
 
-// A short, single-line summary of a node's description -- the tree favors
-// scannability over completeness (see the tech-tree design notes). Full
-// description text is still available via the "Owned" panel's log entries.
-function shortDesc(def: DecisionDef): string {
-  const firstSentence = def.description.split(/(?<=\.)\s/)[0];
-  return firstSentence.length > 90 ? `${firstSentence.slice(0, 87)}...` : firstSentence;
+// Renders the derived-effects line, or nothing when the decision has no
+// direct effects (its authored description carries the conditional story).
+function effectsLine(def: DecisionDef): string {
+  const summary = summarizeDecisionEffects(def);
+  return summary ? `<div class="tt-effects">${esc(summary)}</div>` : "";
 }
 
 // Renders one tech-tree node card. States (mutually exclusive):
@@ -86,10 +86,18 @@ function renderTechNode(a: Availability, ownedCount: number): string {
     button = `<button data-buy="${esc(def.id)}" ${disabled}>Buy</button>`;
   }
 
+  // Card anatomy (design doc section 4): name + category tag, cost line,
+  // authored description (benefit then catch, full text -- no truncation:
+  // descriptions were rewritten in Release 20 to be short enough to always
+  // fit), derived effects (numbers straight from `effects`, so they can't
+  // drift from a balance retune the way hand-written prose can), then
+  // state/button. The derived line is omitted entirely when there is
+  // nothing to derive (synergy targets and challenge gates).
   return `<div class="tt-node ${stateClass}">
     <div class="tt-node-name">${esc(def.name)}</div>
     <div class="tt-node-meta"><span class="tt-cat">${esc(CATEGORY_LABELS[def.category])}</span> <span class="tt-cost">${esc(costLine(def))}</span></div>
-    <div class="tt-node-desc">${esc(shortDesc(def))}</div>
+    <div class="tt-node-desc">${esc(def.description)}</div>
+    ${effectsLine(def)}
     ${stateLine ? `<div class="tt-node-state">${stateLine}</div>` : ""}
     ${button}
   </div>`;

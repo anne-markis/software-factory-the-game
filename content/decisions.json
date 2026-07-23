@@ -2,7 +2,7 @@
   {
     "id": "test-suite",
     "name": "Add test suite",
-    "description": "Slows all work 50% for 5 days while you write tests. Permanently halves tech debt accumulation. Unlocks CI/CD.",
+    "description": "Halves tech debt permanently and unlocks CI/CD. Work slows 50% for about a week while you write them.",
     "tags": [
       "process"
     ],
@@ -30,7 +30,7 @@
   {
     "id": "ci-cd",
     "name": "CI/CD pipeline",
-    "description": "Slows all work 50% for 1 day to set up. Once live, finished work deploys continuously: nothing waits in Done.",
+    "description": "Finished work ships continuously, removing the Done queue entirely. Costs a day of setup.",
     "tags": [
       "process"
     ],
@@ -59,7 +59,7 @@
   {
     "id": "basic-dev",
     "name": "Hire basic developer",
-    "description": "Costs $7/day while employed. Hiring is a gamble: they might be great, or might slow the team down. Removed permanently if payroll fails.",
+    "description": "Adds a developer, hopefully a strong one. It's a gamble, and they're gone for good if payroll fails.",
     "tags": [
       "human"
     ],
@@ -147,7 +147,7 @@
   {
     "id": "agent",
     "name": "Add coding agent",
-    "description": "$10 setup, $4/day to run. Speeds In Progress work by 20% but adds 20% more tech debt. A harness tames the debt.",
+    "description": "Speeds finishing work 20%. Adds 20% more tech debt unless you build a harness for it.",
     "tags": [
       "darkfactory"
     ],
@@ -192,7 +192,7 @@
   {
     "id": "agent-harness",
     "name": "Agent harness",
-    "description": "$250 setup, $5/day. Structured tests and guardrails for agents: agents bought while a harness is present accumulate half the extra debt.",
+    "description": "Halves the extra tech debt your coding agents create. Ongoing cost to keep it running.",
     "tags": [
       "darkfactory"
     ],
@@ -210,7 +210,7 @@
   {
     "id": "better-tooling",
     "name": "Better tooling",
-    "description": "Sharper editors and faster builds permanently speed all work a little.",
+    "description": "Sharper editors and faster builds speed up every rate a little, for good.",
     "tags": [
       "solo"
     ],
@@ -232,7 +232,7 @@
   {
     "id": "copilot",
     "name": "Copilot assistant",
-    "description": "Speeds In Progress work by 15% but adds 5% more tech debt.",
+    "description": "Speeds finishing work 15%. Adds 5% more tech debt in exchange.",
     "tags": [
       "solo"
     ],
@@ -260,7 +260,7 @@
   {
     "id": "senior-dev",
     "name": "Hire senior developer",
-    "description": "Needs a basic developer on the team. Usually a big boost, occasionally a dud; a manager improves the odds.",
+    "description": "Usually a big boost to the team, sometimes a dud. Hiring an engineering manager first improves the odds.",
     "tags": [
       "human"
     ],
@@ -351,7 +351,7 @@
   {
     "id": "contractor",
     "name": "Bring in contractor",
-    "description": "A dependable +1 to pulling and finishing work, but their code adds 10% more tech debt; immune to sickness and poaching.",
+    "description": "A dependable +1 to pulling and finishing work, immune to sickness and poaching. Adds 10% more tech debt.",
     "tags": [
       "human"
     ],
@@ -373,7 +373,7 @@
   {
     "id": "eng-manager",
     "name": "Hire engineering manager",
-    "description": "Needs a basic developer. Adds no output directly, but developers hired under a manager gamble with better odds.",
+    "description": "Improves the odds on every developer hire made while they're on staff. No output of their own.",
     "tags": [
       "human"
     ],
@@ -391,7 +391,7 @@
   {
     "id": "standup",
     "name": "Daily standup",
-    "description": "Costs everyone a little time but keeps work moving: pulling new work speeds up 15%.",
+    "description": "Keeps work moving: pulling new work speeds up 15%. Costs everyone a little time each day.",
     "tags": [
       "human",
       "process"
@@ -414,7 +414,7 @@
   {
     "id": "agent-swarm",
     "name": "Agent swarm",
-    "description": "Needs a harness. Agents pick up, build, and ship work themselves: all work speeds up 80%, but tech debt grows 50% faster; an orchestrator tames the debt.",
+    "description": "Agents pick up and ship work themselves: all work 80% faster. Tech debt grows 50% faster unless an orchestrator tames it.",
     "tags": [
       "darkfactory"
     ],
@@ -462,7 +462,7 @@
   {
     "id": "swarm-orchestrator",
     "name": "Swarm orchestrator",
-    "description": "Needs a harness. No output on its own: swarms bought while it runs accumulate far less debt.",
+    "description": "Swarms bought while this runs accumulate far less tech debt. No output on its own.",
     "tags": [
       "darkfactory"
     ],
@@ -481,7 +481,7 @@
   {
     "id": "self-learning-agents",
     "name": "Self-learning agents",
-    "description": "Needs an agent swarm. Agents improve themselves a little every day, compounding into a large speed boost.",
+    "description": "Agents improve themselves every day, compounding into a large speed boost over time.",
     "tags": [
       "darkfactory"
     ],
@@ -519,7 +519,7 @@
   {
     "id": "support-retainer",
     "name": "Support retainer",
-    "description": "Earns $8/day in support fees, but the interruptions slow all work by 5%.",
+    "description": "Earns $8/day in support fees. The interruptions slow all work by 5%.",
     "tags": [
       "process"
     ],
@@ -540,7 +540,7 @@
   {
     "id": "ddos-protection",
     "name": "DDoS protection",
-    "description": "Prevents DDoS attacks entirely.",
+    "description": "Prevents DDoS attacks from ever hitting your factory.",
     "tags": [
       "process"
     ],
@@ -556,7 +556,7 @@
   {
     "id": "refactoring-sprint",
     "name": "Refactoring sprint",
-    "description": "Stop and clean up: all work slows 40% for about a week, and 30% of your tech debt is paid down.",
+    "description": "Pays down 30% of your tech debt in one sprint. Work slows 40% for about a week while you clean up.",
     "tags": [
       "process"
     ],
@@ -583,7 +583,7 @@
   {
     "id": "redesign-rebuild",
     "name": "Redesign and rebuild",
-    "description": "Tear it down and rebuild it right: work crawls for over three weeks, but 90% of your tech debt is wiped.",
+    "description": "Wipes 90% of your tech debt. Work crawls at 40% speed for over three weeks while you rebuild.",
     "tags": [
       "process"
     ],

@@ -47,6 +47,14 @@
       .tt-node-name { font-weight: bold; }
       .tt-node-meta { color: #666; display: flex; justify-content: space-between; gap: 0.5rem; margin: 0.15rem 0; }
       .tt-node-desc { color: #444; margin-bottom: 0.25rem; }
+      /* Derived effects line (Release 20 card legibility): terse, numbers-only
+         summary generated from the decision's structured effects data (see
+         src/ui/effectSummary.ts), rendered beneath the authored description.
+         Dimmer than .tt-node-desc so the authored benefit/catch prose reads
+         first and the hard numbers read as a quieter confirmation underneath
+         -- reuses the existing #666 dim tone from .tt-node-meta rather than
+         introducing a new color. */
+      .tt-effects { color: #666; font-size: 0.8rem; margin-bottom: 0.25rem; }
       .tt-node-state { margin-bottom: 0.25rem; }
       .tt-reason { color: #a60; }
       .tt-node.tt-locked { opacity: 0.5; }
