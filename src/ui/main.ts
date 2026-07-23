@@ -5,10 +5,11 @@ import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
 import projectsJson from "../../content/projects.json";
 import type { GameContent } from "../engine/types";
-import { renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall } from "./render";
+import { renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall, renderTimeControls } from "./render";
 import { loopDiagramSvg } from "./loopDiagram";
 import { inProgressPanelSvg } from "./inProgressPanel";
-import { saveGame, loadGame, clearSave } from "./storage";
+import { saveGame, loadGame, clearSave, saveSpeed, loadSpeed } from "./storage";
+import { advance, SPEED_OPTIONS, type Speed } from "./tickDriver";
 
 const content: GameContent = {
   start: parseStartConfig(startJson),
@@ -21,6 +22,11 @@ validateContentGraph(content);
 const engine = new Engine(content, loadGame());
 const app = document.getElementById("app")!;
 
+// Speed is a UI preference, not game state (design doc section 3/6): it
+// lives in its own localStorage key and its own variable here, never in
+// GameState or content, so the engine purity test stays green.
+let speed: Speed = loadSpeed();
+
 function render(): void {
   const state = engine.getState();
   app.innerHTML = `
@@ -30,7 +36,7 @@ function render(): void {
       ${inProgressPanelSvg(state, content)}
     </div>
     ${renderStall(engine.isStalled())}
-    <button id="pause">${state.paused ? "Resume" : "Pause"}</button>
+    ${renderTimeControls(state.paused, speed, SPEED_OPTIONS)}
     <button id="reset">Reset game</button>
     <div class="cols">
       <div class="main">
@@ -71,6 +77,16 @@ app.addEventListener("click", (ev) => {
     } catch (err) {
       alert((err as Error).message);
     }
+  } else if (target.dataset.speed) {
+    // Changing speed applies immediately and persists; allowed while
+    // paused, in which case it takes effect on resume (design doc
+    // section 8/6). It never touches the engine, so no engine.tick()
+    // or state change happens here -- just the UI-layer rate.
+    const next = Number(target.dataset.speed) as Speed;
+    if ((SPEED_OPTIONS as readonly number[]).includes(next)) {
+      speed = next;
+      saveSpeed(speed);
+    }
   } else if (target.id === "reset") {
     if (confirm("Wipe this factory and start over?")) {
       clearSave();
@@ -87,12 +103,60 @@ app.addEventListener("click", (ev) => {
   saveGame(engine.getState());
 });
 
+// Fixed-timestep driver (design doc section 4): a 100ms wall-clock interval
+// decoupled from tick cadence via the pure `advance` accumulator, so render
+// cost stays capped at 10/s regardless of speed while ticks can run faster.
+// See tickDriver.ts for the accumulator itself (large-gap and per-frame-cap
+// guards live there, not here).
+const DRIVER_INTERVAL_MS = 100;
+let accumulatorMs = 0;
+let lastFrameTime = performance.now();
+
 const intervalId = setInterval(() => {
-  engine.tick();
-  if (engine.getState().day % 10 === 0) saveGame(engine.getState());
-  render();
-}, 1000);
+  const now = performance.now();
+  const elapsedMs = now - lastFrameTime;
+  lastFrameTime = now;
+
+  if (engine.getState().paused) {
+    // Paused: lastFrameTime still advances above every 100ms, so no gap
+    // builds up while paused and resuming doesn't replay a burst of ticks.
+    // The accumulator itself is left untouched -- fractional progress
+    // toward the next tick isn't lost across a pause/resume.
+    return;
+  }
+
+  const result = advance(accumulatorMs, elapsedMs, speed);
+  accumulatorMs = result.accumulatorMs;
+
+  // Autosave check runs inside the per-tick loop (design doc section 7): a
+  // batched multi-tick frame must not step over a `day % 10 === 0` boundary
+  // and skip a save the way checking only once per frame would.
+  for (let i = 0; i < result.ticks; i++) {
+    engine.tick();
+    if (engine.getState().day % 10 === 0) saveGame(engine.getState());
+  }
+
+  if (result.ticks > 0) render();
+}, DRIVER_INTERVAL_MS);
 render();
+
+// Spacebar toggles pause (design doc section 8). Guarded against form
+// controls even though none exist today, per spec.
+window.addEventListener("keydown", (ev) => {
+  if (ev.code !== "Space") return;
+  const target = ev.target as HTMLElement | null;
+  const tag = target?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  ev.preventDefault(); // don't let the page scroll
+  const state = engine.getState();
+  if (state.paused) {
+    engine.resume();
+  } else {
+    engine.pause();
+  }
+  render();
+  saveGame(engine.getState());
+});
 
 // Vite HMR: without this, each edit stacks another interval on the old one.
 if (import.meta.hot) {

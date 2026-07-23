@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { esc, renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall } from "./render";
+import { esc, renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall, renderTimeControls } from "./render";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
@@ -180,6 +180,34 @@ describe("renderProjects", () => {
     const html = renderProjects([...s.projects], projectAvailability(s, c), s);
     expect(html).toContain('data-project="big-migration" disabled');
     expect(html).toContain("requires 5 reputation");
+  });
+});
+
+describe("renderTimeControls", () => {
+  it("renders Pause plus every speed option, marking the active one", () => {
+    const html = renderTimeControls(false, 1, [1, 2, 5]);
+    expect(html).toContain('id="pause"');
+    expect(html).toContain(">Pause<");
+    expect(html).toContain('data-speed="1"');
+    expect(html).toContain('data-speed="2"');
+    expect(html).toContain('data-speed="5"');
+    // Active speed (1) is marked; the others are not.
+    expect(html).toContain('class="tc-btn tc-active" data-speed="1"');
+    expect(html).toContain('class="tc-btn" data-speed="2"');
+    expect(html).toContain('class="tc-btn" data-speed="5"');
+  });
+
+  it("moves the active marker when the active speed changes", () => {
+    const html = renderTimeControls(false, 5, [1, 2, 5]);
+    expect(html).toContain('class="tc-btn" data-speed="1"');
+    expect(html).toContain('class="tc-btn" data-speed="2"');
+    expect(html).toContain('class="tc-btn tc-active" data-speed="5"');
+  });
+
+  it("flips the pause button's label to Resume when paused", () => {
+    const html = renderTimeControls(true, 1, [1, 2, 5]);
+    expect(html).toContain(">Resume<");
+    expect(html).not.toContain(">Pause<");
   });
 });
 
