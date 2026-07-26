@@ -134,7 +134,9 @@ function summarizeGamble(gamble: GambleOutcome[]): string {
       // reads oddly with mismatched precision at its two ends -- see the
       // design doc's own exemplar, "all rates +2.0 to -0.5 (gamble)".
       const fmtRange = (v: number) => (op === "mul" ? `x${v.toFixed(1)}` : `${v >= 0 ? "+" : ""}${v.toFixed(1)}`);
-      return `${label} ${fmtRange(max)} to ${fmtRange(min)} (gamble)`;
+      // The range shows the spread; the card's gamble chip carries the
+      // "this is a gamble" label, so it is not repeated in the suffix here.
+      return `${label} ${fmtRange(max)} to ${fmtRange(min)}`;
     }
   }
   // Fallback: shape is too heterogeneous to range cleanly (spec section 3)
@@ -142,7 +144,7 @@ function summarizeGamble(gamble: GambleOutcome[]): string {
   const scored = gamble.map((o) => ({ label: o.label, score: outcomeScore(o.effects) }));
   const best = scored.reduce((a, b) => (b.score > a.score ? b : a));
   const worst = scored.reduce((a, b) => (b.score < a.score ? b : a));
-  return `${best.label} to ${worst.label} (gamble)`;
+  return `${best.label} to ${worst.label}`;
 }
 
 // Pure: same DecisionDef always yields the same string. Never returns "" for

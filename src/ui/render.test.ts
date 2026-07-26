@@ -143,6 +143,19 @@ describe("renderDecisions", () => {
     // -- test-suite's is a known, stable case.
     expect(html).toContain('<div class="tt-effects">all rates x0.5 for 5d, debt x0.5</div>');
   });
+
+  it("flags gamble decisions with a chip and omits it from deterministic ones", () => {
+    const e = new Engine(content());
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    // basic-dev and senior-dev are the only shipped gamble hires; their cards
+    // carry the chip. A deterministic decision (test-suite) does not.
+    const gambleChips = html.match(/class="tt-gamble"/g) ?? [];
+    expect(gambleChips.length).toBe(2);
+    expect(html).toContain('<span class="tt-gamble"');
+    // The "(gamble)" suffix moved out of the derived line onto the chip, so a
+    // gamble card shows the range alone.
+    expect(html).not.toContain("(gamble)");
+  });
 });
 
 describe("renderLog", () => {

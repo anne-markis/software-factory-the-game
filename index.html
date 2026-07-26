@@ -46,6 +46,11 @@
       .tt-node { border: 1px solid #999; padding: 0.4rem 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
       .tt-node-name { font-weight: bold; }
       .tt-node-meta { color: #666; display: flex; justify-content: space-between; gap: 0.5rem; margin: 0.15rem 0; }
+      /* Gamble chip: a decision whose outcome is a lucky-or-unlucky roll at
+         purchase. Reuses the existing amber warning tone (.tt-reason / .stall
+         family) as an outlined badge so it reads as "risk here" at a glance,
+         distinct from the plain dim category label beside it. */
+      .tt-gamble { color: #a60; border: 1px solid #a60; border-radius: 3px; padding: 0 0.25rem; margin-right: 0.3rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
       .tt-node-desc { color: #444; margin-bottom: 0.25rem; }
       /* Derived effects line (Release 20 card legibility): terse, numbers-only
          summary generated from the decision's structured effects data (see
