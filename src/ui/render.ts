@@ -55,6 +55,13 @@ function costLine(def: DecisionDef): string {
   );
 }
 
+// A gamble decision's outcome is a lucky-or-unlucky roll at purchase, so it
+// gets a scannable chip up top rather than relying on the "(gamble)" suffix
+// buried at the end of the derived line. Empty for deterministic decisions.
+function gambleTag(def: DecisionDef): string {
+  return def.gamble && def.gamble.length > 0 ? `<span class="tt-gamble" title="Outcome is a roll: could help or hurt">gamble</span> ` : "";
+}
+
 // Renders the derived-effects line, or nothing when the decision has no
 // direct effects (its authored description carries the conditional story).
 function effectsLine(def: DecisionDef): string {
@@ -95,7 +102,7 @@ function renderTechNode(a: Availability, ownedCount: number): string {
   // nothing to derive (synergy targets and challenge gates).
   return `<div class="tt-node ${stateClass}">
     <div class="tt-node-name">${esc(def.name)}</div>
-    <div class="tt-node-meta"><span class="tt-cat">${esc(CATEGORY_LABELS[def.category])}</span> <span class="tt-cost">${esc(costLine(def))}</span></div>
+    <div class="tt-node-meta"><span>${gambleTag(def)}<span class="tt-cat">${esc(CATEGORY_LABELS[def.category])}</span></span> <span class="tt-cost">${esc(costLine(def))}</span></div>
     <div class="tt-node-desc">${esc(def.description)}</div>
     ${effectsLine(def)}
     ${stateLine ? `<div class="tt-node-state">${stateLine}</div>` : ""}

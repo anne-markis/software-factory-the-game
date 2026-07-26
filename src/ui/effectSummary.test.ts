@@ -112,7 +112,7 @@ describe("summarizeDecisionEffects", () => {
   });
 
   describe("gamble range form", () => {
-    it("uniform outcomes collapse to an 'all rates X to Y (gamble)' range, matching the design doc's exemplar", () => {
+    it("uniform outcomes collapse to an 'all rates X to Y' range (the card's gamble chip carries the label)", () => {
       const def = base({
         effects: [],
         gamble: [
@@ -150,7 +150,7 @@ describe("summarizeDecisionEffects", () => {
           },
         ],
       });
-      expect(summarizeDecisionEffects(def)).toBe("all rates +2.0 to -0.5 (gamble)");
+      expect(summarizeDecisionEffects(def)).toBe("all rates +2.0 to -0.5");
     });
 
     it("heterogeneous outcomes fall back to naming the best and worst outcome", () => {
@@ -165,7 +165,7 @@ describe("summarizeDecisionEffects", () => {
           },
         ],
       });
-      expect(summarizeDecisionEffects(def)).toBe("Jackpot to Bust (gamble)");
+      expect(summarizeDecisionEffects(def)).toBe("Jackpot to Bust");
     });
   });
 
