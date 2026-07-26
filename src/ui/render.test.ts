@@ -126,6 +126,23 @@ describe("renderDecisions", () => {
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     expect(html).not.toContain("more alterations unlock");
   });
+
+  it("renders a card's authored description in full, with no first-sentence truncation, plus a derived effects line", () => {
+    const e = new Engine(content());
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    // agent-swarm's description (>110 chars, multiple sentences) is a known
+    // long-ish entry -- assert it appears whole, not clipped to its first
+    // sentence or an ellipsis (Release 20 removes the old 87-char truncation).
+    const agentSwarmDesc =
+      "Agents pick up and ship work themselves: all work 80% faster. Tech debt grows 50% faster unless an orchestrator tames it.";
+    expect(agentSwarmDesc.length).toBeGreaterThan(110);
+    expect(html).toContain(`<div class="tt-node-desc">${agentSwarmDesc}</div>`);
+    expect(html).not.toContain("...");
+    // The derived effects line sits beneath the description, terse and
+    // numbers-only, generated from structured effects (see effectSummary.ts)
+    // -- test-suite's is a known, stable case.
+    expect(html).toContain('<div class="tt-effects">all rates x0.5 for 5d, debt x0.5</div>');
+  });
 });
 
 describe("renderLog", () => {
