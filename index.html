@@ -99,6 +99,17 @@
          scrolls the loops within their own bounded region instead of eating
          the whole viewport. */
       .loops { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; max-height: 42vh; overflow-y: auto; }
+      /* Left loop column stacks the (short) delivery diagram over the stats
+         grid, filling the vertical dead space beside the taller progress
+         loop rather than leaving it empty. The stats sit in ~half width, so
+         the auto-fill grid drops to ~3 columns and grows downward into that
+         space; because the progress loop still governs the row height, this
+         adds no overflow beyond what already existed. */
+      .loop-left { display: flex; flex-direction: column; }
+      .loop-left .stats { margin-bottom: 0; }
+      /* Time controls + reset, moved above the loops (top of the header). */
+      .controls-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+      .controls-row .time-controls { margin-bottom: 0; }
       /* Tab bar (Release 22 cockpit layout, design doc section 5): fixed-width
          buttons so the bar never reflows as the active marker moves -- same
          no-reflow guarantee as .tc-btn. The active tab reuses the .tc-active

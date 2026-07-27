@@ -51,15 +51,19 @@ function render(): void {
 
   app.innerHTML = `
     <div class="cockpit-header">
-      ${renderStats(state)}
+      <div class="controls-row">
+        ${renderTimeControls(state.paused, speed, SPEED_OPTIONS)}
+        <button id="reset">Reset game</button>
+      </div>
       <div class="loops">
-        <div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>
+        <div class="loop-left">
+          <div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>
+          ${renderStats(state)}
+        </div>
         ${inProgressPanelSvg(state, content)}
       </div>
       ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
       ${renderStall(engine.isStalled())}
-      ${renderTimeControls(state.paused, speed, SPEED_OPTIONS)}
-      <button id="reset">Reset game</button>
     </div>
     <div id="${BODY_ID}" class="cockpit-body">
       ${renderBody(
