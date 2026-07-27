@@ -1,7 +1,7 @@
 import type { DecisionDef, GameContent } from "../engine/types";
 
 // Groups decisions into requires-chains for the tech-tree view (see
-// renderDecisions in render.ts). Pure and unit-testable in isolation from
+// renderShop in render.ts). Pure and unit-testable in isolation from
 // rendering/HTML concerns -- see techTree.test.ts.
 
 export interface TechChain {
