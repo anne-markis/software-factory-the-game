@@ -51,11 +51,21 @@ scrolling body, a naive rebuild resets the body's `scrollTop` to 0 on
 every render, i.e. five times a second at 5x: the player is yanked to
 the top of the shop constantly.
 
-Fix: capture the scrolling body's `scrollTop` before writing innerHTML
-and restore it after. The structure is recreated identically each
-render, so a numeric restore is correct. Guard for the element being
-absent on first render. This is not optional polish; the layout is
-unusable without it.
+Fix (as shipped, stronger than first drafted): the scrollTop
+capture/restore alone fixes the position but not the gesture. Rebuilding
+all of `#app` destroys and recreates the scroll container itself, so a
+scrollbar drag in progress when a tick fires loses the element it is
+dragging (five times a second at 5x). The shipped fix keeps the scroll
+container alive: the cockpit shell (fixed header element over a
+persistent `#cockpit-body`) is built once; each render updates the
+header in place and only rewrites the body when its markup actually
+changes (a card's affordability, a new log line, a project's remaining,
+a tab switch). While the player scrolls a static shop the body DOM is
+not touched at all, so neither the position nor the drag is disturbed;
+when it does change, scroll is preserved unless the tab changed (a new
+tab starts at the top). This is a targeted slice of the incremental
+rendering noted in section 9, done because the full-rebuild approach was
+not merely inefficient but actively broke scrolling.
 
 (A fuller fix is incremental rendering rather than full innerHTML
 replacement, which would also cut render cost. Out of scope here and

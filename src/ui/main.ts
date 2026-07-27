@@ -31,56 +31,74 @@ let speed: Speed = loadSpeed();
 // 5): its own localStorage key, its own variable, never in GameState.
 let activeTab: Tab = loadTab();
 
-// Stable id for the scrolling body element, used by the scroll-reset fix
-// below (design doc section 4): the DOM structure is rebuilt identically on
-// every render, so this id lets us re-find "the same" scrollable element
-// across a full innerHTML replacement.
+// The cockpit shell (a fixed header element over a persistent scrolling body
+// element) is built ONCE; thereafter the header and body are updated
+// separately. Rebuilding all of #app every tick used to destroy and recreate
+// the #cockpit-body scroll container itself, which not only reset scrollTop
+// but interrupted an in-progress scrollbar drag (the element being dragged
+// vanished mid-gesture, up to 5x/sec). Keeping the scroll container alive and
+// only touching the body when its content actually changes fixes both.
 const BODY_ID = "cockpit-body";
+let shellBuilt = false;
+let lastBodyMarkup = "";
+let lastRenderedTab: Tab = activeTab;
 
 function render(): void {
   const state = engine.getState();
 
-  // Scroll-reset fix (design doc section 4, mandatory): #app.innerHTML is
-  // rebuilt every tick (up to 5x/sec at top speed), which would otherwise
-  // reset the scrolling body's scrollTop to 0 on every render and yank the
-  // player back to the top of whatever tab they're scrolled into. Capture
-  // before writing, restore after -- guarded for the element being absent
-  // on the very first render (before any DOM exists yet).
-  const prevBody = document.getElementById(BODY_ID);
-  const scrollTop = prevBody ? prevBody.scrollTop : 0;
+  if (!shellBuilt) {
+    app.innerHTML = `<div class="cockpit-header"></div><div id="${BODY_ID}" class="cockpit-body"></div>`;
+    shellBuilt = true;
+  }
+  const headerEl = app.querySelector(".cockpit-header") as HTMLElement;
+  const bodyEl = document.getElementById(BODY_ID) as HTMLElement;
 
-  app.innerHTML = `
-    <div class="cockpit-header">
-      <div class="controls-row">
-        ${renderTimeControls(state.paused, speed, SPEED_OPTIONS)}
-        <button id="reset">Reset game</button>
-      </div>
-      <div class="loops">
-        <div class="loop-left">
-          <div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>
-          ${renderStats(state)}
-        </div>
-        ${inProgressPanelSvg(state, content)}
-      </div>
-      ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
-      ${renderStall(engine.isStalled())}
+  // Header: the live view (stats, loops, controls, banners). It has no element
+  // the player drag-scrolls during normal play, so a full replace every tick
+  // is fine. (The loops region can scroll on very short viewports; that is the
+  // one remaining place a full header rebuild could interrupt a drag, far
+  // rarer than the shop and left as a known follow-up.)
+  headerEl.innerHTML = `
+    <div class="controls-row">
+      ${renderTimeControls(state.paused, speed, SPEED_OPTIONS)}
+      <button id="reset">Reset game</button>
     </div>
-    <div id="${BODY_ID}" class="cockpit-body">
-      ${renderBody(
-        activeTab,
-        engine.availableDecisions(),
-        [...state.decisions],
-        content,
-        [...state.projects],
-        engine.availableProjects(),
-        state,
-        state.log,
-      )}
+    <div class="loops">
+      <div class="loop-left">
+        <div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>
+        ${renderStats(state)}
+      </div>
+      ${inProgressPanelSvg(state, content)}
     </div>
+    ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
+    ${renderStall(engine.isStalled())}
   `;
 
-  const newBody = document.getElementById(BODY_ID);
-  if (newBody) newBody.scrollTop = scrollTop;
+  // Body: the interactive, scrollable tabbed panels. Only rewrite it when its
+  // markup actually changes (a card's affordability flipping, a new log line,
+  // a project's remaining ticking down, a tab switch). While the player scrolls
+  // a static shop, the markup is identical tick to tick and the body DOM is
+  // never touched, so the scroll position holds and a scrollbar drag is never
+  // interrupted. When it does change, preserve scroll unless the tab changed
+  // (a new tab starts at the top).
+  const bodyMarkup = renderBody(
+    activeTab,
+    engine.availableDecisions(),
+    [...state.decisions],
+    content,
+    [...state.projects],
+    engine.availableProjects(),
+    state,
+    state.log,
+  );
+  if (bodyMarkup !== lastBodyMarkup) {
+    const tabChanged = activeTab !== lastRenderedTab;
+    const scrollTop = bodyEl.scrollTop;
+    bodyEl.innerHTML = bodyMarkup;
+    bodyEl.scrollTop = tabChanged ? 0 : scrollTop;
+    lastBodyMarkup = bodyMarkup;
+    lastRenderedTab = activeTab;
+  }
 }
 
 // Event delegation on #app: survives the innerHTML re-render each tick.
