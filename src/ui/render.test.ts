@@ -1,5 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { esc, renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall, renderTimeControls } from "./render";
+import {
+  esc,
+  renderStats,
+  renderShop,
+  renderOwned,
+  renderLog,
+  renderChoices,
+  renderProjects,
+  renderStall,
+  renderTimeControls,
+  renderTabBar,
+  renderBody,
+  TAB_OPTIONS,
+} from "./render";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
@@ -38,22 +51,24 @@ describe("renderStats", () => {
   });
 });
 
-describe("renderDecisions", () => {
+describe("renderShop", () => {
   it("shows a prerequisite-locked node (ci-cd on a fresh game) visibly, dimmed, with its requirement", () => {
     const e = new Engine(content());
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const html = renderShop(e.availableDecisions(), [...e.getState().decisions], content());
     // ci-cd is present (not hidden) but its Buy button is disabled and it
     // carries the human-readable requirement.
     expect(html).toContain('data-buy="ci-cd" disabled');
     expect(html).toContain("requires Add test suite");
     expect(html).toContain("tt-locked");
-    expect(html).toContain("Nothing yet. You are a solo dev.");
+    // The owned panel (with its own placeholder) is a separate tab now --
+    // renderShop renders only the tech tree.
+    expect(html).not.toContain("Nothing yet. You are a solo dev.");
   });
 
   it("buying test-suite unlocks ci-cd (Buy enabled, no longer locked)", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const html = renderShop(e.availableDecisions(), [...e.getState().decisions], content());
     expect(html).toContain('data-buy="ci-cd" ');
     expect(html).not.toContain('data-buy="ci-cd" disabled');
   });
@@ -62,25 +77,16 @@ describe("renderDecisions", () => {
     const c = content();
     c.start.stocks.budget = 0;
     const e = new Engine(c);
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], c);
+    const html = renderShop(e.availableDecisions(), [...e.getState().decisions], c);
     expect(html).toContain('data-buy="ddos-protection" disabled');
     expect(html).toContain("cannot afford");
-  });
-
-  it("shows owned instances with gamble outcome and remove button", () => {
-    const e = new Engine(content());
-    e.applyDecision("basic-dev");
-    const inst = e.getState().decisions[0];
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(html).toContain(`data-remove="${inst.instanceId}"`);
-    expect(html).toContain(`[${inst.gambleLabel}]`);
   });
 
   it("escapes content-derived strings", () => {
     const c = content();
     c.decisions[0].name = `<img src=x onerror=alert(1)>`;
     const e = new Engine(c);
-    const html = renderDecisions(e.availableDecisions(), [], c);
+    const html = renderShop(e.availableDecisions(), [], c);
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img");
   });
@@ -88,7 +94,7 @@ describe("renderDecisions", () => {
   it("shows an owned unique decision as owned instead of vanishing from the tree", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const html = renderShop(e.availableDecisions(), [...e.getState().decisions], content());
     // test-suite is unique and owned: still present, no Buy button, marked owned.
     expect(html).not.toContain('data-buy="test-suite"');
     expect(html).toContain("Add test suite");
@@ -102,14 +108,14 @@ describe("renderDecisions", () => {
     const e = new Engine(content());
     e.applyDecision("contractor");
     e.applyDecision("contractor");
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const html = renderShop(e.availableDecisions(), [...e.getState().decisions], content());
     expect(html).toContain("owned x2");
     expect(html).toContain('data-buy="contractor"');
   });
 
   it("renders each node's chain (or standalone) placement and a short category tag", () => {
     const e = new Engine(content());
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const html = renderShop(e.availableDecisions(), [...e.getState().decisions], content());
     // Chain headers, named after each chain's root.
     expect(html).toContain("Add test suite");
     expect(html).toContain("Hire basic developer");
@@ -123,13 +129,13 @@ describe("renderDecisions", () => {
 
   it("no longer renders the retired unlock-count hint", () => {
     const e = new Engine(content());
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const html = renderShop(e.availableDecisions(), [...e.getState().decisions], content());
     expect(html).not.toContain("more alterations unlock");
   });
 
   it("renders a card's authored description in full, with no first-sentence truncation, plus a derived effects line", () => {
     const e = new Engine(content());
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const html = renderShop(e.availableDecisions(), [...e.getState().decisions], content());
     // agent-swarm's description (>110 chars, multiple sentences) is a known
     // long-ish entry -- assert it appears whole, not clipped to its first
     // sentence or an ellipsis (Release 20 removes the old 87-char truncation).
@@ -146,7 +152,7 @@ describe("renderDecisions", () => {
 
   it("flags gamble decisions with a chip and omits it from deterministic ones", () => {
     const e = new Engine(content());
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const html = renderShop(e.availableDecisions(), [...e.getState().decisions], content());
     // basic-dev and senior-dev are the only shipped gamble hires; their cards
     // carry the chip. A deterministic decision (test-suite) does not.
     const gambleChips = html.match(/class="tt-gamble"/g) ?? [];
@@ -155,6 +161,30 @@ describe("renderDecisions", () => {
     // The "(gamble)" suffix moved out of the derived line onto the chip, so a
     // gamble card shows the range alone.
     expect(html).not.toContain("(gamble)");
+  });
+});
+
+describe("renderOwned", () => {
+  it("renders a placeholder when nothing is owned", () => {
+    const html = renderOwned([], content());
+    expect(html).toContain("Nothing yet. You are a solo dev.");
+    expect(html).toContain("Owned");
+  });
+
+  it("shows owned instances with gamble outcome and remove button", () => {
+    const e = new Engine(content());
+    e.applyDecision("basic-dev");
+    const inst = e.getState().decisions[0];
+    const html = renderOwned([...e.getState().decisions], content());
+    expect(html).toContain(`data-remove="${inst.instanceId}"`);
+    expect(html).toContain(`[${inst.gambleLabel}]`);
+  });
+
+  it("does not render the tech tree", () => {
+    const e = new Engine(content());
+    const html = renderOwned([...e.getState().decisions], content());
+    expect(html).not.toContain("tt-chain");
+    expect(html).not.toContain("Alter the loop");
   });
 });
 
@@ -245,5 +275,86 @@ describe("renderStall", () => {
   it("renders the banner only when stalled", () => {
     expect(renderStall(true)).toContain("stalled");
     expect(renderStall(false)).toBe("");
+  });
+});
+
+describe("renderTabBar", () => {
+  it("renders all four tabs", () => {
+    const html = renderTabBar("build");
+    expect(html).toContain('data-tab="build"');
+    expect(html).toContain('data-tab="projects"');
+    expect(html).toContain('data-tab="owned"');
+    expect(html).toContain('data-tab="events"');
+    expect(TAB_OPTIONS.length).toBe(4);
+  });
+
+  it("marks the active tab and leaves the others unmarked", () => {
+    const html = renderTabBar("projects");
+    expect(html).toContain('class="tab-btn tab-active" data-tab="projects"');
+    expect(html).toContain('class="tab-btn" data-tab="build"');
+    expect(html).toContain('class="tab-btn" data-tab="owned"');
+    expect(html).toContain('class="tab-btn" data-tab="events"');
+  });
+
+  it("moves the active marker when the active tab changes", () => {
+    const html = renderTabBar("events");
+    expect(html).toContain('class="tab-btn tab-active" data-tab="events"');
+    expect(html).not.toContain('class="tab-btn tab-active" data-tab="build"');
+  });
+});
+
+describe("renderBody", () => {
+  function bodyArgs(activeTab: (typeof TAB_OPTIONS)[number]): Parameters<typeof renderBody> {
+    const c = { start: parseStartConfig(startJson), decisions: parseDecisions(decisionsJson), challenges: parseChallenges(challengesJson), projects: parseProjects(projectsJson) };
+    const e = new Engine(c);
+    const state = e.getState();
+    return [
+      activeTab,
+      e.availableDecisions(),
+      [...state.decisions],
+      c,
+      [...state.projects],
+      e.availableProjects(),
+      state,
+      state.log,
+    ];
+  }
+
+  it("renders only the Build panel (tech tree) when Build is active", () => {
+    const html = renderBody(...bodyArgs("build"));
+    expect(html).toContain("Alter the loop");
+    expect(html).not.toContain("Projects (efficiency");
+    expect(html).not.toContain("Nothing yet. You are a solo dev.");
+    expect(html).not.toContain('<h3>Events</h3>');
+  });
+
+  it("renders only the Projects panel when Projects is active", () => {
+    const html = renderBody(...bodyArgs("projects"));
+    expect(html).toContain("Projects (efficiency");
+    expect(html).not.toContain("Alter the loop");
+    expect(html).not.toContain("Nothing yet. You are a solo dev.");
+    expect(html).not.toContain('<h3>Events</h3>');
+  });
+
+  it("renders only the Owned panel when Owned is active", () => {
+    const html = renderBody(...bodyArgs("owned"));
+    expect(html).toContain("Nothing yet. You are a solo dev.");
+    expect(html).not.toContain("Alter the loop");
+    expect(html).not.toContain("Projects (efficiency");
+    expect(html).not.toContain('<h3>Events</h3>');
+  });
+
+  it("renders only the Events panel when Events is active", () => {
+    const html = renderBody(...bodyArgs("events"));
+    expect(html).toContain('<h3>Events</h3>');
+    expect(html).not.toContain("Alter the loop");
+    expect(html).not.toContain("Projects (efficiency");
+    expect(html).not.toContain("Nothing yet. You are a solo dev.");
+  });
+
+  it("always includes the tab bar", () => {
+    const html = renderBody(...bodyArgs("build"));
+    expect(html).toContain('class="tab-bar"');
+    expect(html).toContain('class="tab-btn tab-active" data-tab="build"');
   });
 });

@@ -5,10 +5,10 @@ import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
 import projectsJson from "../../content/projects.json";
 import type { GameContent } from "../engine/types";
-import { renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall, renderTimeControls } from "./render";
+import { renderStats, renderChoices, renderStall, renderTimeControls, renderBody, TAB_OPTIONS, type Tab } from "./render";
 import { loopDiagramSvg } from "./loopDiagram";
 import { inProgressPanelSvg } from "./inProgressPanel";
-import { saveGame, loadGame, clearSave, saveSpeed, loadSpeed } from "./storage";
+import { saveGame, loadGame, clearSave, saveSpeed, loadSpeed, saveTab, loadTab } from "./storage";
 import { advance, SPEED_OPTIONS, type Speed } from "./tickDriver";
 
 const content: GameContent = {
@@ -27,28 +27,56 @@ const app = document.getElementById("app")!;
 // GameState or content, so the engine purity test stays green.
 let speed: Speed = loadSpeed();
 
+// Active tab is likewise a UI preference (cockpit layout design doc section
+// 5): its own localStorage key, its own variable, never in GameState.
+let activeTab: Tab = loadTab();
+
+// Stable id for the scrolling body element, used by the scroll-reset fix
+// below (design doc section 4): the DOM structure is rebuilt identically on
+// every render, so this id lets us re-find "the same" scrollable element
+// across a full innerHTML replacement.
+const BODY_ID = "cockpit-body";
+
 function render(): void {
   const state = engine.getState();
+
+  // Scroll-reset fix (design doc section 4, mandatory): #app.innerHTML is
+  // rebuilt every tick (up to 5x/sec at top speed), which would otherwise
+  // reset the scrolling body's scrollTop to 0 on every render and yank the
+  // player back to the top of whatever tab they're scrolled into. Capture
+  // before writing, restore after -- guarded for the element being absent
+  // on the very first render (before any DOM exists yet).
+  const prevBody = document.getElementById(BODY_ID);
+  const scrollTop = prevBody ? prevBody.scrollTop : 0;
+
   app.innerHTML = `
-    ${renderStats(state)}
-    <div class="loops">
-      <div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>
-      ${inProgressPanelSvg(state, content)}
+    <div class="cockpit-header">
+      ${renderStats(state)}
+      <div class="loops">
+        <div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>
+        ${inProgressPanelSvg(state, content)}
+      </div>
+      ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
+      ${renderStall(engine.isStalled())}
+      ${renderTimeControls(state.paused, speed, SPEED_OPTIONS)}
+      <button id="reset">Reset game</button>
     </div>
-    ${renderStall(engine.isStalled())}
-    ${renderTimeControls(state.paused, speed, SPEED_OPTIONS)}
-    <button id="reset">Reset game</button>
-    <div class="cols">
-      <div class="main">
-        ${renderDecisions(engine.availableDecisions(), [...state.decisions], content)}
-        ${renderProjects([...state.projects], engine.availableProjects(), state)}
-      </div>
-      <div class="side">
-        ${renderChoices([...state.pendingChoices], content.challenges, state.day)}
-        ${renderLog(state.log)}
-      </div>
+    <div id="${BODY_ID}" class="cockpit-body">
+      ${renderBody(
+        activeTab,
+        engine.availableDecisions(),
+        [...state.decisions],
+        content,
+        [...state.projects],
+        engine.availableProjects(),
+        state,
+        state.log,
+      )}
     </div>
   `;
+
+  const newBody = document.getElementById(BODY_ID);
+  if (newBody) newBody.scrollTop = scrollTop;
 }
 
 // Event delegation on #app: survives the innerHTML re-render each tick.
@@ -86,6 +114,14 @@ app.addEventListener("click", (ev) => {
     if ((SPEED_OPTIONS as readonly number[]).includes(next)) {
       speed = next;
       saveSpeed(speed);
+    }
+  } else if (target.dataset.tab) {
+    // Same UI-preference pattern as speed: persists immediately, never
+    // touches the engine.
+    const next = target.dataset.tab;
+    if ((TAB_OPTIONS as readonly string[]).includes(next)) {
+      activeTab = next as Tab;
+      saveTab(activeTab);
     }
   } else if (target.id === "reset") {
     if (confirm("Wipe this factory and start over?")) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeSpeed } from "./storage";
+import { normalizeSpeed, normalizeTab } from "./storage";
 
 // storage.ts's saveSpeed/loadGame etc. touch localStorage, which doesn't
 // exist in the node test environment, so the validation logic is extracted
@@ -32,5 +32,31 @@ describe("normalizeSpeed", () => {
     expect(normalizeSpeed(10)).toBe(1);
     expect(normalizeSpeed(0)).toBe(1);
     expect(normalizeSpeed(-1)).toBe(1);
+  });
+});
+
+// Tab preference (design doc section 5): same pure-validator pattern as
+// normalizeSpeed above, since localStorage is absent in the node test env.
+describe("normalizeTab", () => {
+  it("accepts each allowed tab unchanged", () => {
+    expect(normalizeTab("build")).toBe("build");
+    expect(normalizeTab("projects")).toBe("projects");
+    expect(normalizeTab("owned")).toBe("owned");
+    expect(normalizeTab("events")).toBe("events");
+  });
+
+  it("falls back to build for a missing value", () => {
+    expect(normalizeTab(null)).toBe("build");
+    expect(normalizeTab(undefined)).toBe("build");
+  });
+
+  it("falls back to build for an invalid string", () => {
+    expect(normalizeTab("nope")).toBe("build");
+    expect(normalizeTab("")).toBe("build");
+  });
+
+  it("falls back to build for a non-string value", () => {
+    expect(normalizeTab(1)).toBe("build");
+    expect(normalizeTab({})).toBe("build");
   });
 });

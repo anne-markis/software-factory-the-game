@@ -5,7 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Software Factory</title>
     <style>
-      body { font-family: ui-monospace, monospace; max-width: 1280px; margin: 1rem auto; padding: 0 1rem; }
+      /* Cockpit layout (Release 22, design doc section 2): html/body fill the
+         viewport with no margin so #app can become a full-height flex column;
+         the previous body max-width/centering moves onto .page so the
+         centered 1280px column is preserved unchanged. */
+      html, body { height: 100%; margin: 0; }
+      body { font-family: ui-monospace, monospace; }
+      .page { max-width: 1280px; margin: 0 auto; padding: 0 1rem; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; }
+      .page h1 { flex: 0 0 auto; margin: 1rem 0 0.5rem; }
+      /* #app is the flex column itself: a fixed header (.cockpit-header) plus
+         a body that flex-fills the remainder and scrolls internally
+         (.cockpit-body). flex:1 1 auto + min-height:0 on both #app and
+         .cockpit-body is required -- without min-height:0 a flex child won't
+         shrink below its content size and the body never gets its own
+         scrollbar (it pushes the page taller instead). */
+      #app { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+      .cockpit-header { flex: 0 0 auto; }
+      .cockpit-body { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
       button { font-family: inherit; margin: 2px; }
       /* Non-reflowing stats bar: each stat is a fixed-width slot (label +
          tabular-nums value) so a value changing width on tick never shifts
@@ -76,27 +92,30 @@
       .tc-btn { display: inline-block; min-width: 4.5rem; text-align: center; opacity: 0.6; }
       .tc-btn.tc-active { opacity: 1; font-weight: bold; }
       .stall { background: #fdd; padding: 0.5rem; font-weight: bold; }
-      .loops { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
-      .cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; align-items: start; }
-      /* minmax(0, 1fr) on the track alone isn't enough: a grid item's default
-         min-width is auto (its content's min-content size), so the tech
-         tree's fixed-width tier columns would still overflow the .main
-         column and drag the whole page into horizontal scroll. min-width: 0
-         lets .main shrink to the track and defer overflow handling to
-         .tt-chain-row's own overflow-x: auto instead. */
-      .main { min-width: 0; }
-      .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
-      .side .log { max-height: 50vh; }
+      /* Header height budget (design doc section 3): stats + time controls +
+         both loops can approach 730px, which would starve the scrolling body
+         on a laptop viewport. Capping .loops at 42vh with its own
+         overflow-y:auto means a tall screen shows everything and a short one
+         scrolls the loops within their own bounded region instead of eating
+         the whole viewport. */
+      .loops { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; max-height: 42vh; overflow-y: auto; }
+      /* Tab bar (Release 22 cockpit layout, design doc section 5): fixed-width
+         buttons so the bar never reflows as the active marker moves -- same
+         no-reflow guarantee as .tc-btn. The active tab reuses the .tc-active
+         dimming/weight vocabulary rather than a new color. */
+      .tab-bar { margin-bottom: 0.5rem; }
+      .tab-btn { display: inline-block; min-width: 6rem; text-align: center; opacity: 0.6; }
+      .tab-btn.tab-active { opacity: 1; font-weight: bold; }
       @media (max-width: 900px) {
         .loops { grid-template-columns: 1fr; }
-        .cols { grid-template-columns: 1fr; }
-        .side { position: static; order: -1; max-height: none; }
       }
     </style>
   </head>
   <body>
-    <h1>Software Factory</h1>
-    <div id="app"></div>
+    <div class="page">
+      <h1>Software Factory</h1>
+      <div id="app"></div>
+    </div>
     <script type="module" src="/src/ui/main.ts"></script>
   </body>
 </html>

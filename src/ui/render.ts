@@ -9,6 +9,16 @@ export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+// Body tabs (design doc section 5): the active tab is a UI preference, not
+// game state -- same reasoning as Speed in tickDriver.ts, its own
+// localStorage key via storage.ts's saveTab/loadTab, never touching
+// GameState so the engine purity test stays green. Lives here rather than
+// storage.ts because render.ts is where the tab bar and per-tab panels are
+// composed; storage.ts imports these for its normalizeTab validator.
+export const TAB_OPTIONS = ["build", "projects", "owned", "events"] as const;
+export type Tab = (typeof TAB_OPTIONS)[number];
+export const DEFAULT_TAB: Tab = "build";
+
 export function fmt(n: number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
@@ -126,7 +136,10 @@ function renderStandalone(defs: DecisionDef[], availById: Map<string, Availabili
   return `<div class="tt-standalone"><h4>Standalone</h4><div class="tt-standalone-grid">${nodes}</div></div>`;
 }
 
-export function renderDecisions(avail: Availability[], ownedInstances: DecisionInstance[], content: GameContent): string {
+// The tech tree only (Build tab). Split from the owned list (Release 22
+// cockpit layout, design doc section 5) since the two are now separate
+// tabs rather than always-visible sibling panels.
+export function renderShop(avail: Availability[], ownedInstances: DecisionInstance[], content: GameContent): string {
   const availById = new Map(avail.map((a) => [a.def.id, a]));
   const ownedCounts = new Map<string, number>();
   for (const inst of ownedInstances) ownedCounts.set(inst.defId, (ownedCounts.get(inst.defId) ?? 0) + 1);
@@ -134,6 +147,12 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
   const shop =
     tree.chains.map((chain) => renderChain(chain, availById, ownedCounts)).join("") +
     renderStandalone(tree.standalone, availById, ownedCounts);
+  return `<div class="panel"><h3>Alter the loop</h3>${shop}</div>`;
+}
+
+// The owned list only (Owned tab). See renderShop above for why this split
+// out of the old renderDecisions.
+export function renderOwned(ownedInstances: DecisionInstance[], content: GameContent): string {
   const ownedList = ownedInstances
     .map((inst) => {
       const def = content.decisions.find((d) => d.id === inst.defId);
@@ -144,9 +163,7 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
       return `<div>${esc(def.name)}${outcome}${sick} ${remove}</div>`;
     })
     .join("");
-  return `
-    <div class="panel"><h3>Alter the loop</h3>${shop}</div>
-    <div class="panel"><h3>Owned</h3>${ownedList || "<small>Nothing yet. You are a solo dev.</small>"}</div>`;
+  return `<div class="panel"><h3>Owned</h3>${ownedList || "<small>Nothing yet. You are a solo dev.</small>"}</div>`;
 }
 
 export function renderLog(log: readonly LogEntry[]): string {
@@ -218,4 +235,58 @@ export function renderChoices(pending: readonly PendingChoice[], challenges: Cha
     })
     .join("");
   return `<div class="panel" style="border-color:#c00"><h3>Decision needed</h3>${blocks}</div>`;
+}
+
+const TAB_LABELS: Record<Tab, string> = {
+  build: "Build",
+  projects: "Projects",
+  owned: "Owned",
+  events: "Events",
+};
+
+// The scrolling body's tab bar (design doc section 5): one button per tab,
+// fixed-width so the bar never reflows as the active marker moves -- same
+// no-reflow pattern as .tc-btn/time-controls (render.ts renderTimeControls).
+// The active tab uses the established dimming/weight vocabulary (tc-active
+// et al.), no new color. Routed through the existing #app click delegation
+// via data-tab, matching data-buy/data-project/data-speed.
+export function renderTabBar(activeTab: Tab): string {
+  const buttons = TAB_OPTIONS.map((tab) => {
+    const active = tab === activeTab ? " tab-active" : "";
+    return `<button class="tab-btn${active}" data-tab="${tab}">${TAB_LABELS[tab]}</button>`;
+  }).join("");
+  return `<div class="tab-bar">${buttons}</div>`;
+}
+
+// Composes the tab bar and only the active tab's panel (design doc section
+// 5): a hidden tab's panel is never emitted into the DOM. Kept as its own
+// testable function -- rather than a switch inline in main.ts -- so "only
+// the active panel renders" is directly assertable against markup, per the
+// design doc's testing section (8).
+export function renderBody(
+  activeTab: Tab,
+  avail: Availability[],
+  ownedInstances: DecisionInstance[],
+  content: GameContent,
+  inFlight: readonly ActiveProject[],
+  projectOffers: ProjectAvailability[],
+  state: Readonly<GameState>,
+  log: readonly LogEntry[],
+): string {
+  let panel: string;
+  switch (activeTab) {
+    case "build":
+      panel = renderShop(avail, ownedInstances, content);
+      break;
+    case "projects":
+      panel = renderProjects(inFlight, projectOffers, state);
+      break;
+    case "owned":
+      panel = renderOwned(ownedInstances, content);
+      break;
+    case "events":
+      panel = renderLog(log);
+      break;
+  }
+  return `${renderTabBar(activeTab)}${panel}`;
 }
