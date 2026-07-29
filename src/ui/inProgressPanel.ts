@@ -1,5 +1,5 @@
 import type { GameContent, GameState, Modifier } from "../engine/types";
-import { effectiveRate, effectiveDebtMultiplier, contextSwitchTax, debtDragMultiplier } from "../engine/modifiers";
+import { effectiveDebtMultiplier, contextSwitchTax, debtDragMultiplier } from "../engine/modifiers";
 import { continuousDeployActive } from "../engine/continuousDeploy";
 import { esc } from "./render";
 
@@ -248,7 +248,12 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
   const exitBoxY = loopCy - EXIT_BOX_H / 2;
 
   const shipped = continuousDeployActive(state, content);
-  const finishRate = `${effectiveRate(state, "finish").toFixed(1)}/day`;
+  // Issue #9: show the realized finish flow (what actually moved out of
+  // In Progress this tick, capped by whatever was actually sitting there),
+  // not the stage's uncapped capacity (effectiveRate) -- they only agree
+  // once the stage is fully saturated every tick. tick.ts already computes
+  // and persists this as state.finishFlow, mirroring pointsPerDay.
+  const finishRate = `${state.finishFlow.toFixed(1)}/day`;
   const exitCaption = shipped ? "escapes to Shipped" : "escapes to Done";
   const debtLabel = effectiveDebtMultiplier(state).toFixed(2);
 
@@ -262,12 +267,17 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       <text x="${LOOP_CX}" y="${loopCy - 4}" text-anchor="middle" font-size="14">work cycling</text>
       <text x="${LOOP_CX}" y="${loopCy + 12}" text-anchor="middle" font-size="14">inside In Progress</text>`;
 
+  // No "= outer loop throughput" caption here (issue #9): even with the
+  // realized finish flow above, that equivalence isn't generally true --
+  // finish and deploy are different stages, and finish flow can keep
+  // outrunning deploy flow indefinitely (Done piling up) whenever ci-cd
+  // isn't owned (see tick.test.ts's deploy-bottleneck cases). The footer
+  // below already states the (accurate, directional) relationship.
   const exit = `
       <line x1="${exitStartX.toFixed(1)}" y1="${exitStartY.toFixed(1)}" x2="${exitBoxX - 8}" y2="${loopCy}" stroke="currentColor" marker-end="url(#ipArrow)"/>
       <rect x="${exitBoxX}" y="${exitBoxY}" width="${EXIT_BOX_W}" height="${EXIT_BOX_H}" fill="none" stroke="currentColor"/>
       <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 22}" text-anchor="middle" font-size="16" font-weight="bold">${esc(finishRate)}</text>
-      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 40}" text-anchor="middle" font-size="13">${esc(exitCaption)}</text>
-      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + EXIT_BOX_H + 16}" text-anchor="middle" font-size="12">= outer loop throughput</text>`;
+      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 40}" text-anchor="middle" font-size="13">${esc(exitCaption)}</text>`;
 
   const leak = `
       <path d="M ${leakStartX.toFixed(1)} ${leakStartY.toFixed(1)} C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${leakEndX.toFixed(1)} ${leakEndY.toFixed(1)}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#ipArrow)"/>

@@ -32,6 +32,27 @@ describe("tick", () => {
     expect(s.pointsPerDay).toBe(1);
   });
 
+  // Issue #9: pullFlow/finishFlow mirror pointsPerDay's realized-flow
+  // semantics (capped by the stock actually available that tick, not the
+  // stage's uncapped rate) for the other two stages, so the loop diagram and
+  // in-progress panel can show what actually moved instead of raw capacity.
+  it("persists realized pull/finish flow, capped by the stock actually available that tick", () => {
+    const e = new Engine(testContent());
+    e.tick(); // day 1: backlog (1500) is plentiful, so pull saturates its 1.0/day
+    // capacity; but inProgress/done both started at 0, so finish and deploy
+    // had nothing to move yet -- their realized flow is genuinely 0.
+    let s = e.getState();
+    expect(s.pullFlow).toBe(1);
+    expect(s.finishFlow).toBe(0);
+    expect(s.pointsPerDay).toBe(0);
+
+    e.tick(); // day 2: the point pulled on day 1 is now in inProgress, so finish
+    // now has something to move.
+    s = e.getState();
+    expect(s.pullFlow).toBe(1);
+    expect(s.finishFlow).toBe(1);
+  });
+
   it("shipped points regenerate tech debt into the backlog", () => {
     const e = new Engine(testContent());
     e.tick();

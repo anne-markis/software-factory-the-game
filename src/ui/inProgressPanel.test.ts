@@ -43,6 +43,13 @@ function inLeakGroup(svg: string, needle: string): boolean {
   return indexBetween(svg, needle, "Leak size");
 }
 
+// Locates the exit box's own bold value text, distinct from the "Cycle
+// speed" stack's "Base X.X/day" contributor line, which also matches a bare
+// "X.X/day" substring search.
+function exitBoxValue(svg: string): string | undefined {
+  return svg.match(/font-weight="bold">(-?\d+\.\d)\/day</)?.[1];
+}
+
 describe("inProgressPanelSvg", () => {
   it("renders the loop, exit flow, leak arc, and footer on a fresh engine", () => {
     const e = new Engine(content());
@@ -52,10 +59,32 @@ describe("inProgressPanelSvg", () => {
     expect(svg).toContain("Cycle speed");
     expect(svg).toContain("Base 1.0/day");
     expect(svg).toContain("escapes to Done");
-    expect(svg).toContain("1.0/day");
+    // Issue #9: no tick has run yet on this fresh engine, so inProgress is
+    // still 0 -- nothing was there for "finish" to actually move this tick,
+    // even though its base capacity is 1.0/day. The exit box must show the
+    // realized (zero) flow, not the stage's uncapped capacity.
+    expect(exitBoxValue(svg)).toBe("0.0");
     expect(svg).toContain("x0.50"); // effectiveDebtMultiplier on the leak arc label
     expect(svg).toContain("The inner loop's pace sets outer throughput; its leak feeds outer backlog.");
     expect(svg).not.toContain("Context switch");
+    // The old caption asserted the exit box's number equals outer-loop
+    // throughput unconditionally; that's false whenever Done piles up
+    // between the finish and deploy stages (see tick.test.ts's deploy-
+    // bottleneck cases), so it must not appear regardless of this number.
+    expect(svg).not.toContain("= outer loop throughput");
+  });
+
+  it("issue #9: exit box tracks realized finish flow across ticks, not raw finish-stage capacity", () => {
+    const e = new Engine(content());
+    e.tick(); // day 1: inProgress still 0 pre-tick (pull hasn't landed anything into it yet)
+    expect(exitBoxValue(inProgressPanelSvg(e.getState(), content()))).toBe("0.0");
+    for (let i = 0; i < 5; i++) e.tick(); // let the pipeline warm up so inProgress is nonzero
+    const s = e.getState();
+    expect(s.stocks.inProgress).toBeGreaterThan(0);
+    // Once the pipeline has warmed up, base rate (1) is fully saturated (there
+    // is always at least 1 point sitting in inProgress to finish), so realized
+    // flow now matches capacity -- this is the expected, non-bottlenecked case.
+    expect(exitBoxValue(inProgressPanelSvg(s, content()))).toBe("1.0");
   });
 
   it("switches the exit caption to Shipped, and shows setup slowdowns and leak once test-suite + ci-cd are owned", () => {

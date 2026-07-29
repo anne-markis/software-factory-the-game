@@ -215,6 +215,18 @@ export interface GameState {
   pendingChoices: PendingChoice[];
   log: LogEntry[];
   pointsPerDay: number;
+  // Realized flow for the pull and finish stages, mirroring pointsPerDay
+  // (which is the realized deploy-stage flow: shippedFlow, capped by
+  // whatever was actually sitting in Done that tick -- see tick.ts). Each is
+  // capped by the stock actually available that tick (backlog for pull,
+  // inProgress for finish), NOT the stage's uncapped rate. Added for issue
+  // #9: the Delivery loop diagram's arrows and the Progress loop panel's
+  // exit box used to print raw stage capacity (effectiveRate) and claim it
+  // equaled throughput, which is only true when the relevant stock fully
+  // saturates that stage every tick -- these fields let the UI show what
+  // actually moved instead.
+  pullFlow: number;
+  finishFlow: number;
   nextInstanceId: number;
   nextModifierId: number;
   rngState: number;

@@ -132,5 +132,7 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   chargeUpkeep(state, content);
 
   state.pointsPerDay = shippedFlow;
+  state.pullFlow = pullFlow;
+  state.finishFlow = finishFlow;
   state.rngState = rng.getState();
 }

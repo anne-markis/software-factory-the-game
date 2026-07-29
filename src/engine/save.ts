@@ -47,5 +47,16 @@ export function deserialize(json: string): GameState {
   if (state.milestonesSeen === undefined) {
     state.milestonesSeen = [];
   }
+  // defensive defaults for saves written before pullFlow/finishFlow (issue
+  // #9's realized-throughput fix). Content-free like archetypesSeen/
+  // milestonesSeen, so they default here rather than in the Engine
+  // constructor. 0 is a safe, neutral placeholder until the next tick
+  // recomputes the real realized flow.
+  if (state.pullFlow === undefined) {
+    state.pullFlow = 0;
+  }
+  if (state.finishFlow === undefined) {
+    state.finishFlow = 0;
+  }
   return state;
 }

@@ -165,6 +165,25 @@ describe("save/load", () => {
     expect(restored.milestonesSeen).toEqual([]);
   });
 
+  // pullFlow/finishFlow (issue #9) are content-free like archetypesSeen/
+  // milestonesSeen, so they default in deserialize itself rather than the
+  // Engine constructor. Legacy saves predate both fields entirely; without a
+  // default, loopDiagram.ts/inProgressPanel.ts crash calling .toFixed(1) on
+  // undefined before the first tick ever runs.
+  it("defaults missing pullFlow/finishFlow to 0 (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.pullFlow;
+    delete raw.state.finishFlow;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.pullFlow).toBe(0);
+    expect(restored.finishFlow).toBe(0);
+    // and the restored engine renders fine immediately, before any tick
+    const b = new Engine(c, restored);
+    expect(() => b.tick()).not.toThrow();
+  });
+
   it("loads a legacy save without lastChallengeDay fine (stays undefined, no default needed)", () => {
     const c = content();
     const a = new Engine(c);
