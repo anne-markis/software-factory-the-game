@@ -37,17 +37,24 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
 }
 
 function chargeUpkeep(state: GameState, content: GameContent): void {
-  // Clamp at 0 deliberately per the design spec: budget never goes negative;
-  // insolvency manifests as payroll failure removals, not a negative balance.
-  state.stocks.budget = Math.max(0, state.stocks.budget - state.baseBurnPerDay);
   const snapshot = [...state.decisions];
-  // Credit ALL income before charging ANY payroll, so income from a
-  // later-purchased decision can rescue an earlier decision's payroll;
+  // Net total incomePerDay against baseBurnPerDay in the same step, before
+  // the zero-floor clamp below. Crediting income after an already-clamped
+  // burn would throw the burn deficit away entirely once budget had been
+  // driven to 0, turning any owned income decision into a permanent,
+  // risk-free income stream instead of being consumed by ongoing burn
+  // (issue #13). This still credits ALL income (from the same snapshot the
+  // payroll loop below uses) before charging ANY payroll, so income from a
+  // later-purchased decision can still rescue an earlier decision's payroll;
   // otherwise outcomes would depend arbitrarily on purchase order.
+  let totalIncome = 0;
   for (const inst of snapshot) {
     const def = content.decisions.find((d) => d.id === inst.defId);
-    if (def?.incomePerDay) state.stocks.budget += def.incomePerDay;
+    if (def?.incomePerDay) totalIncome += def.incomePerDay;
   }
+  // Clamp at 0 deliberately per the design spec: budget never goes negative;
+  // insolvency manifests as payroll failure removals, not a negative balance.
+  state.stocks.budget = Math.max(0, state.stocks.budget - state.baseBurnPerDay + totalIncome);
   for (const inst of snapshot) {
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;

@@ -210,4 +210,35 @@ describe("tick", () => {
       expect(e.getState().stocks.done).toBeCloseTo(3, 10); // only the latest tick's finish output waits
     });
   });
+
+  // Issue #13: chargeUpkeep used to clamp budget to 0 against baseBurnPerDay
+  // BEFORE crediting incomePerDay, instead of netting burn against income in
+  // the same step. Once budget had already been driven to 0, that clamp threw
+  // away the burn deficit entirely, so any owned income decision (e.g.
+  // support-retainer, free to acquire, incomePerDay 8) got added on top of a
+  // clean 0 with nothing left to net against -- turning insolvency into a
+  // permanent, risk-free income stream of exactly incomePerDay per day
+  // forever, instead of the intended steady 0 (burn of 20/day still exceeds
+  // income of 8/day, so the correct steady state is 0, not 8).
+  describe("insolvency does not monetize owned income decisions (issue #13)", () => {
+    it("stabilizes budget at 0, not at incomePerDay, once burn has driven the player insolvent", () => {
+      const content = ciCdContent();
+      // No pipeline flow at all, so no shipped-point revenue can leak into
+      // budget and contaminate the probe: this isolates chargeUpkeep's
+      // burn-vs-income netting from attributeShipped entirely.
+      content.start.stocks.backlog = 0;
+      const e = new Engine(content);
+      e.applyDecision("support-retainer"); // free (cost {}), incomePerDay 8, no perDay payroll cost
+      const state = e.getState() as GameState;
+      state.stocks.budget = 0; // manufacture insolvency directly, matching this file's other escape-hatch tests
+
+      for (let day = 1; day <= 5; day++) {
+        e.tick();
+        // Buggy code stabilizes at incomePerDay (8) from day 1 onward; the
+        // fix must keep netting burn (20) against income (8) before the
+        // zero-floor clamp, so budget stays pinned at 0.
+        expect(e.getState().stocks.budget, `day ${day}`).toBe(0);
+      }
+    });
+  });
 });
