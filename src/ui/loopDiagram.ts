@@ -1,7 +1,26 @@
-import type { GameContent, GameState } from "../engine/types";
+import type { GameContent, GameState, RateId } from "../engine/types";
 import { RATE_IDS } from "../engine/types";
-import { effectiveRate, effectiveDebtMultiplier } from "../engine/modifiers";
+import { effectiveDebtMultiplier } from "../engine/modifiers";
 import { continuousDeployActive } from "../engine/continuousDeploy";
+
+// Issue #9: the arrows must show what actually flowed through each stage
+// this tick, not the stage's uncapped rate (effectiveRate) -- those only
+// agree when the stage's upstream stock fully saturates it every tick, and
+// diverge whenever a stage is stock-limited (fresh game, post-stall, a newly
+// bought speed-up outrunning its upstream stage). tick.ts already computes
+// and persists exactly this realized flow per stage (pointsPerDay is the
+// realized deploy flow; pullFlow/finishFlow mirror it for the other two
+// stages), so read those instead of recomputing/relabeling capacity here.
+function realizedFlow(state: Readonly<GameState>, rate: RateId): number {
+  switch (rate) {
+    case "pull":
+      return state.pullFlow;
+    case "finish":
+      return state.finishFlow;
+    case "deploy":
+      return state.pointsPerDay;
+  }
+}
 
 const FULL_STAGES: { key: "backlog" | "inProgress" | "done" | "shipped"; label: string }[] = [
   { key: "backlog", label: "Backlog" },
@@ -60,7 +79,7 @@ function fourBoxLoop(state: Readonly<GameState>): string {
   const arrows = RATE_IDS.map((rate, i) => {
     const x1 = 10 + BOX_W + i * (BOX_W + GAP);
     const x2 = x1 + GAP;
-    return arrow(x1, x2, `${effectiveRate(state, rate).toFixed(1)}/day`);
+    return arrow(x1, x2, `${realizedFlow(state, rate).toFixed(1)}/day`);
   }).join("");
 
   // tech debt regeneration: shipped back to backlog underneath
@@ -84,11 +103,11 @@ function continuousDeployLoop(state: Readonly<GameState>): string {
   const boxes = CD_STAGES.map((stage, i) => box(x0 + i * (BOX_W + GAP), stage.label, state.stocks[stage.key])).join("");
 
   const pullX1 = x0 + BOX_W;
-  const pullArrow = arrow(pullX1, pullX1 + GAP, `${effectiveRate(state, "pull").toFixed(1)}/day`);
+  const pullArrow = arrow(pullX1, pullX1 + GAP, `${realizedFlow(state, "pull").toFixed(1)}/day`);
 
   const finishArrowX1 = x0 + BOX_W + GAP + BOX_W; // right edge of the inProgress box
   const finishArrowX2 = finishArrowX1 + GAP;
-  const finishArrow = arrow(finishArrowX1, finishArrowX2, `${effectiveRate(state, "finish").toFixed(1)}/day`);
+  const finishArrow = arrow(finishArrowX1, finishArrowX2, `${realizedFlow(state, "finish").toFixed(1)}/day`);
   const caption = `
       <text x="${(finishArrowX1 + finishArrowX2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic">continuous deploy</text>`;
 

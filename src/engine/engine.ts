@@ -36,6 +36,8 @@ export function initialState(content: GameContent): GameState {
     pendingChoices: [],
     log: [],
     pointsPerDay: 0,
+    pullFlow: 0,
+    finishFlow: 0,
     nextInstanceId: 1,
     nextModifierId: 1,
     rngState: 0,
