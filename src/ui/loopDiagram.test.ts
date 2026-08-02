@@ -62,4 +62,29 @@ describe("loopDiagramSvg", () => {
     expect(svg).toContain("continuous deploy");
     expect(svg.match(/<line /g)).toHaveLength(2); // pull, finish only
   });
+
+  // Issue #10 follow-up: <rect>/<line>/<path> shapes use stroke="currentColor"
+  // and correctly inherit dark-mode text color, but SVG's fill defaults to
+  // black independent of the surrounding CSS cascade -- a <text> element
+  // without an explicit fill renders unreadable black-on-black in dark mode
+  // even though every other shape in the same diagram adapts correctly. This
+  // test inspects the actual generated SVG markup (not index.html's static
+  // stylesheet, which darkMode.test.ts already covers and which never sees
+  // this dynamically-built markup at all) so a future <text> element added
+  // without fill="currentColor" fails immediately instead of shipping invisible.
+  it("issue #10: every <text> element sets fill=currentColor so it adapts to dark mode", () => {
+    const content = fullDecisionsContent();
+    const state = initialState(content);
+    const svgs = [loopDiagramSvg(state, content)];
+    state.decisions.push({ instanceId: "inst-cd", defId: "ci-cd" });
+    svgs.push(loopDiagramSvg(state, content)); // continuous-deploy layout too
+
+    for (const svg of svgs) {
+      const textTags = svg.match(/<text\b[^>]*>/g) ?? [];
+      expect(textTags.length).toBeGreaterThan(0);
+      for (const tag of textTags) {
+        expect(tag).toContain('fill="currentColor"');
+      }
+    }
+  });
 });

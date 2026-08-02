@@ -47,7 +47,7 @@ function inLeakGroup(svg: string, needle: string): boolean {
 // speed" stack's "Base X.X/day" contributor line, which also matches a bare
 // "X.X/day" substring search.
 function exitBoxValue(svg: string): string | undefined {
-  return svg.match(/font-weight="bold">(-?\d+\.\d)\/day</)?.[1];
+  return svg.match(/font-weight="bold"[^>]*>(-?\d+\.\d)\/day</)?.[1];
 }
 
 describe("inProgressPanelSvg", () => {
@@ -272,6 +272,29 @@ describe("inProgressPanelSvg", () => {
     const svg = inProgressPanelSvg(s, content());
     expect(svg).toContain("-0.5/day");
     expect(svg).not.toContain("+-0.5");
+  });
+
+  // Issue #10 follow-up: <rect>/<line>/<ellipse>/<path> shapes use
+  // stroke="currentColor" and correctly inherit dark-mode text color, but
+  // SVG's fill defaults to black independent of the surrounding CSS cascade
+  // -- a <text> element without an explicit fill renders unreadable
+  // black-on-black in dark mode even though every other shape in the same
+  // diagram adapts correctly. This test inspects the actual generated SVG
+  // markup (not index.html's static stylesheet, which darkMode.test.ts
+  // already covers and which never sees this dynamically-built markup at
+  // all) so a future <text> element added without fill="currentColor" fails
+  // immediately instead of shipping invisible.
+  it("issue #10: every <text> element sets fill=currentColor so it adapts to dark mode", () => {
+    const e = new Engine(content());
+    e.applyDecision("basic-dev");
+    e.applyDecision("test-suite");
+    e.applyDecision("ci-cd");
+    const svg = inProgressPanelSvg(e.getState(), content());
+    const textTags = svg.match(/<text\b[^>]*>/g) ?? [];
+    expect(textTags.length).toBeGreaterThan(0);
+    for (const tag of textTags) {
+      expect(tag).toContain('fill="currentColor"');
+    }
   });
 });
 

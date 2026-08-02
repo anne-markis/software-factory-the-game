@@ -53,22 +53,22 @@ function box(x: number, label: string, value: number): string {
   const text = value.toLocaleString("en-US", { maximumFractionDigits: 1 });
   return `
       <rect x="${x}" y="${Y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"/>
-      <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="16">${label}</text>
-      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold">${text}</text>`;
+      <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="16" fill="currentColor">${label}</text>
+      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">${text}</text>`;
 }
 
 function arrow(x1: number, x2: number, label: string): string {
   const mid = Y + BOX_H / 2;
   return `
       <line x1="${x1}" y1="${mid}" x2="${x2 - 8}" y2="${mid}" stroke="currentColor" marker-end="url(#arrow)"/>
-      <text x="${(x1 + x2) / 2}" y="${mid - 8}" text-anchor="middle" font-size="11">${label}</text>`;
+      <text x="${(x1 + x2) / 2}" y="${mid - 8}" text-anchor="middle" font-size="11" fill="currentColor">${label}</text>`;
 }
 
 function debtRegenLoop(startX: number, endX: number, debt: string): string {
   const loopY = Y + BOX_H + 40;
   return `
     <path d="M ${startX} ${Y + BOX_H} V ${loopY} H ${endX} V ${Y + BOX_H + 8}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
-    <text x="${(startX + endX) / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11">debt +${debt}/pt</text>`;
+    <text x="${(startX + endX) / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11" fill="currentColor">debt +${debt}/pt</text>`;
 }
 
 const DEFS = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`;
@@ -109,7 +109,7 @@ function continuousDeployLoop(state: Readonly<GameState>): string {
   const finishArrowX2 = finishArrowX1 + GAP;
   const finishArrow = arrow(finishArrowX1, finishArrowX2, `${realizedFlow(state, "finish").toFixed(1)}/day`);
   const caption = `
-      <text x="${(finishArrowX1 + finishArrowX2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic">continuous deploy</text>`;
+      <text x="${(finishArrowX1 + finishArrowX2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">continuous deploy</text>`;
 
   // tech debt regeneration: shipped (last box) back to backlog (first box)
   const startX = x0 + 2 * (BOX_W + GAP) + BOX_W / 2;
