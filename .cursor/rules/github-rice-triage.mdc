@@ -1,0 +1,29 @@
+---
+description: RICE triage goes in issue comments only — never rice:* labels
+alwaysApply: true
+---
+
+# GitHub issue RICE triage
+
+When triaging GitHub issues with RICE (Reach, Impact, Confidence, Effort):
+
+- Put the RICE breakdown **only as a comment** on the issue.
+- Do **not** create or apply `rice:*` labels (or similar) for Reach, Impact, Confidence, Effort, or Score.
+- Type labels (`bug`, `enhancement`, etc.) and priority labels (`high`, `medium`, `low`) are fine and expected.
+
+```markdown
+<!-- ✅ GOOD: RICE as an issue comment -->
+## RICE triage
+- Reach: 80
+- Impact: Medium (1)
+- Confidence: High (100%)
+- Effort: 0.25w
+- Score: 80
+
+<!-- ❌ BAD: do not create or apply these -->
+rice:reach-80
+rice:impact-medium
+rice:confidence-high
+rice:effort-0.25w
+rice:score-80
+```
