@@ -13,6 +13,26 @@ people, agents, and process; survive random challenges; scale points/day.
 
     npm run test
 
+## Deploy
+
+`npm run build` produces a fully static, self-contained bundle in `dist/`
+(content is compiled into the JS at build time, no runtime fetches, relative
+asset paths via `base: "./"` in `vite.config.ts`), so it can be dropped into
+any subdirectory of any static host with no code changes.
+
+The live copy is served at
+[annemarkisgraham.com/software-factory-game](https://www.annemarkisgraham.com/software-factory-game/),
+embedded as a subdirectory of the `annemarkisgraham.com` static site (a
+Lightsail instance running nginx). That repo's `Makefile` has the automation:
+
+    cd ~/Code/annemarkisgraham
+    make deploy-game   # builds this repo, copies dist/ into public/software-factory-game/, deploys
+
+`make deploy-game` expects this repo to be a sibling checkout at
+`~/Code/software-factory-the-game` (override with `GAME_DIR` in that repo's
+`.makerc` if it lives elsewhere). See that repo's `README.md` for the full
+setup notes (SSH key, server details, SSL).
+
 ## Layout
 
 - `src/engine/` - all game rules. Framework-free TypeScript, no DOM access
