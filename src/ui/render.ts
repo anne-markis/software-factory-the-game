@@ -4,6 +4,7 @@ import type { ProjectAvailability } from "../engine/projects";
 import type { DecisionCategory, DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
 import { buildTechTree, type TechChain } from "./techTree";
 import { summarizeDecisionEffects } from "./effectSummary";
+import { SECTION_ATTR } from "./domPatch";
 
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -156,17 +157,35 @@ export function renderLog(log: readonly LogEntry[]): string {
   return `<div class="panel"><h3>Events</h3><div class="log">${lines || "<small>Quiet so far.</small>"}</div></div>`;
 }
 
-export function renderProjects(
-  inFlight: readonly ActiveProject[],
-  offers: ProjectAvailability[],
-  state: Readonly<GameState>,
-): string {
+// The projects panel is split into two independently-patched sections
+// (issue #6). The in-flight lines change on every tick that moves work, while
+// the offers below them -- which carry the Start buttons -- only change when a
+// project starts, completes, or crosses a gate. Writing the whole panel on
+// every tick destroyed those buttons ~10x/second; keeping the volatile status
+// block in its own container means the buttons are only rebuilt when the
+// offers themselves actually change. The panel's chrome is written once at
+// mount and never touched again.
+export const PROJECTS_STATUS_SECTION = "projects-status";
+export const PROJECTS_OFFERS_SECTION = "projects-offers";
+
+export function projectsPanelScaffold(): string {
+  return `<div class="panel"><div ${SECTION_ATTR}="${PROJECTS_STATUS_SECTION}"></div><hr/><div ${SECTION_ATTR}="${PROJECTS_OFFERS_SECTION}"></div></div>`;
+}
+
+export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: Readonly<GameState>): string {
   const taxNow = contextSwitchTax(state);
-  const taxNext = Math.pow(state.contextSwitchFactor, inFlight.length);
   const flight = inFlight
     .map((p) => `<div>${esc(p.name)}: ${fmt(p.remaining)} points left ($${fmt(p.payoutPerPoint)}/pt, $${fmt(p.completionBonus)} on completion)</div>`)
     .join("");
-  const shop = offers
+  return `<h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}`;
+}
+
+export function renderProjectOffers(offers: ProjectAvailability[], state: Readonly<GameState>): string {
+  // Efficiency preview for starting one more project. Depends on how many are
+  // already in flight, not on per-tick progress, so this string is stable
+  // between starts and completions -- which is what lets the memo hold.
+  const taxNext = Math.pow(state.contextSwitchFactor, state.projects.length);
+  return offers
     .map((o) => {
       const disabled = o.startable ? "" : "disabled";
       const reason = o.reason ? ` (${esc(o.reason)})` : "";
@@ -175,7 +194,6 @@ export function renderProjects(
         Starting this drops efficiency to ${(taxNext * 100).toFixed(0)}%.</small></div>`;
     })
     .join("");
-  return `<div class="panel"><h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}<hr/>${shop}</div>`;
 }
 
 // The time-control group (design doc section 8): Pause/Resume plus one
@@ -205,7 +223,18 @@ export function renderStall(stalled: boolean): string {
     : "";
 }
 
-export function renderChoices(pending: readonly PendingChoice[], challenges: ChallengeDef[], day: number): string {
+// Pending choices are the one region whose text changes every single day the
+// game runs (the expiry countdown) while carrying the buttons a player is
+// actively reaching for. So the countdown lives in its own tiny patched
+// section and everything else -- including the option buttons -- is part of a
+// scaffold that only changes when the set of pending choices changes (issue
+// #6). Rebuilding on that event is correct: the buttons themselves are what
+// changed.
+export function choiceCountdownSection(challengeId: string): string {
+  return `choice-countdown:${challengeId}`;
+}
+
+export function renderChoicesScaffold(pending: readonly PendingChoice[], challenges: ChallengeDef[]): string {
   if (pending.length === 0) return "";
   const blocks = pending
     .map((pc) => {
@@ -214,8 +243,12 @@ export function renderChoices(pending: readonly PendingChoice[], challenges: Cha
       const buttons = def.choice.options
         .map((o) => `<button data-choice="${esc(def.id)}" data-option="${esc(o.id)}">${esc(o.label)}</button>`)
         .join(" ");
-      return `<div><strong>${esc(def.name)}</strong>: ${esc(def.description)} <em>(${pc.expiresDay - day} days left)</em><br/>${buttons}</div>`;
+      return `<div><strong>${esc(def.name)}</strong>: ${esc(def.description)} <em ${SECTION_ATTR}="${choiceCountdownSection(def.id)}"></em><br/>${buttons}</div>`;
     })
     .join("");
   return `<div class="panel" style="border-color:#c00"><h3>Decision needed</h3>${blocks}</div>`;
+}
+
+export function renderChoiceCountdown(pc: PendingChoice, day: number): string {
+  return `(${pc.expiresDay - day} days left)`;
 }
