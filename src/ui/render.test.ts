@@ -1,5 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { esc, renderStats, renderDecisions, renderLog, renderChoices, renderProjects, renderStall, renderTimeControls } from "./render";
+import {
+  esc,
+  renderStats,
+  renderDecisions,
+  renderLog,
+  renderChoicesScaffold,
+  renderChoiceCountdown,
+  choiceCountdownSection,
+  projectsPanelScaffold,
+  renderProjectsStatus,
+  renderProjectOffers,
+  PROJECTS_STATUS_SECTION,
+  PROJECTS_OFFERS_SECTION,
+  renderStall,
+  renderTimeControls,
+} from "./render";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
@@ -172,27 +187,54 @@ describe("renderLog", () => {
   });
 });
 
-describe("renderChoices", () => {
+describe("renderChoicesScaffold", () => {
   it("renders nothing without pending choices", () => {
-    expect(renderChoices([], parseChallenges(challengesJson), 5)).toBe("");
+    expect(renderChoicesScaffold([], parseChallenges(challengesJson))).toBe("");
   });
 
-  it("renders option buttons and countdown for a pending choice", () => {
+  it("renders option buttons and a countdown placeholder for a pending choice", () => {
     const challenges = parseChallenges(challengesJson);
-    const html = renderChoices([{ challengeId: "key-dev-poached", expiresDay: 8 }], challenges, 5);
+    const html = renderChoicesScaffold([{ challengeId: "key-dev-poached", expiresDay: 8 }], challenges);
     expect(html).toContain('data-choice="key-dev-poached" data-option="match-offer"');
-    expect(html).toContain("(3 days left)");
     expect(html).toContain("Decision needed");
+    // The countdown is patched separately (issue #6) so the day ticking down
+    // does not rebuild the option buttons: the scaffold carries only its slot.
+    expect(html).toContain(`<em data-section="${choiceCountdownSection("key-dev-poached")}"></em>`);
+    expect(html).not.toContain("days left");
+  });
+
+  it("keeps the same scaffold string as days pass, so the memo holds", () => {
+    const challenges = parseChallenges(challengesJson);
+    const pending = [{ challengeId: "key-dev-poached", expiresDay: 8 }];
+    expect(renderChoicesScaffold(pending, challenges)).toBe(renderChoicesScaffold(pending, challenges));
   });
 });
 
-describe("renderProjects", () => {
-  it("shows in-flight projects, offers with gating reasons, and the efficiency preview", () => {
+describe("renderChoiceCountdown", () => {
+  it("renders the remaining days", () => {
+    expect(renderChoiceCountdown({ challengeId: "key-dev-poached", expiresDay: 8 }, 5)).toBe("(3 days left)");
+    expect(renderChoiceCountdown({ challengeId: "key-dev-poached", expiresDay: 8 }, 6)).toBe("(2 days left)");
+  });
+});
+
+describe("renderProjectsStatus", () => {
+  it("shows the efficiency header and the in-flight lines", () => {
     const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
     const e = new Engine(c);
-    const html = renderProjects([...e.getState().projects], e.availableProjects(), e.getState());
+    const html = renderProjectsStatus([...e.getState().projects], e.getState());
     expect(html).toContain("Projects (efficiency 100%)");
     expect(html).toContain("First Contract: 1,500 points left");
+    // The Start buttons live in the sibling offers section, not here, so the
+    // per-tick progress update cannot tear them down (issue #6).
+    expect(html).not.toContain("data-project");
+  });
+});
+
+describe("renderProjectOffers", () => {
+  it("shows offers with gating reasons and the efficiency preview", () => {
+    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const e = new Engine(c);
+    const html = renderProjectOffers(e.availableProjects(), e.getState());
     expect(html).toContain('data-project="small-crm" ');
     expect(html).toContain('data-project="big-migration" disabled');
     expect(html).toContain("requires 1 completed project(s)");
@@ -207,9 +249,27 @@ describe("renderProjects", () => {
     // reputation reason -- not the completion reason -- is what renders.
     s.completedProjects = 1;
     s.stocks.reputation = 1;
-    const html = renderProjects([...s.projects], projectAvailability(s, c), s);
+    const html = renderProjectOffers(projectAvailability(s, c), s);
     expect(html).toContain('data-project="big-migration" disabled');
     expect(html).toContain("requires 5 reputation");
+  });
+
+  it("does not change as in-flight work progresses, so the Start buttons survive the tick", () => {
+    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const s = initialState(c);
+    const before = renderProjectOffers(projectAvailability(s, c), s);
+    s.projects[0].remaining -= 25;
+    expect(renderProjectOffers(projectAvailability(s, c), s)).toBe(before);
+  });
+});
+
+describe("projectsPanelScaffold", () => {
+  it("provides both patch targets inside one panel", () => {
+    const html = projectsPanelScaffold();
+    expect(html).toContain(`data-section="${PROJECTS_STATUS_SECTION}"`);
+    expect(html).toContain(`data-section="${PROJECTS_OFFERS_SECTION}"`);
+    expect(html).toContain('<div class="panel">');
+    expect(html).toContain("<hr/>");
   });
 });
 
