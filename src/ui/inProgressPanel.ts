@@ -150,12 +150,12 @@ function renderStack(
   header: string,
   nodes: readonly ContributorNode[],
 ): { svg: string; midY: number; bottom: number } {
-  const headerSvg = `<text x="${x}" y="${top}" font-size="16" font-weight="bold">${esc(header)}</text>`;
+  const headerSvg = `<text x="${x}" y="${top}" font-size="16" font-weight="bold" fill="currentColor">${esc(header)}</text>`;
   const itemsSvg = nodes
     .map((n, i) => {
       const y = top + HEADER_GAP + i * ROW_H;
       const opacity = n.dim ? ` opacity="0.5"` : "";
-      return `<text x="${x}" y="${y}" font-size="13"${opacity}>${esc(n.label)}</text>`;
+      return `<text x="${x}" y="${y}" font-size="13" fill="currentColor"${opacity}>${esc(n.label)}</text>`;
     })
     .join("");
   const count = nodes.length;
@@ -264,8 +264,8 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       ${loopFlowArrow(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, -70)}
       ${loopFlowArrow(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, 50)}
       ${loopFlowArrow(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, 170)}
-      <text x="${LOOP_CX}" y="${loopCy - 4}" text-anchor="middle" font-size="14">work cycling</text>
-      <text x="${LOOP_CX}" y="${loopCy + 12}" text-anchor="middle" font-size="14">inside In Progress</text>`;
+      <text x="${LOOP_CX}" y="${loopCy - 4}" text-anchor="middle" font-size="14" fill="currentColor">work cycling</text>
+      <text x="${LOOP_CX}" y="${loopCy + 12}" text-anchor="middle" font-size="14" fill="currentColor">inside In Progress</text>`;
 
   // No "= outer loop throughput" caption here (issue #9): even with the
   // realized finish flow above, that equivalence isn't generally true --
@@ -276,13 +276,13 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
   const exit = `
       <line x1="${exitStartX.toFixed(1)}" y1="${exitStartY.toFixed(1)}" x2="${exitBoxX - 8}" y2="${loopCy}" stroke="currentColor" marker-end="url(#ipArrow)"/>
       <rect x="${exitBoxX}" y="${exitBoxY}" width="${EXIT_BOX_W}" height="${EXIT_BOX_H}" fill="none" stroke="currentColor"/>
-      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 22}" text-anchor="middle" font-size="16" font-weight="bold">${esc(finishRate)}</text>
-      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 40}" text-anchor="middle" font-size="13">${esc(exitCaption)}</text>`;
+      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 22}" text-anchor="middle" font-size="16" font-weight="bold" fill="currentColor">${esc(finishRate)}</text>
+      <text x="${exitBoxX + EXIT_BOX_W / 2}" y="${exitBoxY + 40}" text-anchor="middle" font-size="13" fill="currentColor">${esc(exitCaption)}</text>`;
 
   const leak = `
       <path d="M ${leakStartX.toFixed(1)} ${leakStartY.toFixed(1)} C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${leakEndX.toFixed(1)} ${leakEndY.toFixed(1)}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#ipArrow)"/>
-      <text x="${leakEndX}" y="${leakEndY + 18}" text-anchor="end" font-size="13">${esc(`rework leak x${debtLabel} per shipped point`)}</text>
-      <text x="${leakEndX}" y="${leakEndY + 34}" text-anchor="end" font-size="12">refills the outer loop's Backlog</text>`;
+      <text x="${leakEndX}" y="${leakEndY + 18}" text-anchor="end" font-size="13" fill="currentColor">${esc(`rework leak x${debtLabel} per shipped point`)}</text>
+      <text x="${leakEndX}" y="${leakEndY + 34}" text-anchor="end" font-size="12" fill="currentColor">refills the outer loop's Backlog</text>`;
 
   const speedConnectorTarget = ellipsePoint(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, -120);
   const frictionConnectorTarget = ellipsePoint(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, 120);
@@ -304,7 +304,7 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       ${leakTmp.svg}
       ${connector(RIGHT_CONNECTOR_X, leakTmp.midY, leakStartX, leakStartY, true)}`;
 
-  const footer = `<text x="${LEFT_X}" y="${totalHeight - 10}" font-size="12">The inner loop's pace sets outer throughput; its leak feeds outer backlog.</text>`;
+  const footer = `<text x="${LEFT_X}" y="${totalHeight - 10}" font-size="12" fill="currentColor">The inner loop's pace sets outer throughput; its leak feeds outer backlog.</text>`;
 
   const svg = `
     <svg viewBox="0 0 ${VIEW_W} ${totalHeight}" width="100%" role="img" aria-label="Progress loop">

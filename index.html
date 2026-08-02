@@ -5,7 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Software Factory</title>
     <style>
-      body { font-family: ui-monospace, monospace; max-width: 1280px; margin: 1rem auto; padding: 0 1rem; }
+      /* Issue #10: without color-scheme + explicit fg/bg, prefers-color-scheme:
+         dark forces the canvas near-black while every hardcoded tone below
+         (#666/#999/#a60/#c00/#444/#fdd, plus default body text) stays put,
+         collapsing contrast to near-invisible. Custom properties hold the
+         light-mode palette (values unchanged from before this fix) and are
+         overridden below for dark mode, so every tone gets a contrast-safe
+         counterpart instead of being silently left behind. */
+      :root {
+        color-scheme: light dark;
+        --bg: #fff;
+        --fg: #000;
+        --fg-dim: #666;
+        --border: #999;
+        --accent-amber: #a60;
+        --accent-red: #c00;
+        --desc: #444;
+        --stall-bg: #fdd;
+        --stall-fg: #000;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #181818;
+          --fg: #e8e8e8;
+          --fg-dim: #aaa;
+          --border: #888;
+          --accent-amber: #e0a030;
+          --accent-red: #ff6b6b;
+          --desc: #c2c2c2;
+          --stall-bg: #4a1f1f;
+          --stall-fg: #ffd6d6;
+        }
+      }
+      body { font-family: ui-monospace, monospace; max-width: 1280px; margin: 1rem auto; padding: 0 1rem; color: var(--fg); background: var(--bg); }
       button { font-family: inherit; margin: 2px; }
       /* Non-reflowing stats bar: each stat is a fixed-width slot (label +
          tabular-nums value) so a value changing width on tick never shifts
@@ -17,7 +49,7 @@
          no-reflow guarantee holds while leaving room for future stocks. */
       .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.25rem 0.5rem; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
       .stat { display: inline-block; }
-      .stat-label { color: #666; }
+      .stat-label { color: var(--fg-dim); }
       .stat-value { display: inline-block; font-variant-numeric: tabular-nums; text-align: right; }
       .stat-value.v-day { min-width: 5ch; } /* Day: up to ~5 digits */
       .stat-value.v-flow { min-width: 9ch; } /* Backlog/Shipped: e.g. "12,345.6" */
@@ -26,10 +58,10 @@
       .stat-value.v-debt { min-width: 7ch; } /* Tech Debt */
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-rate { min-width: 5ch; } /* Points/Day */
-      .panel { border: 1px solid #999; padding: 0.5rem 1rem; margin-bottom: 1rem; }
+      .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 1rem; }
       .panel h4 { margin: 0.75rem 0 0.25rem; font-size: 0.95rem; }
       .panel h4:first-of-type { margin-top: 0.25rem; }
-      .panel h4 small { font-weight: normal; color: #666; }
+      .panel h4 small { font-weight: normal; color: var(--fg-dim); }
       .log { max-height: 160px; overflow-y: auto; font-size: 0.85rem; }
       /* Tech tree (Alter the loop). Each chain is a left-to-right row of tier
          columns joined by an arrow glyph; nodes stack vertically within a
@@ -40,18 +72,18 @@
       .tt-chain { margin-bottom: 1rem; }
       .tt-chain-row { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; }
       .tt-tier { display: flex; flex-direction: column; gap: 0.5rem; min-width: 190px; }
-      .tt-arrow { flex: none; align-self: center; padding: 0 0.5rem; color: #666; font-size: 1.1rem; }
+      .tt-arrow { flex: none; align-self: center; padding: 0 0.5rem; color: var(--fg-dim); font-size: 1.1rem; }
       .tt-standalone-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
       .tt-standalone-grid .tt-node, .tt-tier .tt-node { width: 190px; }
-      .tt-node { border: 1px solid #999; padding: 0.4rem 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
+      .tt-node { border: 1px solid var(--border); padding: 0.4rem 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
       .tt-node-name { font-weight: bold; }
-      .tt-node-meta { color: #666; display: flex; justify-content: space-between; gap: 0.5rem; margin: 0.15rem 0; }
+      .tt-node-meta { color: var(--fg-dim); display: flex; justify-content: space-between; gap: 0.5rem; margin: 0.15rem 0; }
       /* Gamble chip: a decision whose outcome is a lucky-or-unlucky roll at
          purchase. Reuses the existing amber warning tone (.tt-reason / .stall
          family) as an outlined badge so it reads as "risk here" at a glance,
          distinct from the plain dim category label beside it. */
-      .tt-gamble { color: #a60; border: 1px solid #a60; border-radius: 3px; padding: 0 0.25rem; margin-right: 0.3rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
-      .tt-node-desc { color: #444; margin-bottom: 0.25rem; }
+      .tt-gamble { color: var(--accent-amber); border: 1px solid var(--accent-amber); border-radius: 3px; padding: 0 0.25rem; margin-right: 0.3rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
+      .tt-node-desc { color: var(--desc); margin-bottom: 0.25rem; }
       /* Derived effects line (Release 20 card legibility): terse, numbers-only
          summary generated from the decision's structured effects data (see
          src/ui/effectSummary.ts), rendered beneath the authored description.
@@ -59,13 +91,13 @@
          first and the hard numbers read as a quieter confirmation underneath
          -- reuses the existing #666 dim tone from .tt-node-meta rather than
          introducing a new color. */
-      .tt-effects { color: #666; font-size: 0.8rem; margin-bottom: 0.25rem; }
+      .tt-effects { color: var(--fg-dim); font-size: 0.8rem; margin-bottom: 0.25rem; }
       .tt-node-state { margin-bottom: 0.25rem; }
-      .tt-reason { color: #a60; }
+      .tt-reason { color: var(--accent-amber); }
       .tt-node.tt-locked { opacity: 0.5; }
       .tt-node.tt-owned { opacity: 0.6; }
       .tt-node.tt-owned .tt-tag-state { font-weight: bold; }
-      .tt-node.tt-cannot-afford .tt-reason { color: #c00; }
+      .tt-node.tt-cannot-afford .tt-reason { color: var(--accent-red); }
       /* Time-control group (Release 19): Pause/Resume + one button per
          speed. Fixed-width buttons so the group's footprint never changes
          as the active marker moves or the Pause/Resume label flips --
@@ -75,7 +107,7 @@
       .time-controls { margin-bottom: 0.5rem; }
       .tc-btn { display: inline-block; min-width: 4.5rem; text-align: center; opacity: 0.6; }
       .tc-btn.tc-active { opacity: 1; font-weight: bold; }
-      .stall { background: #fdd; padding: 0.5rem; font-weight: bold; }
+      .stall { background: var(--stall-bg); color: var(--stall-fg); padding: 0.5rem; font-weight: bold; }
       .loops { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
       .cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; align-items: start; }
       /* minmax(0, 1fr) on the track alone isn't enough: a grid item's default
