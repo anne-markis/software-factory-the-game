@@ -184,26 +184,11 @@ const EXIT_BOX_H = 54;
 const EXIT_GAP = 65;
 const FOOTER_GAP = 34;
 
-// A group (Cycle speed, Friction, Leak size) gaining or losing rows -- most
-// visibly friction appearing/disappearing as decisions are bought -- used to
-// grow or shrink the whole viewBox height, shifting every element below the
-// panel on the page. Reserve enough vertical space for 6 rows in each group
-// (a generous ceiling for how many contributor lines realistically stack up)
-// so the common case never resizes the panel; only a rarer, larger stack
-// grows past the reserve. Derived from the same top-stack/loop/friction math
-// used below, evaluated at RESERVE_ROWS instead of the real node counts, so
-// this isn't a hardcoded pixel guess.
-const RESERVE_ROWS = 6;
-const RESERVE_HEIGHT = (() => {
-  const topStacksBottom = TOP_MARGIN + HEADER_GAP + RESERVE_ROWS * ROW_H;
-  const loopTopY = topStacksBottom + STACK_LOOP_GAP;
-  const loopCy = loopTopY + LOOP_RY;
-  const loopBottomY = loopCy + LOOP_RY;
-  const frictionTop = loopBottomY + STACK_LOOP_GAP;
-  const frictionBottom = frictionTop + HEADER_GAP + RESERVE_ROWS * ROW_H;
-  const leakEndY = loopBottomY + 110; // mirrors the real leakEndY formula below (loopBottomY + 110)
-  return Math.max(frictionBottom, leakEndY + 50, loopCy + EXIT_BOX_H / 2 + 40) + FOOTER_GAP;
-})();
+// Once Friction is visible, reserve a small cushion so one or two temporary
+// drag rows can appear/disappear without resizing the whole page. Do not
+// reserve for absent friction or for hypothetical growth in unrelated groups:
+// the SVG should track the actual content in the common fresh/no-friction case.
+const FRICTION_RESERVE_ROWS = 3;
 
 export function inProgressPanelSvg(state: Readonly<GameState>, content: GameContent): string {
   const speedNodes = buildRateGroupNodes(state, content, "speed");
@@ -236,10 +221,12 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
   const c2x = leakEndX - 90;
   const c2y = leakEndY - 50;
 
-  const totalHeight = Math.max(
-    Math.max(friction.bottom, leakEndY + 50, loopCy + EXIT_BOX_H / 2 + 40) + FOOTER_GAP,
-    RESERVE_HEIGHT,
-  );
+  const actualContentBottom = Math.max(friction.bottom, leakEndY + 50, loopCy + EXIT_BOX_H / 2 + 40);
+  const reservedFrictionBottom =
+    frictionNodes.length > 0
+      ? frictionTop + HEADER_GAP + Math.max(frictionNodes.length, FRICTION_RESERVE_ROWS) * ROW_H
+      : friction.bottom;
+  const totalHeight = Math.max(actualContentBottom, reservedFrictionBottom) + FOOTER_GAP;
 
   // Exit flow: solid arrow from the loop's right edge to the throughput box,
   // vertically centered on the loop.
