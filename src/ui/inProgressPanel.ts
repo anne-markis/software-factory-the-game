@@ -184,12 +184,6 @@ const EXIT_BOX_H = 54;
 const EXIT_GAP = 65;
 const FOOTER_GAP = 34;
 
-// Once Friction is visible, reserve a small cushion so one or two temporary
-// drag rows can appear/disappear without resizing the whole page. Do not
-// reserve for absent friction or for hypothetical growth in unrelated groups:
-// the SVG should track the actual content in the common fresh/no-friction case.
-const FRICTION_RESERVE_ROWS = 3;
-
 export function inProgressPanelSvg(state: Readonly<GameState>, content: GameContent): string {
   const speedNodes = buildRateGroupNodes(state, content, "speed");
   const frictionNodes = buildRateGroupNodes(state, content, "friction");
@@ -222,11 +216,7 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
   const c2y = leakEndY - 50;
 
   const actualContentBottom = Math.max(friction.bottom, leakEndY + 50, loopCy + EXIT_BOX_H / 2 + 40);
-  const reservedFrictionBottom =
-    frictionNodes.length > 0
-      ? frictionTop + HEADER_GAP + Math.max(frictionNodes.length, FRICTION_RESERVE_ROWS) * ROW_H
-      : friction.bottom;
-  const totalHeight = Math.max(actualContentBottom, reservedFrictionBottom) + FOOTER_GAP;
+  const totalHeight = actualContentBottom + FOOTER_GAP;
 
   // Exit flow: solid arrow from the loop's right edge to the throughput box,
   // vertically centered on the loop.

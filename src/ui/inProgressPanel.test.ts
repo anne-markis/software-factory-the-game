@@ -247,26 +247,9 @@ describe("inProgressPanelSvg", () => {
     const height0 = viewBoxHeight(svg0);
     expect(height0).toBeLessThan(450);
     expect(height0).not.toBe(484); // old worst-case reserve for six rows in every group
-
-    const e3 = new Engine(content());
-    const s3 = e3.getState() as MutableState;
-    for (let i = 0; i < 3; i++) {
-      s3.modifiers.push({
-        id: `mod-friction-${i}`,
-        source: `chal-test-friction-${i}`,
-        target: "allRates",
-        op: "mul",
-        value: 0.9,
-      });
-    }
-    const svg3 = inProgressPanelSvg(s3, content());
-    expect(svg3).toContain("Friction"); // now populated, 3 rows
-
-    const height3 = viewBoxHeight(svg3);
-    expect(height3).toBe(height0);
   });
 
-  it("lets the viewBox grow when contributor stacks exceed the conservative reserve", () => {
+  it("lets the viewBox grow when contributor stacks are large", () => {
     const fresh = new Engine(content());
     const freshHeight = viewBoxHeight(inProgressPanelSvg(fresh.getState(), content()));
 
