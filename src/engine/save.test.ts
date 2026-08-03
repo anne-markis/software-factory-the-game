@@ -184,6 +184,21 @@ describe("save/load", () => {
     expect(() => b.tick()).not.toThrow();
   });
 
+  // pointsPerDay (same realized-throughput family as pullFlow/finishFlow,
+  // issue #9) defaults in deserialize itself. Legacy saves predate the
+  // field; without a default, render.ts crashes calling .toLocaleString()
+  // on undefined before the first tick ever runs.
+  it("defaults a missing pointsPerDay to 0 (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.pointsPerDay;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.pointsPerDay).toBe(0);
+    const b = new Engine(c, restored);
+    expect(() => b.tick()).not.toThrow();
+  });
+
   it("loads a legacy save without lastChallengeDay fine (stays undefined, no default needed)", () => {
     const c = content();
     const a = new Engine(c);

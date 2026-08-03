@@ -58,5 +58,12 @@ export function deserialize(json: string): GameState {
   if (state.finishFlow === undefined) {
     state.finishFlow = 0;
   }
+  // defensive default for saves written before pointsPerDay (same realized-
+  // throughput family as pullFlow/finishFlow). Legacy saves predate the
+  // field; 0 is a safe placeholder until the next tick recomputes the real
+  // realized flow (see tick.ts which sets state.pointsPerDay = shippedFlow).
+  if (state.pointsPerDay === undefined) {
+    state.pointsPerDay = 0;
+  }
   return state;
 }
