@@ -36,8 +36,9 @@ describe("esc", () => {
 
 describe("renderStats", () => {
   it("renders each stat as a label span plus a width-classed, tabular-nums value span (single-line, non-reflowing bar)", () => {
-    const e = new Engine(content());
-    const html = renderStats(e.getState());
+    const c = content();
+    const e = new Engine(c);
+    const html = renderStats(e.getState(), c);
     expect(html).toContain('<div class="stats">');
     expect(html).toContain(
       '<span class="stat"><span class="stat-label">Day</span> <span class="stat-value v-day">0</span></span>',
@@ -50,6 +51,47 @@ describe("renderStats", () => {
     expect(html).toContain('<span class="stat-label">Tech Debt</span> <span class="stat-value v-debt">');
     expect(html).toContain('<span class="stat-label">Reputation</span> <span class="stat-value v-rep">');
     expect(html).toContain('<span class="stat-label">Points/Day</span> <span class="stat-value v-rate">');
+  });
+
+  // Issue #37: Budget must telegraph runway before payroll wipe.
+  it("appends runway days to Budget when recurring burn is positive", () => {
+    const c = content();
+    const e = new Engine(c);
+    const html = renderStats(e.getState(), c);
+    // Fresh game: $10,000 / $20/day = 500 days; healthy, no warning class.
+    expect(html).toContain('class="stat-value v-budget">$10,000 (500 days)</span>');
+    expect(html).not.toContain("budget-low");
+  });
+
+  it("marks Budget with budget-low when runway is at or under 14 days", () => {
+    const c = content();
+    const e = new Engine(c);
+    e.applyDecision("basic-dev"); // +$7/day → burn 27
+    const state = e.getState();
+    state.stocks.budget = 270; // exactly 10 days
+    const html = renderStats(state, c);
+    expect(html).toContain('class="stat-value v-budget budget-low">$270 (10 days)</span>');
+  });
+
+  it("uses singular day label and warns at 1 day of runway", () => {
+    const c = content();
+    const e = new Engine(c);
+    const state = e.getState();
+    state.stocks.budget = 20; // 1 day at base burn 20
+    const html = renderStats(state, c);
+    expect(html).toContain('class="stat-value v-budget budget-low">$20 (1 day)</span>');
+  });
+
+  it("omits runway and warning when net burn is not positive", () => {
+    const c = content();
+    c.start.baseBurnPerDay = 0;
+    const e = new Engine(c);
+    e.applyDecision("support-retainer");
+    const html = renderStats(e.getState(), c);
+    expect(html).toContain('class="stat-value v-budget">$');
+    expect(html).not.toContain(" days)");
+    expect(html).not.toContain(" day)");
+    expect(html).not.toContain("budget-low");
   });
 });
 

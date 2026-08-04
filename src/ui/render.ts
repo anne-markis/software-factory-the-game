@@ -5,6 +5,7 @@ import type { DecisionCategory, DecisionDef, DecisionInstance, GameContent, Game
 import { buildTechTree, type TechChain } from "./techTree";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { SECTION_ATTR } from "./domPatch";
+import { budgetRunwayDays, RUNWAY_WARN_DAYS } from "./runway";
 
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -22,7 +23,18 @@ function stat(label: string, value: string, widthClass: string): string {
   return `<span class="stat"><span class="stat-label">${label}</span> <span class="stat-value ${widthClass}">${value}</span></span>`;
 }
 
-export function renderStats(state: Readonly<GameState>): string {
+function budgetStat(state: Readonly<GameState>, content: GameContent): string {
+  // Issue #37: surface days of runway on Budget itself and warn visually
+  // before payroll wipe. Recurring burn only (see runway.ts).
+  const runway = budgetRunwayDays(state, content);
+  const low = runway !== null && runway <= RUNWAY_WARN_DAYS;
+  const classes = low ? "v-budget budget-low" : "v-budget";
+  const dayLabel = runway === 1 ? "1 day" : `${runway} days`;
+  const value = runway === null ? `$${fmt(state.stocks.budget)}` : `$${fmt(state.stocks.budget)} (${dayLabel})`;
+  return stat("Budget", value, classes);
+}
+
+export function renderStats(state: Readonly<GameState>, content: GameContent): string {
   return `
     <div class="stats">
       ${stat("Day", String(state.day), "v-day")}
@@ -30,7 +42,7 @@ export function renderStats(state: Readonly<GameState>): string {
       ${stat("In Progress", fmt(state.stocks.inProgress), "v-count")}
       ${stat("Done", fmt(state.stocks.done), "v-count")}
       ${stat("Shipped", fmt(state.stocks.shipped), "v-flow")}
-      ${stat("Budget", `$${fmt(state.stocks.budget)}`, "v-budget")}
+      ${budgetStat(state, content)}
       ${stat("Tech Debt", fmt(state.stocks.techDebt), "v-debt")}
       ${stat("Reputation", fmt(state.stocks.reputation), "v-rep")}
       ${stat("Points/Day", fmt(state.pointsPerDay), "v-rate")}
