@@ -53,6 +53,12 @@ describe("decisions", () => {
     const s = e.getState();
     const debtMods = s.modifiers.filter((m) => m.target === "debtMultiplier").map((m) => m.value).sort();
     expect(debtMods).toEqual([1.1, 1.2]);
+    // The applied variant is recorded on the instance that got it, and only on
+    // that one: the first agent predates the harness, so it kept the base
+    // effects (see archetypes.ts's debt mitigation check, issue #14).
+    const agents = s.decisions.filter((d) => d.defId === "agent");
+    expect(agents.map((d) => d.appliedSynergyIfOwned)).toEqual([undefined, "agent-harness"]);
+    expect(s.decisions.find((d) => d.defId === "agent-harness")!.appliedSynergyIfOwned).toBeUndefined();
   });
 
   it("buying refactoring-sprint pays down 30% of tech debt and slows all rates 40% for 8 days", () => {

@@ -146,7 +146,11 @@ rest are ignored for that purchase.
 Synergy ownership is checked once, at purchase. Removing the synergy
 provider later does not revert instances already purchased under it, and
 buying the synergy provider *after* the decision does not retroactively
-apply the synergy to instances already owned.
+apply the synergy to instances already owned. Which provider (if any) a
+purchase matched is recorded on the instance as `appliedSynergyIfOwned`,
+which is how the `shifting-the-burden` archetype tells a synergy that
+really lowered an instance's debt from a provider that merely happens to
+be owned now (see `src/engine/archetypes.ts`).
 
 ### Unique, removable, and payroll failure
 

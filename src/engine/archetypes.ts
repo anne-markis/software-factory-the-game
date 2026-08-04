@@ -31,14 +31,13 @@ function debtMulProduct(effects: readonly { type: string; op?: string; value?: n
   return p;
 }
 
-// The set of decision ids that "lower the debt multiplier" -- either directly
-// (a base effect multiplies debt below 1, e.g. test-suite; or a base effect
-// shrinks the techDebt stock via scaleStock with factor < 1, e.g.
-// refactoring-sprint/redesign-rebuild, Release 16) or structurally, by being
-// the ifOwned provider of a synergy that reduces some decision's debt below
-// its base (agent-harness for agent, swarm-orchestrator for agent-swarm).
+// The set of decision ids that lower debt directly through their own base
+// effects: a base effect multiplies debt below 1 (e.g. test-suite), or a base
+// effect shrinks the techDebt stock via scaleStock with factor < 1 (e.g.
+// refactoring-sprint/redesign-rebuild, Release 16). Ownership alone is proof
+// of mitigation here, since the effect landed when the instance was bought.
 // Derived entirely from content so the archetypes stay data-driven.
-function debtLowererIds(content: GameContent): Set<string> {
+function directDebtLowererIds(content: GameContent): Set<string> {
   const ids = new Set<string>();
   for (const def of content.decisions) {
     if (def.effects.some((e) => e.type === "modifyDebtMultiplier" && e.op === "mul" && e.value < 1)) {
@@ -47,6 +46,31 @@ function debtLowererIds(content: GameContent): Set<string> {
     if (def.effects.some((e) => e.type === "scaleStock" && e.stock === "techDebt" && e.factor < 1)) {
       ids.add(def.id);
     }
+  }
+  return ids;
+}
+
+function synergyKey(defId: string, ifOwned: string): string {
+  return `${defId}\u0000${ifOwned}`;
+}
+
+// Keys for the (decision, synergy provider) pairs whose synergy variant
+// mitigates debt: the variant's debt-multiplier product comes out below the
+// def's base product (agent under agent-harness, agent-swarm under
+// swarm-orchestrator in shipped content).
+//
+// Structural mitigation like this is only real for an instance that was
+// actually purchased under the synergy -- synergies are selected at purchase
+// time and recorded as DecisionInstance.appliedSynergyIfOwned -- so owning the
+// provider proves nothing on its own (issue #14: agent-harness requires agent,
+// so the very first agent can never have been bought under the harness
+// synergy, yet owning the harness used to suppress shifting-the-burden).
+// Keyed per pair rather than by provider id so a provider whose synergy is
+// debt-mitigating on one decision cannot credit an instance of another
+// decision whose synergy with it leaves debt untouched.
+function debtMitigatingSynergyKeys(content: GameContent): Set<string> {
+  const keys = new Set<string>();
+  for (const def of content.decisions) {
     const baseDebt = debtMulProduct(def.effects);
     for (const syn of def.synergies ?? []) {
       // Guard (Release 15 final review): only compare debt products when the
@@ -54,18 +78,18 @@ function debtLowererIds(content: GameContent): Set<string> {
       // rate-only synergy (e.g. a bonus-speed swap on a debt-raiser) would
       // otherwise default its debt product to 1 via debtMulProduct's
       // no-matching-terms fallback, which reads as "lower than any raiser's
-      // baseDebt > 1" and misclassifies the provider as a mitigator even
+      // baseDebt > 1" and misclassifies the synergy as a mitigator even
       // though it never touches the debt multiplier at all.
       if (
         syn.effects &&
         syn.effects.some((e) => e.type === "modifyDebtMultiplier") &&
         debtMulProduct(syn.effects) < baseDebt
       ) {
-        ids.add(syn.ifOwned);
+        keys.add(synergyKey(def.id, syn.ifOwned));
       }
     }
   }
-  return ids;
+  return keys;
 }
 
 export function detectArchetypes(
@@ -91,15 +115,21 @@ export function detectArchetypes(
   }
 
   // Shifting the burden: quick capacity fixes (2+ debt-raising decisions) are
-  // feeding the debt loop while nothing pays it down (zero debt-lowering
-  // decisions owned) and debt is already past the grace band (freeDebt).
+  // feeding the debt loop while nothing pays it down (no owned instance
+  // mitigates debt, either directly or through a synergy it was actually
+  // bought under) and debt is already past the grace band (freeDebt).
   if (!seen.has("shifting-the-burden")) {
-    const lowerers = debtLowererIds(content);
+    const direct = directDebtLowererIds(content);
+    const mitigatingSynergies = debtMitigatingSynergyKeys(content);
     let raiserCount = 0;
     let lowererCount = 0;
     for (const inst of state.decisions) {
       if (raisesDebt(content, inst.defId)) raiserCount += 1;
-      if (lowerers.has(inst.defId)) lowererCount += 1;
+      const mitigates =
+        direct.has(inst.defId) ||
+        (inst.appliedSynergyIfOwned !== undefined &&
+          mitigatingSynergies.has(synergyKey(inst.defId, inst.appliedSynergyIfOwned)));
+      if (mitigates) lowererCount += 1;
     }
     if (raiserCount >= 2 && lowererCount === 0 && state.stocks.techDebt > state.debtDragFreeDebt) {
       state.archetypesSeen.push("shifting-the-burden");

@@ -84,6 +84,13 @@ export interface DecisionInstance {
   instanceId: string;
   defId: string;
   gambleLabel?: string;
+  // The Synergy.ifOwned provider whose variant effects were applied when this
+  // instance was purchased, or absent when the base effects were used.
+  // Synergies are selected at purchase time only (see applyDecision), so this
+  // is the sole record of which variant an owned instance actually got --
+  // ownership of the provider today says nothing about instances bought before
+  // it. Legacy saves predate the field; undefined means "base effects".
+  appliedSynergyIfOwned?: string;
   // Sickness is deliberately tracked per decision instance rather than as a
   // Modifier: it scales this one instance's contribution instead of a whole
   // rate. The engine's effectiveRate computation consults these fields.

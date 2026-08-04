@@ -60,13 +60,16 @@ export function applyDecision(state: GameState, content: GameContent, defId: str
   state.stocks.budget -= def.cost.oneTime ?? 0;
 
   // Synergy ownership is evaluated at purchase time only; removing the
-  // synergy provider later does not revert instances purchased under it.
+  // synergy provider later does not revert instances purchased under it. The
+  // choice is recorded on the instance so consumers can tell which variant
+  // this instance actually got (see archetypes.ts's debt mitigation check).
   const synergy = (def.synergies ?? []).find((s) => owned(state, s.ifOwned));
   const effects = synergy?.effects ?? def.effects;
   const gamble = synergy?.gamble ?? def.gamble;
 
   const instanceId = `inst-${state.nextInstanceId++}`;
   const instance: DecisionInstance = { instanceId, defId: def.id };
+  if (synergy) instance.appliedSynergyIfOwned = synergy.ifOwned;
 
   applyEffects(state, effects, instanceId);
   if (gamble) {
