@@ -65,5 +65,10 @@ export function deserialize(json: string): GameState {
   if (state.pointsPerDay === undefined) {
     state.pointsPerDay = 0;
   }
+  // DecisionInstance.appliedSynergyIfOwned (issue #14) needs no defaulting:
+  // undefined already means "bought under the base effects", and which synergy
+  // a legacy instance was bought under is unrecoverable from the save, so any
+  // backfill from current ownership would invent mitigation that never
+  // happened -- exactly the bug the field exists to fix.
   return state;
 }
