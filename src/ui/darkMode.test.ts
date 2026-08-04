@@ -56,7 +56,7 @@ function contrastRatio(hexA: string, hexB: string): number {
 // ---------------------------------------------------------------------------
 // Narrow, purpose-built CSS extraction. Not a general CSS parser -- it only
 // knows the exact selectors/properties this stylesheet uses (see the color
-// catalog in decision_audit_issue_10.md), and resolves var(--token)
+// catalog in index.html's :root / dark-mode blocks), and resolves var(--token)
 // references against the :root custom-property block(s) so the same
 // extraction works whether a color is a literal hex or a custom property.
 // ---------------------------------------------------------------------------
