@@ -50,6 +50,12 @@ function exitBoxValue(svg: string): string | undefined {
   return svg.match(/font-weight="bold"[^>]*>(-?\d+\.\d)\/day</)?.[1];
 }
 
+function viewBoxHeight(svg: string): number {
+  const height = svg.match(/viewBox="0 0 \d+ (\d+(?:\.\d+)?)"/)?.[1];
+  expect(height).toBeDefined();
+  return Number(height);
+}
+
 describe("inProgressPanelSvg", () => {
   it("renders the loop, exit flow, leak arc, and footer on a fresh engine", () => {
     const e = new Engine(content());
@@ -234,31 +240,50 @@ describe("inProgressPanelSvg", () => {
     expect(inFrictionGroup(svg, "Context switch x0.85")).toBe(true);
   });
 
-  it("keeps the viewBox height identical whether Friction has 0 or 3 rows (release 14: reserved vertical space)", () => {
-    const extractHeight = (svg: string) => svg.match(/viewBox="0 0 \d+ (\d+(?:\.\d+)?)"/)?.[1];
-
+  it("keeps a fresh no-friction panel close to its content without the old six-row reserve", () => {
     const e0 = new Engine(content());
     const svg0 = inProgressPanelSvg(e0.getState(), content());
     expect(svg0).not.toContain("Friction"); // fresh engine has no drag, group omitted
+    const height0 = viewBoxHeight(svg0);
+    expect(height0).toBeLessThan(450);
+    expect(height0).not.toBe(484); // old worst-case reserve for six rows in every group
+  });
 
-    const e3 = new Engine(content());
-    const s3 = e3.getState() as MutableState;
-    for (let i = 0; i < 3; i++) {
-      s3.modifiers.push({
-        id: `mod-friction-${i}`,
-        source: `chal-test-friction-${i}`,
-        target: "allRates",
-        op: "mul",
-        value: 0.9,
-      });
+  it("lets the viewBox grow when contributor stacks are large", () => {
+    const fresh = new Engine(content());
+    const freshHeight = viewBoxHeight(inProgressPanelSvg(fresh.getState(), content()));
+
+    const e = new Engine(content());
+    const s = e.getState() as MutableState;
+    for (let i = 0; i < 8; i++) {
+      s.modifiers.push(
+        {
+          id: `mod-speed-${i}`,
+          source: `chal-test-speed-${i}`,
+          target: "finish",
+          op: "add",
+          value: 0.2,
+        },
+        {
+          id: `mod-leak-${i}`,
+          source: `chal-test-leak-${i}`,
+          target: "debtMultiplier",
+          op: "mul",
+          value: 1.1,
+        },
+        {
+          id: `mod-friction-${i}`,
+          source: `chal-test-friction-${i}`,
+          target: "allRates",
+          op: "mul",
+          value: 0.9,
+        },
+      );
     }
-    const svg3 = inProgressPanelSvg(s3, content());
-    expect(svg3).toContain("Friction"); // now populated, 3 rows
 
-    const height0 = extractHeight(svg0);
-    const height3 = extractHeight(svg3);
-    expect(height0).toBeDefined();
-    expect(height3).toBe(height0);
+    const crowdedHeight = viewBoxHeight(inProgressPanelSvg(s, content()));
+    expect(crowdedHeight).toBeGreaterThan(freshHeight);
+    expect(crowdedHeight).toBeGreaterThan(484);
   });
 
   it("renders negative contributions with a bare minus, not +-", () => {
