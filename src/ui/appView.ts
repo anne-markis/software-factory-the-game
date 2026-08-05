@@ -78,12 +78,14 @@ const CHOICES = "choices";
 const LOG = "log";
 
 function pageScaffold(): string {
+  // Issue #7: time controls + Reset sit above the stats bar and loop panels
+  // so pause/speed/reset stay reachable without scrolling past the loops.
   return `
+    <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
+    <button id="reset">Reset game</button>
     <div ${SECTION_ATTR}="${STATS}"></div>
     <div class="loops" ${SECTION_ATTR}="${LOOPS}"></div>
     <div ${SECTION_ATTR}="${STALL}"></div>
-    <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
-    <button id="reset">Reset game</button>
     <div class="cols">
       <div class="main">
         <div ${SECTION_ATTR}="${DECISIONS}"></div>
