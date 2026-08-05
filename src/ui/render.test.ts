@@ -299,6 +299,14 @@ describe("renderTimeControls", () => {
     expect(html).toContain(">Resume<");
     expect(html).not.toContain(">Pause<");
   });
+
+  it("marks Resume as the active control while paused so the day-clock start is obvious", () => {
+    const html = renderTimeControls(true, 1, [1, 2, 5]);
+    expect(html).toContain('class="tc-btn tc-active" id="pause"');
+    // Speeds stay dimmed while paused; the selected 1x must not look like Play.
+    expect(html).toContain('class="tc-btn" data-speed="1"');
+    expect(html).not.toContain('tc-active" data-speed');
+  });
 });
 
 describe("renderStall", () => {
