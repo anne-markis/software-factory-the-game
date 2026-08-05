@@ -1,38 +1,14 @@
 [
   {
-    "number": 38,
+    "number": 47,
     "type": "enhancement",
-    "priority": "high",
-    "comment": "## RICE triage\n\n**Units & thresholds**\n- Reach: estimated % of players who encounter this (0–100)\n- Impact: Massive=3, High=2, Medium=1, Low=0.5, Minimal=0.25\n- Confidence: High=100%, Medium=80%, Low=50%\n- Effort: person-weeks\n- Score = (Reach × Impact × Confidence) / Effort\n- Priority: **high** ≥ 80 · **medium** 25–79 · **low** < 25\n\n\n### Issue #38 — Fresh game / Reset starts unpaused — reading the factory burns days before you can act\n\n| Factor | Value | Rationale |\n|--------|-------|-----------|\n| Reach | 100 | Every fresh load and Reset hits this default |\n| Impact | High (2) | Burns sim-days and budget while orienting; punishes reading the tech tree |\n| Confidence | High (100%) | Repro verified; scoped to default pause state |\n| Effort | 0.25 person-weeks | Start paused after load/Reset; small default-state change |\n\n**RICE score:** (100 × 2 × 1.0) / 0.25 = **800** → **high**"
-  },
-  {
-    "number": 37,
-    "type": "enhancement",
-    "priority": "high",
-    "comment": "## RICE triage\n\n**Units & thresholds**\n- Reach: estimated % of players who encounter this (0–100)\n- Impact: Massive=3, High=2, Medium=1, Low=0.5, Minimal=0.25\n- Confidence: High=100%, Medium=80%, Low=50%\n- Effort: person-weeks\n- Score = (Reach × Impact × Confidence) / Effort\n- Priority: **high** ≥ 80 · **medium** 25–79 · **low** < 25\n\n\n### Issue #37 — No runway warning before payroll wipe — entire roster vanishes at $0 with no telegraph\n\n| Factor | Value | Rationale |\n|--------|-------|-----------|\n| Reach | 55 | Requires paid hires and not actively watching budget; common at 2x/5x |\n| Impact | Massive (3) | Entire roster removed permanently with no prior signal |\n| Confidence | High (100%) | Detailed session evidence; clear UX gap |\n| Effort | 0.5 person-weeks | Runway display + low-runway visual warning on Budget stat |\n\n**RICE score:** (55 × 3 × 1.0) / 0.5 = **330** → **high**"
-  },
-  {
-    "number": 39,
-    "type": "enhancement",
-    "priority": "high",
-    "comment": "## RICE triage\n\n**Units & thresholds**\n- Reach: estimated % of players who encounter this (0–100)\n- Impact: Massive=3, High=2, Medium=1, Low=0.5, Minimal=0.25\n- Confidence: High=100%, Medium=80%, Low=50%\n- Effort: person-weeks\n- Score = (Reach × Impact × Confidence) / Effort\n- Priority: **high** ≥ 80 · **medium** 25–79 · **low** < 25\n\n\n### Issue #39 — Done→Shipped stays at 1/day after hiring — Done piles up with no pointer to CI/CD\n\n| Factor | Value | Rationale |\n|--------|-------|-----------|\n| Reach | 75 | Most players hire developers early and hit the release bottleneck |\n| Impact | High (2) | Core loop confusion; Done pile grows while Points/Day stays flat |\n| Confidence | High (100%) | Verified numbers across a full play session |\n| Effort | 0.5 person-weeks | Bottleneck hint on Done stat/arrow or near Delivery loop |\n\n**RICE score:** (75 × 2 × 1.0) / 0.5 = **300** → **high**"
-  },
-  {
-    "number": 40,
-    "type": "enhancement",
-    "priority": "high",
-    "comment": "## RICE triage\n\n**Units & thresholds**\n- Reach: estimated % of players who encounter this (0–100)\n- Impact: Massive=3, High=2, Medium=1, Low=0.5, Minimal=0.25\n- Confidence: High=100%, Medium=80%, Low=50%\n- Effort: person-weeks\n- Score = (Reach × Impact × Confidence) / Effort\n- Priority: **high** ≥ 80 · **medium** 25–79 · **low** < 25\n\n\n### Issue #40 — Decision-needed challenges expire in ~3 days with no pause or sticky alert — trivial to miss at 5x\n\n| Factor | Value | Rationale |\n|--------|-------|-----------|\n| Reach | 65 | Mid/late players on 2x/5x who scroll away from Events/Choices |\n| Impact | High (2) | Defaults spend budget and change rates; undermines meaningful choices |\n| Confidence | High (100%) | Concrete day-by-day repro; UI exists but is easy to miss |\n| Effort | 1 person-week | Auto-pause, sticky banner, or speed-aware timer — pick/combine |\n\n**RICE score:** (65 × 2 × 1.0) / 1 = **130** → **high**"
-  },
-  {
-    "number": 33,
-    "type": "bug",
-    "priority": "high",
-    "comment": "## RICE triage\n\n**Units & thresholds**\n- Reach: estimated % of players who encounter this (0–100)\n- Impact: Massive=3, High=2, Medium=1, Low=0.5, Minimal=0.25\n- Confidence: High=100%, Medium=80%, Low=50%\n- Effort: person-weeks\n- Score = (Reach × Impact × Confidence) / Effort\n- Priority: **high** ≥ 80 · **medium** 25–79 · **low** < 25\n\n\n### Issue #33 — Key-dev-poached \"Let them go\" only slows rates; the developer stays on payroll\n\n| Factor | Value | Rationale |\n|--------|-------|-----------|\n| Reach | 35 | Requires the Key developer poached challenge and choosing/expiring Let them go |\n| Impact | High (2) | Copy promises loss but roster and payroll unchanged; breaks trust |\n| Confidence | High (100%) | Challenge JSON and design spec cited; clear code path |\n| Effort | 0.5 person-weeks | Add removeDecision (or equivalent) effect on let-them-go resolution |\n\n**RICE score:** (35 × 2 × 1.0) / 0.5 = **140** → **high**"
-  },
-  {
-    "number": 32,
-    "type": "bug",
     "priority": "medium",
-    "comment": "## RICE triage\n\n**Units & thresholds**\n- Reach: estimated % of players who encounter this (0–100)\n- Impact: Massive=3, High=2, Medium=1, Low=0.5, Minimal=0.25\n- Confidence: High=100%, Medium=80%, Low=50%\n- Effort: person-weeks\n- Score = (Reach × Impact × Confidence) / Effort\n- Priority: **high** ≥ 80 · **medium** 25–79 · **low** < 25\n\n\n### Issue #32 — Agent harness requires an agent but never mitigates that first agent\n\n| Factor | Value | Rationale |\n|--------|-------|-----------|\n| Reach | 25 | Players who buy the agent → harness chain |\n| Impact | High (2) | Misleading copy; harness purchase doesn't help the required first agent |\n| Confidence | High (100%) | Engine test pins behavior; play session confirms x1.2 on first agent |\n| Effort | 1 person-week | Engine synergy or content/copy fix across decisions + tests |\n\n**RICE score:** (25 × 2 × 1.0) / 1 = **50** → **medium**"
+    "comment": "## RICE triage\n\n| Factor | Value | Rationale |\n|--------|-------|-----------|\n| **Reach** | 75 | Most players hire basic developers early; the GAMBLE card is a core hiring path |\n| **Impact** | Medium (1) | Pre-buy copy frames risk as \"maybe not strong\" rather than active throughput drag; effects range exists but is easy to miss — meaningful friction, not wrong game state |\n| **Confidence** | High (100%) | Detailed session repro with Strong vs Net-negative outcomes and rate deltas |\n| **Effort** | 0.5 person-weeks | Copy/UX tweak on decision card + review (UI change floor) |\n\n**Score:** (75 × 1 × 1.0) / 0.5 = **150**\n\n**Priority:** medium (score 50–199)\n\n**Type:** enhancement — behavior matches the +1.0 to −1.0 spec; the gap is telegraphing downside before purchase, not broken logic."
+  },
+  {
+    "number": 45,
+    "type": "enhancement",
+    "priority": "low",
+    "comment": "## RICE triage\n\n| Factor | Value | Rationale |\n|--------|-------|-----------|\n| **Reach** | 30 | Useful when reporting bugs or checking deploy freshness; not on the critical gameplay path |\n| **Impact** | Low (0.5) | Polish/discoverability; game is fully playable without an in-app version stamp |\n| **Confidence** | High (100%) | Clear, scoped request |\n| **Effort** | 0.5 person-weeks | Surface version + last-deploy metadata in UI; may need build-time injection (UI change floor) |\n\n**Score:** (30 × 0.5 × 1.0) / 0.5 = **30**\n\n**Priority:** low (score < 50)\n\n**Type:** enhancement — new UX surface, not a defect."
   }
 ]
