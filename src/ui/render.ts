@@ -5,6 +5,7 @@ import type { DecisionCategory, DecisionDef, DecisionInstance, GameContent, Game
 import { buildTechTree, type TechChain } from "./techTree";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { SECTION_ATTR } from "./domPatch";
+import { formatBuiltAt, type BuildInfo } from "./buildInfo";
 
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -225,6 +226,16 @@ export function renderStall(stalled: boolean): string {
   return stalled
     ? `<div class="stall">The factory is stalled: no work in the pipeline and nothing affordable. Income may still accrue; otherwise this factory is dead.</div>`
     : "";
+}
+
+// Quiet page footer (issue #45): version + deploy/build time + repo link.
+// Lives in the page scaffold (not a patched region) because build identity
+// never changes during a session. Version is shown as injected (CalVer tag
+// in CI, "x.y.z-dev" locally) with no extra "v" prefix so CalVer tags do
+// not become "vv…".
+export function renderBuildStamp(info: BuildInfo): string {
+  const when = formatBuiltAt(info.builtAt);
+  return `<div class="build-stamp">${esc(info.version)} · deployed ${esc(when)} · <a href="${esc(info.repoUrl)}" target="_blank" rel="noopener noreferrer">source</a></div>`;
 }
 
 // Pending choices are the one region whose text changes every single day the

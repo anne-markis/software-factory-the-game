@@ -27,7 +27,9 @@ import {
   PROJECTS_OFFERS_SECTION,
   renderStall,
   renderTimeControls,
+  renderBuildStamp,
 } from "./render";
+import { getBuildInfo } from "./buildInfo";
 import { loopDiagramSvg } from "./loopDiagram";
 import { inProgressPanelSvg } from "./inProgressPanel";
 import { createRegion, SECTION_ATTR } from "./domPatch";
@@ -92,6 +94,7 @@ function pageScaffold(): string {
         <div ${SECTION_ATTR}="${LOG}"></div>
       </div>
     </div>
+    ${renderBuildStamp(getBuildInfo())}
   `;
 }
 
