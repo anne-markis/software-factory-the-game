@@ -27,7 +27,9 @@ import {
   PROJECTS_OFFERS_SECTION,
   renderStall,
   renderTimeControls,
+  renderBuildStamp,
 } from "./render";
+import { getBuildInfo } from "./buildInfo";
 import { loopDiagramSvg } from "./loopDiagram";
 import { inProgressPanelSvg } from "./inProgressPanel";
 import { createRegion, SECTION_ATTR } from "./domPatch";
@@ -92,6 +94,7 @@ function pageScaffold(): string {
         <div ${SECTION_ATTR}="${LOG}"></div>
       </div>
     </div>
+    ${renderBuildStamp(getBuildInfo())}
   `;
 }
 
@@ -168,13 +171,16 @@ export function mountAppView(deps: AppViewDeps): AppView {
         deps.onError((err as Error).message);
       }
     } else if (target.dataset.speed) {
-      // Changing speed applies immediately and persists; allowed while
-      // paused, in which case it takes effect on resume (design doc
-      // section 8/6). It never touches the engine, so no engine.tick()
-      // or state change happens here -- just the UI-layer rate.
+      // Changing speed applies immediately and persists. Selecting a speed
+      // while paused also resumes: after issue #38's start-paused default,
+      // the bright 1x control was the natural "start the day clock" click
+      // and previously did nothing, leaving Day stuck at 0.
       const next = Number(target.dataset.speed) as Speed;
       if ((SPEED_OPTIONS as readonly number[]).includes(next)) {
         deps.onSpeedChange(next);
+      }
+      if (engine.getState().paused) {
+        engine.resume();
       }
     } else if (target.id === "reset") {
       deps.onReset();

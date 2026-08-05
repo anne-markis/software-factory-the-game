@@ -1,0 +1,108 @@
+name: Release and deploy
+
+# Runs when a PR merges to main (push to main). Does NOT run on tag pushes,
+# which avoids re-triggering after this workflow creates a release tag.
+on:
+  push:
+    branches: [main]
+
+# Only one release/deploy at a time; later merges queue rather than overlap.
+concurrency:
+  group: release-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release-and-deploy:
+    # Guard: main only, and skip if a bot pushed (prevents tag/release loops
+    # if you ever add tag-based triggers elsewhere).
+    if: github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+      # Compute CalVer identity before build so the in-game stamp (issue #45)
+      # carries the same tag the release step creates below.
+      - name: Compute release identity
+        id: release
+        run: |
+          TAG="v$(date -u +%Y.%m.%d)-${GITHUB_RUN_NUMBER}"
+          BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "built_at=${BUILT_AT}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        env:
+          APP_VERSION: ${{ steps.release.outputs.tag }}
+          APP_BUILT_AT: ${{ steps.release.outputs.built_at }}
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          test -f dist/index.html || (echo "dist/index.html missing" && exit 1)
+          test -n "$(ls dist/assets/*.js 2>/dev/null)" || (echo "dist/assets/*.js missing" && exit 1)
+
+      - name: Create release tag
+        run: |
+          TAG="${{ steps.release.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Release ${TAG} (${GITHUB_SHA:0:7})"
+          git push origin "${TAG}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.release.outputs.tag }}"
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes "Automated release from merge to \`main\` ([${GITHUB_SHA:0:7}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}))." \
+            --repo "${GITHUB_REPOSITORY}"
+
+      - name: Deploy to Lightsail
+        env:
+          LIGHTSAIL_SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+          REMOTE_GAME_PATH: ${{ secrets.REMOTE_GAME_PATH }}
+        run: |
+          if [ -z "${LIGHTSAIL_SSH_KEY}" ]; then
+            echo "::error::LIGHTSAIL_SSH_KEY secret is not set. See deploy-setup.html for setup instructions."
+            exit 1
+          fi
+
+          HOST="${LIGHTSAIL_HOST:-52.25.226.94}"
+          USER="${LIGHTSAIL_USER:-bitnami}"
+          REMOTE="${REMOTE_GAME_PATH:-/var/www/annemarkisgraham.com/public/software-factory-game/}"
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "${LIGHTSAIL_SSH_KEY}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Deploy only the game subdirectory — not the full annemarkisgraham site.
+          # --delete removes stale hashed assets from previous Vite builds.
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            dist/ \
+            "${USER}@${HOST}:${REMOTE}"
+
+          echo "Deploy complete → https://www.annemarkisgraham.com/software-factory-game/"

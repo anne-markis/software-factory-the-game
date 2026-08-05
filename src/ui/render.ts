@@ -5,6 +5,7 @@ import type { DecisionCategory, DecisionDef, DecisionInstance, GameContent, Game
 import { buildTechTree, type TechChain } from "./techTree";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { SECTION_ATTR } from "./domPatch";
+import { formatBuiltAt, type BuildInfo } from "./buildInfo";
 import { budgetRunwayDays, RUNWAY_WARN_DAYS } from "./runway";
 
 export function esc(s: string): string {
@@ -217,14 +218,18 @@ export function renderProjectOffers(offers: ProjectAvailability[], state: Readon
 // changes width.
 export function renderTimeControls(paused: boolean, speed: number, options: readonly number[]): string {
   const pauseLabel = paused ? "Resume" : "Pause";
+  // When paused, Resume is the active control (issue #38 start-paused): speeds
+  // stay dimmed so the bright button is the one that starts the day clock,
+  // not the already-selected 1x that looks like a play toggle.
+  const pauseActive = paused ? " tc-active" : "";
   const speedButtons = options
     .map((opt) => {
-      const active = opt === speed ? " tc-active" : "";
+      const active = !paused && opt === speed ? " tc-active" : "";
       return `<button class="tc-btn${active}" data-speed="${opt}">${opt}x</button>`;
     })
     .join("");
   return `<div class="time-controls">
-    <button class="tc-btn" id="pause">${pauseLabel}</button>
+    <button class="tc-btn${pauseActive}" id="pause">${pauseLabel}</button>
     ${speedButtons}
   </div>`;
 }
@@ -233,6 +238,16 @@ export function renderStall(stalled: boolean): string {
   return stalled
     ? `<div class="stall">The factory is stalled: no work in the pipeline and nothing affordable. Income may still accrue; otherwise this factory is dead.</div>`
     : "";
+}
+
+// Quiet page footer (issue #45): version + deploy/build time + repo link.
+// Lives in the page scaffold (not a patched region) because build identity
+// never changes during a session. Version is shown as injected (CalVer tag
+// in CI, "x.y.z-dev" locally) with no extra "v" prefix so CalVer tags do
+// not become "vv…".
+export function renderBuildStamp(info: BuildInfo): string {
+  const when = formatBuiltAt(info.builtAt);
+  return `<div class="build-stamp">${esc(info.version)} · deployed ${esc(when)} · <a href="${esc(info.repoUrl)}" target="_blank" rel="noopener noreferrer">source</a></div>`;
 }
 
 // Pending choices are the one region whose text changes every single day the

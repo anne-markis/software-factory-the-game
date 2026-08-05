@@ -14,6 +14,7 @@ import {
   PROJECTS_OFFERS_SECTION,
   renderStall,
   renderTimeControls,
+  renderBuildStamp,
 } from "./render";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
 import startJson from "../../content/start.json";
@@ -340,6 +341,41 @@ describe("renderTimeControls", () => {
     const html = renderTimeControls(true, 1, [1, 2, 5]);
     expect(html).toContain(">Resume<");
     expect(html).not.toContain(">Pause<");
+  });
+
+  it("marks Resume as the active control while paused so the day-clock start is obvious", () => {
+    const html = renderTimeControls(true, 1, [1, 2, 5]);
+    expect(html).toContain('class="tc-btn tc-active" id="pause"');
+    // Speeds stay dimmed while paused; the selected 1x must not look like Play.
+    expect(html).toContain('class="tc-btn" data-speed="1"');
+    expect(html).not.toContain('tc-active" data-speed');
+  });
+});
+
+describe("renderBuildStamp (issue #45)", () => {
+  it("renders version, deployed time, and a repo link", () => {
+    const html = renderBuildStamp({
+      version: "v2026.08.05-12",
+      builtAt: "2026-08-05T20:15:30.000Z",
+      repoUrl: "https://github.com/anne-markis/software-factory-the-game",
+    });
+    expect(html).toContain('class="build-stamp"');
+    expect(html).toContain("v2026.08.05-12");
+    expect(html).toContain("deployed 2026-08-05 20:15:30 UTC");
+    expect(html).toContain('href="https://github.com/anne-markis/software-factory-the-game"');
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain(">source<");
+  });
+
+  it("escapes untrusted characters in version and URL", () => {
+    const html = renderBuildStamp({
+      version: '<script>x</script>',
+      builtAt: "2026-01-01T00:00:00.000Z",
+      repoUrl: 'https://example.com/"onclick="alert(1)',
+    });
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("&quot;");
   });
 });
 

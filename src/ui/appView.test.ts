@@ -187,6 +187,17 @@ describe("appView node identity across renders (issue #6)", () => {
 });
 
 describe("appView keeps the DOM in step with state (no stale memoized regions)", () => {
+  it("shows the build stamp with version, deployed time, and repo link on mount (issue #45)", () => {
+    const h = mount();
+    const stamp = h.root.querySelector(".build-stamp");
+    expect(stamp).not.toBeNull();
+    expect(stamp!.textContent).toMatch(/deployed/);
+    const link = stamp!.querySelector("a");
+    expect(link).not.toBeNull();
+    expect(link!.getAttribute("href")).toBe("https://github.com/anne-markis/software-factory-the-game");
+    expect(link!.textContent).toBe("source");
+  });
+
   it("flips the Pause label when the pause state changes", () => {
     const h = mount();
     expect(pauseButton(h.root).textContent).toBe("Pause");
@@ -246,6 +257,19 @@ describe("appView click delegation on the stable root", () => {
     pauseButton(h.root).click();
     expect(h.engine.getState().paused).toBe(false);
     expect(h.actions).toBe(2);
+  });
+
+  it("starts the day clock when a speed is clicked while paused (issue #38)", () => {
+    const h = mount();
+    h.engine.pause();
+    h.view.render();
+    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).className).toContain("tc-active");
+    h.root.querySelector<HTMLElement>('[data-speed="2"]')!.click();
+    expect(h.engine.getState().paused).toBe(false);
+    expect(h.speedChanges).toEqual([2]);
+    expect(h.actions).toBe(1);
+    expect(pauseButton(h.root).textContent).toBe("Pause");
   });
 
   it("starts a project through data-project", () => {

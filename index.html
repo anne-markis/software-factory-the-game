@@ -108,8 +108,9 @@
          speed. Fixed-width buttons so the group's footprint never changes
          as the active marker moves or the Pause/Resume label flips --
          same no-reflow guarantee as .stat-value (see render.ts). The
-         active speed uses the same dimming/weight vocabulary as
-         .tt-owned rather than a new color. */
+         active control (current speed while running, Resume while paused)
+         uses the same dimming/weight vocabulary as .tt-owned rather than
+         a new color. */
       .time-controls { margin-bottom: 0.5rem; }
       .tc-btn { display: inline-block; min-width: 4.5rem; text-align: center; opacity: 0.6; }
       .tc-btn.tc-active { opacity: 1; font-weight: bold; }
@@ -125,6 +126,11 @@
       .main { min-width: 0; }
       .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
       .side .log { max-height: 50vh; }
+      /* Issue #45: quiet build identity under the game. Dim so it never
+         competes with the loops or time controls; still selectable for
+         bug reports. */
+      .build-stamp { margin-top: 1.5rem; font-size: 0.8rem; color: var(--fg-dim); }
+      .build-stamp a { color: inherit; }
       @media (max-width: 900px) {
         .loops { grid-template-columns: 1fr; }
         .cols { grid-template-columns: 1fr; }
