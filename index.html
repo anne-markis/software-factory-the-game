@@ -120,6 +120,11 @@
       .main { min-width: 0; }
       .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
       .side .log { max-height: 50vh; }
+      /* Issue #45: quiet build identity under the game. Dim so it never
+         competes with the loops or time controls; still selectable for
+         bug reports. */
+      .build-stamp { margin-top: 1.5rem; font-size: 0.8rem; color: var(--fg-dim); }
+      .build-stamp a { color: inherit; }
       @media (max-width: 900px) {
         .loops { grid-template-columns: 1fr; }
         .cols { grid-template-columns: 1fr; }

@@ -39,7 +39,20 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      # Compute CalVer identity before build so the in-game stamp (issue #45)
+      # carries the same tag the release step creates below.
+      - name: Compute release identity
+        id: release
+        run: |
+          TAG="v$(date -u +%Y.%m.%d)-${GITHUB_RUN_NUMBER}"
+          BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "built_at=${BUILT_AT}" >> "$GITHUB_OUTPUT"
+
       - name: Build
+        env:
+          APP_VERSION: ${{ steps.release.outputs.tag }}
+          APP_BUILT_AT: ${{ steps.release.outputs.built_at }}
         run: npm run build
 
       - name: Verify build output
@@ -48,11 +61,8 @@ jobs:
           test -n "$(ls dist/assets/*.js 2>/dev/null)" || (echo "dist/assets/*.js missing" && exit 1)
 
       - name: Create release tag
-        id: tag
         run: |
-          # CalVer + run number: unique per merge, readable, no package.json bump required.
-          TAG="v$(date -u +%Y.%m.%d)-${GITHUB_RUN_NUMBER}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          TAG="${{ steps.release.outputs.tag }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "${TAG}" -m "Release ${TAG} (${GITHUB_SHA:0:7})"
@@ -62,7 +72,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ steps.tag.outputs.tag }}"
+          TAG="${{ steps.release.outputs.tag }}"
           gh release create "${TAG}" \
             --title "${TAG}" \
             --notes "Automated release from merge to \`main\` ([${GITHUB_SHA:0:7}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}))." \

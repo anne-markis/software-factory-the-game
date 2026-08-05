@@ -187,6 +187,17 @@ describe("appView node identity across renders (issue #6)", () => {
 });
 
 describe("appView keeps the DOM in step with state (no stale memoized regions)", () => {
+  it("shows the build stamp with version, deployed time, and repo link on mount (issue #45)", () => {
+    const h = mount();
+    const stamp = h.root.querySelector(".build-stamp");
+    expect(stamp).not.toBeNull();
+    expect(stamp!.textContent).toMatch(/deployed/);
+    const link = stamp!.querySelector("a");
+    expect(link).not.toBeNull();
+    expect(link!.getAttribute("href")).toBe("https://github.com/anne-markis/software-factory-the-game");
+    expect(link!.textContent).toBe("source");
+  });
+
   it("flips the Pause label when the pause state changes", () => {
     const h = mount();
     expect(pauseButton(h.root).textContent).toBe("Pause");
