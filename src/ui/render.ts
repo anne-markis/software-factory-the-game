@@ -205,14 +205,18 @@ export function renderProjectOffers(offers: ProjectAvailability[], state: Readon
 // changes width.
 export function renderTimeControls(paused: boolean, speed: number, options: readonly number[]): string {
   const pauseLabel = paused ? "Resume" : "Pause";
+  // When paused, Resume is the active control (issue #38 start-paused): speeds
+  // stay dimmed so the bright button is the one that starts the day clock,
+  // not the already-selected 1x that looks like a play toggle.
+  const pauseActive = paused ? " tc-active" : "";
   const speedButtons = options
     .map((opt) => {
-      const active = opt === speed ? " tc-active" : "";
+      const active = !paused && opt === speed ? " tc-active" : "";
       return `<button class="tc-btn${active}" data-speed="${opt}">${opt}x</button>`;
     })
     .join("");
   return `<div class="time-controls">
-    <button class="tc-btn" id="pause">${pauseLabel}</button>
+    <button class="tc-btn${pauseActive}" id="pause">${pauseLabel}</button>
     ${speedButtons}
   </div>`;
 }

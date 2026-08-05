@@ -248,6 +248,19 @@ describe("appView click delegation on the stable root", () => {
     expect(h.actions).toBe(2);
   });
 
+  it("starts the day clock when a speed is clicked while paused (issue #38)", () => {
+    const h = mount();
+    h.engine.pause();
+    h.view.render();
+    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).className).toContain("tc-active");
+    h.root.querySelector<HTMLElement>('[data-speed="2"]')!.click();
+    expect(h.engine.getState().paused).toBe(false);
+    expect(h.speedChanges).toEqual([2]);
+    expect(h.actions).toBe(1);
+    expect(pauseButton(h.root).textContent).toBe("Pause");
+  });
+
   it("starts a project through data-project", () => {
     const h = mount();
     h.root.querySelector<HTMLElement>('[data-project="small-crm"]')!.click();
