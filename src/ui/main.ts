@@ -1,4 +1,3 @@
-import { Engine } from "../engine/engine";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects, validateContentGraph } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
@@ -6,6 +5,7 @@ import challengesJson from "../../content/challenges.json";
 import projectsJson from "../../content/projects.json";
 import type { GameContent } from "../engine/types";
 import { mountAppView } from "./appView";
+import { createPlayerEngine } from "./playerEngine";
 import { saveGame, loadGame, clearSave, saveSpeed, loadSpeed } from "./storage";
 import { advance, type Speed } from "./tickDriver";
 
@@ -17,7 +17,10 @@ const content: GameContent = {
 };
 validateContentGraph(content);
 
-const engine = new Engine(content, loadGame());
+// Fresh load and Reset (clearSave → reload with no save) start paused so the
+// player can read the factory without burning days (issue #38). Mid-game
+// restores keep the serialized pause flag.
+const engine = createPlayerEngine(content, loadGame());
 const app = document.getElementById("app")!;
 
 // Speed is a UI preference, not game state (design doc section 3/6): it
