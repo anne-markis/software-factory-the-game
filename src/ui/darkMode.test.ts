@@ -234,6 +234,8 @@ const PAIRS: Pair[] = [
     bg,
     category: "text",
   },
+  // Issue #37: low-runway Budget warning reuses --accent-red.
+  { label: ".stat-value.budget-low on body background", fg: tokenColor(".stat-value.budget-low", "color"), bg, category: "text" },
 ];
 
 // .stall has its own background and (pre-fix) an inherited foreground.

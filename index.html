@@ -54,7 +54,13 @@
       .stat-value.v-day { min-width: 5ch; } /* Day: up to ~5 digits */
       .stat-value.v-flow { min-width: 9ch; } /* Backlog/Shipped: e.g. "12,345.6" */
       .stat-value.v-count { min-width: 6ch; } /* In Progress/Done */
-      .stat-value.v-budget { min-width: 10ch; } /* Budget: e.g. "$123,456.7" */
+      /* Budget may append "(N days)" runway; keep a wider slot so the
+         suffix does not reflow neighboring stats when crossing comma or
+         day-count boundaries. */
+      .stat-value.v-budget { min-width: 18ch; } /* Budget: e.g. "$12,345.6 (12 days)" */
+      /* Issue #37: low runway telegraph — reuse the existing danger red
+         so payroll cliff reads before Events fill with removals. */
+      .stat-value.budget-low { color: var(--accent-red); font-weight: bold; }
       .stat-value.v-debt { min-width: 7ch; } /* Tech Debt */
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-rate { min-width: 5ch; } /* Points/Day */

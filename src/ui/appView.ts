@@ -121,7 +121,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
 
   function render(): void {
     const state = engine.getState();
-    page.patch(STATS, renderStats(state));
+    page.patch(STATS, renderStats(state, content));
     page.patch(
       LOOPS,
       `<div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>${inProgressPanelSvg(state, content)}`,
