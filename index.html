@@ -100,6 +100,12 @@
          -- reuses the existing #666 dim tone from .tt-node-meta rather than
          introducing a new color. */
       .tt-effects { color: var(--fg-dim); font-size: 0.8rem; margin-bottom: 0.25rem; }
+      /* Issue #15: Owned list mirrors shop cost + derived-effects so upkeep
+         trim decisions are scannable without hunting the tech tree. */
+      .owned-item { margin-bottom: 0.5rem; }
+      .owned-item-head { margin-bottom: 0.15rem; }
+      .owned-cost { color: var(--fg-dim); font-size: 0.85rem; }
+      .owned-item .tt-effects { margin-bottom: 0; }
       .tt-node-state { margin-bottom: 0.25rem; }
       .tt-reason { color: var(--accent-amber); }
       .tt-node.tt-locked { opacity: 0.5; }
