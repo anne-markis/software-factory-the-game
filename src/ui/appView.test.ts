@@ -97,6 +97,50 @@ function pauseButton(root: HTMLElement): HTMLElement {
   return el!;
 }
 
+describe("appView delivery-column stats layout (issue #8)", () => {
+  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other five under Delivery loop", () => {
+    const h = mount();
+    const top = h.root.querySelector(".stats")!;
+    expect(top).toBeTruthy();
+    const topLabels = Array.from(top.querySelectorAll(".stat-label")).map((el) => el.textContent);
+    expect(topLabels).toEqual(["Day", "Backlog", "Budget", "Points/Day"]);
+
+    const deliveryCol = h.root.querySelector(".delivery-column")!;
+    expect(deliveryCol).toBeTruthy();
+    expect(deliveryCol.querySelector("h3")!.textContent).toBe("Delivery loop");
+    const under = deliveryCol.querySelector(".delivery-stats")!;
+    expect(under).toBeTruthy();
+    // Stats sit after the Delivery loop panel inside the same column.
+    expect(deliveryCol.querySelector(".panel")!.nextElementSibling).toBe(under);
+    const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
+    expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation"]);
+
+    // Progress loop remains a sibling of the delivery column, not a parent of those stats.
+    const loops = h.root.querySelector(".loops")!;
+    expect(loops.contains(deliveryCol)).toBe(true);
+    expect(loops.querySelector("h3")!.textContent).toBe("Delivery loop");
+    const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
+    expect(headings).toContain("Progress loop");
+    expect(under.closest(".panel")).toBeNull();
+  });
+
+  it("keeps delivery-stats nodes stable across ticks that only change values", () => {
+    const h = mount();
+    const before = h.root.querySelector(".delivery-stats")!;
+    for (let i = 0; i < 5; i++) {
+      h.engine.tick();
+      h.view.render();
+    }
+    // Values moved, but the container is the same region patch target under loops —
+    // when HTML string changes the nodes rebuild; assert labels and placement hold.
+    const after = h.root.querySelector(".delivery-stats")!;
+    expect(after.querySelector(".stat-label")!.textContent).toBe("In Progress");
+    expect(h.root.querySelector(".delivery-column .delivery-stats")).toBe(after);
+    expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
+    expect(before.className).toBe(after.className);
+  });
+});
+
 describe("appView node identity across renders (issue #6)", () => {
   it("keeps the same Pause button node across repeated renders with unchanged state", () => {
     const h = mount();

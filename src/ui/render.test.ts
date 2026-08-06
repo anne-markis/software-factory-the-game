@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   esc,
   renderStats,
+  renderDeliveryStats,
   renderDecisions,
   renderLog,
   renderChoicesScaffold,
@@ -36,7 +37,8 @@ describe("esc", () => {
 });
 
 describe("renderStats", () => {
-  it("renders each stat as a label span plus a width-classed, tabular-nums value span (single-line, non-reflowing bar)", () => {
+  // Issue #8: top bar keeps Day / Backlog / Budget / Points/Day only.
+  it("renders the top-bar stats as label + width-classed value spans (no flow/quality stocks)", () => {
     const c = content();
     const e = new Engine(c);
     const html = renderStats(e.getState(), c);
@@ -45,13 +47,13 @@ describe("renderStats", () => {
       '<span class="stat"><span class="stat-label">Day</span> <span class="stat-value v-day">0</span></span>',
     );
     expect(html).toContain('<span class="stat-label">Backlog</span> <span class="stat-value v-flow">');
-    expect(html).toContain('<span class="stat-label">Shipped</span> <span class="stat-value v-flow">');
-    expect(html).toContain('<span class="stat-label">In Progress</span> <span class="stat-value v-count">');
-    expect(html).toContain('<span class="stat-label">Done</span> <span class="stat-value v-count">');
     expect(html).toContain('<span class="stat-label">Budget</span> <span class="stat-value v-budget">$');
-    expect(html).toContain('<span class="stat-label">Tech Debt</span> <span class="stat-value v-debt">');
-    expect(html).toContain('<span class="stat-label">Reputation</span> <span class="stat-value v-rep">');
     expect(html).toContain('<span class="stat-label">Points/Day</span> <span class="stat-value v-rate">');
+    expect(html).not.toContain("In Progress");
+    expect(html).not.toContain(">Done<");
+    expect(html).not.toContain("Shipped");
+    expect(html).not.toContain("Tech Debt");
+    expect(html).not.toContain("Reputation");
   });
 
   // Issue #37: Budget must telegraph runway before payroll wipe.
@@ -93,6 +95,25 @@ describe("renderStats", () => {
     expect(html).not.toContain(" days)");
     expect(html).not.toContain(" day)");
     expect(html).not.toContain("budget-low");
+  });
+});
+
+describe("renderDeliveryStats", () => {
+  // Issue #8: flow/quality stocks under the Delivery loop, same slot pattern.
+  it("renders In Progress, Done, Shipped, Tech Debt, and Reputation with fixed-width value slots", () => {
+    const c = content();
+    const e = new Engine(c);
+    const html = renderDeliveryStats(e.getState());
+    expect(html).toContain('<div class="delivery-stats">');
+    expect(html).toContain('<span class="stat-label">In Progress</span> <span class="stat-value v-count">');
+    expect(html).toContain('<span class="stat-label">Done</span> <span class="stat-value v-count">');
+    expect(html).toContain('<span class="stat-label">Shipped</span> <span class="stat-value v-flow">');
+    expect(html).toContain('<span class="stat-label">Tech Debt</span> <span class="stat-value v-debt">');
+    expect(html).toContain('<span class="stat-label">Reputation</span> <span class="stat-value v-rep">');
+    expect(html).not.toContain("Day");
+    expect(html).not.toContain("Backlog");
+    expect(html).not.toContain("Budget");
+    expect(html).not.toContain("Points/Day");
   });
 });
 

@@ -39,14 +39,11 @@
       }
       body { font-family: ui-monospace, monospace; max-width: 1280px; margin: 1rem auto; padding: 0 1rem; color: var(--fg); background: var(--bg); }
       button { font-family: inherit; margin: 2px; }
-      /* Non-reflowing stats bar: each stat is a fixed-width slot (label +
-         tabular-nums value) so a value changing width on tick never shifts
-         anything below. Laid out as an auto-filling grid rather than one
-         nowrap line: a single line could not fit a ninth stat (reputation)
-         even at the 1280px body max, silently scrolling Points/Day off
-         screen. The grid wraps predictably instead, and the row count only
-         changes when a stat is added or removed (never during play), so the
-         no-reflow guarantee holds while leaving room for future stocks. */
+      /* Top stats bar (Day / Backlog / Budget / Points/Day): each stat is a
+         fixed-width slot (label + tabular-nums value) so a value changing
+         width on tick never shifts anything below. Auto-filling grid wraps
+         predictably; row count only changes when a stat is added or removed.
+         Issue #8 moved flow/quality stocks under the Delivery loop. */
       .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.25rem 0.5rem; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
       .stat { display: inline-block; }
       .stat-label { color: var(--fg-dim); }
@@ -64,6 +61,11 @@
       .stat-value.v-debt { min-width: 7ch; } /* Tech Debt */
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-rate { min-width: 5ch; } /* Points/Day */
+      /* Issue #8: relocated stocks under the Delivery loop column. Flex
+         wrap (not the 900px loops stack) so they stay inside that column
+         at any width without introducing a horizontal scrollbar. */
+      .delivery-column { min-width: 0; }
+      .delivery-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; white-space: nowrap; font-size: 0.95rem; margin: -0.25rem 0 1rem; }
       .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 1rem; }
       .panel h4 { margin: 0.75rem 0 0.25rem; font-size: 0.95rem; }
       .panel h4:first-of-type { margin-top: 0.25rem; }

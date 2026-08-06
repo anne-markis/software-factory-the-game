@@ -15,6 +15,7 @@ import type { Engine } from "../engine/engine";
 import type { GameContent, PendingChoice } from "../engine/types";
 import {
   renderStats,
+  renderDeliveryStats,
   renderDecisions,
   renderLog,
   renderChoicesScaffold,
@@ -122,9 +123,11 @@ export function mountAppView(deps: AppViewDeps): AppView {
   function render(): void {
     const state = engine.getState();
     page.patch(STATS, renderStats(state, content));
+    // Issue #8: wrap Delivery loop + its relocated stocks in one column so
+    // the five flow/quality stats sit under that panel, not in the top bar.
     page.patch(
       LOOPS,
-      `<div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>${inProgressPanelSvg(state, content)}`,
+      `<div class="delivery-column"><div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>${renderDeliveryStats(state)}</div>${inProgressPanelSvg(state, content)}`,
     );
     page.patch(STALL, renderStall(engine.isStalled()));
     page.patch(TIME_CONTROLS, renderTimeControls(state.paused, deps.getSpeed(), SPEED_OPTIONS));

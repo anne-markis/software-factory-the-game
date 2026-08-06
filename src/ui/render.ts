@@ -35,18 +35,30 @@ function budgetStat(state: Readonly<GameState>, content: GameContent): string {
   return stat("Budget", value, classes);
 }
 
+// Top bar keeps the cockpit glanceables: clock, work waiting, money, and
+// throughput. Flow-stage and quality stocks live under the Delivery loop
+// (see renderDeliveryStats) so they sit next to the diagram they describe.
 export function renderStats(state: Readonly<GameState>, content: GameContent): string {
   return `
     <div class="stats">
       ${stat("Day", String(state.day), "v-day")}
       ${stat("Backlog", fmt(state.stocks.backlog), "v-flow")}
+      ${budgetStat(state, content)}
+      ${stat("Points/Day", fmt(state.pointsPerDay), "v-rate")}
+    </div>`;
+}
+
+// Issue #8: In Progress / Done / Shipped / Tech Debt / Reputation sit under
+// the Delivery loop panel. Same fixed-width value slots as the top bar so
+// ticking numbers never jitter this row either.
+export function renderDeliveryStats(state: Readonly<GameState>): string {
+  return `
+    <div class="delivery-stats">
       ${stat("In Progress", fmt(state.stocks.inProgress), "v-count")}
       ${stat("Done", fmt(state.stocks.done), "v-count")}
       ${stat("Shipped", fmt(state.stocks.shipped), "v-flow")}
-      ${budgetStat(state, content)}
       ${stat("Tech Debt", fmt(state.stocks.techDebt), "v-debt")}
       ${stat("Reputation", fmt(state.stocks.reputation), "v-rep")}
-      ${stat("Points/Day", fmt(state.pointsPerDay), "v-rate")}
     </div>`;
 }
 
