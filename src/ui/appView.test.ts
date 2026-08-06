@@ -230,6 +230,30 @@ describe("appView node identity across renders (issue #6)", () => {
   });
 });
 
+describe("appView page layout (issue #7)", () => {
+  it("places time controls and Reset above the stats bar and loop panels", () => {
+    const h = mount();
+    const order = () => {
+      const kids = Array.from(h.root.children) as HTMLElement[];
+      return {
+        time: kids.findIndex((el) => el.getAttribute("data-section") === "time-controls"),
+        reset: kids.findIndex((el) => el.id === "reset"),
+        stats: kids.findIndex((el) => el.getAttribute("data-section") === "stats"),
+        loops: kids.findIndex((el) => el.classList.contains("loops")),
+      };
+    };
+    const before = order();
+    expect(before.time).toBe(0);
+    expect(before.reset).toBe(1);
+    expect(before.stats).toBeGreaterThan(before.reset);
+    expect(before.loops).toBeGreaterThan(before.stats);
+    // Scaffold is static: order holds across ticks.
+    h.engine.tick();
+    h.view.render();
+    expect(order()).toEqual(before);
+  });
+});
+
 describe("appView keeps the DOM in step with state (no stale memoized regions)", () => {
   it("shows the build stamp with version, deployed time, and repo link on mount (issue #45)", () => {
     const h = mount();

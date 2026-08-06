@@ -1,7 +1,11 @@
-import type { Effect, GameState, Modifier, ModifierTarget } from "./types";
+import type { Effect, GameContent, GameState, Modifier, ModifierTarget } from "./types";
+import { log } from "./tick";
 
 export interface EffectContext {
   instanceId?: string;
+  // Required for effects that consult decision defs (removeHuman). Optional
+  // elsewhere so existing call sites stay unchanged.
+  content?: GameContent;
 }
 
 // Expiry semantics: durationDays counts from the current day (expiresDay =
@@ -28,6 +32,13 @@ function pushModifier(
     expiresDay: durationDays !== undefined ? state.day + durationDays : undefined,
     rampPerDay: ramp?.perDay,
     rampCap: ramp?.cap,
+  });
+}
+
+function humanDevInstances(state: GameState, content: GameContent) {
+  return state.decisions.filter((inst) => {
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    return def?.human === true;
   });
 }
 
@@ -81,6 +92,23 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // no modifier. tick.ts derives activation directly from ownership
         // via continuousDeployActive, so there is nothing to apply here.
         break;
+      case "removeHuman": {
+        // Challenge-driven roster loss (key-dev-poached let-them-go). Ignores
+        // DecisionDef.removable the same way payroll failure does -- the
+        // person left, whether or not the player could have clicked Remove.
+        // No-ops without content or when no human remains (defensive: the
+        // challenge condition should have required minHumanDevs >= 1).
+        if (!ctx.content) break;
+        const humans = humanDevInstances(state, ctx.content);
+        const target =
+          (ctx.instanceId !== undefined ? humans.find((h) => h.instanceId === ctx.instanceId) : undefined) ?? humans[0];
+        if (!target) break;
+        const def = ctx.content.decisions.find((d) => d.id === target.defId);
+        state.decisions = state.decisions.filter((d) => d.instanceId !== target.instanceId);
+        state.modifiers = state.modifiers.filter((m) => m.source !== target.instanceId);
+        if (def) log(state, `Lost: ${def.name}`);
+        break;
+      }
     }
   }
 }

@@ -127,6 +127,8 @@ const effectSchema = z.discriminatedUnion("type", [
     .strict(),
   // No parameters: presence in a def's effects list is the whole signal.
   z.object({ type: z.literal("continuousDeploy") }).strict(),
+  // No parameters: strips one human developer instance at apply time.
+  z.object({ type: z.literal("removeHuman") }).strict(),
 ]);
 
 const gambleOutcomeSchema = z
@@ -239,6 +241,16 @@ export function parseChallenges(json: unknown): ChallengeDef[] {
     // a sickness effect needs a per-human-dev roll to target an instance; without it the effect no-ops
     if (def.effects.some((e) => e.type === "sickness") && !def.perHumanDev) {
       throw new Error(`Invalid content in content/challenges.json: "${def.id}" has a sickness effect but perHumanDev is not true`);
+    }
+    // removeHuman on a choice option needs at least one human on staff when the
+    // choice can fire; otherwise the effect silently no-ops and "lose them"
+    // copy would lie. Top-level (non-choice) removeHuman is allowed without
+    // this gate because fire() only runs after conditionMet.
+    const choiceHasRemoveHuman = def.choice?.options.some((o) => o.effects.some((e) => e.type === "removeHuman")) ?? false;
+    if (choiceHasRemoveHuman && (def.condition?.minHumanDevs ?? 0) < 1) {
+      throw new Error(
+        `Invalid content in content/challenges.json: "${def.id}" has a removeHuman choice effect but condition.minHumanDevs is missing or < 1`,
+      );
     }
   }
   return defs;
