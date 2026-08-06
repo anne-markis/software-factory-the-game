@@ -1,0 +1,196 @@
+# Software Factory: Medium and Long-Term Vision
+
+Date: 2026-08-06
+Status: Living vision (not a roadmap, not a backlog)
+Stance: Product vision informed by systems thinking (Meadows)
+
+This document holds direction. It does not define features, schedules, or
+acceptance criteria. Implementation specs and content waves live elsewhere;
+this is the "why this shape of game" layer those docs should serve.
+
+---
+
+## North star
+
+**Optimize fun while teaching systems thinking, using the software SDLC as
+the playground.**
+
+Fun is the engagement loop that keeps the player inside the model long
+enough for structure to become felt. Systems thinking is the educational
+loop: the player leaves with transferable mental models, not trivia about
+software process. The SDLC is not the subject — it is the familiar ground
+where stocks, flows, delays, and feedback become visible without a lecture.
+
+The game succeeds when a player says something like: "I sped up coding and
+suddenly shipping didn't move — oh, that's a bottleneck," and later
+recognizes the same pattern in hiring, healthcare, or climate work.
+
+---
+
+## Where we are (as of this writing)
+
+A working stocks-and-flows delivery loop. Tech debt as a regenerating stock
+that drags throughput and scales incidents. Context-switch tax on concurrent
+work. Reputation as Success to the Successful (with a real downward spiral).
+Emergent track attractors sketched in content (solo / human / dark factory
+stronger than startup / megacorp). One-shot archetype narration for Limits
+to Growth and Shifting the Burden. Endless play with reputation milestones.
+An UX arc underway so the machine stays watchable as content grows.
+
+The core thesis is already playable: **structure generates behavior**. The
+medium and long term are about deepening that thesis — not bolting on more
+shop items for their own sake.
+
+---
+
+## Medium term: make the system feel honest and the lesson stick
+
+**Horizon:** deepen the existing factory until every major play pattern
+teaches a distinct systems idea, and until fun no longer fights the model.
+
+### Meta direction
+
+1. **Finish the attractors as different system characters.**
+   Solo, startup, megacorp, and dark factory should remain emergent from
+   purchases — not selectable modes — but each should pull the player into
+   a different family of loops and failure modes. Same engine grammar;
+   different lived lessons (bus-factor fragility, growth-under-quota,
+   process-as-product, humans-as-optional).
+
+2. **Promote delays from afterthought to first-class experience.**
+   Meadows: people underestimate delays. Hires that ramp, refactors that
+   hurt before they help, debt that bites later, reputation that lags
+   shipping — the medium-term game should make *time between cause and
+   effect* a felt part of play, not only a balance knob.
+
+3. **Teach by recognition, not by tutorial.**
+   Keep archetype moments sparse and after-the-fact. Expand the set of
+   patterns the factory can honestly exhibit (escalation, drift to low
+   performance, policy resistance, seeking the wrong goal) only when the
+   simulation already produces them. Narration names what the player just
+   lived; it never substitutes for living it.
+
+4. **Make watching the machine as rewarding as buying from the shop.**
+   Fun in this genre is mostly attention to a changing system. Layout,
+   speed, goals, and feedback exist so the player can stay in the loop
+   diagram — the game's signature systems thesis — without fighting the UI.
+   Content growth must not bury the model under the menu.
+
+5. **Couple growth loops to governors.**
+   Every reinforcing loop that feels good (ship → money → capacity;
+   ship → reputation → bigger contracts; agents → throughput → more agents)
+   needs a balancing pressure that is legible in play. Debt, incidents,
+   morale, compute cost, quota — whatever stocks arrive — should exist
+   because the reinforcing loop would otherwise lie about how systems work.
+
+6. **Preserve emergence over authored "tracks as campaigns."**
+   The engine stays ignorant of which story the player is in. Content tags,
+   synergies, and challenge pools do the steering. Medium-term ambition is
+   richer identity through interaction density, not cutscenes or mode locks.
+
+### What "done enough" for medium term feels like
+
+A thoughtful player can complete several distinct builds, feel different
+system personalities, and articulate at least a few Meadows-shaped insights
+in their own words — without the game having explained systems theory to
+them. Fun holds across a long session because bottlenecks move, recovery is
+possible but not free, and milestones give the endless loop something to
+lean toward.
+
+---
+
+## Long term: from one factory to systems literacy
+
+**Horizon:** the game becomes a durable sandbox for practicing leverage —
+changing structure, goals, and information flows — with the SDLC still as
+ground, but the transferable skill as the product.
+
+### Meta direction
+
+1. **Climb Meadows' leverage ladder through play.**
+   Early play is parameters (buy more rate). Mid play is feedback and delays
+   (debt, reputation, ramp). Long-term play should increasingly reward
+   changing *structure* and *goals*: what counts as shipped, who the system
+   optimizes for, whether the player is still inside the loop. The dark
+   factory endgame — the factory that no longer needs humans, including
+   you — is the sharpest version of this idea already in the design DNA.
+
+2. **Loops of loops.**
+   Nested systems: each SDLC stage as an inner loop; eventually the factory
+   inside a market, a talent pool, an ecosystem of vendors and incidents.
+   Hierarchy and boundaries become gameplay, not diagram decoration. The
+   lesson: optimize a subsystem and watch the larger system punish you —
+   or redesign the boundary.
+
+3. **Multiple goals, conflicting goods.**
+   Points/day is a clean primary score for v1. Long term, the game should
+   make goal choice itself a systems move: lifestyle vs valuation vs
+   autonomy vs resilience. Seeking the wrong goal should be a trap the
+   player can walk into with eyes open, not a fail state the UI prevents.
+
+4. **Resilience and self-organization as endgame crafts.**
+   Beyond "biggest throughput," celebrate factories that absorb shocks,
+   reorganize after loss, and keep shipping under constraint. That is both
+   truer to software delivery and truer to Meadows: resilience is a property
+   of structure, not of peak rate.
+
+5. **The player as information flow.**
+   What the UI shows and hides is part of the model. Long-term vision:
+   information architecture that sometimes mirrors real orgs (lagged
+   metrics, local optima, missing feedback) without becoming frustrating
+   chrome. Teaching "missing feedback" by letting the player feel its
+   absence — carefully, and only when fun still holds.
+
+6. **Stay a sandbox, resist becoming a course.**
+   No win screen that grades systems literacy. No quiz. Optional reflection
+   (archetypes, milestones, build-as-diagram) can deepen learning; compulsory
+   pedagogy will kill fun and therefore kill the lesson. The long-term
+   product is a *place to practice*, shareable and extensible via content,
+   not a curriculum product with a certificate.
+
+7. **Content as the living model.**
+   The long-term technical posture stays: engine as grammar, content as
+   vocabulary. New stocks (morale, compute, valuation, …) and new
+   archetypes arrive when they earn a place in the loop grammar — each one
+   a new way for structure to generate behavior — not as checklist
+   completion of the original design doc.
+
+### What "arrived" for long term feels like
+
+Players talk about their factories the way systems thinkers talk about
+systems: stocks, delays, goals, boundaries. Different attractors feel like
+different worlds with different ethics of optimization. The SDLC remains
+recognizable, but the takeaway travels. Fun still comes first; without it,
+nobody stays long enough to learn.
+
+---
+
+## Guardrails (non-negotiables for both horizons)
+
+- **Structure generates behavior.** Prefer mechanics that exhibit a pattern
+  over text that describes one.
+- **Second-order effects stay emergent.** Do not model-and-display every
+  interaction; let the simulation surprise.
+- **Fun is a governor on teaching ambition.** If a systems-honest mechanic
+  is unfun, redesign the feel — do not abandon honesty or abandon play.
+- **One delivery loop as the home base** until nested loops are earned.
+  Complexity is a privilege the UI and the player must be ready for.
+- **Client-side sandbox, deterministic engine.** The educational value of
+  reproducible runs and content-driven balance probes is part of the
+  product's integrity.
+- **Tracks emerge; they are not modes.**
+
+---
+
+## Relationship to other docs
+
+| Doc | Role |
+| --- | --- |
+| `docs/VISION.md` (this file) | Medium / long-term *direction* |
+| `docs/superpowers/specs/*` | Concrete design for a near change |
+| `docs/superpowers/plans/*` | Implementation sequencing |
+| `docs/OPEN-DECISIONS.md` | Deferred tactical choices |
+| `docs/CONTENT-AUTHORING.md` | How to extend the living model |
+
+When a near-term spec conflicts with this vision, update one of them
+deliberately — do not let the backlog silently redefine the product.
