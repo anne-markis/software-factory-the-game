@@ -78,6 +78,9 @@ function describeEffect(effect: Effect): string | null {
       // instanceId through, so this never actually does anything when it
       // lives here. Nothing to summarize; filtered out by the caller.
       return null;
+    case "removeHuman":
+      // Challenge-only roster loss; not used on shop decision cards today.
+      return "loses a developer";
     default: {
       // Exhaustiveness guard: a new Effect variant that reaches here is a
       // compile error, not a silently-blank card.

@@ -72,7 +72,7 @@
       "defaultOptionId": "let-them-go",
       "options": [
         { "id": "match-offer", "label": "Match the offer ($150)", "effects": [{ "type": "addToStock", "stock": "budget", "value": -150 }] },
-        { "id": "let-them-go", "label": "Let them go (all rates -15% for 10 days)", "effects": [{ "type": "modifyRate", "target": "all", "op": "mul", "value": 0.85, "durationDays": 10 }] }
+        { "id": "let-them-go", "label": "Let them go (lose the developer; all rates -15% for 10 days)", "effects": [{ "type": "removeHuman" }, { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.85, "durationDays": 10 }] }
       ]
     }
   },

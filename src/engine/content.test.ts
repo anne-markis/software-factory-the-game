@@ -441,6 +441,9 @@ describe("parseChallenges", () => {
 
     const poached = defs.find((c) => c.id === "key-dev-poached")!;
     expect(poached.cooldownDays).toBe(60);
+    const letGo = poached.choice!.options.find((o) => o.id === "let-them-go")!;
+    expect(letGo.effects.some((e) => e.type === "removeHuman")).toBe(true);
+    expect(letGo.label).toMatch(/lose the developer/i);
   });
 
   it("pins the mobile-app project gate", () => {
@@ -477,6 +480,44 @@ describe("parseChallenges", () => {
         },
       ]),
     ).toThrow(/perHumanDev/);
+  });
+
+  it("rejects a removeHuman choice effect without minHumanDevs >= 1", () => {
+    expect(() =>
+      parseChallenges([
+        {
+          id: "bad",
+          name: "bad",
+          description: "bad",
+          probabilityPerDay: 0.1,
+          effects: [],
+          choice: {
+            expiresInDays: 3,
+            defaultOptionId: "go",
+            options: [{ id: "go", label: "go", effects: [{ type: "removeHuman" }] }],
+          },
+        },
+      ]),
+    ).toThrow(/removeHuman/);
+  });
+
+  it("accepts a removeHuman choice effect when minHumanDevs is at least 1", () => {
+    const defs = parseChallenges([
+      {
+        id: "ok",
+        name: "ok",
+        description: "ok",
+        probabilityPerDay: 0.1,
+        condition: { minHumanDevs: 1 },
+        effects: [],
+        choice: {
+          expiresInDays: 3,
+          defaultOptionId: "go",
+          options: [{ id: "go", label: "go", effects: [{ type: "removeHuman" }] }],
+        },
+      },
+    ]);
+    expect(defs[0].choice!.options[0].effects[0]).toEqual({ type: "removeHuman" });
   });
 
   it("rejects a choice whose default option id does not exist", () => {

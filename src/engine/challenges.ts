@@ -11,6 +11,10 @@ function humanDevInstances(state: GameState, content: GameContent) {
   });
 }
 
+function choiceNeedsHumanTarget(def: ChallengeDef): boolean {
+  return def.choice?.options.some((o) => o.effects.some((e) => e.type === "removeHuman")) ?? false;
+}
+
 function conditionMet(def: ChallengeDef, state: GameState, content: GameContent): boolean {
   const cond = def.condition;
   if (!cond) return true;
@@ -42,14 +46,25 @@ function probability(def: ChallengeDef, state: GameState): number {
 // Returns whether the challenge actually fired (effects applied or a new
 // choice queued). False for the "already pending" no-op so callers -- the
 // global spacing gap in rollChallenges -- don't treat a no-op as an event.
-function fire(def: ChallengeDef, state: GameState, instanceId?: string): boolean {
+function fire(def: ChallengeDef, state: GameState, content: GameContent, instanceId?: string): boolean {
   if (def.choice) {
     if (state.pendingChoices.some((pc) => pc.challengeId === def.id)) return false; // one at a time
-    state.pendingChoices.push({ challengeId: def.id, expiresDay: state.day + def.choice.expiresInDays });
+    // Prefer a perHumanDev roll target; otherwise, if any option can remove a
+    // human, pin the first human on the roster at queue time so resolve/expiry
+    // still removes the intended person even if the roster changed later.
+    let targetInstanceId = instanceId;
+    if (targetInstanceId === undefined && choiceNeedsHumanTarget(def)) {
+      targetInstanceId = humanDevInstances(state, content)[0]?.instanceId;
+    }
+    state.pendingChoices.push({
+      challengeId: def.id,
+      expiresDay: state.day + def.choice.expiresInDays,
+      ...(targetInstanceId !== undefined ? { targetInstanceId } : {}),
+    });
     log(state, `Decision needed: ${def.name} (${def.choice.expiresInDays} days to respond)`);
     return true; // queueing does not start the cooldown clock; resolveChoice/expiry-default does
   }
-  applyEffects(state, def.effects, `chal-${def.id}-d${state.day}`, { instanceId });
+  applyEffects(state, def.effects, `chal-${def.id}-d${state.day}`, { instanceId, content });
   log(state, `${def.name}: ${def.description}`);
   if (def.cooldownDays !== undefined) state.challengeLastFired[def.id] = state.day;
   return true;
@@ -68,7 +83,10 @@ export function resolveChoice(state: GameState, content: GameContent, challengeI
   const def = content.challenges.find((c) => c.id === challengeId);
   const option = def?.choice?.options.find((o) => o.id === optionId);
   if (!def || !option) throw new Error(`Unknown option ${optionId} for ${challengeId}`);
-  applyEffects(state, option.effects, `choice-${challengeId}-d${state.day}`);
+  applyEffects(state, option.effects, `choice-${challengeId}-d${state.day}`, {
+    instanceId: pending.targetInstanceId,
+    content,
+  });
   log(state, `${def.name}: chose "${option.label}"`);
   state.pendingChoices = state.pendingChoices.filter((pc) => pc.challengeId !== challengeId);
   if (def.cooldownDays !== undefined) state.challengeLastFired[challengeId] = state.day;
@@ -87,7 +105,10 @@ export function rollChallenges(state: GameState, _rng: Rng, content: GameContent
       const def = content.challenges.find((c) => c.id === pending.challengeId);
       if (def?.choice) {
         const fallback = def.choice.options.find((o) => o.id === def.choice!.defaultOptionId)!;
-        applyEffects(state, fallback.effects, `choice-${def.id}-d${state.day}`);
+        applyEffects(state, fallback.effects, `choice-${def.id}-d${state.day}`, {
+          instanceId: pending.targetInstanceId,
+          content,
+        });
         log(state, `${def.name}: expired, defaulted to "${fallback.label}"`);
         if (def.cooldownDays !== undefined) state.challengeLastFired[def.id] = state.day;
       }
@@ -117,7 +138,7 @@ export function rollChallenges(state: GameState, _rng: Rng, content: GameContent
       // within a game).
       for (const inst of humanDevInstances(state, content)) {
         if (hashRoll(state.gameSeed, state.day, `${def.id}:${inst.instanceId}`) < probability(def, state)) {
-          if (fire(def, state, inst.instanceId)) {
+          if (fire(def, state, content, inst.instanceId)) {
             state.lastChallengeDay = state.day;
             // One event at a time: stop rolling further challenges this tick.
             // Gated on spacingDays > 0 so spacing-disabled games keep the
@@ -128,7 +149,7 @@ export function rollChallenges(state: GameState, _rng: Rng, content: GameContent
       }
     } else {
       if (hashRoll(state.gameSeed, state.day, def.id) < probability(def, state)) {
-        if (fire(def, state)) {
+        if (fire(def, state, content)) {
           state.lastChallengeDay = state.day;
           if (spacingDays > 0) break outer;
         }
