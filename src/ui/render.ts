@@ -160,6 +160,9 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
   const shop =
     tree.chains.map((chain) => renderChain(chain, availById, ownedCounts)).join("") +
     renderStandalone(tree.standalone, availById, ownedCounts);
+  // Issue #15: Owned entries carry the same cost line and derived-effects
+  // summary as shop cards so a player trimming upkeep does not have to
+  // scroll back through Alter the loop matching names card by card.
   const ownedList = ownedInstances
     .map((inst) => {
       const def = content.decisions.find((d) => d.id === inst.defId);
@@ -167,7 +170,11 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
       const remove = def.removable ? `<button data-remove="${esc(inst.instanceId)}">Remove</button>` : "";
       const outcome = inst.gambleLabel ? ` [${esc(inst.gambleLabel)}]` : "";
       const sick = inst.sickUntilDay !== undefined ? " (sick)" : "";
-      return `<div>${esc(def.name)}${outcome}${sick} ${remove}</div>`;
+      return `<div class="owned-item">
+      <div class="owned-item-head">${esc(def.name)}${outcome}${sick} ${remove}</div>
+      <div class="owned-cost">${esc(costLine(def))}</div>
+      ${effectsLine(def)}
+    </div>`;
     })
     .join("");
   return `

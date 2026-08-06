@@ -155,6 +155,33 @@ describe("renderDecisions", () => {
     expect(html).toContain(`[${inst.gambleLabel}]`);
   });
 
+  // Issue #15: Owned entries surface cost + derived effects (same helpers as
+  // shop cards) so upkeep trim does not require scrolling Alter the loop.
+  it("shows cost and derived effects on each Owned entry", () => {
+    const e = new Engine(content());
+    e.applyDecision("basic-dev");
+    e.applyDecision("contractor");
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const ownedHtml = html.slice(html.indexOf("<h3>Owned</h3>"));
+    expect(ownedHtml).toContain("owned-item");
+    expect(ownedHtml).toContain('<div class="owned-cost">$7/day</div>');
+    expect(ownedHtml).toContain('<div class="owned-cost">$12/day</div>');
+    // Gamble range (basic-dev) and deterministic contractor effects both
+    // reuse the shop's .tt-effects line inside the Owned panel.
+    expect(ownedHtml).toMatch(/owned-item[\s\S]*tt-effects[\s\S]*all rates/);
+    expect(ownedHtml).toContain("Bring in contractor");
+    expect(ownedHtml).toContain("pull +1/day, finish +1/day, debt x1.1");
+    expect(ownedHtml).toContain('data-remove=');
+  });
+
+  it("shows one-time + per-day cost on Owned agent entries", () => {
+    const e = new Engine(content());
+    e.applyDecision("agent");
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const ownedHtml = html.slice(html.indexOf("<h3>Owned</h3>"));
+    expect(ownedHtml).toContain('<div class="owned-cost">$10 once + $4/day</div>');
+  });
+
   it("escapes content-derived strings", () => {
     const c = content();
     c.decisions[0].name = `<img src=x onerror=alert(1)>`;
