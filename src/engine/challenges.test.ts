@@ -135,6 +135,87 @@ describe("rollChallenges", () => {
     expect(s.pendingChoices).toHaveLength(0);
   });
 
+  it("key-dev-poached let-them-go removes the targeted human and keeps the disruption mul", () => {
+    const c = content();
+    const s = initialState(c);
+    applyDecision(s, c, "basic-dev", createRng(1));
+    const human = s.decisions.find((d) => d.defId === "basic-dev")!;
+    expect(human).toBeDefined();
+    // Second non-human ownership stays so we can prove only the human left.
+    applyDecision(s, c, "agent", createRng(2));
+    const beforeCount = s.decisions.length;
+
+    s.pendingChoices.push({
+      challengeId: "key-dev-poached",
+      expiresDay: 10,
+      targetInstanceId: human.instanceId,
+    });
+    resolveChoice(s, c, "key-dev-poached", "let-them-go");
+
+    expect(s.decisions.some((d) => d.instanceId === human.instanceId)).toBe(false);
+    expect(s.decisions.some((d) => d.defId === "basic-dev")).toBe(false);
+    expect(s.decisions.some((d) => d.defId === "agent")).toBe(true);
+    expect(s.decisions.length).toBe(beforeCount - 1);
+    expect(s.modifiers.some((m) => m.target === "allRates" && m.value === 0.85)).toBe(true);
+    expect(s.log.some((l) => l.message.startsWith("Lost:"))).toBe(true);
+  });
+
+  it("key-dev-poached expiry default also removes a human (let-them-go is defaultOptionId)", () => {
+    const c = content();
+    const s = initialState(c);
+    applyDecision(s, c, "basic-dev", createRng(1));
+    const human = s.decisions.find((d) => d.defId === "basic-dev")!;
+    s.pendingChoices.push({
+      challengeId: "key-dev-poached",
+      expiresDay: 5,
+      targetInstanceId: human.instanceId,
+    });
+    s.day = 5;
+    rollChallenges(s, noRng, c);
+    expect(s.pendingChoices).toHaveLength(0);
+    expect(s.decisions.some((d) => d.defId === "basic-dev")).toBe(false);
+    expect(s.modifiers.some((m) => m.value === 0.85)).toBe(true);
+  });
+
+  it("queuing key-dev-poached pins targetInstanceId to a human on staff", () => {
+    const challenges = parseChallenges([
+      {
+        id: "key-dev-poached",
+        name: "Key developer poached",
+        description: "desc",
+        probabilityPerDay: 1.0,
+        condition: { minHumanDevs: 1 },
+        cooldownDays: 60,
+        effects: [],
+        choice: {
+          expiresInDays: 3,
+          defaultOptionId: "let-them-go",
+          options: [
+            { id: "match-offer", label: "Match", effects: [] },
+            {
+              id: "let-them-go",
+              label: "Let go",
+              effects: [{ type: "removeHuman" }, { type: "modifyRate", target: "all", op: "mul", value: 0.85, durationDays: 10 }],
+            },
+          ],
+        },
+      },
+    ]);
+    const c: GameContent = {
+      start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 },
+      decisions: parseDecisions(decisionsJson),
+      challenges,
+      projects: [],
+    };
+    const s = initialState(c);
+    applyDecision(s, c, "basic-dev", createRng(1));
+    const humanId = s.decisions.find((d) => d.defId === "basic-dev")!.instanceId;
+    s.day = 20;
+    rollChallenges(s, noRng, c);
+    expect(s.pendingChoices).toHaveLength(1);
+    expect(s.pendingChoices[0].targetInstanceId).toBe(humanId);
+  });
+
   it("sickness rolls each human dev independently: same day, one instance sick and the other not", () => {
     const c = content();
     const s = initialState(c);

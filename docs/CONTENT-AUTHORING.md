@@ -178,7 +178,7 @@ be owned now (see `src/engine/archetypes.ts`).
 
 ## 3. The effect vocabulary
 
-All seven effect types live in one discriminated union
+All eight effect types live in one discriminated union
 (`src/engine/effects.ts` + the `effectSchema` in `content.ts`). Every
 effect object is `.strict()`, so extra or misspelled keys are rejected.
 
@@ -293,6 +293,31 @@ schema-legal but functionally inert: `applyDecision` never passes an
 `instanceId` through the effect context, so the lookup that would find
 the target instance always comes up empty and the effect silently no-ops.
 Don't put `sickness` on decisions; it does nothing there.
+
+### `removeHuman`
+
+```json
+{ "type": "removeHuman" }
+```
+
+No parameters. Removes one owned decision instance whose def has
+`human: true`, and strips every modifier whose `source` is that
+instance id. Prefer `EffectContext.instanceId` when that instance is
+still on the roster as a human; otherwise the first human in roster
+order. Ignores `removable` (same as payroll failure). Requires
+`EffectContext.content`; without content or without any human left,
+the effect silently no-ops.
+
+Used by challenge choice options (shipped: `key-dev-poached`'s
+`let-them-go`). When a choice option carries `removeHuman`, the
+challenge roller pins `PendingChoice.targetInstanceId` at queue time
+(per-human roll target if `perHumanDev`, else the first human on
+staff), and `resolveChoice` / expiry-default pass that id through.
+The loader rejects a choice challenge with a `removeHuman` option
+unless `condition.minHumanDevs` is at least 1.
+
+Don't put `removeHuman` on shop decisions; purchase-time application
+does not pass `content` in the effect context today, so it would no-op.
 
 ### `rampRate`
 

@@ -73,6 +73,93 @@ describe("applyEffects", () => {
     expect(s.decisions[0].sickFactor).toBe(0.7);
   });
 
+  it("removeHuman strips the targeted human instance and its modifiers", () => {
+    const content: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: [
+        {
+          id: "basic-dev",
+          name: "Hire basic developer",
+          description: "d",
+          tags: ["human"],
+          category: "ship-faster",
+          human: true,
+          cost: { perDay: 7 },
+          effects: [{ type: "modifyRate", target: "pull", op: "add", value: 1 }],
+          removable: true,
+        },
+        {
+          id: "ci-cd",
+          name: "CI/CD",
+          description: "d",
+          tags: [],
+          category: "change-structure",
+          cost: { oneTime: 1 },
+          effects: [],
+          removable: false,
+        },
+      ],
+      challenges: [],
+      projects: [],
+    };
+    const s = initialState(content);
+    s.decisions.push({ instanceId: "inst-dev", defId: "basic-dev" }, { instanceId: "inst-tool", defId: "ci-cd" });
+    s.modifiers.push({
+      id: "mod-dev",
+      source: "inst-dev",
+      target: "pull",
+      op: "add",
+      value: 1,
+    });
+    s.modifiers.push({
+      id: "mod-tool",
+      source: "inst-tool",
+      target: "deploy",
+      op: "mul",
+      value: 1.1,
+    });
+
+    applyEffects(s, [{ type: "removeHuman" }], "choice-poach", { instanceId: "inst-dev", content });
+
+    expect(s.decisions.map((d) => d.instanceId)).toEqual(["inst-tool"]);
+    expect(s.modifiers.map((m) => m.id)).toEqual(["mod-tool"]);
+    expect(s.log.some((l) => l.message === "Lost: Hire basic developer")).toBe(true);
+  });
+
+  it("removeHuman prefers the context instance over roster order", () => {
+    const content: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: [
+        {
+          id: "basic-dev",
+          name: "Hire basic developer",
+          description: "d",
+          tags: ["human"],
+          category: "ship-faster",
+          human: true,
+          cost: { perDay: 7 },
+          effects: [],
+          removable: true,
+        },
+      ],
+      challenges: [],
+      projects: [],
+    };
+    const s = initialState(content);
+    s.decisions.push({ instanceId: "first", defId: "basic-dev" }, { instanceId: "second", defId: "basic-dev" });
+    applyEffects(s, [{ type: "removeHuman" }], "choice-poach", { instanceId: "second", content });
+    expect(s.decisions.map((d) => d.instanceId)).toEqual(["first"]);
+  });
+
+  it("removeHuman no-ops without content or humans", () => {
+    const s = freshState();
+    s.decisions.push({ instanceId: "x", defId: "agent" });
+    applyEffects(s, [{ type: "removeHuman" }], "choice-poach");
+    expect(s.decisions).toHaveLength(1);
+    applyEffects(s, [{ type: "removeHuman" }], "choice-poach", { content: freshContent() });
+    expect(s.decisions).toHaveLength(1);
+  });
+
   it("modifier ids come from state and advance nextModifierId", () => {
     const s = freshState();
     applyEffects(s, [{ type: "modifyRate", target: "all", op: "mul", value: 0.5 }], "src-1");

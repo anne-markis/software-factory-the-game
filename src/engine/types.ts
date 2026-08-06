@@ -28,7 +28,13 @@ export type Effect =
   // Activation is derived from ownership -- see continuousDeployActive in
   // continuousDeploy.ts -- so this variant exists purely to be present or
   // absent in a decision def's effects list.
-  | { type: "continuousDeploy" };
+  | { type: "continuousDeploy" }
+  // Removes one owned human developer instance (DecisionDef.human === true)
+  // and strips its modifiers. Prefer EffectContext.instanceId when that
+  // instance is still a living human; otherwise the first human in roster
+  // order. Used by challenge choice options (key-dev-poached let-them-go).
+  // Requires EffectContext.content; silently no-ops without content or humans.
+  | { type: "removeHuman" };
 
 export type ModifierTarget = RateId | "allRates" | "debtMultiplier";
 
@@ -158,6 +164,10 @@ export interface ActiveProject {
 export interface PendingChoice {
   challengeId: string;
   expiresDay: number;
+  // Optional human-dev instance targeted when the choice was queued (e.g. for
+  // removeHuman on let-them-go). Absent on legacy saves and on choices that
+  // never needed a person target; applyEffects then falls back at resolve time.
+  targetInstanceId?: string;
 }
 
 export interface LogEntry {
