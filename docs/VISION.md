@@ -33,13 +33,16 @@ A working stocks-and-flows delivery loop. Tech debt as a regenerating stock
 that drags throughput and scales incidents. Context-switch tax on concurrent
 work. Reputation as Success to the Successful (with a real downward spiral).
 Emergent track attractors sketched in content (solo / human / dark factory
-stronger than startup / megacorp). One-shot archetype narration for Limits
+stronger than startup / megacorp). A decision graph (requires / unlocks,
+synergies, tags, categories) that already steers builds, but unevenly —
+some branches dense, others thin. One-shot archetype narration for Limits
 to Growth and Shifting the Burden. Endless play with reputation milestones.
 An UX arc underway so the machine stays watchable as content grows.
 
 The core thesis is already playable: **structure generates behavior**. The
 medium and long term are about deepening that thesis — not bolting on more
-shop items for their own sake.
+shop items for their own sake. The decision tree is where that deepening
+mostly happens.
 
 ---
 
@@ -57,33 +60,41 @@ teaches a distinct systems idea, and until fun no longer fights the model.
    different lived lessons (bus-factor fragility, growth-under-quota,
    process-as-product, humans-as-optional).
 
-2. **Promote delays from afterthought to first-class experience.**
+2. **Treat the decision graph as the curriculum map.**
+   Requires / unlocks, synergies, tags, and categories are how players
+   navigate into attractors. Medium-term ambition: denser structure and
+   clearer attractor pull — decisions that commit you toward a system
+   character — without turning tracks into campaigns or the shop into a
+   checklist. Depth and consequence of the tree matter more than width of
+   the catalog; every major branch should change what problems find you.
+
+3. **Promote delays from afterthought to first-class experience.**
    Meadows: people underestimate delays. Hires that ramp, refactors that
    hurt before they help, debt that bites later, reputation that lags
    shipping — the medium-term game should make *time between cause and
    effect* a felt part of play, not only a balance knob.
 
-3. **Teach by recognition, not by tutorial.**
+4. **Teach by recognition, not by tutorial.**
    Keep archetype moments sparse and after-the-fact. Expand the set of
    patterns the factory can honestly exhibit (escalation, drift to low
    performance, policy resistance, seeking the wrong goal) only when the
    simulation already produces them. Narration names what the player just
    lived; it never substitutes for living it.
 
-4. **Make watching the machine as rewarding as buying from the shop.**
+5. **Make watching the machine as rewarding as buying from the shop.**
    Fun in this genre is mostly attention to a changing system. Layout,
    speed, goals, and feedback exist so the player can stay in the loop
    diagram — the game's signature systems thesis — without fighting the UI.
    Content growth must not bury the model under the menu.
 
-5. **Couple growth loops to governors.**
+6. **Couple growth loops to governors.**
    Every reinforcing loop that feels good (ship → money → capacity;
    ship → reputation → bigger contracts; agents → throughput → more agents)
    needs a balancing pressure that is legible in play. Debt, incidents,
    morale, compute cost, quota — whatever stocks arrive — should exist
    because the reinforcing loop would otherwise lie about how systems work.
 
-6. **Preserve emergence over authored "tracks as campaigns."**
+7. **Preserve emergence over authored "tracks as campaigns."**
    The engine stays ignorant of which story the player is in. Content tags,
    synergies, and challenge pools do the steering. Medium-term ambition is
    richer identity through interaction density, not cutscenes or mode locks.
@@ -93,9 +104,10 @@ teaches a distinct systems idea, and until fun no longer fights the model.
 A thoughtful player can complete several distinct builds, feel different
 system personalities, and articulate at least a few Meadows-shaped insights
 in their own words — without the game having explained systems theory to
-them. Fun holds across a long session because bottlenecks move, recovery is
-possible but not free, and milestones give the endless loop something to
-lean toward.
+them. Reading the decision tree should feel like reading commitments:
+early choices visibly open some worlds and close others. Fun holds across
+a long session because bottlenecks move, recovery is possible but not free,
+and milestones give the endless loop something to lean toward.
 
 ---
 
@@ -115,45 +127,53 @@ ground, but the transferable skill as the product.
    factory endgame — the factory that no longer needs humans, including
    you — is the sharpest version of this idea already in the design DNA.
 
-2. **Loops of loops.**
+2. **Let the decision space climb that ladder with the player.**
+   Late-tree decisions should increasingly change structure and goals, not
+   just add rate: new stocks unlocked by commitment, rules rewritten,
+   attractor end-states reached through the graph rather than a mode
+   switch. The tech tree becomes leverage space — where you stand in it
+   is what kind of system you have become.
+
+3. **Loops of loops.**
    Nested systems: each SDLC stage as an inner loop; eventually the factory
    inside a market, a talent pool, an ecosystem of vendors and incidents.
    Hierarchy and boundaries become gameplay, not diagram decoration. The
    lesson: optimize a subsystem and watch the larger system punish you —
    or redesign the boundary.
 
-3. **Multiple goals, conflicting goods.**
+4. **Multiple goals, conflicting goods.**
    Points/day is a clean primary score for v1. Long term, the game should
    make goal choice itself a systems move: lifestyle vs valuation vs
    autonomy vs resilience. Seeking the wrong goal should be a trap the
    player can walk into with eyes open, not a fail state the UI prevents.
 
-4. **Resilience and self-organization as endgame crafts.**
+5. **Resilience and self-organization as endgame crafts.**
    Beyond "biggest throughput," celebrate factories that absorb shocks,
    reorganize after loss, and keep shipping under constraint. That is both
    truer to software delivery and truer to Meadows: resilience is a property
    of structure, not of peak rate.
 
-5. **The player as information flow.**
+6. **The player as information flow.**
    What the UI shows and hides is part of the model. Long-term vision:
    information architecture that sometimes mirrors real orgs (lagged
    metrics, local optima, missing feedback) without becoming frustrating
    chrome. Teaching "missing feedback" by letting the player feel its
    absence — carefully, and only when fun still holds.
 
-6. **Stay a sandbox, resist becoming a course.**
+7. **Stay a sandbox, resist becoming a course.**
    No win screen that grades systems literacy. No quiz. Optional reflection
    (archetypes, milestones, build-as-diagram) can deepen learning; compulsory
    pedagogy will kill fun and therefore kill the lesson. The long-term
    product is a *place to practice*, shareable and extensible via content,
    not a curriculum product with a certificate.
 
-7. **Content as the living model.**
+8. **Content as the living model.**
    The long-term technical posture stays: engine as grammar, content as
-   vocabulary. New stocks (morale, compute, valuation, …) and new
+   vocabulary. New decisions, stocks (morale, compute, valuation, …), and
    archetypes arrive when they earn a place in the loop grammar — each one
    a new way for structure to generate behavior — not as checklist
-   completion of the original design doc.
+   completion of the original design doc. The decision graph remains the
+   primary surface for extending the model.
 
 ### What "arrived" for long term feels like
 
@@ -179,6 +199,9 @@ nobody stays long enough to learn.
   reproducible runs and content-driven balance probes is part of the
   product's integrity.
 - **Tracks emerge; they are not modes.**
+- **The decision graph is the curriculum map.** Grow depth and
+  consequence before catalog width; shop sprawl without attractor pull
+  is not progress.
 
 ---
 
