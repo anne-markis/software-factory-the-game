@@ -95,6 +95,17 @@ function effectsLine(def: DecisionDef): string {
   return summary ? `<div class="tt-effects">${esc(summary)}</div>` : "";
 }
 
+// Issue #24: the decisions/tech-tree region used to be one memoized HTML
+// string. When any node's availability flipped (budget crossing a cost
+// threshold), every Buy button in the tree was torn down. Mirror the
+// projects/choices split: a content-stable scaffold holds per-node section
+// containers, and each card is patched independently.
+export const OWNED_LIST_SECTION = "owned-list";
+
+export function decisionNodeSection(defId: string): string {
+  return `decision-node:${defId}`;
+}
+
 // Renders one tech-tree node card. States (mutually exclusive):
 //  - owned unique: dimmed, no Buy button, marked "owned"
 //  - owned repeatable: not dimmed, keeps the Buy button, shows "owned xN"
@@ -102,7 +113,7 @@ function effectsLine(def: DecisionDef): string {
 //    unlocked behavior so the ladder ahead is visible), Buy disabled
 //  - cannot-afford: Buy disabled, reason shown
 //  - purchasable: Buy enabled
-function renderTechNode(a: Availability, ownedCount: number): string {
+export function renderDecisionNode(a: Availability, ownedCount: number): string {
   const def = a.def;
   const ownedUnique = a.code === "already-owned";
   const ownedRepeatable = !ownedUnique && ownedCount > 0;
@@ -136,33 +147,42 @@ function renderTechNode(a: Availability, ownedCount: number): string {
   </div>`;
 }
 
-function renderChain(chain: TechChain, availById: Map<string, Availability>, ownedCounts: Map<string, number>): string {
-  const columns = chain.tiers
-    .map((tier) => {
-      const nodes = tier.map((def) => renderTechNode(availById.get(def.id)!, ownedCounts.get(def.id) ?? 0)).join("");
-      return `<div class="tt-tier">${nodes}</div>`;
-    })
-    .join(`<div class="tt-arrow">&rarr;</div>`);
-  return `<div class="tt-chain"><h4>${esc(chain.name)}</h4><div class="tt-chain-row">${columns}</div></div>`;
-}
-
-function renderStandalone(defs: DecisionDef[], availById: Map<string, Availability>, ownedCounts: Map<string, number>): string {
-  if (defs.length === 0) return "";
-  const nodes = defs.map((def) => renderTechNode(availById.get(def.id)!, ownedCounts.get(def.id) ?? 0)).join("");
-  return `<div class="tt-standalone"><h4>Standalone</h4><div class="tt-standalone-grid">${nodes}</div></div>`;
-}
-
-export function renderDecisions(avail: Availability[], ownedInstances: DecisionInstance[], content: GameContent): string {
-  const availById = new Map(avail.map((a) => [a.def.id, a]));
-  const ownedCounts = new Map<string, number>();
-  for (const inst of ownedInstances) ownedCounts.set(inst.defId, (ownedCounts.get(inst.defId) ?? 0) + 1);
+// Shared chain/standalone layout. `renderNode` is either a live card
+// (string tests / renderDecisions) or an empty data-section shell (scaffold).
+function renderShopLayout(content: GameContent, renderNode: (def: DecisionDef) => string): string {
   const tree = buildTechTree(content);
-  const shop =
-    tree.chains.map((chain) => renderChain(chain, availById, ownedCounts)).join("") +
-    renderStandalone(tree.standalone, availById, ownedCounts);
-  // Issue #15: Owned entries carry the same cost line and derived-effects
-  // summary as shop cards so a player trimming upkeep does not have to
-  // scroll back through Alter the loop matching names card by card.
+  const chains = tree.chains
+    .map((chain: TechChain) => {
+      const columns = chain.tiers
+        .map((tier) => {
+          const nodes = tier.map((def) => renderNode(def)).join("");
+          return `<div class="tt-tier">${nodes}</div>`;
+        })
+        .join(`<div class="tt-arrow">&rarr;</div>`);
+      return `<div class="tt-chain"><h4>${esc(chain.name)}</h4><div class="tt-chain-row">${columns}</div></div>`;
+    })
+    .join("");
+  if (tree.standalone.length === 0) return chains;
+  const nodes = tree.standalone.map((def) => renderNode(def)).join("");
+  return `${chains}<div class="tt-standalone"><h4>Standalone</h4><div class="tt-standalone-grid">${nodes}</div></div>`;
+}
+
+// Content-stable panel chrome + per-decision section shells. Written once at
+// mount; node cards and the Owned list are patched into these containers.
+export function decisionsPanelScaffold(content: GameContent): string {
+  const shop = renderShopLayout(
+    content,
+    (def) => `<div ${SECTION_ATTR}="${decisionNodeSection(def.id)}"></div>`,
+  );
+  return `
+    <div class="panel"><h3>Alter the loop</h3>${shop}</div>
+    <div class="panel"><h3>Owned</h3><div ${SECTION_ATTR}="${OWNED_LIST_SECTION}"></div></div>`;
+}
+
+// Issue #15: Owned entries carry the same cost line and derived-effects
+// summary as shop cards so a player trimming upkeep does not have to
+// scroll back through Alter the loop matching names card by card.
+export function renderOwnedList(ownedInstances: DecisionInstance[], content: GameContent): string {
   const ownedList = ownedInstances
     .map((inst) => {
       const def = content.decisions.find((d) => d.id === inst.defId);
@@ -177,9 +197,19 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
     </div>`;
     })
     .join("");
+  return ownedList || "<small>Nothing yet. You are a solo dev.</small>";
+}
+
+export function renderDecisions(avail: Availability[], ownedInstances: DecisionInstance[], content: GameContent): string {
+  const availById = new Map(avail.map((a) => [a.def.id, a]));
+  const ownedCounts = new Map<string, number>();
+  for (const inst of ownedInstances) ownedCounts.set(inst.defId, (ownedCounts.get(inst.defId) ?? 0) + 1);
+  const shop = renderShopLayout(content, (def) =>
+    renderDecisionNode(availById.get(def.id)!, ownedCounts.get(def.id) ?? 0),
+  );
   return `
     <div class="panel"><h3>Alter the loop</h3>${shop}</div>
-    <div class="panel"><h3>Owned</h3>${ownedList || "<small>Nothing yet. You are a solo dev.</small>"}</div>`;
+    <div class="panel"><h3>Owned</h3>${renderOwnedList(ownedInstances, content)}</div>`;
 }
 
 export function renderLog(log: readonly LogEntry[]): string {

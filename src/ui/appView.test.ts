@@ -184,6 +184,32 @@ describe("appView node identity across renders (issue #6)", () => {
     }
   });
 
+  // Issue #24: previously the whole Alter-the-loop block was one memoized
+  // string, so any single node's affordability flip rebuilt every Buy button.
+  // Per-node patched sections keep unrelated Buy nodes alive.
+  it("keeps one decision's Buy button when another node's affordability flips (issue #24)", () => {
+    const content = makeContent();
+    content.start.stocks.budget = 500; // exactly affords test-suite ($500)
+    const h = mount({ content });
+
+    const stable = h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!;
+    expect(stable).toBeTruthy();
+    expect(stable.hasAttribute("disabled")).toBe(false);
+
+    const flipping = h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!;
+    expect(flipping).toBeTruthy();
+    expect(flipping.hasAttribute("disabled")).toBe(false);
+
+    h.state.stocks.budget = 499;
+    h.view.render();
+
+    expect(h.root.querySelector('[data-buy="basic-dev"]')).toBe(stable);
+    const flipped = h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!;
+    expect(flipped).not.toBe(flipping);
+    expect(flipped.hasAttribute("disabled")).toBe(true);
+    expect(h.root.textContent).toContain("cannot afford");
+  });
+
   it("keeps the same project Start button node across ticks even while an in-flight project's remaining points change", () => {
     const h = mount();
     const before = h.root.querySelector<HTMLElement>('[data-project="small-crm"]')!;
