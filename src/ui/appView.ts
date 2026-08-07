@@ -16,7 +16,6 @@ import type { GameContent, PendingChoice } from "../engine/types";
 import {
   renderStats,
   renderDeliveryStats,
-  renderDecisions,
   renderLog,
   renderChoicesScaffold,
   renderChoiceCountdown,
@@ -26,6 +25,11 @@ import {
   renderProjectOffers,
   PROJECTS_STATUS_SECTION,
   PROJECTS_OFFERS_SECTION,
+  decisionsPanelScaffold,
+  decisionNodeSection,
+  renderDecisionNode,
+  renderOwnedList,
+  OWNED_LIST_SECTION,
   renderStall,
   renderTimeControls,
   renderBuildStamp,
@@ -111,6 +115,10 @@ export function mountAppView(deps: AppViewDeps): AppView {
   // so the containers inside keep stable identity too.
   const projects = createRegion(page.section(PROJECTS)!);
   projects.setScaffold(projectsPanelScaffold());
+  // Issue #24: tech-tree Buy buttons each live in their own patched section so
+  // one node's affordability flip cannot tear down every other Buy button.
+  const decisions = createRegion(page.section(DECISIONS)!);
+  decisions.setScaffold(decisionsPanelScaffold(content));
   const choices = createRegion(page.section(CHOICES)!);
 
   function renderChoicesRegion(pending: readonly PendingChoice[], day: number): void {
@@ -120,6 +128,18 @@ export function mountAppView(deps: AppViewDeps): AppView {
     for (const pc of pending) {
       choices.patch(choiceCountdownSection(pc.challengeId), renderChoiceCountdown(pc, day));
     }
+  }
+
+  function renderDecisionsRegion(): void {
+    const state = engine.getState();
+    const ownedCounts = new Map<string, number>();
+    for (const inst of state.decisions) {
+      ownedCounts.set(inst.defId, (ownedCounts.get(inst.defId) ?? 0) + 1);
+    }
+    for (const a of engine.availableDecisions()) {
+      decisions.patch(decisionNodeSection(a.def.id), renderDecisionNode(a, ownedCounts.get(a.def.id) ?? 0));
+    }
+    decisions.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
   }
 
   function render(): void {
@@ -133,7 +153,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     );
     page.patch(STALL, renderStall(engine.isStalled()));
     page.patch(TIME_CONTROLS, renderTimeControls(state.paused, deps.getSpeed(), SPEED_OPTIONS));
-    page.patch(DECISIONS, renderDecisions(engine.availableDecisions(), [...state.decisions], content));
+    renderDecisionsRegion();
     projects.patch(PROJECTS_STATUS_SECTION, renderProjectsStatus([...state.projects], state));
     projects.patch(PROJECTS_OFFERS_SECTION, renderProjectOffers(engine.availableProjects(), state));
     renderChoicesRegion([...state.pendingChoices], state.day);

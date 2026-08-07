@@ -4,6 +4,9 @@ import {
   renderStats,
   renderDeliveryStats,
   renderDecisions,
+  decisionsPanelScaffold,
+  decisionNodeSection,
+  OWNED_LIST_SECTION,
   renderLog,
   renderChoicesScaffold,
   renderChoiceCountdown,
@@ -17,6 +20,7 @@ import {
   renderTimeControls,
   renderBuildStamp,
 } from "./render";
+import { SECTION_ATTR } from "./domPatch";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
@@ -127,6 +131,21 @@ describe("renderDecisions", () => {
     expect(html).toContain("requires Add test suite");
     expect(html).toContain("tt-locked");
     expect(html).toContain("Nothing yet. You are a solo dev.");
+  });
+
+  // Issue #24: scaffold lays out one patchable section per decision plus the
+  // Owned list, matching the projects/choices nested-region pattern.
+  it("decisionsPanelScaffold exposes a section shell for every decision and Owned", () => {
+    const c = content();
+    const html = decisionsPanelScaffold(c);
+    expect(html).toContain(`<h3>Alter the loop</h3>`);
+    expect(html).toContain(`<h3>Owned</h3>`);
+    expect(html).toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
+    for (const def of c.decisions) {
+      expect(html).toContain(`${SECTION_ATTR}="${decisionNodeSection(def.id)}"`);
+    }
+    // Scaffold is structure only — no live Buy buttons yet.
+    expect(html).not.toContain("data-buy=");
   });
 
   it("buying test-suite unlocks ci-cd (Buy enabled, no longer locked)", () => {
