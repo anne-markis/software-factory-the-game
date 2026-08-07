@@ -129,8 +129,9 @@
          min-width is auto (its content's min-content size), so the tech
          tree's fixed-width tier columns would still overflow the .main
          column and drag the whole page into horizontal scroll. min-width: 0
-         lets .main shrink to the track and defer overflow handling to
-         .tt-chain-row's own overflow-x: auto instead. */
+         lets .main shrink to the track. On wide viewports, overflow stays
+         inside .tt-chain-row (overflow-x: auto); on narrow viewports the
+         media query below stacks tiers so that scroll region is unused. */
       .main { min-width: 0; }
       .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
       .side .log { max-height: 50vh; }
@@ -139,10 +140,29 @@
          bug reports. */
       .build-stamp { margin-top: 1.5rem; font-size: 0.8rem; color: var(--fg-dim); }
       .build-stamp a { color: inherit; }
+      /* Issue #18: below the single-column layout threshold, stack tech-tree
+         tiers top-to-bottom instead of one overflow-x region per chain.
+         Fixed 190px card widths + 2–4 tiers overflow ~390px phones and force
+         a sideways swipe per row while the page itself scrolls vertically.
+         Full-width cards keep names/descriptions readable without truncation
+         at the viewport edge; rotate the existing → glyph to read as ↓. */
       @media (max-width: 900px) {
         .loops { grid-template-columns: 1fr; }
         .cols { grid-template-columns: 1fr; }
         .side { position: static; order: -1; max-height: none; }
+        .tt-chain-row {
+          flex-direction: column;
+          align-items: stretch;
+          overflow-x: visible;
+          gap: 0.25rem;
+        }
+        .tt-tier { min-width: 0; width: 100%; }
+        .tt-standalone-grid .tt-node, .tt-tier .tt-node { width: 100%; max-width: 100%; }
+        .tt-arrow {
+          transform: rotate(90deg);
+          padding: 0.15rem 0;
+          align-self: center;
+        }
       }
     </style>
   </head>
