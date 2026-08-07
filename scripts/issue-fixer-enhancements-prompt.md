@@ -21,28 +21,55 @@ Before touching code, read when relevant:
 
 ---
 
+## Kanban board (source of truth for pickup)
+
+Project:
+https://github.com/users/anne-markis/projects/1
+
+- Owner: `anne-markis` · project number: `1`
+- Project id: `PVT_kwHOARa0Vs4BftZB`
+- Status field id: `PVTSSF_lAHOARa0Vs4BftZBzhZ-X80`
+- Status option ids:
+  - Backlog: `f75ad846`
+  - Ready: `61e4505c`
+  - In progress: `47fc9ee4`
+  - In review: `df73e18b`
+  - Done: `98236657`
+
+Use `gh project` / GraphQL to list items and set Status. Do not invent
+new Status options.
+
+Set Status with:
+
+```bash
+gh project item-edit \
+  --id <ITEM_ID> \
+  --project-id PVT_kwHOARa0Vs4BftZB \
+  --field-id PVTSSF_lAHOARa0Vs4BftZBzhZ-X80 \
+  --single-select-option-id <STATUS_OPTION_ID>
+```
+
+---
+
 ## Phase 1 — Select and claim an issue
 
-1. List open issues with the `enhancement` label only. Ignore all other
-   labels/categories (including `bug`).
+**Enhancements only come from the Ready column.** If there is no eligible
+`enhancement` in Ready, stop — do not pull from Backlog, do not add
+orphans, do not invent work.
+
+1. List items on project `1` with Status **Ready** whose linked issue is
+   OPEN and has the `enhancement` label. Ignore `bug` and all other
+   types.
 2. Exclude any issue that already has an open PR referencing it:
 
    `gh pr list --repo anne-markis/software-factory-the-game --state open --search "closes #<N>"`
 
    Also exclude if an open PR title/body references `#<N>` without
    "closes/fixes".
-3. Prefer issues that have a milestone set. If an otherwise eligible issue
-   has no milestone, skip it (comment: `Skipped — no milestone; assign a
-   P0/P1/P2 milestone before automated pickup.`) unless EVERY remaining
-   candidate also lacks a milestone — then fall back to priority + age.
-4. Pick one issue using this order:
-   - Milestone horizon: **P0.\*** > **P1.\*** > **P2.\***
-     (parse from milestone title prefix: P0 / P1 / P2)
-   - Within the same horizon: lower project number first
-     (P0.1 before P0.2; P1.1 before P1.4; etc.)
-   - Then priority label: high > medium > low
-   - Then oldest first
-5. Skip and do not start work if the issue:
+3. Among remaining Ready enhancements, pick one using this order:
+   - Priority label: high > medium > low
+   - Then oldest first (issue created date)
+4. Skip and do not start work if the issue:
    - Is listed as deferred/unresolved in `docs/OPEN-DECISIONS.md`
    - Presents multiple design options without a clear chosen direction
    - Requires a product/design call you cannot infer from the issue +
@@ -53,10 +80,14 @@ Before touching code, read when relevant:
      path
    - Is really a bug (incorrect behavior) — comment suggesting the `bug`
      label and stop
-6. Comment on the issue before starting. Include the milestone when set,
-   e.g. `Automated enhancement attempt — claiming this issue (milestone:
-   P0.1 — Cockpit & watchability).`
-7. If no eligible issue exists, stop and report why.
+   If you skip, try the next Ready enhancement. If none remain, stop.
+5. **Claim on the board:** move the chosen item Ready → **In progress**
+   (Status option id `47fc9ee4`) before coding.
+6. Comment on the issue before starting, e.g. `Automated enhancement
+   attempt — claiming this issue (board: Ready → In progress).` Include
+   the milestone when set.
+7. If no eligible Ready enhancement exists, stop and report why. Do
+   nothing else.
 
 ---
 
@@ -227,11 +258,16 @@ Trivial UI-only).
 
 1. From the worktree, run `npm test` and `npx tsc --noEmit` one final time.
 2. Commit with message: `Implement <short description> (closes #<N>)`
-3. Push branch and open a **non-draft** PR:
+3. Push branch and open a **non-draft** PR (ready for review immediately —
+   never draft):
    - Title: `Implement <short description> (closes #<N>)`
    - Body: summary, acceptance criteria (checked off), before/after notes,
      test evidence, `Closes #<N>`
-4. Comment on the PR summarizing the pipeline:
+   - If a draft was created by mistake: `gh pr ready <PR>`
+4. **Board:** after the PR is posted and marked ready for review, move the
+   project item **In progress → In review** (Status option id
+   `df73e18b`).
+5. Comment on the PR summarizing the pipeline:
 
 ```
 Agent pipeline summary
@@ -264,6 +300,10 @@ Final verification (orchestrator)
 
 ## Global rules
 
+- Pickup source is the project board Ready column only — never Backlog or
+  off-board issues for enhancements.
+- On claim: Ready → In progress. On PR posted (ready for review): In
+  progress → In review.
 - Do not push PRs in DRAFT mode; they are ready for review immediately.
 - One enhancement, one PR, one issue per run.
 - Do not pick issues Patrice would own (`bug` label) — if mislabeled,
