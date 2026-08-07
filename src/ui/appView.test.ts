@@ -262,7 +262,10 @@ describe("appView page layout (issue #7)", () => {
   it("places time controls and Reset above the stats bar and loop panels", () => {
     const h = mount();
     const order = () => {
-      const kids = Array.from(h.root.children) as HTMLElement[];
+      // Issue #66: machine chrome lives under .cockpit-machine; order within
+      // that block still matches the issue #7 reachability guarantee.
+      const machine = h.root.querySelector(".cockpit-machine")!;
+      const kids = Array.from(machine.children) as HTMLElement[];
       return {
         time: kids.findIndex((el) => el.getAttribute("data-section") === "time-controls"),
         reset: kids.findIndex((el) => el.id === "reset"),
@@ -279,6 +282,62 @@ describe("appView page layout (issue #7)", () => {
     h.engine.tick();
     h.view.render();
     expect(order()).toEqual(before);
+  });
+});
+
+describe("appView cockpit layout (issue #66)", () => {
+  it("defaults to one spend panel (shop) with projects and owned disclosed away", () => {
+    const h = mount();
+    const shop = h.root.querySelector<HTMLElement>('[data-spend-panel="shop"]')!;
+    const projects = h.root.querySelector<HTMLElement>('[data-spend-panel="projects"]')!;
+    const owned = h.root.querySelector<HTMLElement>('[data-spend-panel="owned"]')!;
+    expect(shop.hidden).toBe(false);
+    expect(projects.hidden).toBe(true);
+    expect(owned.hidden).toBe(true);
+    expect(h.root.querySelector('[data-spend-tab="shop"]')!.className).toContain("spend-tab-active");
+    expect(h.root.querySelector('[data-spend-tab="projects"]')!.className).not.toContain("spend-tab-active");
+  });
+
+  it("switches spend tabs without tearing down Buy button identity", () => {
+    const h = mount();
+    const buy = h.root.querySelector<HTMLElement>("[data-buy]:not([disabled])")!;
+    expect(buy).toBeTruthy();
+    h.root.querySelector<HTMLElement>('[data-spend-tab="projects"]')!.click();
+    expect(h.root.querySelector<HTMLElement>('[data-spend-panel="projects"]')!.hidden).toBe(false);
+    expect(h.root.querySelector<HTMLElement>('[data-spend-panel="shop"]')!.hidden).toBe(true);
+    expect(h.root.querySelector(`[data-buy="${buy.dataset.buy}"]`)).toBe(buy);
+    expect(h.actions).toBe(0); // disclosure is UI-only
+    h.root.querySelector<HTMLElement>('[data-spend-tab="shop"]')!.click();
+    expect(h.root.querySelector<HTMLElement>('[data-spend-panel="shop"]')!.hidden).toBe(false);
+    expect(h.root.querySelector(`[data-buy="${buy.dataset.buy}"]`)).toBe(buy);
+  });
+
+  it("keeps Decision-needed and the next-goal slot outside spend panels", () => {
+    const content = makeContent(parseChallenges(challengesJson));
+    const restored = initialState(content);
+    restored.day = 5;
+    restored.pendingChoices = [{ challengeId: "key-dev-poached", expiresDay: 8 }];
+    const h = mount({ content, restored });
+    const machine = h.root.querySelector(".cockpit-machine")!;
+    expect(machine.querySelector("[data-section='choices']")).toBeTruthy();
+    expect(machine.querySelector("[data-section='next-goal']")).toBeTruthy();
+    expect(h.root.querySelector(".spend-panels [data-section='choices']")).toBeNull();
+    expect(h.root.textContent).toContain("Decision needed");
+    // Shop tab active must not hide the interrupt.
+    expect(h.root.querySelector('[data-spend-tab="shop"]')!.className).toContain("spend-tab-active");
+    expect(machine.textContent).toContain("Decision needed");
+  });
+
+  it("still reaches Remove after buying while Owned tab is closed, then opening it", () => {
+    const h = mount();
+    const buy = h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!;
+    buy.click();
+    h.root.querySelector<HTMLElement>('[data-spend-tab="owned"]')!.click();
+    const removeBtn = h.root.querySelector<HTMLElement>("[data-remove]");
+    expect(removeBtn).not.toBeNull();
+    const before = h.engine.getState().decisions.length;
+    removeBtn!.click();
+    expect(h.engine.getState().decisions.length).toBe(before - 1);
   });
 });
 
@@ -318,9 +377,9 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const name = buy.closest(".tt-node")!.querySelector(".tt-node-name")!.textContent!;
     buy.click();
     expect(h.engine.getState().decisions.some((d) => d.defId === id)).toBe(true);
-    const owned = h.root.querySelectorAll(".panel")[0];
-    expect(owned).toBeTruthy();
-    expect(h.root.textContent).toContain(name);
+    h.root.querySelector<HTMLElement>('[data-spend-tab="owned"]')!.click();
+    const ownedPanel = h.root.querySelector('[data-spend-panel="owned"]')!;
+    expect(ownedPanel.textContent).toContain(name);
     expect(h.actions).toBe(1);
   });
 
@@ -370,6 +429,7 @@ describe("appView click delegation on the stable root", () => {
 
   it("starts a project through data-project", () => {
     const h = mount();
+    h.root.querySelector<HTMLElement>('[data-spend-tab="projects"]')!.click();
     h.root.querySelector<HTMLElement>('[data-project="small-crm"]')!.click();
     expect(h.engine.getState().projects.some((p) => p.defId === "small-crm")).toBe(true);
     expect(h.actions).toBe(1);
@@ -382,8 +442,10 @@ describe("appView click delegation on the stable root", () => {
     for (const buy of Array.from(h.root.querySelectorAll<HTMLElement>("[data-buy]:not([disabled])"))) {
       const live = h.root.querySelector<HTMLElement>(`[data-buy="${buy.dataset.buy}"]:not([disabled])`);
       live?.click();
+      h.root.querySelector<HTMLElement>('[data-spend-tab="owned"]')!.click();
       removeBtn = h.root.querySelector<HTMLElement>("[data-remove]");
       if (removeBtn) break;
+      h.root.querySelector<HTMLElement>('[data-spend-tab="shop"]')!.click();
     }
     expect(removeBtn).not.toBeNull();
     const owned = h.engine.getState().decisions.length;

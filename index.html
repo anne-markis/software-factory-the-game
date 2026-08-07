@@ -39,12 +39,49 @@
       }
       body { font-family: ui-monospace, monospace; max-width: 1280px; margin: 1rem auto; padding: 0 1rem; color: var(--fg); background: var(--bg); }
       button { font-family: inherit; margin: 2px; }
+      /* Issue #66: on desktop, pin the machine (stats + loops + interrupt)
+         and scroll only the spend columns so shopping never pushes the
+         diagrams off-screen. Mobile keeps normal document scroll. */
+      @media (min-width: 901px) {
+        #app {
+          display: flex;
+          flex-direction: column;
+          max-height: calc(100vh - 4.5rem);
+          min-height: 0;
+        }
+        .cockpit-machine {
+          flex: 0 1 auto;
+          min-height: 0;
+          overflow: auto;
+          background: var(--bg);
+        }
+        .cols {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow: auto;
+        }
+      }
+      .cockpit-machine { margin-bottom: 0.5rem; }
       /* Top stats bar (Day / Backlog / Budget / Points/Day): each stat is a
          fixed-width slot (label + tabular-nums value) so a value changing
          width on tick never shifts anything below. Auto-filling grid wraps
          predictably; row count only changes when a stat is added or removed.
-         Issue #8 moved flow/quality stocks under the Delivery loop. */
-      .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.25rem 0.5rem; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
+         Issue #8 moved flow/quality stocks under the Delivery loop.
+         Issue #66: sticky within the machine (and on mobile within the page)
+         so primary stats stay glanceable while scrolling spend panels. */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 0.25rem 0.5rem;
+        white-space: nowrap;
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: var(--bg);
+        padding: 0.25rem 0;
+      }
       .stat { display: inline-block; }
       .stat-label { color: var(--fg-dim); }
       .stat-value { display: inline-block; font-variant-numeric: tabular-nums; text-align: right; }
@@ -133,7 +170,13 @@
          inside .tt-chain-row (overflow-x: auto); on narrow viewports the
          media query below stacks tiers so that scroll region is unused. */
       .main { min-width: 0; }
-      .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
+      /* Issue #66: one primary spend panel at a time. Active tab uses the
+         same weight/opacity vocabulary as .tc-btn.tc-active — no new chrome. */
+      .spend-tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 0.5rem; }
+      .spend-tab { display: inline-block; min-width: 7rem; text-align: center; opacity: 0.6; }
+      .spend-tab.spend-tab-active { opacity: 1; font-weight: bold; }
+      .spend-panel-hidden { display: none; }
+      .side { display: flex; flex-direction: column; gap: 0; }
       .side .log { max-height: 50vh; }
       /* Issue #45: quiet build identity under the game. Dim so it never
          competes with the loops or time controls; still selectable for
@@ -149,7 +192,8 @@
       @media (max-width: 900px) {
         .loops { grid-template-columns: 1fr; }
         .cols { grid-template-columns: 1fr; }
-        .side { position: static; order: -1; max-height: none; }
+        .side { order: 1; max-height: none; }
+        .side .log { max-height: none; }
         .tt-chain-row {
           flex-direction: column;
           align-items: stretch;

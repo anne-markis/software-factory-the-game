@@ -167,16 +167,39 @@ function renderShopLayout(content: GameContent, renderNode: (def: DecisionDef) =
   return `${chains}<div class="tt-standalone"><h4>Standalone</h4><div class="tt-standalone-grid">${nodes}</div></div>`;
 }
 
-// Content-stable panel chrome + per-decision section shells. Written once at
-// mount; node cards and the Owned list are patched into these containers.
+// Content-stable shop chrome + per-decision section shells. Written once at
+// mount; node cards are patched into these containers. Owned lives in its own
+// spend tab (issue #66) so this scaffold is shop-only.
 export function decisionsPanelScaffold(content: GameContent): string {
   const shop = renderShopLayout(
     content,
     (def) => `<div ${SECTION_ATTR}="${decisionNodeSection(def.id)}"></div>`,
   );
-  return `
-    <div class="panel"><h3>Alter the loop</h3>${shop}</div>
-    <div class="panel"><h3>Owned</h3><div ${SECTION_ATTR}="${OWNED_LIST_SECTION}"></div></div>`;
+  return `<div class="panel"><h3>Alter the loop</h3>${shop}</div>`;
+}
+
+// Issue #66: Owned is its own progressive-disclosure panel, not stacked under
+// the shop. Same section id as before so patch targets stay stable.
+export function ownedPanelScaffold(): string {
+  return `<div class="panel"><h3>Owned</h3><div ${SECTION_ATTR}="${OWNED_LIST_SECTION}"></div></div>`;
+}
+
+/** Spend tabs for shop / projects / owned (issue #66). Default: shop open. */
+export type SpendTab = "shop" | "projects" | "owned";
+
+export const SPEND_TABS: readonly { id: SpendTab; label: string }[] = [
+  { id: "shop", label: "Alter the loop" },
+  { id: "projects", label: "Projects" },
+  { id: "owned", label: "Owned" },
+];
+
+export function spendTabsHtml(active: SpendTab): string {
+  const buttons = SPEND_TABS.map((t) => {
+    const activeClass = t.id === active ? " spend-tab-active" : "";
+    const pressed = t.id === active ? "true" : "false";
+    return `<button type="button" class="spend-tab${activeClass}" data-spend-tab="${t.id}" aria-pressed="${pressed}">${esc(t.label)}</button>`;
+  }).join("");
+  return `<div class="spend-tabs" role="tablist" aria-label="Spend">${buttons}</div>`;
 }
 
 // Issue #15: Owned entries carry the same cost line and derived-effects

@@ -5,6 +5,8 @@ import {
   renderDeliveryStats,
   renderDecisions,
   decisionsPanelScaffold,
+  ownedPanelScaffold,
+  spendTabsHtml,
   decisionNodeSection,
   OWNED_LIST_SECTION,
   renderLog,
@@ -133,14 +135,14 @@ describe("renderDecisions", () => {
     expect(html).toContain("Nothing yet. You are a solo dev.");
   });
 
-  // Issue #24: scaffold lays out one patchable section per decision plus the
-  // Owned list, matching the projects/choices nested-region pattern.
-  it("decisionsPanelScaffold exposes a section shell for every decision and Owned", () => {
+  // Issue #24: scaffold lays out one patchable section per decision.
+  // Issue #66: Owned moved to its own spend tab (ownedPanelScaffold).
+  it("decisionsPanelScaffold exposes a section shell for every decision (shop only)", () => {
     const c = content();
     const html = decisionsPanelScaffold(c);
     expect(html).toContain(`<h3>Alter the loop</h3>`);
-    expect(html).toContain(`<h3>Owned</h3>`);
-    expect(html).toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
+    expect(html).not.toContain(`<h3>Owned</h3>`);
+    expect(html).not.toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
     for (const def of c.decisions) {
       expect(html).toContain(`${SECTION_ATTR}="${decisionNodeSection(def.id)}"`);
     }
@@ -370,6 +372,27 @@ describe("renderProjectOffers", () => {
     const before = renderProjectOffers(projectAvailability(s, c), s);
     s.projects[0].remaining -= 25;
     expect(renderProjectOffers(projectAvailability(s, c), s)).toBe(before);
+  });
+});
+
+describe("ownedPanelScaffold / spendTabsHtml (issue #66)", () => {
+  it("ownedPanelScaffold exposes the Owned list section shell", () => {
+    const html = ownedPanelScaffold();
+    expect(html).toContain(`<h3>Owned</h3>`);
+    expect(html).toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
+  });
+
+  it("spendTabsHtml marks only the active tab", () => {
+    const shop = spendTabsHtml("shop");
+    expect(shop).toContain('data-spend-tab="shop"');
+    expect(shop).toContain('data-spend-tab="projects"');
+    expect(shop).toContain('data-spend-tab="owned"');
+    expect(shop).toContain("spend-tab-active");
+    expect(shop.match(/spend-tab-active/g)?.length).toBe(1);
+    expect(shop).toContain('aria-pressed="true"');
+    const projects = spendTabsHtml("projects");
+    expect(projects.match(/spend-tab-active/g)?.length).toBe(1);
+    expect(projects).toContain('data-spend-tab="projects"');
   });
 });
 

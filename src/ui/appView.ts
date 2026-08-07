@@ -26,6 +26,7 @@ import {
   PROJECTS_STATUS_SECTION,
   PROJECTS_OFFERS_SECTION,
   decisionsPanelScaffold,
+  ownedPanelScaffold,
   decisionNodeSection,
   renderDecisionNode,
   renderOwnedList,
@@ -33,6 +34,8 @@ import {
   renderStall,
   renderTimeControls,
   renderBuildStamp,
+  spendTabsHtml,
+  type SpendTab,
 } from "./render";
 import { getBuildInfo } from "./buildInfo";
 import { loopDiagramSvg } from "./loopDiagram";
@@ -70,34 +73,50 @@ export interface AppView {
 }
 
 // Page layout, written once at mount and never rebuilt. The wrapper elements
-// (.loops, .cols, .main, .side) and the reset button are static, so they --
-// unlike before -- are not churned by the driver at all. Section containers
-// are empty until the first render patches them.
+// (.cockpit-machine, .loops, .cols, .main, .side) and the reset button are
+// static, so they -- unlike before -- are not churned by the driver at all.
+// Section containers are empty until the first render patches them.
 const STATS = "stats";
 const LOOPS = "loops";
 const STALL = "stall";
 const TIME_CONTROLS = "time-controls";
 const DECISIONS = "decisions";
 const PROJECTS = "projects";
+const OWNED = "owned";
 const CHOICES = "choices";
 const LOG = "log";
+// Reserved empty region for the next-goal indicator (issue #65 / US-4). Kept
+// outside spend tabs so FR-5.4 stays structurally true when that lands.
+const NEXT_GOAL = "next-goal";
+const SPEND_TABS = "spend-tabs";
+
+const SPEND_TAB_IDS: readonly SpendTab[] = ["shop", "projects", "owned"];
 
 function pageScaffold(): string {
   // Issue #7: time controls + Reset sit above the stats bar and loop panels
   // so pause/speed/reset stay reachable without scrolling past the loops.
+  // Issue #66: pin that machine block; shop / projects / owned share one
+  // progressive-disclosure slot; Decision-needed stays above the tabs.
   return `
-    <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
-    <button id="reset">Reset game</button>
-    <div ${SECTION_ATTR}="${STATS}"></div>
-    <div class="loops" ${SECTION_ATTR}="${LOOPS}"></div>
-    <div ${SECTION_ATTR}="${STALL}"></div>
+    <div class="cockpit-machine">
+      <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
+      <button id="reset">Reset game</button>
+      <div ${SECTION_ATTR}="${STATS}"></div>
+      <div class="loops" ${SECTION_ATTR}="${LOOPS}"></div>
+      <div ${SECTION_ATTR}="${STALL}"></div>
+      <div ${SECTION_ATTR}="${NEXT_GOAL}"></div>
+      <div ${SECTION_ATTR}="${CHOICES}"></div>
+    </div>
     <div class="cols">
       <div class="main">
-        <div ${SECTION_ATTR}="${DECISIONS}"></div>
-        <div ${SECTION_ATTR}="${PROJECTS}"></div>
+        <div ${SECTION_ATTR}="${SPEND_TABS}"></div>
+        <div class="spend-panels">
+          <div class="spend-panel" data-spend-panel="shop" ${SECTION_ATTR}="${DECISIONS}"></div>
+          <div class="spend-panel spend-panel-hidden" data-spend-panel="projects" ${SECTION_ATTR}="${PROJECTS}" hidden></div>
+          <div class="spend-panel spend-panel-hidden" data-spend-panel="owned" ${SECTION_ATTR}="${OWNED}" hidden></div>
+        </div>
       </div>
       <div class="side">
-        <div ${SECTION_ATTR}="${CHOICES}"></div>
         <div ${SECTION_ATTR}="${LOG}"></div>
       </div>
     </div>
@@ -105,8 +124,15 @@ function pageScaffold(): string {
   `;
 }
 
+function isSpendTab(value: string | undefined): value is SpendTab {
+  return value === "shop" || value === "projects" || value === "owned";
+}
+
 export function mountAppView(deps: AppViewDeps): AppView {
   const { root, engine, content } = deps;
+
+  // UI-only spend disclosure (issue #66). Not persisted — fresh mount opens shop.
+  let spendTab: SpendTab = "shop";
 
   const page = createRegion(root);
   page.setScaffold(pageScaffold());
@@ -119,7 +145,22 @@ export function mountAppView(deps: AppViewDeps): AppView {
   // one node's affordability flip cannot tear down every other Buy button.
   const decisions = createRegion(page.section(DECISIONS)!);
   decisions.setScaffold(decisionsPanelScaffold(content));
+  const owned = createRegion(page.section(OWNED)!);
+  owned.setScaffold(ownedPanelScaffold());
   const choices = createRegion(page.section(CHOICES)!);
+
+  function applySpendTab(): void {
+    // Tabs are patched as their own region; panels stay in the static scaffold
+    // and are only shown/hidden so Buy/Start/Remove nodes keep identity.
+    page.patch(SPEND_TABS, spendTabsHtml(spendTab));
+    for (const id of SPEND_TAB_IDS) {
+      const panel = root.querySelector<HTMLElement>(`[data-spend-panel="${id}"]`);
+      if (!panel) continue;
+      const active = id === spendTab;
+      panel.hidden = !active;
+      panel.classList.toggle("spend-panel-hidden", !active);
+    }
+  }
 
   function renderChoicesRegion(pending: readonly PendingChoice[], day: number): void {
     // The scaffold (option buttons included) is rewritten only when the set of
@@ -139,7 +180,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     for (const a of engine.availableDecisions()) {
       decisions.patch(decisionNodeSection(a.def.id), renderDecisionNode(a, ownedCounts.get(a.def.id) ?? 0));
     }
-    decisions.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
+    owned.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
   }
 
   function render(): void {
@@ -153,6 +194,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     );
     page.patch(STALL, renderStall(engine.isStalled()));
     page.patch(TIME_CONTROLS, renderTimeControls(state.paused, deps.getSpeed(), SPEED_OPTIONS));
+    applySpendTab();
     renderDecisionsRegion();
     projects.patch(PROJECTS_STATUS_SECTION, renderProjectsStatus([...state.projects], state));
     projects.patch(PROJECTS_OFFERS_SECTION, renderProjectOffers(engine.availableProjects(), state));
@@ -179,6 +221,13 @@ export function mountAppView(deps: AppViewDeps): AppView {
     if (target.id === "pause") {
       togglePause();
       return; // togglePause already re-rendered and saved
+    } else if (isSpendTab(target.dataset.spendTab)) {
+      // Disclosure only — no game action / save.
+      if (spendTab !== target.dataset.spendTab) {
+        spendTab = target.dataset.spendTab;
+        applySpendTab();
+      }
+      return;
     } else if (target.dataset.buy) {
       try {
         engine.applyDecision(target.dataset.buy);
