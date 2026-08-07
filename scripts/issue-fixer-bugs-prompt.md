@@ -15,33 +15,82 @@ Architecture (enforce this):
 
 ---
 
+## Kanban board (source of truth for pickup)
+
+Project:
+https://github.com/users/anne-markis/projects/1
+
+- Owner: `anne-markis` · project number: `1`
+- Project id: `PVT_kwHOARa0Vs4BftZB`
+- Status field id: `PVTSSF_lAHOARa0Vs4BftZBzhZ-X80`
+- Status option ids:
+  - Backlog: `f75ad846`
+  - Ready: `61e4505c`
+  - In progress: `47fc9ee4`
+  - In review: `df73e18b`
+  - Done: `98236657`
+
+Use `gh project` / GraphQL to list items and set Status. Do not invent
+new Status options.
+
+Set Status with:
+
+```bash
+gh project item-edit \
+  --id <ITEM_ID> \
+  --project-id PVT_kwHOARa0Vs4BftZB \
+  --field-id PVTSSF_lAHOARa0Vs4BftZBzhZ-X80 \
+  --single-select-option-id <STATUS_OPTION_ID>
+```
+
+Add an issue to the board with:
+
+```bash
+gh project item-add 1 --owner anne-markis --url <issue-url> --format json
+```
+
+---
+
 ## Phase 1 — Select and claim an issue
 
-1. List open issues with the `bug` label only. Ignore all other
-   labels/categories.
+Prefer **Ready** column bugs. If Ready has none, optionally adopt one
+**triaged orphan** (see step 3). Do not pull ordinary Backlog cards.
+
+1. List items on project `1` with Status **Ready** whose linked issue is
+   OPEN and has the `bug` label. Ignore enhancements and other types.
 2. Exclude any issue that already has an open PR referencing it:
 
    `gh pr list --repo anne-markis/software-factory-the-game --state open --search "fixes #<N>"`
 
-3. Prefer issues that have a milestone set. If an otherwise eligible issue
-   has no milestone, skip it (comment: `Skipped — no milestone; assign a
-   P0/P1/P2 milestone before automated pickup.`) unless EVERY remaining
-   candidate also lacks a milestone — then fall back to priority + age.
-4. Pick one issue using this order:
-   - Milestone horizon: **P0.\*** > **P1.\*** > **P2.\***
-     (parse from milestone title prefix: P0 / P1 / P2)
-   - Within the same horizon: lower project number first
-     (P0.1 before P0.2; P1.1 before P1.4; etc.)
-   - Then priority label: high > medium > low
-   - Then oldest first
+3. If no Ready bugs remain after exclusions, look for a **triaged orphan
+   bug**:
+   - OPEN issue with label `bug`
+   - Triaged: has a priority label (`high` / `medium` / `low`)
+   - Orphaned: **not** currently an item on project `1`
+   - Prefer high > medium > low, then oldest first
+   - Skip if it fails the skip rules in step 5
+   - If one qualifies:
+     1. Add it to the project (`gh project item-add …`)
+     2. Set Status to **Backlog** (`f75ad846`), then immediately to
+        **Ready** (`61e4505c`)
+     3. Treat it as the chosen Ready bug and continue
+   - If no orphan qualifies either, stop and report why.
+4. Among Ready bugs (including a just-adopted orphan), pick one:
+   - Priority label: high > medium > low
+   - Then oldest first (issue created date)
 5. Skip and do not start work if the issue:
    - Has no reproduction path and you cannot infer one from code
    - Clearly needs a product/design decision
    - Would require touching >5 unrelated files with no test coverage path
-6. Comment on the issue before starting. Include the milestone when set,
-   e.g. `Automated fix attempt — claiming this issue (milestone: P0.1 —
-   Cockpit & watchability).`
-7. If no eligible issue exists, stop and report why.
+   If you skip a Ready bug, try the next. Only after Ready is exhausted
+   run the orphan path (step 3). If nothing remains, stop.
+6. **Claim on the board:** move the chosen item Ready → **In progress**
+   (Status option id `47fc9ee4`) before coding.
+7. Comment on the issue before starting, e.g. `Automated fix attempt —
+   claiming this issue (board: Ready → In progress).` Include the
+   milestone when set. If you adopted an orphan, note that you added it
+   to the board (Backlog → Ready → In progress).
+8. If no eligible issue exists, stop and report why.
 
 ---
 
@@ -181,10 +230,15 @@ Trivial).
 
 1. From the worktree, run `npm test` and `npx tsc --noEmit` one final time.
 2. Commit with message: `Fix <short description> (fixes #<N>)`
-3. Push branch and open a **non-draft** PR:
+3. Push branch and open a **non-draft** PR (ready for review immediately —
+   never draft):
    - Title: `Fix <short description> (fixes #<N>)`
    - Body: summary, repro steps, test evidence, `Fixes #<N>`
-4. Comment on the PR summarizing the pipeline (this replaces audit files):
+   - If a draft was created by mistake: `gh pr ready <PR>`
+4. **Board:** after the PR is posted and marked ready for review, move the
+   project item **In progress → In review** (Status option id
+   `df73e18b`).
+5. Comment on the PR summarizing the pipeline (this replaces audit files):
 
 ```
 Agent pipeline summary
@@ -216,6 +270,10 @@ Final verification (orchestrator)
 
 ## Global rules
 
+- Pickup prefers project board Ready bugs; only if Ready is empty, adopt
+  one triaged orphan (add → Backlog → Ready), then claim.
+- On claim: Ready → In progress. On PR posted (ready for review): In
+  progress → In review.
 - Do not push or leave PRs in DRAFT mode; PRs are ready for review
   immediately.
 - One bug, one PR, one issue per run.

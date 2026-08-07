@@ -14,3 +14,9 @@ then paste the matching stub into the automation's prompt field in Cursor.
 
 The stub should be the **entire** automation prompt — no duplicate policy
 inline in Cursor.
+
+**Kanban:** Issue fixers pick work from
+[project board #1](https://github.com/users/anne-markis/projects/1)
+(Ready → In progress on claim; In progress → In review when the
+non-draft PR is posted). Triage fills Ready; it does not move cards into
+In progress / In review.
