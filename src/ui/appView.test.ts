@@ -190,7 +190,9 @@ describe("appView node identity across renders (issue #6)", () => {
   it("keeps one decision's Buy button when another node's affordability flips (issue #24)", () => {
     const content = makeContent();
     content.start.stocks.budget = 500; // exactly affords test-suite ($500)
-    const h = mount({ content });
+    // richBudget: false so the start budget above is not overwritten — the
+    // flip from 500 → 499 is what rebuilds test-suite while basic-dev stays put.
+    const h = mount({ content, richBudget: false });
 
     const stable = h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!;
     expect(stable).toBeTruthy();
