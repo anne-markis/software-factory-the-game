@@ -6,7 +6,7 @@ import { buildTechTree, type TechChain } from "./techTree";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { SECTION_ATTR } from "./domPatch";
 import { formatBuiltAt, type BuildInfo } from "./buildInfo";
-import { budgetRunwayDays, RUNWAY_WARN_DAYS } from "./runway";
+import { cockpitStatViews, deliveryStatViews, statsRowHtml } from "./gameFeel";
 
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -16,50 +16,19 @@ export function fmt(n: number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
-// Each stat is a fixed label + tabular-nums value slot (see index.html's
-// .stat-value width classes) so a value changing width on tick -- Day
-// ticking up, Budget crossing a comma boundary, etc -- never reflows the
-// single-line bar and shifts the buttons below it.
-function stat(label: string, value: string, widthClass: string): string {
-  return `<span class="stat"><span class="stat-label">${label}</span> <span class="stat-value ${widthClass}">${value}</span></span>`;
-}
-
-function budgetStat(state: Readonly<GameState>, content: GameContent): string {
-  // Issue #37: surface days of runway on Budget itself and warn visually
-  // before payroll wipe. Recurring burn only (see runway.ts).
-  const runway = budgetRunwayDays(state, content);
-  const low = runway !== null && runway <= RUNWAY_WARN_DAYS;
-  const classes = low ? "v-budget budget-low" : "v-budget";
-  const dayLabel = runway === 1 ? "1 day" : `${runway} days`;
-  const value = runway === null ? `$${fmt(state.stocks.budget)}` : `$${fmt(state.stocks.budget)} (${dayLabel})`;
-  return stat("Budget", value, classes);
-}
-
 // Top bar keeps the cockpit glanceables: clock, work waiting, money, and
 // throughput. Flow-stage and quality stocks live under the Delivery loop
 // (see renderDeliveryStats) so they sit next to the diagram they describe.
+// Markup is shared with gameFeel.syncStatRow (issue #67 in-place flash).
 export function renderStats(state: Readonly<GameState>, content: GameContent): string {
-  return `
-    <div class="stats">
-      ${stat("Day", String(state.day), "v-day")}
-      ${stat("Backlog", fmt(state.stocks.backlog), "v-flow")}
-      ${budgetStat(state, content)}
-      ${stat("Points/Day", fmt(state.pointsPerDay), "v-rate")}
-    </div>`;
+  return statsRowHtml(cockpitStatViews(state, content), "stats");
 }
 
 // Issue #8: In Progress / Done / Shipped / Tech Debt / Reputation sit under
 // the Delivery loop panel. Same fixed-width value slots as the top bar so
 // ticking numbers never jitter this row either.
 export function renderDeliveryStats(state: Readonly<GameState>): string {
-  return `
-    <div class="delivery-stats">
-      ${stat("In Progress", fmt(state.stocks.inProgress), "v-count")}
-      ${stat("Done", fmt(state.stocks.done), "v-count")}
-      ${stat("Shipped", fmt(state.stocks.shipped), "v-flow")}
-      ${stat("Tech Debt", fmt(state.stocks.techDebt), "v-debt")}
-      ${stat("Reputation", fmt(state.stocks.reputation), "v-rep")}
-    </div>`;
+  return statsRowHtml(deliveryStatViews(state), "delivery-stats");
 }
 
 // Short player-facing labels for the tech-tree node tags. Every shipped

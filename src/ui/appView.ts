@@ -14,8 +14,6 @@
 import type { Engine } from "../engine/engine";
 import type { GameContent, PendingChoice } from "../engine/types";
 import {
-  renderStats,
-  renderDeliveryStats,
   renderLog,
   renderChoicesScaffold,
   renderChoiceCountdown,
@@ -39,6 +37,15 @@ import { loopDiagramSvg } from "./loopDiagram";
 import { inProgressPanelSvg } from "./inProgressPanel";
 import { createRegion, SECTION_ATTR } from "./domPatch";
 import { SPEED_OPTIONS, type Speed } from "./tickDriver";
+import {
+  cockpitStatViews,
+  createFlashController,
+  deliveryStatViews,
+  GAMBLE_REVEAL_MS,
+  renderGambleReveal,
+  syncStatRow,
+  type GambleReveal,
+} from "./gameFeel";
 
 export interface AppViewDeps {
   root: HTMLElement;
@@ -73,8 +80,16 @@ export interface AppView {
 // (.loops, .cols, .main, .side) and the reset button are static, so they --
 // unlike before -- are not churned by the driver at all. Section containers
 // are empty until the first render patches them.
+//
+// Issue #67: Delivery loop diagram, delivery-stats, and Progress loop are
+// separate sections so material stock numbers can update in place (flash)
+// without rebuilding the SVG wrappers every time a digit moves. Gamble reveal
+// is its own ephemeral section between stats and the loops.
 const STATS = "stats";
-const LOOPS = "loops";
+const DELIVERY_LOOP = "delivery-loop";
+const DELIVERY_STATS = "delivery-stats";
+const PROGRESS_LOOP = "progress-loop";
+const GAMBLE_REVEAL = "gamble-reveal";
 const STALL = "stall";
 const TIME_CONTROLS = "time-controls";
 const DECISIONS = "decisions";
@@ -89,7 +104,14 @@ function pageScaffold(): string {
     <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
     <button id="reset">Reset game</button>
     <div ${SECTION_ATTR}="${STATS}"></div>
-    <div class="loops" ${SECTION_ATTR}="${LOOPS}"></div>
+    <div ${SECTION_ATTR}="${GAMBLE_REVEAL}"></div>
+    <div class="loops">
+      <div class="delivery-column">
+        <div class="panel"><h3>Delivery loop</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
+        <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>
+      </div>
+      <div ${SECTION_ATTR}="${PROGRESS_LOOP}"></div>
+    </div>
     <div ${SECTION_ATTR}="${STALL}"></div>
     <div class="cols">
       <div class="main">
@@ -121,6 +143,28 @@ export function mountAppView(deps: AppViewDeps): AppView {
   decisions.setScaffold(decisionsPanelScaffold(content));
   const choices = createRegion(page.section(CHOICES)!);
 
+  const flash = createFlashController();
+  let gambleReveal: GambleReveal | null = null;
+  let gambleRevealTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearGambleRevealTimer(): void {
+    if (gambleRevealTimer !== null) {
+      clearTimeout(gambleRevealTimer);
+      gambleRevealTimer = null;
+    }
+  }
+
+  function showGambleReveal(reveal: GambleReveal): void {
+    clearGambleRevealTimer();
+    gambleReveal = reveal;
+    page.patch(GAMBLE_REVEAL, renderGambleReveal(gambleReveal));
+    gambleRevealTimer = setTimeout(() => {
+      gambleReveal = null;
+      gambleRevealTimer = null;
+      page.patch(GAMBLE_REVEAL, renderGambleReveal(null));
+    }, GAMBLE_REVEAL_MS);
+  }
+
   function renderChoicesRegion(pending: readonly PendingChoice[], day: number): void {
     // The scaffold (option buttons included) is rewritten only when the set of
     // pending choices changes; the countdown beside them is patched per day.
@@ -144,13 +188,13 @@ export function mountAppView(deps: AppViewDeps): AppView {
 
   function render(): void {
     const state = engine.getState();
-    page.patch(STATS, renderStats(state, content));
-    // Issue #8: wrap Delivery loop + its relocated stocks in one column so
-    // the five flow/quality stats sit under that panel, not in the top bar.
-    page.patch(
-      LOOPS,
-      `<div class="delivery-column"><div class="panel"><h3>Delivery loop</h3>${loopDiagramSvg(state, content)}</div>${renderDeliveryStats(state)}</div>${inProgressPanelSvg(state, content)}`,
-    );
+    // Issue #67: sync cockpit + delivery stats in place so .stat-flash can
+    // finish without the string-memo path tearing the nodes down each tick.
+    syncStatRow(page.section(STATS)!, "stats", cockpitStatViews(state, content), flash);
+    syncStatRow(page.section(DELIVERY_STATS)!, "delivery-stats", deliveryStatViews(state), flash);
+    page.patch(DELIVERY_LOOP, loopDiagramSvg(state, content));
+    page.patch(PROGRESS_LOOP, inProgressPanelSvg(state, content));
+    page.patch(GAMBLE_REVEAL, renderGambleReveal(gambleReveal));
     page.patch(STALL, renderStall(engine.isStalled()));
     page.patch(TIME_CONTROLS, renderTimeControls(state.paused, deps.getSpeed(), SPEED_OPTIONS));
     renderDecisionsRegion();
@@ -180,11 +224,29 @@ export function mountAppView(deps: AppViewDeps): AppView {
       togglePause();
       return; // togglePause already re-rendered and saved
     } else if (target.dataset.buy) {
+      // Prefer the button itself: a nested click target would miss data-buy.
+      const buyEl = target.closest<HTMLElement>("[data-buy]") ?? target;
+      const defId = buyEl.dataset.buy;
+      if (!defId) return;
       try {
-        engine.applyDecision(target.dataset.buy);
+        engine.applyDecision(defId);
+        render();
+        deps.onAction();
+        // Issue #67: gamble purchases get a short on-screen reveal beyond the
+        // Events log line (hire outcomes and any similarly rolled decision).
+        // Shown after render so the sticky toast is the last paint.
+        const state = engine.getState();
+        const inst = state.decisions[state.decisions.length - 1];
+        if (inst && inst.defId === defId && inst.gambleLabel) {
+          const def = content.decisions.find((d) => d.id === defId);
+          if (def) {
+            showGambleReveal({ decisionName: def.name, outcomeLabel: inst.gambleLabel });
+          }
+        }
       } catch (err) {
         deps.onError((err as Error).message);
       }
+      return;
     } else if (target.dataset.remove) {
       engine.removeDecision(target.dataset.remove);
     } else if (target.dataset.choice && target.dataset.option) {
@@ -218,5 +280,12 @@ export function mountAppView(deps: AppViewDeps): AppView {
   }, { signal: listeners.signal });
 
   render();
-  return { render, togglePause, dispose: () => listeners.abort() };
+  return {
+    render,
+    togglePause,
+    dispose: () => {
+      listeners.abort();
+      clearGambleRevealTimer();
+    },
+  };
 }

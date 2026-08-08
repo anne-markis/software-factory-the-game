@@ -61,6 +61,44 @@
       .stat-value.v-debt { min-width: 7ch; } /* Tech Debt */
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-rate { min-width: 5ch; } /* Points/Day */
+      /* Issue #67: brief pulse when a material cockpit/delivery number
+         changes. Amber underline + opacity (existing risk tone), single
+         shot — presence without a new effect language. prefers-reduced-motion
+         disables it. */
+      @keyframes stat-flash-pulse {
+        from {
+          opacity: 0.4;
+          box-shadow: inset 0 -2px 0 var(--accent-amber);
+        }
+        to {
+          opacity: 1;
+          box-shadow: inset 0 -2px 0 transparent;
+        }
+      }
+      .stat-value.stat-flash {
+        animation: stat-flash-pulse 480ms ease-out 1;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .stat-value.stat-flash { animation: none; }
+      }
+      /* Issue #67: hire/gamble reveal (not log-only). Sticky on the section
+         host (not the inner node) so a purchase made while scrolled into
+         Alter the loop still pins the outcome to the viewport. Amber
+         outcome tone matches .tt-gamble; no card chrome. */
+      [data-section="gamble-reveal"]:not(:empty) {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        margin: 0 0 0.75rem;
+        background: var(--bg);
+        border-bottom: 1px solid var(--accent-amber);
+      }
+      .gamble-reveal {
+        padding: 0.35rem 0;
+        font-size: 1rem;
+        color: var(--fg);
+      }
+      .gamble-reveal-outcome { color: var(--accent-amber); font-weight: bold; }
       /* Issue #8: relocated stocks under the Delivery loop column. Flex
          wrap (not the 900px loops stack) so they stay inside that column
          at any width without introducing a horizontal scrollbar. */
