@@ -224,11 +224,17 @@ export function mountAppView(deps: AppViewDeps): AppView {
       togglePause();
       return; // togglePause already re-rendered and saved
     } else if (target.dataset.buy) {
-      const defId = target.dataset.buy;
+      // Prefer the button itself: a nested click target would miss data-buy.
+      const buyEl = target.closest<HTMLElement>("[data-buy]") ?? target;
+      const defId = buyEl.dataset.buy;
+      if (!defId) return;
       try {
         engine.applyDecision(defId);
+        render();
+        deps.onAction();
         // Issue #67: gamble purchases get a short on-screen reveal beyond the
         // Events log line (hire outcomes and any similarly rolled decision).
+        // Shown after render so the sticky toast is the last paint.
         const state = engine.getState();
         const inst = state.decisions[state.decisions.length - 1];
         if (inst && inst.defId === defId && inst.gambleLabel) {
@@ -240,6 +246,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
       } catch (err) {
         deps.onError((err as Error).message);
       }
+      return;
     } else if (target.dataset.remove) {
       engine.removeDecision(target.dataset.remove);
     } else if (target.dataset.choice && target.dataset.option) {

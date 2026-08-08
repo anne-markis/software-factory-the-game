@@ -120,7 +120,7 @@ describe("gameFeel gamble reveal (issue #67)", () => {
   });
 
   it("exposes a multi-second reveal window constant", () => {
-    expect(GAMBLE_REVEAL_MS).toBeGreaterThanOrEqual(1500);
-    expect(GAMBLE_REVEAL_MS).toBeLessThanOrEqual(4000);
+    expect(GAMBLE_REVEAL_MS).toBeGreaterThanOrEqual(3000);
+    expect(GAMBLE_REVEAL_MS).toBeLessThanOrEqual(8000);
   });
 });

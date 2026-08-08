@@ -16,15 +16,18 @@ function fmt(n: number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
-/** Brief highlight length; kept under 1x tick (1000ms) so it reads as a pulse. */
-export const STAT_FLASH_MS = 320;
+/** Brief highlight length; under 1x tick (1000ms) so it reads as a pulse. */
+export const STAT_FLASH_MS = 480;
 /**
  * Per-label cooldown so 2x/5x ticks cannot restroke the same slot every frame
  * (seizure-grade / noise bar in the issue DoD).
  */
-export const STAT_FLASH_COOLDOWN_MS = 450;
-/** Auto-dismiss for the gamble reveal toast. */
-export const GAMBLE_REVEAL_MS = 2500;
+export const STAT_FLASH_COOLDOWN_MS = 600;
+/**
+ * Auto-dismiss for the gamble reveal. Long enough to notice while scrolled
+ * into Alter the loop; sticky CSS keeps it in view (issue #67 UX).
+ */
+export const GAMBLE_REVEAL_MS = 5000;
 
 export interface StatView {
   label: string;

@@ -173,7 +173,9 @@ describe("appView game feel (issue #67)", () => {
     expect(reveal.textContent).toContain(inst!.gambleLabel!);
     // Still present in the Events log (reveal is additive).
     expect(h.root.querySelector(".log")!.textContent).toContain(inst!.gambleLabel!);
-    vi.advanceTimersByTime(2600);
+    vi.advanceTimersByTime(4999);
+    expect(h.root.querySelector(".gamble-reveal")).toBeTruthy();
+    vi.advanceTimersByTime(2);
     expect(h.root.querySelector(".gamble-reveal")).toBeNull();
     vi.useRealTimers();
   });
