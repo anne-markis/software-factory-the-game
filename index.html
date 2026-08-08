@@ -81,19 +81,22 @@
       @media (prefers-reduced-motion: reduce) {
         .stat-value.stat-flash { animation: none; }
       }
-      /* Issue #67: hire/gamble reveal (not log-only). Sticky so a purchase
-         made while scrolled into Alter the loop still surfaces the outcome.
-         Amber outcome tone matches .tt-gamble; no card chrome. */
-      .gamble-reveal {
+      /* Issue #67: hire/gamble reveal (not log-only). Sticky on the section
+         host (not the inner node) so a purchase made while scrolled into
+         Alter the loop still pins the outcome to the viewport. Amber
+         outcome tone matches .tt-gamble; no card chrome. */
+      [data-section="gamble-reveal"]:not(:empty) {
         position: sticky;
         top: 0;
         z-index: 5;
         margin: 0 0 0.75rem;
+        background: var(--bg);
+        border-bottom: 1px solid var(--accent-amber);
+      }
+      .gamble-reveal {
         padding: 0.35rem 0;
         font-size: 1rem;
         color: var(--fg);
-        background: var(--bg);
-        border-bottom: 1px solid var(--accent-amber);
       }
       .gamble-reveal-outcome { color: var(--accent-amber); font-weight: bold; }
       /* Issue #8: relocated stocks under the Delivery loop column. Flex
