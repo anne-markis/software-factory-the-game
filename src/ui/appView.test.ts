@@ -485,3 +485,41 @@ describe("appView click delegation on the stable root", () => {
     expect(h.speedChanges).toEqual([]);
   });
 });
+
+describe("appView next-goal indicator (issue #65)", () => {
+  it("renders an always-visible next-goal between stats and the loops", () => {
+    const h = mount();
+    const host = h.root.querySelector('[data-section="next-goal"]')!;
+    expect(host).not.toBeNull();
+    expect(host.querySelector(".next-goal")).not.toBeNull();
+    expect(host.textContent).toContain("Next");
+    expect(host.textContent).toContain("Trusted vendor");
+    expect(host.textContent).toMatch(/0\/5 reputation/);
+    expect(host.textContent).toContain("Legacy platform migration");
+
+    const stats = h.root.querySelector('[data-section="stats"]')!;
+    const loops = h.root.querySelector(".loops")!;
+    expect(stats.compareDocumentPosition(host) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(host.compareDocumentPosition(loops) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("advances the milestone line when reputation crosses a threshold", () => {
+    const h = mount();
+    h.state.stocks.reputation = 5;
+    h.view.render();
+    const host = h.root.querySelector('[data-section="next-goal"]')!;
+    expect(host.querySelector('[data-next-milestone="established"]')).not.toBeNull();
+    expect(host.textContent).toContain("Established shop");
+    expect(host.textContent).toMatch(/5\/15 reputation/);
+  });
+
+  it("shows the top-out copy when milestones and contract gates are cleared", () => {
+    const h = mount();
+    h.state.stocks.reputation = 70;
+    h.state.completedProjects = 2;
+    h.view.render();
+    const host = h.root.querySelector('[data-section="next-goal"]')!;
+    expect(host.querySelector('[data-next-top="1"]')).not.toBeNull();
+    expect(host.textContent).toContain("Top milestone reached — keep shipping");
+  });
+});

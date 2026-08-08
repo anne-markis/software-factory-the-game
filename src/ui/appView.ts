@@ -46,6 +46,7 @@ import {
   syncStatRow,
   type GambleReveal,
 } from "./gameFeel";
+import { renderNextGoal } from "./nextGoal";
 
 export interface AppViewDeps {
   root: HTMLElement;
@@ -86,6 +87,7 @@ export interface AppView {
 // without rebuilding the SVG wrappers every time a digit moves. Gamble reveal
 // is its own ephemeral section between stats and the loops.
 const STATS = "stats";
+const NEXT_GOAL = "next-goal";
 const DELIVERY_LOOP = "delivery-loop";
 const DELIVERY_STATS = "delivery-stats";
 const PROGRESS_LOOP = "progress-loop";
@@ -100,10 +102,13 @@ const LOG = "log";
 function pageScaffold(): string {
   // Issue #7: time controls + Reset sit above the stats bar and loop panels
   // so pause/speed/reset stay reachable without scrolling past the loops.
+  // Issue #65: next-goal sits with the glanceable chrome (below stats, above
+  // loops) so the endless-run lean stays visible without opening Projects.
   return `
     <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
     <button id="reset">Reset game</button>
     <div ${SECTION_ATTR}="${STATS}"></div>
+    <div ${SECTION_ATTR}="${NEXT_GOAL}"></div>
     <div ${SECTION_ATTR}="${GAMBLE_REVEAL}"></div>
     <div class="loops">
       <div class="delivery-column">
@@ -192,6 +197,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     // finish without the string-memo path tearing the nodes down each tick.
     syncStatRow(page.section(STATS)!, "stats", cockpitStatViews(state, content), flash);
     syncStatRow(page.section(DELIVERY_STATS)!, "delivery-stats", deliveryStatViews(state), flash);
+    page.patch(NEXT_GOAL, renderNextGoal(state, content));
     page.patch(DELIVERY_LOOP, loopDiagramSvg(state, content));
     page.patch(PROGRESS_LOOP, inProgressPanelSvg(state, content));
     page.patch(GAMBLE_REVEAL, renderGambleReveal(gambleReveal));

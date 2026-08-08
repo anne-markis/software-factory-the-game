@@ -61,6 +61,26 @@
       .stat-value.v-debt { min-width: 7ch; } /* Tech Debt */
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-rate { min-width: 5ch; } /* Points/Day */
+      /* Issue #65: endless-run next lean — glanceable under the stats bar,
+         monospace voice, no card chrome. Sticky so shop scroll does not bury
+         it (pairs with cockpit intent even without tabbed spend). */
+      [data-section="next-goal"]:not(:empty) {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        margin: 0 0 0.75rem;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+      }
+      .next-goal {
+        padding: 0.35rem 0;
+        font-size: 0.95rem;
+        color: var(--fg);
+        white-space: normal;
+      }
+      .next-goal-label { color: var(--fg-dim); font-weight: bold; }
+      .next-goal-sep { color: var(--fg-dim); }
+      .next-goal-item { color: var(--fg); }
       /* Issue #67: brief pulse when a material cockpit/delivery number
          changes. Amber underline + opacity (existing risk tone), single
          shot — presence without a new effect language. prefers-reduced-motion
