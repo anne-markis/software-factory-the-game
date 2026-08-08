@@ -294,7 +294,7 @@ export function renderChoicesScaffold(pending: readonly PendingChoice[], challen
   // Issue #40: class-based interrupt chrome (sticky host in index.html) replaces
   // the old inline border so the panel reads as a persistent affordance, not a
   // log line.
-  return `<div class="panel choice-interrupt" role="alertdialog" aria-label="Decision needed"><h3>Decision needed</h3>${blocks}</div>`;
+  return `<div class="panel choice-interrupt" role="alert" aria-label="Decision needed"><h3>Decision needed</h3>${blocks}</div>`;
 }
 
 export function renderChoiceCountdown(pc: PendingChoice, day: number): string {

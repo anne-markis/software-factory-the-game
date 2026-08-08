@@ -129,7 +129,9 @@
         margin: 0 0 0.75rem;
         background: var(--bg);
       }
-      .choice-interrupt {
+      /* Higher specificity than later .panel { border; margin-bottom } so the
+         danger cue actually wins (same single-class specificity otherwise). */
+      .panel.choice-interrupt {
         border-color: var(--accent-red);
         margin-bottom: 0;
       }
