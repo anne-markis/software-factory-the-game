@@ -307,6 +307,9 @@ describe("renderChoicesScaffold", () => {
     const html = renderChoicesScaffold([{ challengeId: "key-dev-poached", expiresDay: 8 }], challenges);
     expect(html).toContain('data-choice="key-dev-poached" data-option="match-offer"');
     expect(html).toContain("Decision needed");
+    // Issue #40: interrupt affordance uses class chrome + alertdialog role.
+    expect(html).toContain('class="panel choice-interrupt"');
+    expect(html).toContain('role="alertdialog"');
     // The countdown is patched separately (issue #6) so the day ticking down
     // does not rebuild the option buttons: the scaffold carries only its slot.
     expect(html).toContain(`<em data-section="${choiceCountdownSection("key-dev-poached")}"></em>`);

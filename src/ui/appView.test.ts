@@ -486,6 +486,64 @@ describe("appView click delegation on the stable root", () => {
   });
 });
 
+describe("appView Decision-needed interrupt (issue #40)", () => {
+  it("places the choices interrupt in glanceable chrome above the loops", () => {
+    const content = makeContent(parseChallenges(challengesJson));
+    const restored = initialState(content);
+    restored.day = 5;
+    restored.pendingChoices = [{ challengeId: "key-dev-poached", expiresDay: 8 }];
+    const h = mount({ content, restored });
+    const kids = Array.from(h.root.children) as HTMLElement[];
+    const choicesIdx = kids.findIndex((el) => el.getAttribute("data-section") === "choices");
+    const loopsIdx = kids.findIndex((el) => el.classList.contains("loops"));
+    const side = h.root.querySelector(".side")!;
+    expect(choicesIdx).toBeGreaterThan(-1);
+    expect(choicesIdx).toBeLessThan(loopsIdx);
+    expect(side.querySelector('[data-section="choices"]')).toBeNull();
+    expect(h.root.querySelector(".choice-interrupt")).not.toBeNull();
+    expect(h.root.querySelector('[data-choice="key-dev-poached"]')).not.toBeNull();
+  });
+
+  it("soft-pauses when a Decision-needed challenge newly appears", () => {
+    const content = makeContent(parseChallenges(challengesJson));
+    const h = mount({ content });
+    expect(h.engine.getState().paused).toBe(false);
+    const actionsBefore = h.actions;
+    h.state.pendingChoices = [{ challengeId: "key-dev-poached", expiresDay: h.state.day + 3 }];
+    h.view.render();
+    expect(h.engine.getState().paused).toBe(true);
+    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(h.actions).toBe(actionsBefore + 1);
+  });
+
+  it("does not re-pause every render while the same choice stays pending", () => {
+    const content = makeContent(parseChallenges(challengesJson));
+    const restored = initialState(content);
+    restored.day = 5;
+    restored.pendingChoices = [{ challengeId: "key-dev-poached", expiresDay: 8 }];
+    const h = mount({ content, restored });
+    // Mount soft-paused once; Resume and re-render must stay running.
+    expect(h.engine.getState().paused).toBe(true);
+    h.engine.resume();
+    h.view.render();
+    expect(h.engine.getState().paused).toBe(false);
+    h.view.render();
+    expect(h.engine.getState().paused).toBe(false);
+  });
+
+  it("resolves a choice from the interrupt surface and clears it", () => {
+    const content = makeContent(parseChallenges(challengesJson));
+    const restored = initialState(content);
+    restored.day = 5;
+    restored.pendingChoices = [{ challengeId: "key-dev-poached", expiresDay: 8 }];
+    const h = mount({ content, restored });
+    h.root.querySelector<HTMLElement>('[data-choice="key-dev-poached"][data-option="match-offer"]')!.click();
+    expect(h.engine.getState().pendingChoices).toHaveLength(0);
+    expect(h.root.querySelector(".choice-interrupt")).toBeNull();
+    expect(h.root.querySelector("[data-choice]")).toBeNull();
+  });
+});
+
 describe("appView next-goal indicator (issue #65)", () => {
   it("renders an always-visible next-goal between stats and the loops", () => {
     const h = mount();
