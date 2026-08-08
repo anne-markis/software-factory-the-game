@@ -110,19 +110,25 @@ Before spawning anyone:
    - **Content-only** — JSON in content/ (no engine logic change)
    - **Engine** — rules, defaults, tick behavior, new state
    - **Mixed** — engine + UI (most common for gameplay UX)
-6. Classify complexity:
+6. Classify **visual/UX impact** (drives whether Subagent D runs):
+   - **Visual** — the enhancement changes anything a player can see:
+     `src/ui/`, CSS/styles, layout, panels, dialogs, HUD, on-screen copy,
+     icons, or other rendered output (typical for UI-only and Mixed)
+   - **Non-visual** — engine-only, tests-only, docs, or content with no
+     player-visible render change
+7. Classify complexity:
    - **Trivial** — one file, mechanical change, no judgment (copy tweak,
      CSS/layout, add confirmation)
    - **Standard** — clear acceptance criteria, 1–3 files, no balance probe
      retune
    - **Hard** — engine/RNG/state logic, economy/balance impact, ambiguous
      UX, or multi-layer change
-7. Create an isolated worktree and branch:
+8. Create an isolated worktree and branch:
    - Path: `.claude/worktrees/issue-<N>-<short-slug>/`
    - Branch: `enhance/issue-<N>-<short-slug>`
    All subagents must work only inside this worktree (`cd` there first for
    every command).
-8. If you cannot define acceptance criteria or proceed without human input:
+9. If you cannot define acceptance criteria or proceed without human input:
    - Comment on the issue with what you tried and what's blocked
    - Stop. Do not open a PR.
 
@@ -251,18 +257,75 @@ PR.
 
 ---
 
-## Phase 6 — Ship (you do this)
+## Phase 6 — Subagent D (UX Verifier) — only if Visual
 
-Only proceed if Verifier PASS and (Reviewer APPROVED or complexity was
-Trivial UI-only).
+**Run this step only when Phase 2 classified the enhancement as Visual**
+(player-visible UI change). Skip entirely for Non-visual enhancements.
+
+Spawn a UX verifier subagent (browser / computerUse) with: issue text,
+acceptance criteria, worktree path, Subagent A/B reports, and the list of
+visual surfaces touched. Use a strong model.
+
+Subagent D must:
+
+1. Start a vite server from the worktree
+   (`npx vite --port <unique> --strictPort`) and confirm it serves this
+   worktree.
+2. Navigate to each affected visual surface and verify the enhancement
+   matches acceptance criteria: layout, hierarchy, copy, contrast, spacing,
+   and player-facing clarity.
+3. Check desktop and a narrow/mobile viewport when the change touches
+   layout or responsive UI.
+4. Capture screenshot(s) of the changed UI (after state required; before
+   vs after when useful). Save files under a stable absolute path (e.g.
+   `/opt/cursor/artifacts/screenshots/issue-<N>-*.png`) and return those
+   paths.
+5. Return verdict **PASS** or **FAIL**.
+   On FAIL, list numbered visual blockers only (specific, actionable).
+
+Subagent D must return:
+
+```
+UX verifier report
+
+Verdict: PASS | FAIL
+Surfaces checked: ...
+Viewports: desktop | mobile | both
+Screenshots: /absolute/path/to/shot1.png ; ...
+Acceptance criteria (visual): ...
+Visual notes: ...
+Blockers (if FAIL):
+1. ...
+```
+
+**Retry rule:** If FAIL, spawn Subagent A again (one UX fix round) with
+visual blockers only — no new scope. Re-run Subagent D once. After that
+failed UX round: comment on the issue with findings and STOP. No PR.
+
+If Visual but you cannot capture screenshots (tooling failure), treat as
+FAIL for shipping — do not open a PR without UX evidence.
+
+---
+
+## Phase 7 — Ship (you do this)
+
+Only proceed if Verifier PASS, (Reviewer APPROVED or complexity was
+Trivial UI-only), and (UX Verifier PASS or the enhancement was Non-visual).
 
 1. From the worktree, run `npm test` and `npx tsc --noEmit` one final time.
 2. Commit with message: `Implement <short description> (closes #<N>)`
 3. Push branch and open a **non-draft** PR (ready for review immediately —
    never draft):
    - Title: `Implement <short description> (closes #<N>)`
-   - Body: summary, acceptance criteria (checked off), before/after notes,
-     test evidence, `Closes #<N>`
+   - Body must include: summary, acceptance criteria (checked off),
+     before/after notes, test evidence, `Closes #<N>`
+   - **If the enhancement is Visual (UX changed):** the PR body **must**
+     include a `## Screenshots` section with the screenshot(s) from
+     Subagent D embedded as images (HTML
+     `<img alt="..." src="/absolute/path.png" />` for Cursor artifact
+     upload, or equivalent markdown image embeds). Describe briefly what
+     each shot shows. Do not ship a Visual enhancement PR without
+     screenshots in the description.
    - If a draft was created by mistake: `gh pr ready <PR>`
 4. **Board:** after the PR is posted and marked ready for review, move the
    project item **In progress → In review** (Status option id
@@ -275,6 +338,7 @@ Agent pipeline summary
 Issue: #<N> — <title>
 Scope: UI-only | Content-only | Engine | Mixed
 Complexity: Trivial | Standard | Hard
+Visual/UX: Visual | Non-visual
 
 Subagent A (Implementer)
 • Model: ...
@@ -290,6 +354,11 @@ Subagent B (Verifier)
 Subagent C (Reviewer) — if run
 • Verdict: APPROVED
 • Notable findings: none | ...
+
+Subagent D (UX Verifier) — if run
+• Verdict: PASS
+• Screenshots attached to PR: yes
+• Surfaces checked: ...
 
 Final verification (orchestrator)
 • npm test: X/X
@@ -315,3 +384,5 @@ Final verification (orchestrator)
 - Implement what the issue asks; do not redesign adjacent systems.
 - When an enhancement touches defaults or player onboarding, verify a fresh
   game / reset path, not only mid-game saves.
+- Visual enhancements require Subagent D (UX Verifier) and screenshots in
+  the PR description; Non-visual enhancements skip both.

@@ -20,3 +20,7 @@ inline in Cursor.
 (Ready → In progress on claim; In progress → In review when the
 non-draft PR is posted). Triage fills Ready; it does not move cards into
 In progress / In review.
+
+**UX verification:** Both issue fixers run an optional Subagent D (UX
+Verifier) only when the change is Visual (player-facing UI). Visual PRs
+must include screenshots in the description.
