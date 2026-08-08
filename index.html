@@ -61,6 +61,27 @@
       .stat-value.v-debt { min-width: 7ch; } /* Tech Debt */
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-rate { min-width: 5ch; } /* Points/Day */
+      /* Issue #67: brief pulse when a material cockpit/delivery number
+         changes. Opacity-only, short, no color strobe — presence without a
+         new effect language. prefers-reduced-motion disables it. */
+      @keyframes stat-flash-pulse {
+        from { opacity: 0.45; }
+        to { opacity: 1; }
+      }
+      .stat-value.stat-flash {
+        animation: stat-flash-pulse 320ms ease-out 1;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .stat-value.stat-flash { animation: none; }
+      }
+      /* Issue #67: short hire/gamble reveal above the loops (not log-only).
+         Reuses amber risk tone from .tt-gamble; no card chrome. */
+      .gamble-reveal {
+        margin: -0.5rem 0 0.75rem;
+        font-size: 0.95rem;
+        color: var(--fg);
+      }
+      .gamble-reveal-outcome { color: var(--accent-amber); font-weight: bold; }
       /* Issue #8: relocated stocks under the Delivery loop column. Flex
          wrap (not the 900px loops stack) so they stay inside that column
          at any width without introducing a horizontal scrollbar. */

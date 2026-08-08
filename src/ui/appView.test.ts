@@ -110,8 +110,10 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     expect(deliveryCol.querySelector("h3")!.textContent).toBe("Delivery loop");
     const under = deliveryCol.querySelector(".delivery-stats")!;
     expect(under).toBeTruthy();
-    // Stats sit after the Delivery loop panel inside the same column.
-    expect(deliveryCol.querySelector(".panel")!.nextElementSibling).toBe(under);
+    // Stats sit after the Delivery loop panel inside the same column
+    // (issue #67: wrapped in a data-section host for in-place flash sync).
+    const statsHost = deliveryCol.querySelector(".panel")!.nextElementSibling!;
+    expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation"]);
 
@@ -127,17 +129,62 @@ describe("appView delivery-column stats layout (issue #8)", () => {
   it("keeps delivery-stats nodes stable across ticks that only change values", () => {
     const h = mount();
     const before = h.root.querySelector(".delivery-stats")!;
+    const beforeInProgress = before.querySelector(".v-count")!;
     for (let i = 0; i < 5; i++) {
       h.engine.tick();
       h.view.render();
     }
-    // Values moved, but the container is the same region patch target under loops —
-    // when HTML string changes the nodes rebuild; assert labels and placement hold.
+    // Issue #67: in-place sync keeps the row and value nodes identical across
+    // ticks so flash animations are not torn down by string-memo patches.
     const after = h.root.querySelector(".delivery-stats")!;
+    expect(after).toBe(before);
+    expect(after.querySelector(".v-count")).toBe(beforeInProgress);
     expect(after.querySelector(".stat-label")!.textContent).toBe("In Progress");
     expect(h.root.querySelector(".delivery-column .delivery-stats")).toBe(after);
     expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
-    expect(before.className).toBe(after.className);
+  });
+});
+
+describe("appView game feel (issue #67)", () => {
+  it("flashes a material cockpit stat when its value changes on tick", () => {
+    const h = mount();
+    h.view.render();
+    const backlog = h.root.querySelector<HTMLElement>(".stats .v-flow")!;
+    expect(backlog.classList.contains("stat-flash")).toBe(false);
+    for (let i = 0; i < 5; i++) h.engine.tick();
+    h.view.render();
+    // Backlog moves under the idle start config; Day must not flash.
+    expect(h.root.querySelector(".stats .v-day")!.classList.contains("stat-flash")).toBe(false);
+    expect(h.root.querySelector(".stats .v-flow")!.classList.contains("stat-flash")).toBe(true);
+  });
+
+  it("shows a short gamble reveal when buying a hire gamble, not only a log line", () => {
+    vi.useFakeTimers();
+    const h = mount();
+    const buy = h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!;
+    expect(buy).toBeTruthy();
+    buy.click();
+    const inst = h.engine.getState().decisions.find((d) => d.defId === "basic-dev");
+    expect(inst?.gambleLabel).toBeTruthy();
+    const reveal = h.root.querySelector(".gamble-reveal")!;
+    expect(reveal).toBeTruthy();
+    expect(reveal.getAttribute("role")).toBe("status");
+    expect(reveal.textContent).toContain("Hire basic developer");
+    expect(reveal.textContent).toContain(inst!.gambleLabel!);
+    // Still present in the Events log (reveal is additive).
+    expect(h.root.querySelector(".log")!.textContent).toContain(inst!.gambleLabel!);
+    vi.advanceTimersByTime(2600);
+    expect(h.root.querySelector(".gamble-reveal")).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it("does not show a gamble reveal for a deterministic purchase", () => {
+    const h = mount();
+    const buy = h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!;
+    expect(buy).toBeTruthy();
+    buy.click();
+    expect(h.root.querySelector(".gamble-reveal")).toBeNull();
+    expect(h.root.querySelector(".log")!.textContent).toMatch(/Purchased: .*test suite/i);
   });
 });
 
