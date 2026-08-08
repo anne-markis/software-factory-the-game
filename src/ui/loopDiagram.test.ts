@@ -1,12 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { loopDiagramSvg } from "./loopDiagram";
-import { initialState } from "../engine/engine";
+import {
+  BINDING_INFLOW_RATIO,
+  BINDING_SUSTAINED_DAYS,
+  bindingBottleneckStage,
+  loopDiagramSvg,
+} from "./loopDiagram";
+import { Engine, initialState } from "../engine/engine";
 import { tick } from "../engine/tick";
 import { createRng } from "../engine/rng";
 import { parseStartConfig, parseDecisions } from "../engine/content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
-import type { GameContent } from "../engine/types";
+import type { GameContent, GameState } from "../engine/types";
 
 function emptyContent(): GameContent {
   return { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [] };
@@ -87,4 +92,89 @@ describe("loopDiagramSvg", () => {
       }
     }
   });
+
+  // Issue #64: binding-stage bottleneck cue. Thresholds are BINDING_INFLOW_RATIO
+  // (inflow capacity ≥ 1.5× outflow) and BINDING_SUSTAINED_DAYS (stock ≥ 3 days
+  // of outflow capacity). Fixture mirrors tick.test.ts's deploy-bottleneck case.
+  describe("issue #64: binding-stage bottleneck cue", () => {
+    function injectStrongDev(state: GameState): void {
+      state.decisions.push({ instanceId: "inst-dev", defId: "basic-dev" });
+      state.modifiers.push(
+        { id: "m-pull", source: "inst-dev", target: "pull", op: "add", value: 2 },
+        { id: "m-fin", source: "inst-dev", target: "finish", op: "add", value: 2 },
+      );
+    }
+
+    it("pins the sustained-window thresholds used by the cue", () => {
+      expect(BINDING_INFLOW_RATIO).toBe(1.5);
+      expect(BINDING_SUSTAINED_DAYS).toBe(3);
+    });
+
+    it("does not cue on a fresh balanced loop (no noise)", () => {
+      const content = emptyContent();
+      const state = initialState(content);
+      expect(bindingBottleneckStage(state, content)).toBeNull();
+      const svg = loopDiagramSvg(state, content);
+      expect(svg).not.toContain("capacity-bound");
+      expect(svg).not.toContain('data-binding="true"');
+      expect(svg).toContain('aria-label="Delivery loop"');
+    });
+
+    it("cues Done as capacity-bound when finish outruns deploy and Done has piled up", () => {
+      const content = fullDecisionsContent();
+      const e = new Engine(content);
+      injectStrongDev(e.getState() as GameState); // rates: pull 3, finish 3, deploy 1
+      for (let i = 0; i < 15; i++) e.tick(); // warm until Done ≥ 3 days of deploy
+      const state = e.getState();
+      expect(state.stocks.done).toBeGreaterThanOrEqual(BINDING_SUSTAINED_DAYS * 1);
+      expect(bindingBottleneckStage(state, content)).toBe("done");
+
+      const svg = loopDiagramSvg(state, content);
+      expect(svg).toContain("capacity-bound");
+      expect(svg).toContain('data-binding="true"');
+      expect(svg).toContain('data-binding-outflow="true"');
+      expect(svg).toContain('aria-label="Delivery loop, Done capacity-bound"');
+      // Machine-side only: no shop / unlock auto-navigation hooks.
+      expect(svg).not.toContain("ci-cd");
+      expect(svg).not.toContain("data-open-shop");
+      expect(svg).not.toContain("Alter the loop");
+    });
+
+    it("stops cueing Done once continuous deploy removes the Done stage", () => {
+      const content = fullDecisionsContent();
+      const e = new Engine(content);
+      const state = e.getState() as GameState;
+      injectStrongDev(state);
+      state.decisions.push({ instanceId: "inst-cd", defId: "ci-cd" });
+      for (let i = 0; i < 15; i++) e.tick();
+      // With ci-cd, Done never piles; equal pull/finish means no inProgress cue either.
+      expect(bindingBottleneckStage(e.getState(), content)).toBeNull();
+      expect(loopDiagramSvg(e.getState(), content)).not.toContain("capacity-bound");
+    });
+
+    it("cues In Progress when pull outruns finish and WIP has piled up", () => {
+      const content = emptyContent();
+      const state = initialState(content);
+      // Manufacture a clear inProgress bind without shopping: pull 3, finish 1,
+      // stock already past the sustained window.
+      state.baseRates.pull = 3;
+      state.baseRates.finish = 1;
+      state.stocks.inProgress = BINDING_SUSTAINED_DAYS * 1 + 1;
+      state.stocks.done = 0;
+      expect(bindingBottleneckStage(state, content)).toBe("inProgress");
+      const svg = loopDiagramSvg(state, content);
+      expect(svg).toContain("capacity-bound");
+      expect(svg).toContain('aria-label="Delivery loop, In Progress capacity-bound"');
+    });
+
+    it("does not cue when rates are imbalanced but the pile is still a blip", () => {
+      const content = emptyContent();
+      const state = initialState(content);
+      state.baseRates.pull = 3;
+      state.baseRates.finish = 1;
+      state.stocks.inProgress = 1; // < 3 days of finish capacity
+      expect(bindingBottleneckStage(state, content)).toBeNull();
+    });
+  });
 });
+
