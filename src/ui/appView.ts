@@ -86,6 +86,8 @@ export interface AppView {
 // separate sections so material stock numbers can update in place (flash)
 // without rebuilding the SVG wrappers every time a digit moves. Gamble reveal
 // is its own ephemeral section between stats and the loops.
+// Issue #40: Choices live in glanceable chrome (not the scrollable side rail)
+// so a Decision-needed interrupt stays reachable while shopping at speed.
 const STATS = "stats";
 const NEXT_GOAL = "next-goal";
 const DELIVERY_LOOP = "delivery-loop";
@@ -104,12 +106,15 @@ function pageScaffold(): string {
   // so pause/speed/reset stay reachable without scrolling past the loops.
   // Issue #65: next-goal sits with the glanceable chrome (below stats, above
   // loops) so the endless-run lean stays visible without opening Projects.
+  // Issue #40: choices interrupt sits with chrome (before loops) so pending
+  // decisions are not buried under Alter the loop / Events scroll.
   return `
     <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
     <button id="reset">Reset game</button>
     <div ${SECTION_ATTR}="${STATS}"></div>
     <div ${SECTION_ATTR}="${NEXT_GOAL}"></div>
     <div ${SECTION_ATTR}="${GAMBLE_REVEAL}"></div>
+    <div ${SECTION_ATTR}="${CHOICES}"></div>
     <div class="loops">
       <div class="delivery-column">
         <div class="panel"><h3>Delivery loop</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
@@ -124,7 +129,6 @@ function pageScaffold(): string {
         <div ${SECTION_ATTR}="${PROJECTS}"></div>
       </div>
       <div class="side">
-        <div ${SECTION_ATTR}="${CHOICES}"></div>
         <div ${SECTION_ATTR}="${LOG}"></div>
       </div>
     </div>
@@ -151,6 +155,9 @@ export function mountAppView(deps: AppViewDeps): AppView {
   const flash = createFlashController();
   let gambleReveal: GambleReveal | null = null;
   let gambleRevealTimer: ReturnType<typeof setTimeout> | null = null;
+  // Issue #40: track which pending challenges we have already soft-paused for
+  // so Resume is not immediately re-paused every frame while the choice waits.
+  let softPausedChoiceIds = new Set<string>();
 
   function clearGambleRevealTimer(): void {
     if (gambleRevealTimer !== null) {
@@ -179,6 +186,19 @@ export function mountAppView(deps: AppViewDeps): AppView {
     }
   }
 
+  /** Soft-pause once when a Decision-needed challenge newly appears (issue #40). */
+  function softPauseForNewChoices(pending: readonly PendingChoice[]): boolean {
+    const ids = pending.map((pc) => pc.challengeId);
+    const appeared = ids.filter((id) => !softPausedChoiceIds.has(id));
+    // Drop ids that are no longer pending so a later re-fire can soft-pause again.
+    softPausedChoiceIds = new Set(ids);
+    if (appeared.length === 0) return false;
+    if (engine.getState().paused) return false;
+    engine.pause();
+    deps.onAction();
+    return true;
+  }
+
   function renderDecisionsRegion(): void {
     const state = engine.getState();
     const ownedCounts = new Map<string, number>();
@@ -192,6 +212,8 @@ export function mountAppView(deps: AppViewDeps): AppView {
   }
 
   function render(): void {
+    // Soft-pause before painting so time controls show Resume on the same frame.
+    softPauseForNewChoices([...engine.getState().pendingChoices]);
     const state = engine.getState();
     // Issue #67: sync cockpit + delivery stats in place so .stat-flash can
     // finish without the string-memo path tearing the nodes down each tick.

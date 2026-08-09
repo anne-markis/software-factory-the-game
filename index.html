@@ -119,6 +119,23 @@
         color: var(--fg);
       }
       .gamble-reveal-outcome { color: var(--accent-amber); font-weight: bold; }
+      /* Issue #40: Decision-needed interrupt. Sticky on the section host so
+         shopping / Alter the loop cannot bury the choice while the day clock
+         is paused. Danger border matches prior Choices panel cue. */
+      [data-section="choices"]:not(:empty) {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        margin: 0 0 0.75rem;
+        background: var(--bg);
+      }
+      /* Higher specificity than later .panel { border; margin-bottom } so the
+         danger cue actually wins (same single-class specificity otherwise). */
+      .panel.choice-interrupt {
+        border-color: var(--accent-red);
+        margin-bottom: 0;
+      }
+      .choice-interrupt-item { margin-top: 0.35rem; }
       /* Issue #8: relocated stocks under the Delivery loop column. Flex
          wrap (not the 900px loops stack) so they stay inside that column
          at any width without introducing a horizontal scrollbar. */

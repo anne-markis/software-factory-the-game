@@ -288,10 +288,13 @@ export function renderChoicesScaffold(pending: readonly PendingChoice[], challen
       const buttons = def.choice.options
         .map((o) => `<button data-choice="${esc(def.id)}" data-option="${esc(o.id)}">${esc(o.label)}</button>`)
         .join(" ");
-      return `<div><strong>${esc(def.name)}</strong>: ${esc(def.description)} <em ${SECTION_ATTR}="${choiceCountdownSection(def.id)}"></em><br/>${buttons}</div>`;
+      return `<div class="choice-interrupt-item"><strong>${esc(def.name)}</strong>: ${esc(def.description)} <em ${SECTION_ATTR}="${choiceCountdownSection(def.id)}"></em><br/>${buttons}</div>`;
     })
     .join("");
-  return `<div class="panel" style="border-color:#c00"><h3>Decision needed</h3>${blocks}</div>`;
+  // Issue #40: class-based interrupt chrome (sticky host in index.html) replaces
+  // the old inline border so the panel reads as a persistent affordance, not a
+  // log line.
+  return `<div class="panel choice-interrupt" role="alert" aria-label="Decision needed"><h3>Decision needed</h3>${blocks}</div>`;
 }
 
 export function renderChoiceCountdown(pc: PendingChoice, day: number): string {
