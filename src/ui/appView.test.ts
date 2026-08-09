@@ -424,7 +424,7 @@ describe("appView click delegation on the stable root", () => {
     expect(h.actions).toBe(1);
   });
 
-  it("removes an owned decision through data-remove", () => {
+  it("removes an owned decision through data-remove after confirm (issue #16)", () => {
     const h = mount();
     // Buy every removable decision that is affordable until one shows Remove.
     let removeBtn: HTMLElement | null = null;
@@ -436,8 +436,34 @@ describe("appView click delegation on the stable root", () => {
     }
     expect(removeBtn).not.toBeNull();
     const owned = h.engine.getState().decisions.length;
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     removeBtn!.click();
+    expect(confirmSpy).toHaveBeenCalledWith(
+      "Remove this decision? One-time cost is not refunded.",
+    );
     expect(h.engine.getState().decisions.length).toBe(owned - 1);
+    expect(h.actions).toBeGreaterThan(0);
+    confirmSpy.mockRestore();
+  });
+
+  it("leaves owned decisions unchanged when remove confirm is canceled (issue #16)", () => {
+    const h = mount();
+    let removeBtn: HTMLElement | null = null;
+    for (const buy of Array.from(h.root.querySelectorAll<HTMLElement>("[data-buy]:not([disabled])"))) {
+      const live = h.root.querySelector<HTMLElement>(`[data-buy="${buy.dataset.buy}"]:not([disabled])`);
+      live?.click();
+      removeBtn = h.root.querySelector<HTMLElement>("[data-remove]");
+      if (removeBtn) break;
+    }
+    expect(removeBtn).not.toBeNull();
+    const before = structuredClone(h.engine.getState());
+    const actionsBefore = h.actions;
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    removeBtn!.click();
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    expect(h.engine.getState()).toEqual(before);
+    expect(h.actions).toBe(actionsBefore);
+    confirmSpy.mockRestore();
   });
 
   it("reports an engine error through onError instead of throwing", () => {

@@ -276,6 +276,13 @@ export function mountAppView(deps: AppViewDeps): AppView {
       }
       return;
     } else if (target.dataset.remove) {
+      // Issue #16 / FR-7.1: Remove is irreversible (modifiers dropped, one-time
+      // cost not refunded). Gate it behind the same native confirm pattern
+      // Reset already uses so a misclick on a dense Owned list cannot wipe a
+      // sunk-cost hire in one gesture.
+      if (!confirm("Remove this decision? One-time cost is not refunded.")) {
+        return;
+      }
       engine.removeDecision(target.dataset.remove);
     } else if (target.dataset.choice && target.dataset.option) {
       engine.resolveChoice(target.dataset.choice, target.dataset.option);
