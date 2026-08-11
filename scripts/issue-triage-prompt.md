@@ -106,13 +106,16 @@ reliability, mobile shop layout, confirmations, disabled-state copy
 next to Buy/Start.
 
 **P0.2 — Decision graph as curriculum map**
-Decision honesty and discoverability: requires/unlocks, synergies,
-tags, gamble/pre-buy copy vs real outcomes, unlock telegraphing
-(e.g. CI/CD), content/engine mismatch on decision effects.
+Decision honesty and discoverability; retire first-class tags/tracks;
+keep journey gates in JSON; gamble/pre-buy copy vs real outcomes;
+unlock telegraphing (e.g. CI/CD); content/engine mismatch on decision
+effects. See `docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md`.
 
 **P1.1 — Attractor completion**
-Making solo / startup / megacorp / dark factory feel like distinct
-emergent tracks (content density, track-gated challenges/projects).
+Historical title: was “peer tracks.” Prefer issues that deepen the
+dark-factory / era spine or meandering funding journeys — not new
+track taxonomies. If unsure, leave milestone empty rather than
+reviving solo/startup/megacorp as peer endgames.
 
 **P1.2 — Governors for reinforcing loops**
 New/legible balancing pressures on growth (debt, incidents, morale,
