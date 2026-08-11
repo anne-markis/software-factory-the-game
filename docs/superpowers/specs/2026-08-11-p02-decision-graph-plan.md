@@ -476,16 +476,64 @@ If I were a solo starting today:
 
 ### Open design questions (Studio only)
 
-1. **Single AI seat vs ladder:** one “coding assistant” card in Studio,
-   with Company opening “agents that run while you sleep”?
-2. **Income model:** which 2–3 money plays are Studio-core vs flavor?
-3. **Hire gate:** what must be true before `basic-dev` appears (runway
-   days? active income? completed contracts?)?
+1. ~~**Single AI seat vs ladder**~~ → **Settled (B):** one AI seat in
+   Studio = keep **agent**, remove **copilot**. Heavier agent fleet /
+   “runs while you sleep” is later-era depth, not a second day-one card.
+2. ~~**Income model**~~ → **Settled (A):** Studio money spine =
+   **contracts** + **subscription** + **one-time product purchases**
+   (marketplace / productized download — keep the fiction generic).
+   Donations/ads are not core. See §5.2.1 for the no-users compounding
+   assumption.
+3. ~~**Hire gate**~~ → **Settled (C):** hire stays **visible** in the
+   shop; no hide-until-ready gate. Player judges runway/budget. (May
+   still teach via copy / soft cues later — not a hard lock.)
 4. **What replaces standup** if coordination isn’t a $ burn for one
    person — burnout? context-switch? “always-on Slack”?
+5. **Subscription / one-time product:** exact JSON shape for compounding
+   income (ramp rate, cap at era boundary, interaction with challenges).
 
-Next pass: pick money plays and day-zero plays until the Studio shop
-feels like a real solo week-one, then wire gates.
+### 5.2.1 Settled: Studio money without a user stock
+
+**Problem:** real subscriptions and one-time product sales depend on
+users. We will **not** model a users stock (or funnel chrome).
+
+**Assumption (Studio):** product income is a **content-defined compounding
+drip** that trends upward over time while the decision stays owned, until
+the player leaves Studio (era boundary is a natural reset/re-spec point
+for Company-scale economics).
+
+Working shape (names TBD, must stay in JSON):
+
+- **Subscription** decision: unlocks `incomePerDay` that **ramps** (e.g.
+  `+X per day` or multiplicative crawl) toward a Studio **cap** — fiction
+  = “users accumulate,” mechanics = time-based compound without entities.
+- **One-time product / marketplace** decision: either (i) periodic
+  burst sales on a content schedule/probability, or (ii) a slower ramp
+  with lumpier variance than subscription — still no user count.
+- **Contracts:** keep as project stock/flow money (already real).
+
+Design pressures:
+
+- Caps and ramp rates are **era-scoped** so Studio money cannot silently
+  fund Megacorp play without crossing the era gate.
+- Challenges can slap the drip (bad launch, refund spike, outage) without
+  needing users.
+- Player-facing copy can say “customers” / “buyers”; engine only sees
+  income modifiers + time.
+
+### 5.2.2 Settled so far (Studio shop spine)
+
+| Keep / add | Drop / defer |
+| --- | --- |
+| **agent** as the one AI seat | **copilot** (remove) |
+| **contracts** (projects) | support-retainer as primary solo income |
+| **subscription** (new, compounding drip) | standup-as-$/d (replace or cut — open) |
+| **one-time product / marketplace** (new) | swarm / self-learning / eng-manager as Studio-default |
+| **basic-dev** visible anytime (player’s risk) | hide-until-ready hire gate |
+
+Next Studio pass: day-zero non-money plays (tooling, tests/CI, focus cost
+instead of standup) and how subscription vs one-time product should
+*feel* different under the same no-users rule.
 
 ---
 
