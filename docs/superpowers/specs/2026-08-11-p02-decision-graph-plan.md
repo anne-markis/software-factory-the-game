@@ -401,6 +401,94 @@ agent swarm ladder or enterprise contracts to leave Studio.
 
 ---
 
+## 5.2 Studio from scratch (solo-dev-today)
+
+**Status:** redesign brainstorm. Shipped Studio-shaped content above is
+**reference only** — not a keep-list. Start from “I am a solo developer
+starting today” and rebuild plays + money.
+
+### Critiques of the shipped tree (accepted as design pressure)
+
+1. **Copilot vs agent** — mechanically both are “pay upkeep → multiply
+   finish, add debt.” Copilot: ×1.15 finish, ×1.05 debt, $2/d, unique.
+   Agent: ×1.20 finish, ×1.20 debt, $4/d, opens harness ladder. The
+   lived difference is thin; the ladder is the only real distinction.
+   Not good enough for Studio.
+2. **Money options** — `support-retainer` (+$8/d, −5% rates) is a weak
+   / implausible primary for a solo. Missing subscription product,
+   donations/sponsors, ads, marketplace, etc.
+3. **Standup costs money** — $3/d for a ritual that is mostly time, not
+   cash. Smells wrong for Studio (and often for Company).
+4. **Hiring out of the box** — another full-time dev at $7–12/d on a
+   $10k / $20 base-burn runway is a late Studio or Company move, not an
+   immediate play. First shop should not center on headcount.
+
+### First-principles prompt (keep asking)
+
+If I were a solo starting today:
+
+- What do I buy/set up in week 1?
+- How do I expect to make money before I can hire?
+- What breaks (laptop, burnout, scope, deps, cloud bill)?
+- When does “second human” or “serious agent fleet” become rational?
+
+### Draft Studio plays (sketch — not cards yet)
+
+**Immediate (day-zero / first weeks)**
+
+| Play | Why it’s real | Systems hook (possible) |
+| --- | --- | --- |
+| Ship the first thing | You’re already on a contract / building an MVP | Existing delivery loop + first-contract |
+| Editor / tooling | Real first spend | Small permanent rate bump |
+| Coding assistant (one clear AI seat) | Almost everyone tries one early | **One** AI-assist decision — merge/replace copilot+agent ambiguity |
+| Git / basic hosting | Table stakes | Maybe free/flavor, or tiny cost + unlocks deploy path |
+| Domain / landing page | Needed to sell anything | Tiny cost; unlocks some income paths |
+| Time / focus (not standup-as-$/d) | Solo cost is attention | Maybe temporary rate tradeoffs, not payroll |
+
+**Early money (before hire)**
+
+| Play | Why it’s real | Systems hook (possible) |
+| --- | --- | --- |
+| Client contract (project) | Still primary for many solos | Keep projects; size them to Studio |
+| Productized service / retainer | Possible later; not default day one | Optional, gated |
+| Subscription / SaaS drip | Modern solo path | New income stock/effect: $/d with ops load |
+| Donations / sponsors / “buy me a coffee” | Indie reality | Low $/d, reputation or viral coupling |
+| Ads / affiliate | Common, often unfun | $/d with reputation or attention tax |
+| Marketplace / template sales | One-shot or slow drip | Burst budget or small income |
+| Went viral / launched on HN | Breakthrough | Studio→Company exit OR cash+rep spike |
+
+**Later Studio (still alone or almost)**
+
+| Play | Why it waits | Systems hook (possible) |
+| --- | --- | --- |
+| Tests → CI | After you’ve felt Done/ship pain | Keep as structural teach |
+| DDoS / basic hardening | After you’re public | Keep light |
+| Refactor when debt hurts | Reactive | Keep |
+| Contractor / part-time help | Cheaper than FTE | Maybe before full hire |
+| First hire | Expensive; needs runway + demand | Gate on budget/income/reputation — not open day one |
+| Heavier agent / harness | After assistant proves itself | Distinct from “one AI seat”; cost + debt governors |
+
+**Explicitly not Studio-default**
+
+- Eng manager, senior ladder, agent swarm, self-learning, redesign-rebuild
+- Standup-as-daily-cash-burn
+- Parallel near-duplicate AI cards
+
+### Open design questions (Studio only)
+
+1. **Single AI seat vs ladder:** one “coding assistant” card in Studio,
+   with Company opening “agents that run while you sleep”?
+2. **Income model:** which 2–3 money plays are Studio-core vs flavor?
+3. **Hire gate:** what must be true before `basic-dev` appears (runway
+   days? active income? completed contracts?)?
+4. **What replaces standup** if coordination isn’t a $ burn for one
+   person — burnout? context-switch? “always-on Slack”?
+
+Next pass: pick money plays and day-zero plays until the Studio shop
+feels like a real solo week-one, then wire gates.
+
+---
+
 ## 6. Working definition of done (draft)
 
 P0.2 is **done enough to close** when:
