@@ -54,15 +54,14 @@ teaches a distinct systems idea, and until fun no longer fights the model.
 
 ### Meta direction
 
-1. **One long arc: dark factory → far future (Paperclips cadence).**
-   Early play is a boring software delivery shop. Automation and “dark
-   factory” are a false summit: expensive, funded by whatever meandering
-   path got you the money (hires, process, contracts, later funding-shaped
-   stopovers). Past that summit the horizon keeps moving — increasingly
-   sci-fi, alien choices, world-eating consequence — without a win screen.
-   Hiring, process, and growth-shaped detours are resource journeys, not
-   peer endgame “tracks.” Whimsy and SV satire belong later; loop honesty
-   stays in stocks, flows, and delays.
+1. **One long arc: scale eras → far future (Paperclips cadence).**
+   Early play is a credible **small business** software shop (~$10k start;
+   hires *and* early agents/assistants belong here — do not gate “AI” as
+   its own era). Eras advance by **scale of cost** (grind to a budget/
+   reputation gate, or breakthrough events like funding/viral), one-way.
+   Words like megacorp may reappear as **size rungs**, not parallel
+   tracks. Weirdness and world-eating intensify at later scale; loop
+   honesty stays in stocks, flows, and delays.
 
 2. **Treat the decision graph as the curriculum map (content-owned).**
    Requires / unlocks, synergies, costs, and categories — expressed in JSON
@@ -106,13 +105,14 @@ teaches a distinct systems idea, and until fun no longer fights the model.
 
 ### What "done enough" for medium term feels like
 
-A thoughtful player can meander through funding and survival choices, reach
-a dark-factory false summit that felt earned, and articulate at least a few
-Meadows-shaped insights in their own words — without the game having
-explained systems theory to them. Reading the decision tree should feel
-like reading commitments: early choices visibly open later eras and close
-others. Fun holds across a long session because bottlenecks move, recovery
-is possible but not free, and the next era step is always expensive enough
+A thoughtful player can meander inside a scale era, cross into the next
+by grind or breakthrough, hit false summits that felt earned, and
+articulate at least a few Meadows-shaped insights in their own words —
+without the game having explained systems theory to them. Reading the
+decision tree should feel like reading commitments at *this* scale:
+early choices visibly open later costs and close others. Fun holds
+across a long session because bottlenecks move, recovery is possible but
+not free, and the next era’s entry is always expensive or lucky enough
 to stay interesting.
 
 ---

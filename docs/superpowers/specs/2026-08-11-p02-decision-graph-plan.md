@@ -19,38 +19,46 @@ alongside simplification rather than replacing it.
 
 ### Long arc
 
-- **One long game:** automation → dark factory → increasingly sci-fi /
-  world-eating consequences (Paperclips-shaped cadence).
-- **False summit:** reaching today’s “self-learning agents” (or equivalent)
-  should feel like arrival, then the horizon keeps moving. No win screen;
-  endless play with eras that take a long time to *earn*.
-- **Tone:** early game stays a boring software delivery shop. Weirdness,
-  SV satire, and deep futurism leak in **later**, not as day-one flavor.
+- **One long game** with Paperclips cadence: long grinds between
+  *scale* thresholds, then newly strange choices open. No win screen.
+- **Eras = progression of scale (cost of play), not capability tracks.**
+  Demarcate by what a factory can afford and what problems that scale
+  invites — not by “pre-agent SDLC” vs “automation.” Starting from zero
+  today, agents/coding assistants belong in the first era alongside
+  hires, git, and (often later) CI/CD.
+- **Tone:** early game is a credible **small business** software shop
+  (starting ~$10k budget matches what you can buy). Weirdness, SV satire,
+  and deep futurism intensify as scale eras advance — not as day-one
+  flavor, and not gated behind “unlocking AI.”
+- **False summits** still exist (e.g. “we made it / dark factory online”)
+  but they sit on the **scale ladder**, not on a parallel automation
+  track. Horizon keeps moving after each summit.
 - **Whimsy** on scenarios and late choices; **systems honesty** stays in
   stocks, flows, delays, and governors.
 
-### Not tracks
+### Eras vs old “tracks”
 
-- **No first-class tracks or tags** as a player-facing or curriculum
-  concept. Formal solo / startup / megacorp / darkfactory “attractors”
-  as peer endgames are retired.
-- **Dark factory far-future is the spine.** Other paths (hiring humans,
-  process discipline, funding-shaped growth, staying lean) are
-  **meandering ways to gather resources and survive**, not alternate
-  campaigns on the same horizon.
-- **Startup / megacorp** (when/if content returns) = methods of gaining
-  money and scale along the journey, stopovers that can feed the dark
-  factory arc — not mutually exclusive routes and not peer endgames.
-- True late automation should be **expensive**. How the player funds it
-  is gameplay.
+- **No first-class tracks or tags** as peer endgames (solo / startup /
+  megacorp / darkfactory as mutually exclusive campaigns are retired).
+- **Eras replace that vocabulary as a one-way progression ladder** —
+  similar *names* may reappear (e.g. megacorp) but they mean **how big
+  you are**, not which parallel fantasy you picked.
+- **Within an era:** meander (hire-heavy, agent-heavy, process-heavy,
+  viral/funding luck). **Between eras:** irreversible entry once scale
+  criteria (or lucky breakthrough rolls) fire.
+- Late / expensive world-eating content is gated by **being able to pay
+  for it at that scale**. How you got the money is gameplay.
 
 ### Parked for a later pass
 
 - Headcount (`human: true`) vs any leftover “human” labeling — revisit
   when touching hire/challenge content, not in the first simplification
   cut.
-- Full era content authorship (post–self-learning sci-fi ladder) — after
-  the graph is simpler and content-driven.
+- Exact dollar thresholds past the first gate, breakthrough-roll design
+  (“get funded”, “went viral”, …), and late era names — brainstorm in
+  §5; ship after simplify + packaging.
+- Full late-era sci-fi content authorship — after the graph is simpler
+  and content-driven.
 
 ---
 
@@ -90,23 +98,33 @@ Proposed shape (names flexible at implementation):
 ```text
 content/
   start.json                 # global constants, seed stocks (era-agnostic)
-  eras.json                  # ordered era ids + entry criteria refs
+  eras.json                  # ordered era ids + entry criteria (OR-able paths)
   eras/
-    delivery/
+    small-business/          # scale era 0 — ~$10k start fits the shop
       meta.json              # id, name, player-facing blurb (optional)
-      decisions.json
+      decisions.json         # hires AND agents/copilot AND process, etc.
       challenges.json
-      projects.json          # optional; may stay global longer
-    automation/
+      projects.json
+    medium-business/         # name TBD — see §5
       ...
-    dark-factory/
+    big-business/
+      ...
+    megacorp/
       ...
 ```
 
-**Entry criteria** live in `eras.json` (or each era’s `meta.json`), e.g.
-owned decision ids, budget floor, reputation floor, stock thresholds —
-same predicate vocabulary as challenges where possible. Crossing criteria
-sets `eraId` forward only.
+**Do not** split eras by capability (e.g. “delivery” vs “automation”).
+Agents belong in small-business content when costs fit that scale.
+
+**Entry criteria** live in `eras.json` (or each era’s `meta.json`).
+Prefer **OR of paths**, e.g. any of:
+
+- slow grind: budget ≥ N (working example out of small-business: ~$5M)
+  and/or reputation / contract tier floors;
+- breakthrough rolls / challenges: “got funded”, “went viral”, etc.
+  (exact events TBD — content, not engine special cases).
+
+Crossing any listed path sets `eraId` forward only.
 
 **Load merge rule (engine):** active content = `start` + **current era’s**
 decisions/challenges/projects (plus any explicitly marked “carry”
@@ -176,72 +194,92 @@ for eras (docs/content shape only — not full sci-fi content).
 
 | ID | Candidate issue | Why |
 | --- | --- | --- |
-| **E-1** | Split content into per-era JSON + `eras.json` index with one-way entry criteria | Implements §2.1. First cut can put *all current* cards in `delivery` (or `delivery` + `automation`) with a single forward gate stub so the loader/viewer are real before sci-fi content exists. |
-| **E-2** | Inventory which current decisions are spine vs funding-detour vs cut candidates | Prep for meandering resource journeys; may delete thin solo-as-track cards or rehome them as plain early tools. |
-| **V-1** | Local content-graph viewer (`make graph`) | Implements §2.2. Reads era JSON; shows requires / costs / era-entry edges. Authoring aid only. |
+| **E-1** | Split content into per-era JSON + `eras.json` with one-way **scale** entry criteria | Implements §2.1. First cut: put *all current* cards in `small-business`; stub next era + entry (budget floor and/or breakthrough placeholder) so loader/viewer are real before late-scale content exists. **Not** a delivery/automation split. |
+| **E-2** | Inventory which current decisions fit small-business costs vs belong at later scale | Retune or move cards whose prices break the ~$10k-era fantasy; agents/copilot stay eligible early if costs fit. |
+| **V-1** | Local content-graph viewer (`make graph`) | Implements §2.2. Reads era JSON; shows requires / costs / era-entry edges (including OR entry paths). Authoring aid only. |
 
 ### Explicitly out of scope for P0.2 issue cut
 
-- Full post–self-learning sci-fi decision/challenge wave
-- Startup/megacorp funding content as a real stopover (design OK; ship later)
+- Full late-scale / sci-fi decision/challenge wave
+- Final names and $ thresholds for eras after the first gate (brainstorm OK)
 - Player-optional / “factory without you” structure changes (long-term)
 - Headcount flag redesign (parked)
 - Reopening P0.1 cockpit work
 - Shipping the graph viewer inside the player-facing game UI
+- Capability-based era splits (delivery vs automation) — rejected
 
 ---
 
-## 5. Eras brainstorm (decision ladder)
+## 5. Eras brainstorm (scale ladder)
 
-Working sketch. Early = boring shop; weirdness later. **Within** an era,
-many purchases meander; **between** eras, entry is gated and irreversible.
+**Principle:** eras mark **how big the business is** (cost of decisions,
+stakes of challenges, size of contracts). They do **not** mark “you
+unlocked AI.” Capability mix (humans, agents, process) meanders *inside*
+each era. Old “tracks” tried to be parallel plays; eras are the same
+family of *identity words* used as **progression levels** instead.
+
+**Within** an era: many purchases and lucky events. **Between** eras:
+gated, irreversible entry.
 
 ```mermaid
 flowchart LR
-  subgraph E0["Era 0 — Delivery shop"]
-    hire[Hires / tooling]
-    process[Test suite → CI/CD]
-    contracts[Contracts / reputation]
-    hire --> contracts
-    process --> contracts
+  subgraph SB["Small business — ~$10k start"]
+    mix[Hires · agents/copilot · process · contracts]
   end
 
-  subgraph E1["Era 1 — Automation"]
-    agent[Agent ladder]
-    mishaps[Absurd agent mishaps]
-    agent --> mishaps
+  subgraph MB["Next scale — name TBD"]
+    bigger[Bigger shop · bigger bills · new problems]
   end
 
-  subgraph E2["Era 2 — Dark factory false summit"]
-    summit[Self-learning / factory online]
+  subgraph BB["Big business — name TBD"]
+    enterprise[Enterprise stakes]
   end
 
-  subgraph E3["Era 3 — Post-human ops"]
-    post[Humans optional · player role shifts]
+  subgraph MC["Megacorp — name TBD"]
+    mega[Institutional scale]
   end
 
-  subgraph E4["Era 4 — Alien / deep futurism"]
-    alien[Mystery choices · SV satire · world-scale]
+  subgraph LATE["Later — names TBD"]
+    alien[Deep futurism · world-eating]
   end
 
-  E0 -->|"expensive entry (JSON criteria)"| E1
-  E1 -->|one-way| E2
-  E2 -->|horizon moves| E3
-  E3 -->|one-way| E4
+  SB -->|"OR: grind to ~$5M · got funded · went viral · …"| MB
+  MB -->|one-way scale gate| BB
+  BB -->|one-way| MC
+  MC -->|one-way| LATE
 ```
 
-| Era | Player-facing feel | Rough content role |
-| --- | --- | --- |
-| **0 — Delivery shop** | Hire, ship, debt, CI/CD, contracts. Realistic SDLC toy. | Current core loop; keep legible. Meander for money. |
-| **1 — Automation** | Agents, harness, swarm; compute/debt bite; absurd mishaps begin. | Current agent ladder; honesty fixes (#32). Entry should feel costly. |
-| **2 — False summit** | “Dark factory” online — feels like endgame. | Today’s self-learning (or successor); then reveal the horizon moves. |
-| **3 — Post-human ops** | Humans optional/liability; player role starts to shift. | New JSON decisions + governors; expensive. |
-| **4 — Alien / deep futurism** | Paperclips-energy mystery choices; SV satire; world-scale absurdity. | Long-horizon content; whimsy OK if loops stay honest. |
+| Era (working name) | Scale feel | What’s in the JSON shop | How you enter the *next* era |
+| --- | --- | --- | --- |
+| **Small business** | Starting $10k makes sense; local clients; payroll hurts | Current-ish loop: hires **and** early agents/copilot, test/CI/CD, debt work, small contracts. Order is meander (assistant-before-CI is fine). | **OR paths:** slow traditional (larger projects/reputation → e.g. **~$5M** banked); breakthrough rolls (“got funded”, “went viral”, … TBD). |
+| **Medium business?** | Grown-up burn; serious vendors; still founder-visible | Higher-cost decisions; scarier incidents; mid-tier contracts. Agents scale up *because money allows*, not because a new track opened. | Budget / reputation / event OR — thresholds TBD. |
+| **Big business?** | Org chart gravity; compliance-shaped pain | Expensive process, platform, headcount/compute at real scale. | TBD |
+| **Megacorp?** | Institutional; you are a system inside a system | Political/process governors; huge contracts; satire seeds OK. | TBD |
+| **Later…** | False summit then alien / world-eating | Sci-fi and Paperclips-energy mystery; dark-factory *consequences* at planetary cost. | Long grind; choices feel newly strange. |
 
-Funding detours (growth rounds, “megacorp” carve-outs, grind contracts)
-live **inside** early eras as ways to afford the next era’s entry gate,
-not as parallel endgames. Once the gate fires, the prior era’s shop
-rotates out (one-way).
+### Naming notes (open)
+
+“Medium / big business” is plain but clear. Alternatives to brainstorm:
+
+- **Scale language:** Studio → Firm → Enterprise → Megacorp → …
+- **Money language:** Bootstrap → Funded → Scale-up → Public / Megacorp → …
+- **Factory language:** Garage factory → Floor → Campus → Conglomerate → …
+
+Prefer names that read as **size**, not as a chosen fantasy. “Startup”
+as an *era name* is awkward if funding is an *entry roll* into the next
+era — better as an event (“got funded”) than as a rung label.
+
+### Breakthrough entries (open, content later)
+
+Lucky / high-variance OR paths out of small business (and maybe later):
+
+- Got funded (term sheet / round)
+- Went viral (reputation + inbound cash)
+- Acqui-hire / acqui-exit partial (maybe too early)
+- Whale contract signed
+
+Exact design deferred; schema should allow **multiple OR entry
+predicates** per era so grind and luck both work without engine forks.
 
 ---
 
