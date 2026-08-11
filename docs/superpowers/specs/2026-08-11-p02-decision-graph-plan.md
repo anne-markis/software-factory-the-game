@@ -605,7 +605,7 @@ Shipped today (flat, not era-aware):
 
 | Working project | Size (sketch) | Role |
 | --- | --- | --- |
-| **Launch beta release** | **~300** | **Always the start project.** Finish → users begin accruing. Teaches the loop fast. |
+| **Launch beta release** | **~300** | **Always the start project; $0 upfront.** Finish → users begin + **modest cash bonus (Model B)**. |
 | **Ship v1 / public launch** | ~800–1500? | Grows users harder; may pair with (but not auto-unlock) subscription / one-time product buys. |
 | **Tiny client gig** | **~100–500** | Optional cash inflow + **positive reputation**. Competes with beta/v1 via context-switch tax (slower main progress). |
 
@@ -638,36 +638,31 @@ those are **Company** (or later) shapes.
 ### Settled (Studio projects)
 
 1. **Day one:** start on **Launch beta** only as the initial in-flight
-   project. **Tiny client gigs (100–500 pts)** may be offered/startable
-   when the player needs cash; they add **reputation** and slow main
-   product progress via concurrency tax.
+   project (****no upfront cost**** — game starts on it). **Tiny client
+   gigs (100–500 pts)** may be offered/startable for cash + reputation;
+   they slow main product progress via concurrency tax. **Not
+   mandatory** — see solvency rule below.
 2. **Sub / one-time product:** **separate buys** for now. Judge unlock
    timing in a mockup — not locked to beta completion.
+3. **Own-product cash — Model B (hybrid), for now:** finishing beta/v1
+   grants a **modest completion bonus** (launch buzz / early sales
+   cushion) **plus** users. Ongoing scale still comes from subscription /
+   one-time product cards reading `users`. Revisit after mockup if B
+   makes monetization feel too optional.
 
-### Open — own-product cash (expanded)
+**Studio solvency rule (settled):** with starting budget (~$10k) and base
+burn, the player must be able to **finish Launch beta without taking any
+tiny gig** and without buying monetization. Tiny gigs are optional —
+either a bridge toward affording monetization cards, or miscellaneous
+cash/rep inflows — never a soft-required tax on the tutorial.
 
-**Question 3, expanded:** When you finish **Launch beta** / **Ship v1**,
-what should hit the **budget** stock?
+### Open (narrow)
 
-These are different lessons:
-
-| Model | On completing beta/v1 you get… | Where ongoing cash comes from | Feels like | Risk |
-| --- | --- | --- | --- | --- |
-| **A. Users-first** | Little or **no** completion payout (maybe tiny runway crumb). Reward = **users** (+ a little rep). | Only after buying **subscription** / **one-time product**, which read `users`. | “I shipped a product; now I have to monetize.” Classic indie. | Player can launch, get users, and still go broke if they never buy a monetization card or take gigs. Harsh but clear dual loop. |
-| **B. Hybrid** | Modest one-time bonus (launch buzz / early sales baked in) **plus** users. | Same product cards for the drip/bursts; bonus is a cushion. | “Launch puts a little money in the bank; monetization scales it.” | Softens the teach; might make monetization cards feel optional too long. |
-| **C. Client-shaped product** | Fat `payoutPerPoint` + completion bonus like today’s contracts. | Product cards are gravy on top. | Beta plays like a paid gig that also happens to create users. | Blurs the two families; player may ignore subscription forever because shipping projects already prints money. |
-
-**Related knobs (same decision):**
-
-- Does beta cost **upfront** cash (domain, hosting) or is it free to start?
-- Do tiny gigs remain the **intended** cash bridge until monetization,
-  or should launch itself refill runway?
-- If A: UI must make “you have users but no monetization” scream
-  (otherwise it feels like a bug).
-
-**Not deciding yet** — pick A/B/C (or a variant) when mocking Studio.
-Default lean to discuss: **A or light B**, so client gigs and product
-monetization stay distinct loops.
+- Exact beta completion bonus $ and initial user grant on launch.
+- Tiny-gig payout band so they stay tempting but skippable.
+- When subscription / one-time appear in the shop relative to beta
+  (mockup).
+- Standup replacement; day-zero non-money decisions (tooling, CI, …).
 
 ---
 
