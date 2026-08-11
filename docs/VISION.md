@@ -208,9 +208,9 @@ first; without it, nobody stays long enough to learn.
   graph and resource pressure; the dark-factory far future is the long
   spine, not one peer campaign among many.
 - **The decision graph is the curriculum map — and it lives in JSON.**
-  Grow depth and consequence before catalog width; shop sprawl without
-  era pull is not progress. Prefer content predicates over story-aware
-  engine code.
+  Prefer per-era content bundles and content-defined, one-way era entry
+  over story-aware engine code. Grow depth and consequence before
+  catalog width; shop sprawl without era pull is not progress.
 
 ---
 

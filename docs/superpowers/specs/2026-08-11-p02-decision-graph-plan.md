@@ -57,17 +57,83 @@ alongside simplification rather than replacing it.
 ## 2. Architectural goals
 
 1. **Journey graph lives in JSON.** Requires / unlocks / costs / effects /
-   challenge gates / project gates should express progression. Prefer new
-   content fields + generic engine predicates over TypeScript that knows
-   story beats or track names.
+   challenge gates / project gates / **era entry** should express
+   progression. Prefer content fields + generic engine predicates over
+   TypeScript that knows story beats or track names.
 2. **Simplify before lengthening.** Remove first-class track/tag machinery
-   and docs drift *before* adding multi-era content, so longer journeys
-   do not grow on a dual human/tag/track vocabulary.
-3. **Engine stays story-ignorant.** No `currentTrack`, no era enum in the
-   tick unless it is a content-derived stock/flag. Eras are an authoring
-   and pacing idea expressed through the decision/challenge/project graph.
-4. **Existing content is not sacred.** Cards, tags, and thin branches may
+   and docs drift *before* splitting into multi-era content, so longer
+   journeys do not grow on a dual human/tag/track vocabulary.
+3. **Eras are first-class in content, not in story code.** Each era is its
+   own JSON (bundle or folder — see §2.1). The engine may hold
+   `state.eraId` (or equivalent) read from content and advance it when
+   content-defined entry criteria fire. It must not hardcode era names,
+   flavor, or per-era special cases in the tick.
+4. **Era transitions are one-way.** Many steps may lead *into* an era;
+   once entered, the player cannot return to a prior era’s shop/pool.
+   Prior owned effects may still apply (or be retired by content rules) —
+   the irreversible part is **which era’s decision/challenge graph is
+   live**, not necessarily wiping history.
+5. **Authoring visibility:** a light local graph viewer reads the same
+   JSON and shows decisions → requires/criteria → era edges. Framework-
+   only; stand up with `make graph` (or similar). Not part of the player
+   game UI.
+6. **Existing content is not sacred.** Cards, tags, and thin branches may
    be deleted or rewritten when they fight the spine.
+
+### 2.1 ADR — Per-era JSON layout (proposed)
+
+**Decision:** one content bundle per era; a small index lists order and
+entry criteria.
+
+Proposed shape (names flexible at implementation):
+
+```text
+content/
+  start.json                 # global constants, seed stocks (era-agnostic)
+  eras.json                  # ordered era ids + entry criteria refs
+  eras/
+    delivery/
+      meta.json              # id, name, player-facing blurb (optional)
+      decisions.json
+      challenges.json
+      projects.json          # optional; may stay global longer
+    automation/
+      ...
+    dark-factory/
+      ...
+```
+
+**Entry criteria** live in `eras.json` (or each era’s `meta.json`), e.g.
+owned decision ids, budget floor, reputation floor, stock thresholds —
+same predicate vocabulary as challenges where possible. Crossing criteria
+sets `eraId` forward only.
+
+**Load merge rule (engine):** active content = `start` + **current era’s**
+decisions/challenges/projects (plus any explicitly marked “carry”
+globals if we need them). Prior-era decision *definitions* need not stay
+in the shop; owned instances already on the save remain until removed by
+normal rules unless content says otherwise.
+
+**Rejected for now:** single monolithic `decisions.json` with an `era`
+field on every card (harder to visualize/author per act); TypeScript
+era enums; player-facing “pick your era” modes.
+
+### 2.2 ADR — Graph viewer (proposed)
+
+**Decision:** separate tiny static tool under something like
+`tools/content-graph/`, not wired into the game shell.
+
+- Reads era JSON via the same Zod parse path (or a thin shared loader).
+- Renders nodes (decisions) and edges (`requires`, synergy `ifOwned`,
+  era-entry edges).
+- Shows criteria text on nodes/edges (cost, requires, era entry).
+- Local only: `make graph` → serve on a localhost port (Vite or
+  static). No deploy requirement for v1.
+- Framework-light: plain HTML/CSS/JS or minimal Vite page; graph layout
+  can start as layered DAG (era columns × require tiers), not a heavy
+  editor.
+
+Candidate issue **V-1** below.
 
 ---
 
@@ -106,12 +172,13 @@ for eras (docs/content shape only — not full sci-fi content).
 | **#32** | Agent harness synergy honesty. Trust on the automation ladder. |
 | **#47** | Hire gamble downside telegraph. Early shop stays “boring but honest.” |
 
-### Could — prep for longer eras (no full content wave yet)
+### Could — era packaging + authoring tools (after simplify)
 
 | ID | Candidate issue | Why |
 | --- | --- | --- |
-| **E-1** | Sketch era ladder in content comments or a thin `docs/` era outline only | Capture boring → false summit → post-human → alien/futurism as authoring guidance; **do not** implement full sci-fi cards in P0.2 unless a tiny seed is needed to prove JSON gating. |
+| **E-1** | Split content into per-era JSON + `eras.json` index with one-way entry criteria | Implements §2.1. First cut can put *all current* cards in `delivery` (or `delivery` + `automation`) with a single forward gate stub so the loader/viewer are real before sci-fi content exists. |
 | **E-2** | Inventory which current decisions are spine vs funding-detour vs cut candidates | Prep for meandering resource journeys; may delete thin solo-as-track cards or rehome them as plain early tools. |
+| **V-1** | Local content-graph viewer (`make graph`) | Implements §2.2. Reads era JSON; shows requires / costs / era-entry edges. Authoring aid only. |
 
 ### Explicitly out of scope for P0.2 issue cut
 
@@ -120,25 +187,61 @@ for eras (docs/content shape only — not full sci-fi content).
 - Player-optional / “factory without you” structure changes (long-term)
 - Headcount flag redesign (parked)
 - Reopening P0.1 cockpit work
+- Shipping the graph viewer inside the player-facing game UI
 
 ---
 
-## 5. Eras brainstorm (pacing, not tickets yet)
+## 5. Eras brainstorm (decision ladder)
 
-Working sketch for later content waves. Early = boring shop; weirdness
-later. Each step should take a long time to become playable.
+Working sketch. Early = boring shop; weirdness later. **Within** an era,
+many purchases meander; **between** eras, entry is gated and irreversible.
+
+```mermaid
+flowchart LR
+  subgraph E0["Era 0 — Delivery shop"]
+    hire[Hires / tooling]
+    process[Test suite → CI/CD]
+    contracts[Contracts / reputation]
+    hire --> contracts
+    process --> contracts
+  end
+
+  subgraph E1["Era 1 — Automation"]
+    agent[Agent ladder]
+    mishaps[Absurd agent mishaps]
+    agent --> mishaps
+  end
+
+  subgraph E2["Era 2 — Dark factory false summit"]
+    summit[Self-learning / factory online]
+  end
+
+  subgraph E3["Era 3 — Post-human ops"]
+    post[Humans optional · player role shifts]
+  end
+
+  subgraph E4["Era 4 — Alien / deep futurism"]
+    alien[Mystery choices · SV satire · world-scale]
+  end
+
+  E0 -->|"expensive entry (JSON criteria)"| E1
+  E1 -->|one-way| E2
+  E2 -->|horizon moves| E3
+  E3 -->|one-way| E4
+```
 
 | Era | Player-facing feel | Rough content role |
 | --- | --- | --- |
-| **0 — Delivery shop** | Hire, ship, debt, CI/CD, contracts. Realistic SDLC toy. | Current core loop; keep legible. |
-| **1 — Automation** | Agents, harness, swarm; compute/debt bite; absurd mishaps begin. | Current agent ladder; honesty fixes (#32). |
+| **0 — Delivery shop** | Hire, ship, debt, CI/CD, contracts. Realistic SDLC toy. | Current core loop; keep legible. Meander for money. |
+| **1 — Automation** | Agents, harness, swarm; compute/debt bite; absurd mishaps begin. | Current agent ladder; honesty fixes (#32). Entry should feel costly. |
 | **2 — False summit** | “Dark factory” online — feels like endgame. | Today’s self-learning (or successor); then reveal the horizon moves. |
 | **3 — Post-human ops** | Humans optional/liability; player role starts to shift. | New JSON decisions + governors; expensive. |
 | **4 — Alien / deep futurism** | Paperclips-energy mystery choices; SV satire; world-scale absurdity. | Long-horizon content; whimsy OK if loops stay honest. |
 
 Funding detours (growth rounds, “megacorp” carve-outs, grind contracts)
-plug into eras 0–2 as **ways to afford** later steps, not as parallel
-endgames.
+live **inside** early eras as ways to afford the next era’s entry gate,
+not as parallel endgames. Once the gate fires, the prior era’s shop
+rotates out (one-way).
 
 ---
 
@@ -154,9 +257,12 @@ P0.2 is **done enough to close** when:
    curriculum map (VISION + this plan + authoring guide agree).
 4. **Honesty tickets** #39, #32, #47 closed or explicitly deferred with
    reason on the milestone.
-5. **Journey extension path is clear:** a future era step can be added
-   primarily in `content/*.json` without new track enums in the engine.
-6. Tests + `npm run build` green; engine/UI boundary intact.
+5. **Era packaging path is clear:** either E-1 landed (per-era JSON +
+   one-way entry stub) or explicitly deferred with the ADR accepted and
+   a follow-up milestone noted — but authors must know the target layout.
+6. **Graph viewer:** V-1 landed or deferred with `make graph` stub noted;
+   preferred inside P0.2 so era splits are reviewable.
+7. Tests + `npm run build` green; engine/UI boundary intact.
 
 Full sci-fi ladder and funding-stopover content are **successors**, not
 blockers for closing P0.2.
