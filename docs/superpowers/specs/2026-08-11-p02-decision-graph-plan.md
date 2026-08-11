@@ -571,13 +571,58 @@ fallback only. Prefer users-after-launch.
 
 | Keep / add | Drop / defer |
 | --- | --- |
-| **agent** as the one AI seat | **copilot** (remove) |
-| **contracts** + **Launch beta ~300pts** (unlocks users) | support-retainer as primary solo income |
-| **subscription** + **one-time product** (priced off **users**) | standup-as-$/d (replace or cut — open) |
-| **users** stock (0 until beta launch) | swarm / self-learning / eng-manager as Studio-default |
-| **basic-dev** visible anytime (player’s risk) | hide-until-ready hire gate |
+| **agent** — one AI seat type; **buy as many as you want** | **copilot** (remove) |
+| **agent-harness** — available in Studio; player balances cost vs debt/speed (like hire) | support-retainer as primary solo income |
+| **agent orchestration** (rename of agent-swarm) — Studio-allowed; **requires ≥2 agents** owned; improves speed **and** slows tech-debt accrual | standup / burnout / focus replacement → **Company** (not Studio) |
+| **basic-dev** — always listed, **no `requires`** | eng-manager / senior / self-learning as Studio-default (still open/push) |
+| **subscription** + **one-time product** (priced off **users**) | |
+| **Launch beta ~300pts** + optional tiny gigs | |
 
-Next: §5.3 projects-by-era (Studio first), then tighten beta economics.
+#### Agent ladder (Studio — settled shape)
+
+```mermaid
+flowchart TB
+  agent["agent — repeatable purchase<br/>N copies allowed"]
+  harness["agent-harness<br/>optional · budget tradeoff"]
+  orch["agent orchestration<br/>requires ≥2 agents"]
+  agent -->|"own ≥2"| orch
+  agent -.->|optional mitigations / synergies TBD| harness
+  harness -.->|exact synergy TBD in mockup| agent
+  orch -->|"faster delivery + lower debt accrual rate"| loop[delivery loop]
+```
+
+- **Many agents:** no unique cap — stack agents like parallel capacity (costs and debt stack; exact effect stacking TBD in balance).
+- **Orchestration** (ex–agent-swarm): gate is **headcount of agents ≥ 2**, not a long capability era. Improves **speed** and **reduces the rate of tech debt added** (not only a one-shot synergy on the next buy).
+- **Harness:** allowed in Studio; same philosophy as hire — visible when affordable enough to consider; player decides if the burn is worth it. Exact effect vs orchestration split TBD in mockup (avoid two cards that do the same job).
+- **Hire (`basic-dev`):** confirmed — **no `requires`**. Always in the shop; runway is the real gate.
+- **Standup / burnout replacement:** **out of Studio** — revisit in **Company**.
+
+### 5.2.3 Intended Studio graph (decisions + projects)
+
+```mermaid
+flowchart TB
+  subgraph projects["Projects"]
+    beta["Launch beta ~300 · $0 start"]
+    gig["Tiny gig 100–500 · optional"]
+    v1["Ship v1 · TBD"]
+    beta -->|"users + modest $"| users[(users)]
+    gig -.->|concurrency tax| beta
+  end
+
+  subgraph shop["Decisions — player-timed"]
+    agent[agent ×N]
+    harness[agent-harness]
+    orch[agent orchestration]
+    hire[basic-dev · no requires]
+    sub[subscription]
+    ot[one-time product]
+    agent -->|"≥2 agents"| orch
+    users --> sub
+    users --> ot
+  end
+```
+
+Still open on this graph: tooling / test→CI / ddos / refactor; harness vs orchestration effect split; exact agent stacking math; when sub/one-time appear (mockup).
 
 ---
 
@@ -662,7 +707,10 @@ cash/rep inflows — never a soft-required tax on the tutorial.
 - Tiny-gig payout band so they stay tempting but skippable.
 - When subscription / one-time appear in the shop relative to beta
   (mockup).
-- Standup replacement; day-zero non-money decisions (tooling, CI, …).
+- Harness vs orchestration: distinct effects (orchestration already =
+  speed up + debt accrual down; harness must not be a clone).
+- Agent ×N stacking: additive rates? diminishing? debt per agent?
+- Tooling / tests→CI / ddos / refactor — still undecided for Studio.
 
 ---
 
