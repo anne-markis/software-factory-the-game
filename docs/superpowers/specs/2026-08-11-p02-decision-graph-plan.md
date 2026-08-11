@@ -605,21 +605,22 @@ Shipped today (flat, not era-aware):
 
 | Working project | Size (sketch) | Role |
 | --- | --- | --- |
-| **Launch beta release** | **~300** | Start project. Finish → users begin accruing. Teaches the loop fast. Reward mix TBD (small cash vs mostly users/rep). |
-| **Ship v1 / public launch** | ~800–1500? | Grows users harder; may unlock subscription and/or one-time product decisions. |
-| **Client gig — tiny** | ~400–800 | Quick cash; no users. Optional parallel to product path. |
-| **Client gig — small** | ~1500–3000 | Bigger cash + a little rep; still Studio-scale. |
+| **Launch beta release** | **~300** | **Always the start project.** Finish → users begin accruing. Teaches the loop fast. |
+| **Ship v1 / public launch** | ~800–1500? | Grows users harder; may pair with (but not auto-unlock) subscription / one-time product buys. |
+| **Tiny client gig** | **~100–500** | Optional cash inflow + **positive reputation**. Competes with beta/v1 via context-switch tax (slower main progress). |
 
 Push out of Studio: small-crm @ 5k, mobile @ 9k, migrations, enterprise —
 those are **Company** (or later) shapes.
 
 **Studio design pressures:**
 
-- Beta must be finishable on base rates in a short tutorial window
-  (~300 pts @ ~1–3 pts/day effective ⇒ days, not months of wall play at
-  1x — tune with speed controls in mind).
-- Player can still take a client gig instead of / beside product — money
-  without users (systems lesson: different loops).
+- Game **starts on beta** (~300 pts @ base rates ⇒ short tutorial window;
+  tune with speed controls in mind).
+- Tiny client gigs are the relief valve when budget is tight — cash + rep,
+  at the cost of splitting focus (existing concurrent-project tax).
+- Product monetization cards (**subscription**, **one-time product**) are
+  **separate buys** after launch — not auto-unlocked by finishing beta.
+  Final buy timing/requirements deferred until a mockup is playable.
 - Do not require enterprise-shaped contracts to exit Studio.
 
 ### Company (light sketch — fill later)
@@ -634,14 +635,39 @@ those are **Company** (or later) shapes.
 - Enterprise replatform–scale clients; platform bets; maybe users become
   “seats” / market share fiction at huge magnitude.
 
-### Open (projects)
+### Settled (Studio projects)
 
-1. Is **Launch beta** the *only* initial project, or is a tiny client
-   gig also offered from day one?
-2. Does finishing beta **auto-enable** subscription/one-time cards, or
-   are those separate buys after launch?
-3. Should own-product projects pay **budget** at all, or primarily
-   users/rep (cash comes from the product income loop)?
+1. **Day one:** start on **Launch beta** only as the initial in-flight
+   project. **Tiny client gigs (100–500 pts)** may be offered/startable
+   when the player needs cash; they add **reputation** and slow main
+   product progress via concurrency tax.
+2. **Sub / one-time product:** **separate buys** for now. Judge unlock
+   timing in a mockup — not locked to beta completion.
+
+### Open — own-product cash (expanded)
+
+**Question 3, expanded:** When you finish **Launch beta** / **Ship v1**,
+what should hit the **budget** stock?
+
+These are different lessons:
+
+| Model | On completing beta/v1 you get… | Where ongoing cash comes from | Feels like | Risk |
+| --- | --- | --- | --- | --- |
+| **A. Users-first** | Little or **no** completion payout (maybe tiny runway crumb). Reward = **users** (+ a little rep). | Only after buying **subscription** / **one-time product**, which read `users`. | “I shipped a product; now I have to monetize.” Classic indie. | Player can launch, get users, and still go broke if they never buy a monetization card or take gigs. Harsh but clear dual loop. |
+| **B. Hybrid** | Modest one-time bonus (launch buzz / early sales baked in) **plus** users. | Same product cards for the drip/bursts; bonus is a cushion. | “Launch puts a little money in the bank; monetization scales it.” | Softens the teach; might make monetization cards feel optional too long. |
+| **C. Client-shaped product** | Fat `payoutPerPoint` + completion bonus like today’s contracts. | Product cards are gravy on top. | Beta plays like a paid gig that also happens to create users. | Blurs the two families; player may ignore subscription forever because shipping projects already prints money. |
+
+**Related knobs (same decision):**
+
+- Does beta cost **upfront** cash (domain, hosting) or is it free to start?
+- Do tiny gigs remain the **intended** cash bridge until monetization,
+  or should launch itself refill runway?
+- If A: UI must make “you have users but no monetization” scream
+  (otherwise it feels like a bug).
+
+**Not deciding yet** — pick A/B/C (or a variant) when mocking Studio.
+Default lean to discuss: **A or light B**, so client gigs and product
+monetization stay distinct loops.
 
 ---
 
