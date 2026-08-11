@@ -476,21 +476,21 @@ If I were a solo starting today:
 
 ### Open design questions (Studio only)
 
-1. ~~**Single AI seat vs ladder**~~ → **Settled (B):** one AI seat in
-   Studio = keep **agent**, remove **copilot**. Heavier agent fleet /
-   “runs while you sleep” is later-era depth, not a second day-one card.
+1. ~~**Single AI seat vs ladder**~~ → **Settled:** Studio AI = **agent**
+   (repeatable — buy many). Drop **copilot**. **Harness** + **agent
+   orchestration** (rename of swarm) are **in Studio**; player times them
+   against budget like hiring. Orchestration needs **≥2 agents**; it
+   speeds delivery and **slows debt accrual**. Heavier toys
+   (self-learning, etc.) still later.
 2. ~~**Income model**~~ → **Settled (A) spine:** Studio money =
    **contracts** + **subscription** + **one-time product purchases**.
-   **Users stock: reopened** — see §5.2.1 (was “no users”; now exploring
-   a real users stock coupled to reputation and product income).
-3. ~~**Hire gate**~~ → **Settled (C):** hire stays **visible** in the
-   shop; no hide-until-ready gate. Player judges runway/budget. (May
-   still teach via copy / soft cues later — not a hard lock.)
-4. **What replaces standup** if coordination isn’t a $ burn for one
-   person — burnout? context-switch? “always-on Slack”?
-5. **Users system:** stocks, inflows/outflows, coupling to reputation /
-   product decisions / challenges — brainstorm in §5.2.1 before locking
-   JSON shape.
+   **Users stock:** 0 until beta launch; product cards read users.
+3. ~~**Hire gate**~~ → **Settled:** hire **always visible**, **no
+   `requires`**. Player judges budget.
+4. ~~**Standup / burnout**~~ → **Deferred to Company.** Not a Studio
+   concern.
+5. **Users / monetization mockup:** formula, card timing, harness vs
+   orchestration effect split, agent stacking math.
 
 ### 5.2.1 Studio product money + users (exploring)
 
