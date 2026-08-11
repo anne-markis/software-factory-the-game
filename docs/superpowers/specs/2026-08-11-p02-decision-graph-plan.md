@@ -599,6 +599,9 @@ flowchart TB
 
 ### 5.2.3 Intended Studio graph (decisions + projects)
 
+**Status: accepted as Studio starting point** (2026-08-11). Expand later;
+not a ticket cut yet.
+
 ```mermaid
 flowchart TB
   subgraph projects["Projects"]
