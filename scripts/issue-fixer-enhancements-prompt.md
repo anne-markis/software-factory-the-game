@@ -83,10 +83,16 @@ orphans, do not invent work.
    If you skip, try the next Ready enhancement. If none remain, stop.
 5. **Claim on the board:** move the chosen item Ready → **In progress**
    (Status option id `47fc9ee4`) before coding.
-6. Comment on the issue before starting, e.g. `Automated enhancement
+6. **Title prefix:** ensure the GitHub issue title starts with
+   `[Enhancement] ` (case-sensitive bracket tag). If missing, rename
+   with `gh issue edit <N> --title "[Enhancement] <existing title>"` —
+   do not duplicate if already prefixed (`[Enhancement]`,
+   `Enhancement:`, etc.). Strip a stale wrong-type prefix (e.g.
+   `[Bug]`) before adding `[Enhancement]`.
+7. Comment on the issue before starting, e.g. `Automated enhancement
    attempt — claiming this issue (board: Ready → In progress).` Include
    the milestone when set.
-7. If no eligible Ready enhancement exists, stop and report why. Do
+8. If no eligible Ready enhancement exists, stop and report why. Do
    nothing else.
 
 ---
@@ -316,7 +322,9 @@ Trivial UI-only), and (UX Verifier PASS or the enhancement was Non-visual).
 2. Commit with message: `Implement <short description> (closes #<N>)`
 3. Push branch and open a **non-draft** PR (ready for review immediately —
    never draft):
-   - Title: `Implement <short description> (closes #<N>)`
+   - Title: `[Enhancement] Implement <short description> (closes #<N>)`
+     (always prefix with `[Enhancement] `; match the issue title type
+     tag)
    - Body must include: summary, acceptance criteria (checked off),
      before/after notes, test evidence, `Closes #<N>`
    - **If the enhancement is Visual (UX changed):** the PR body **must**
@@ -373,6 +381,8 @@ Final verification (orchestrator)
   off-board issues for enhancements.
 - On claim: Ready → In progress. On PR posted (ready for review): In
   progress → In review.
+- Issue and PR titles must be prefixed with `[Enhancement]` (set/fix
+  the issue title on claim; PR title on ship).
 - Do not push PRs in DRAFT mode; they are ready for review immediately.
 - One enhancement, one PR, one issue per run.
 - Do not pick issues Patrice would own (`bug` label) — if mislabeled,

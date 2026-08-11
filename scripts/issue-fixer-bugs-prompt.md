@@ -86,11 +86,17 @@ Prefer **Ready** column bugs. If Ready has none, optionally adopt one
    run the orphan path (step 3). If nothing remains, stop.
 6. **Claim on the board:** move the chosen item Ready → **In progress**
    (Status option id `47fc9ee4`) before coding.
-7. Comment on the issue before starting, e.g. `Automated fix attempt —
+7. **Title prefix:** ensure the GitHub issue title starts with `[Bug] `
+   (case-sensitive bracket tag). If missing, rename with
+   `gh issue edit <N> --title "[Bug] <existing title>"` — do not
+   duplicate if already prefixed (`[Bug]`, `Bug:`, etc.). Strip a
+   stale wrong-type prefix (e.g. `[Enhancement]`) before adding
+   `[Bug]`.
+8. Comment on the issue before starting, e.g. `Automated fix attempt —
    claiming this issue (board: Ready → In progress).` Include the
    milestone when set. If you adopted an orphan, note that you added it
    to the board (Backlog → Ready → In progress).
-8. If no eligible issue exists, stop and report why.
+9. If no eligible issue exists, stop and report why.
 
 ---
 
@@ -287,7 +293,8 @@ Trivial), and (UX Verifier PASS or the fix was Non-visual).
 2. Commit with message: `Fix <short description> (fixes #<N>)`
 3. Push branch and open a **non-draft** PR (ready for review immediately —
    never draft):
-   - Title: `Fix <short description> (fixes #<N>)`
+   - Title: `[Bug] Fix <short description> (fixes #<N>)`
+     (always prefix with `[Bug] `; match the issue title type tag)
    - Body must include: summary, repro steps, test evidence, `Fixes #<N>`
    - **If the fix is Visual (UX changed):** the PR body **must** include a
      `## Screenshots` section with the screenshot(s) from Subagent D
@@ -341,6 +348,8 @@ Final verification (orchestrator)
   one triaged orphan (add → Backlog → Ready), then claim.
 - On claim: Ready → In progress. On PR posted (ready for review): In
   progress → In review.
+- Issue and PR titles must be prefixed with `[Bug]` (set/fix the issue
+  title on claim; PR title on ship).
 - Do not push or leave PRs in DRAFT mode; PRs are ready for review
   immediately.
 - One bug, one PR, one issue per run.
