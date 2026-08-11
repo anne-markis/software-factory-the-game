@@ -7,6 +7,7 @@ import { summarizeDecisionEffects } from "./effectSummary";
 import { SECTION_ATTR } from "./domPatch";
 import { formatBuiltAt, type BuildInfo } from "./buildInfo";
 import { cockpitStatViews, deliveryStatViews, statsRowHtml } from "./gameFeel";
+import { formatProjectEta } from "./projectEta";
 
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -206,7 +207,10 @@ export function projectsPanelScaffold(): string {
 export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: Readonly<GameState>): string {
   const taxNow = contextSwitchTax(state);
   const flight = inFlight
-    .map((p) => `<div>${esc(p.name)}: ${fmt(p.remaining)} points left ($${fmt(p.payoutPerPoint)}/pt, $${fmt(p.completionBonus)} on completion)</div>`)
+    .map((p) => {
+      const eta = formatProjectEta(p.remaining, state.pointsPerDay);
+      return `<div>${esc(p.name)}: ${fmt(p.remaining)} points left ($${fmt(p.payoutPerPoint)}/pt, $${fmt(p.completionBonus)} on completion) · ${esc(eta)}</div>`;
+    })
     .join("");
   return `<h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}`;
 }

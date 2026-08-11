@@ -337,9 +337,34 @@ describe("renderProjectsStatus", () => {
     const html = renderProjectsStatus([...e.getState().projects], e.getState());
     expect(html).toContain("Projects (efficiency 100%)");
     expect(html).toContain("First Contract: 1,500 points left");
+    // Fresh engine has not ticked yet — realized Points/Day is 0 → stalled
+    // (issue #17 / FR-3.2).
+    expect(html).toContain("· stalled");
     // The Start buttons live in the sibling offers section, not here, so the
     // per-tick progress update cannot tear them down (issue #6).
     expect(html).not.toContain("data-project");
+  });
+
+  // Issue #17 / P0.1 FR-3: derived ~days from remaining ÷ Points/Day.
+  it("shows ~N days at current rate when Points/Day is positive", () => {
+    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const s = initialState(c);
+    // Pipeline fill takes several days before realized Points/Day is non-zero;
+    // set the rate directly so this asserts the derived line, not tick lag.
+    s.pointsPerDay = 1;
+    const html = renderProjectsStatus([...s.projects], s);
+    expect(html).toContain("First Contract: 1,500 points left");
+    expect(html).toContain("· ~1,500 days at current rate");
+  });
+
+  it("updates the estimate when Points/Day changes", () => {
+    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const s = initialState(c);
+    s.pointsPerDay = 10;
+    s.projects[0]!.remaining = 100;
+    expect(renderProjectsStatus([...s.projects], s)).toContain("· ~10 days at current rate");
+    s.pointsPerDay = 0;
+    expect(renderProjectsStatus([...s.projects], s)).toContain("· stalled");
   });
 });
 
