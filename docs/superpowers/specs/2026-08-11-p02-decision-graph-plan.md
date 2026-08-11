@@ -517,60 +517,131 @@ than inventing customers offstage.
 
 | Piece | Role |
 | --- | --- |
-| **Stock: `users`** | Non-negative; starts at 0 (or tiny after first launch). |
-| **Inflows** | Launch / marketing decisions; reputation-gated organic growth; viral challenge; shipping product updates (?) |
+| **Stock: `users`** | Non-negative; **stays 0 until first launch** (settled). |
+| **Inflows** | Completing launch / beta project; later marketing; reputation-gated organic growth; viral challenge; product updates (?) |
 | **Outflows** | Churn from incidents, neglect, bad support; competitor events |
 | **Subscription income** | ≈ `f(users)` per day (content formula: linear, diminishing, tier steps) |
 | **One-time product** | Bursts scaled by users (or by *new* users this window) — lumpier than sub |
-| **Contracts** | Mostly orthogonal (B2B projects), but rep still shared |
+| **Contracts** | Client work — orthogonal money; may not unlock users by itself |
 | **Reputation** | Affects acquisition rate and/or churn; damaged by breaches/incidents |
 
 ```mermaid
 flowchart LR
-  ship[Ship / launch / polish] --> users[users stock]
+  beta[Launch beta ~300 pts] -->|first unlock| users[users stock]
+  polish[Later launches / updates] --> users
   rep[reputation] --> users
   users --> sub[subscription $/d]
   users --> ot[one-time product bursts]
   sub --> budget[budget]
   ot --> budget
-  contracts[contracts] --> budget
+  contracts[client contracts] --> budget
   contracts --> rep
   incident[incidents / debt] -->|churn| users
   incident -->|rep hit| rep
 ```
 
-#### Open forks (Studio only)
+#### Settled forks
 
-1. **When do users appear?** Only after a “launch product” decision, or
-   from day one as a dormant stock?
-2. **One product or many?** Single generic “your product” for Studio
-   simplicity vs separate subscription SKU and one-time SKU sharing one
-   user base.
-3. **Formula complexity:** start with `incomePerDay = users * k` and
-   `acquisition = g(reputation)` — enough? Or need satisfaction/churn
-   stocks immediately?
-4. **Era boundary:** users carry into Company (scaled problems) vs soft
-   reset / “market segment change” on era entry.
-5. **Engine cost:** new stock + a few effects is still JSON-friendly;
-   avoid a full marketing sim in Studio.
+1. **When do users appear?** **Settled — option 1:** users stay **0
+   until launch**. First meaningful ship is reframed as **“Launch beta
+   release”** (working size **~300 points**, down from today’s 1500
+   “First Contract”), and completing it **starts user acquisition**.
+   Client contracts are a separate money path and do not by themselves
+   invent users.
+2. **Projects are era-scoped** — revisit the whole project list per era
+   (§5.3). Today’s CRM / migration / enterprise ladder is not sacred.
 
-**Previous “compound until era, no users” assumption** is demoted to a
-fallback if users proves too heavy for Studio. Prefer trying users if
-the loop stays watchable.
+#### Still open
+
+3. **One product or many?** Single generic “your product” for Studio
+   vs separate subscription SKU and one-time SKU sharing one user base.
+4. **Formula complexity:** `incomePerDay = users * k` and
+   `acquisition = g(reputation)` enough for Studio?
+5. **Era boundary:** users carry into Company vs soft reset / segment
+   change.
+6. **Beta details:** starting backlog = 300? payout vs “you’re launching
+   your own product” (maybe low/no client payout, reward = users + rep)?
+   Relationship between beta launch and enabling subscription /
+   one-time product decisions.
+
+**Previous “compound until era, no users” assumption** remains a
+fallback only. Prefer users-after-launch.
 
 ### 5.2.2 Settled so far (Studio shop spine)
 
 | Keep / add | Drop / defer |
 | --- | --- |
 | **agent** as the one AI seat | **copilot** (remove) |
-| **contracts** (projects) | support-retainer as primary solo income |
+| **contracts** + **Launch beta ~300pts** (unlocks users) | support-retainer as primary solo income |
 | **subscription** + **one-time product** (priced off **users**) | standup-as-$/d (replace or cut — open) |
-| **users** stock (exploring — §5.2.1) | swarm / self-learning / eng-manager as Studio-default |
+| **users** stock (0 until beta launch) | swarm / self-learning / eng-manager as Studio-default |
 | **basic-dev** visible anytime (player’s risk) | hide-until-ready hire gate |
 
-Next Studio pass: pressure-test the users loop (acquisition, churn, rep
-coupling) with a minimal formula — or day-zero non-money plays in
-parallel.
+Next: §5.3 projects-by-era (Studio first), then tighten beta economics.
+
+---
+
+## 5.3 Projects by era (revisit)
+
+Shipped today (flat, not era-aware):
+
+| id | Size | Upfront | Notes |
+| --- | --- | --- | --- |
+| first-contract (start) | 1500 | 0 | Client fiction; unlocks nothing special |
+| small-crm | 5000 | $2k | Open |
+| mobile-app | 9000 | $3k | ≥1 completion, rep 5 |
+| big-migration | 20000 | $5k | ≥1 completion, rep 5 |
+| enterprise-replatform | 50000 | $12k | ≥2 completions, rep 15 |
+
+**Direction:** projects live in per-era JSON. Two families inside an era:
+
+1. **Own-product work** — builds/ships *your* product (beta, v1, polish).
+   Completing these interacts with **users** (and maybe unlocks sub /
+   one-time SKUs).
+2. **Client contracts** — classic B2B money + reputation; usually **no
+   direct users**, unless we later add “open-source fame” style exceptions.
+
+### Studio (zoom — draft)
+
+| Working project | Size (sketch) | Role |
+| --- | --- | --- |
+| **Launch beta release** | **~300** | Start project. Finish → users begin accruing. Teaches the loop fast. Reward mix TBD (small cash vs mostly users/rep). |
+| **Ship v1 / public launch** | ~800–1500? | Grows users harder; may unlock subscription and/or one-time product decisions. |
+| **Client gig — tiny** | ~400–800 | Quick cash; no users. Optional parallel to product path. |
+| **Client gig — small** | ~1500–3000 | Bigger cash + a little rep; still Studio-scale. |
+
+Push out of Studio: small-crm @ 5k, mobile @ 9k, migrations, enterprise —
+those are **Company** (or later) shapes.
+
+**Studio design pressures:**
+
+- Beta must be finishable on base rates in a short tutorial window
+  (~300 pts @ ~1–3 pts/day effective ⇒ days, not months of wall play at
+  1x — tune with speed controls in mind).
+- Player can still take a client gig instead of / beside product — money
+  without users (systems lesson: different loops).
+- Do not require enterprise-shaped contracts to exit Studio.
+
+### Company (light sketch — fill later)
+
+- Mid client work (CRM-shaped, mobile-shaped).
+- Product: growth features, paid tier launch, marketplace listing scale-up.
+- Reputation gates matter; users already exist from Studio carry (if we
+  carry them).
+
+### Megacorp (lighter sketch)
+
+- Enterprise replatform–scale clients; platform bets; maybe users become
+  “seats” / market share fiction at huge magnitude.
+
+### Open (projects)
+
+1. Is **Launch beta** the *only* initial project, or is a tiny client
+   gig also offered from day one?
+2. Does finishing beta **auto-enable** subscription/one-time cards, or
+   are those separate buys after launch?
+3. Should own-product projects pay **budget** at all, or primarily
+   users/rep (cash comes from the product income loop)?
 
 ---
 
