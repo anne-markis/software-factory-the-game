@@ -149,8 +149,9 @@ Optional reflection; no grades or quizzes.
 ### Dual-fit rule
 
 If P0.1 and P0.2 both fit: prefer **P0.2** when the fix is unlock /
-decision-copy / synergy honesty; prefer **P0.1** when the fix is
-annotation, layout, or attention while watching the machine.
+decision-copy / synergy honesty / tag-or-track retirement / JSON journey
+gates; prefer **P0.1** when the fix is annotation, layout, or attention
+while watching the machine.
 
 ### Do NOT assign (leave empty + comment)
 
