@@ -56,9 +56,10 @@ alongside simplification rather than replacing it.
 - Headcount (`human: true`) vs any leftover “human” labeling — revisit
   when touching hire/challenge content, not in the first simplification
   cut.
-- Exact dollar thresholds past the first gate, breakthrough-roll design
-  (“get funded”, “went viral”, …), and late era names — brainstorm in
-  §5; ship after simplify + packaging.
+- Exact dollar thresholds and breakthrough-roll design (“got funded”,
+  “went viral”, …) for Studio→Company and Company→Megacorp — brainstorm
+  in §5; ship after simplify + packaging.
+- Names for rungs after Megacorp.
 - Full late-era sci-fi content authorship — after the graph is simpler
   and content-driven.
 
