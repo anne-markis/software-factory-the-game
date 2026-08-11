@@ -276,6 +276,131 @@ Later names stay open. Prefer size language; keep “got funded” /
 
 ---
 
+## 5.1 Studio zoom (inventory of *today’s* content)
+
+Eras are not split in JSON yet. This section sorts **shipped** decisions,
+gates, challenges, and projects into a **provisional Studio cut** vs
+“push to Company+,” for brainstorming only — not sacred, not tickets.
+
+Baseline: start budget **$10k**, base burn **$20/day**, first contract
+1500 pts @ $17/pt + $2k bonus.
+
+### Decision graph (requires + synergies)
+
+```mermaid
+flowchart TB
+  subgraph open["No requires — buy anytime"]
+    tooling[better-tooling $150]
+    copilot[copilot $20+$2/d]
+    agent[agent $10+$4/d]
+    basic[basic-dev $7/d GAMBLE]
+    contractor[contractor $12/d]
+    standup[standup $3/d]
+    test[test-suite $500]
+    retainer[support-retainer +$8/d]
+    ddos[ddos-protection $200+$2/d]
+    refactor[refactoring-sprint $400]
+    rebuild[redesign-rebuild $1200]
+  end
+
+  subgraph gated["Requires gates"]
+    harness[agent-harness $250+$5/d]
+    swarm[agent-swarm $100+$20/d]
+    orch[swarm-orchestrator $150+$8/d]
+    sla[self-learning-agents $350+$10/d]
+    senior[senior-dev $12/d GAMBLE]
+    mgr[eng-manager $8/d]
+    cicd[ci-cd $750]
+  end
+
+  agent --> harness
+  harness --> swarm
+  harness --> orch
+  swarm --> sla
+  basic --> senior
+  basic --> mgr
+  test --> cicd
+  mgr -.->|synergy: tighter gamble| basic
+  mgr -.->|synergy: tighter gamble| senior
+  harness -.->|synergy: less debt on buy| agent
+  orch -.->|synergy: less debt on buy| swarm
+```
+
+### Provisional Studio vs Company+ (cost / tutorial lens)
+
+| id | Cost | Gates | Studio lean |
+| --- | --- | --- | --- |
+| **better-tooling** | $150 once | — | **In** — cheap, teaches rate bump |
+| **copilot** | $20+$2/d | — | **In** — modern “assistant before CI” |
+| **agent** | $10+$4/d | — | **In** — early agent; debt catch |
+| **basic-dev** | $7/d gamble | — | **In** — core hire lesson |
+| **contractor** | $12/d | — | **Maybe** — safe hire; overlaps senior burn |
+| **standup** | $3/d | — | **In** if any hire/agent team exists |
+| **test-suite** | $500 | — | **In** — debt + unlocks CI |
+| **ci-cd** | $750 | requires test-suite | **In** — main structural teach (#39) |
+| **support-retainer** | +$8/d, −5% rates | — | **In** — income vs slowdown |
+| **ddos-protection** | $200+$2/d | — | **In** — pairs with ddos challenge |
+| **refactoring-sprint** | $400 | — | **Maybe** — debt recovery; OK if debt appears in Studio |
+| **agent-harness** | $250+$5/d | requires agent | **Maybe / light** — second step on agent path; honesty bug #32 |
+| **eng-manager** | $8/d | requires basic-dev | **Push?** — management layer feels Company |
+| **senior-dev** | $12/d | requires basic-dev | **Push?** — or keep one senior as Studio stretch |
+| **redesign-rebuild** | $1200 + long slowdown | — | **Push** — heavy for tutorial |
+| **agent-swarm** | $100+$20/d | harness | **Push** — burn alone rivals Studio runway |
+| **swarm-orchestrator** | $150+$8/d | harness | **Push** with swarm |
+| **self-learning-agents** | $350+$10/d | swarm | **Push** — false-summit / Company+ |
+
+Soft teaching gates (not `requires`, but the loop teaches them): hire
+without CI → Done piles up; agent without harness → debt; zero humans →
+laptop-dies.
+
+### Challenges — what fires in a Studio-shaped run
+
+| Challenge | Gate today | Studio lean |
+| --- | --- | --- |
+| scope-creep | minDay 15 | **In** |
+| prod-incident | minDay 15, debt scales | **In** (light) |
+| ddos | minDay 15, lacks ddos-protection | **In** |
+| open-source-windfall | minDay 15 | **In** (lucky money) |
+| sickness | minHumanDevs ≥ 1 | **In** if hires |
+| key-dev-poached | minHumanDevs ≥ 1 | **Maybe** — choice teach; $150 match |
+| laptop-dies | maxHumanDevs 0 | **In** for solo/agent-only |
+| meeting-creep | hasTag human | **Push?** — Company calendar pain |
+| team-conflict | hasTag human | **Maybe** |
+| model-deprecation / api-price-hike / runaway-agent-loop / cloud-credits | hasTag darkfactory | **In-light** if Studio keeps agent; or delay until harness/Company |
+| security-breach | techDebt ≥ 800 | **Push** — needs real debt pile |
+
+### Projects / reputation (today)
+
+| Project | Gate | Studio lean |
+| --- | --- | --- |
+| first-contract (start) | — | **In** — the tutorial ship |
+| small-crm | afford $2k upfront | **In** or early Company |
+| mobile-app / big-migration | 1 completion + rep 5 | **Company** (Trusted vendor) |
+| enterprise-replatform | 2 completions + rep 15 | **Company+ / Megacorp-adjacent** |
+
+Reputation milestones “Trusted” (5) / “Established” (15) currently sit
+on the same endless ladder — likely **Company** landmarks, not Studio
+exits.
+
+### Studio → Company exit (still open)
+
+Not implemented. Working intent: **fast exit**, OR of modest grind and
+breakthroughs (funded / viral / …). Do **not** require finishing the
+agent swarm ladder or enterprise contracts to leave Studio.
+
+### Open questions for this zoom
+
+1. How small is Studio’s shop — **core 8–10 cards** or most of today’s
+   catalog with only swarm/rebuild deferred?
+2. Is **CI/CD** a Studio must-teach, or can some players exit Studio
+   still Done-bound and learn it in Company?
+3. Should **agent-harness** be the Studio agent ceiling (one upgrade
+   deep), with swarm+ reserved for Company?
+4. Breakthrough exits: which events are Studio-valid without breaking
+   the “short tutorial” feel?
+
+---
+
 ## 6. Working definition of done (draft)
 
 P0.2 is **done enough to close** when:
