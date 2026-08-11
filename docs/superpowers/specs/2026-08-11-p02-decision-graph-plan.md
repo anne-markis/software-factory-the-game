@@ -717,7 +717,92 @@ cash/rep inflows — never a soft-required tax on the tutorial.
 
 ---
 
-## 6. Working definition of done (draft)
+## 5.4 Studio challenges (from scratch)
+
+**Status:** brainstorm against the accepted Studio spine. Shipped
+challenges are reference only. Gates use owned decisions / stocks /
+headcount — **not** track tags (`hasTag` retires with S-1/S-4).
+
+**Design pressures for Studio challenges:**
+
+- Short era — keep the pool **small** and legible; Company gets calendar
+  politics and heavier org pain (meeting-creep, team-conflict, burnout).
+- Hit the loops we actually teach: delivery, debt, **agents ×N**,
+  optional hire, **users after beta**, optional gigs, monetization.
+- Positive events OK (windfall, viral seed) so upside isn’t only “buy.”
+- Must not force tiny gigs or break the **finish-beta-on-starting-resources**
+  solvency rule (tune severity / early quiet period).
+
+### Draft pool
+
+#### Always-on / delivery (after a short quiet period)
+
+| Working id | Gate | Effect sketch | Why |
+| --- | --- | --- | --- |
+| **scope-creep** | Active **client gig** (not on pure beta?) | Backlog +N | Client path pain; optional if we only fire when a gig is in flight |
+| **prod-incident** | minDay + debt scaling; maybe only after **users > 0** or first deploy | $ hit, light rep hit, short slowdown; **user churn** if users exist | Teaches debt after you’re “live” |
+| **dependency-break** / bitrot | minDay | Short finish drag or small debt spike | Solo reality; no hire required |
+| **open-source-windfall** | minDay | +$ | Lucky misc inflow (not a gig) |
+
+#### Solo / bus-factor
+
+| Working id | Gate | Effect sketch | Why |
+| --- | --- | --- | --- |
+| **laptop-dies** | No human hires (solo / agents-only) | −$ | Classic; keep |
+| **founder’s flu** | Always or no humans | Short personal rate drag (you are the bottleneck) | Solo sickness without needing a hire |
+
+#### Agents (owned agent count ≥ 1, or ≥ 2 where noted)
+
+| Working id | Gate | Effect sketch | Why |
+| --- | --- | --- | --- |
+| **runaway-agent-loop** | ≥1 agent | −$ (scales lightly with agent count?) | Absurd mishap; whimsy OK |
+| **api-price-hike** | ≥1 agent | −$ or +upkeep temporary | Vendor reality |
+| **model-deprecation** | ≥1 agent | Choice: pay migrate vs degraded finish | Keep; choice teach |
+| **cloud-credits** | ≥1 agent | +$ | Upside for agent path |
+| **orchestration-mess** | orchestration owned **or** ≥2 agents without it | Debt spike or rate drag | Pushes orchestration as governor, not mandatory |
+
+#### Hire (optional path)
+
+| Working id | Gate | Effect sketch | Why |
+| --- | --- | --- | --- |
+| **sickness** | ≥1 human | Per-dev rate drag | Keep |
+| **key-dev-poached** | ≥1 human | Choice: pay or lose hire | Keep; Studio-scale $ |
+| ~~meeting-creep / team-conflict~~ | — | — | **Company** (with standup/burnout) |
+
+#### Users / product (after beta)
+
+| Working id | Gate | Effect sketch | Why |
+| --- | --- | --- | --- |
+| **went-viral** (light) | users > 0 | Users spike + maybe rep; optional Studio→Company breakthrough seed | Upside; era-exit candidate later |
+| **angry-users** / review bomb | users > 0 | Churn + light rep hit | Governor on ignoring quality/debt |
+| **refund-wave** | one-time product owned | −$ burst | Monetization has downside |
+| **churn-spike** | subscription owned | Users down or income mul down | Same for sub |
+
+#### Push to Company+
+
+| id / idea | Why not Studio |
+| --- | --- |
+| security-breach (debt ≥ 800) | Needs long debt pile; heavy rep nuke |
+| meeting-creep, team-conflict | Org calendar — Company |
+| ddos (+ ddos-protection card) | Only if we keep that decision in Studio; else Company or cut |
+
+### Quiet period
+
+Keep something like **minDay** (or “until beta ships”) so the first
+minutes aren’t a pile-on. Exact number TBD with ~300-pt beta timing.
+
+### Open forks (challenges)
+
+1. **Scope creep** only on client gigs, or also on beta (bad product
+   scope)?
+2. **Prod incident** before users exist (while building beta) — yes/no?
+3. How hard should agent mishaps scale with **agent ×N**?
+4. Is **went-viral** a normal Studio challenge, an era-exit breakthrough,
+   or both (light version vs big version)?
+5. DDoS / hardening — in Studio shop+challenges or skip until Company?
+
+Shipped tag-gated pool (`hasTag: darkfactory|human`) is replaced by the
+gates above when content is rewritten.
 
 P0.2 is **done enough to close** when:
 
