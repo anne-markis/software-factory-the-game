@@ -26,13 +26,14 @@ alongside simplification rather than replacing it.
   invites — not by “pre-agent SDLC” vs “automation.” Starting from zero
   today, agents/coding assistants belong in the first era alongside
   hires, git, and (often later) CI/CD.
-- **Tone:** early game is a credible **small business** software shop
-  (starting ~$10k budget matches what you can buy). Weirdness, SV satire,
-  and deep futurism intensify as scale eras advance — not as day-one
-  flavor, and not gated behind “unlocking AI.”
-- **False summits** still exist (e.g. “we made it / dark factory online”)
-  but they sit on the **scale ladder**, not on a parallel automation
-  track. Horizon keeps moving after each summit.
+- **Tone:** early game is a short **Studio** stretch (tutorial-scale;
+  starting ~$10k; player can leave relatively fast). Most of the long
+  session lives in **Company**. Weirdness, SV satire, and deep futurism
+  intensify from **Megacorp** onward — not as day-one flavor, and not
+  gated behind “unlocking AI.”
+- **False summits** still exist at later scale rungs but sit on the
+  **scale ladder**, not on a parallel automation track. Horizon keeps
+  moving after each summit.
 - **Whimsy** on scenarios and late choices; **systems honesty** stays in
   stocks, flows, delays, and governors.
 
@@ -41,8 +42,9 @@ alongside simplification rather than replacing it.
 - **No first-class tracks or tags** as peer endgames (solo / startup /
   megacorp / darkfactory as mutually exclusive campaigns are retired).
 - **Eras replace that vocabulary as a one-way progression ladder** —
-  similar *names* may reappear (e.g. megacorp) but they mean **how big
-  you are**, not which parallel fantasy you picked.
+  settled working names: **Studio → Company → Megacorp → …** (capability
+  mix meanders inside each rung). Words like megacorp mean **how big you
+  are**, not which parallel fantasy you picked.
 - **Within an era:** meander (hire-heavy, agent-heavy, process-heavy,
   viral/funding luck). **Between eras:** irreversible entry once scale
   criteria (or lucky breakthrough rolls) fire.
@@ -100,29 +102,32 @@ content/
   start.json                 # global constants, seed stocks (era-agnostic)
   eras.json                  # ordered era ids + entry criteria (OR-able paths)
   eras/
-    small-business/          # scale era 0 — ~$10k start fits the shop
+    studio/                  # short tutorial-scale era; ~$10k start fits
       meta.json              # id, name, player-facing blurb (optional)
       decisions.json         # hires AND agents/copilot AND process, etc.
       challenges.json
       projects.json
-    medium-business/         # name TBD — see §5
-      ...
-    big-business/
+    company/                 # main long-session era
       ...
     megacorp/
       ...
+    # later eras TBD (sci-fi / world-eating at cost)
 ```
 
 **Do not** split eras by capability (e.g. “delivery” vs “automation”).
-Agents belong in small-business content when costs fit that scale.
+Agents belong in Studio content when costs fit that scale.
 
 **Entry criteria** live in `eras.json` (or each era’s `meta.json`).
-Prefer **OR of paths**, e.g. any of:
+Prefer **OR of paths**, e.g. out of Studio into Company — any of:
 
-- slow grind: budget ≥ N (working example out of small-business: ~$5M)
-  and/or reputation / contract tier floors;
+- slow grind: budget / reputation / contract floors (exact numbers TBD;
+  Studio should be *exitable fast*, so grind bar is modest or skippable
+  via breakthrough);
 - breakthrough rolls / challenges: “got funded”, “went viral”, etc.
   (exact events TBD — content, not engine special cases).
+
+Company → Megacorp (and later) use the same OR pattern at higher bars —
+Company is where most playtime lives, so its exit should feel earned.
 
 Crossing any listed path sets `eraId` forward only.
 
@@ -195,8 +200,8 @@ for eras (docs/content shape only — not full sci-fi content).
 
 | ID | Candidate issue | Why |
 | --- | --- | --- |
-| **E-1** | Split content into per-era JSON + `eras.json` with one-way **scale** entry criteria | Implements §2.1. First cut: put *all current* cards in `small-business`; stub next era + entry (budget floor and/or breakthrough placeholder) so loader/viewer are real before late-scale content exists. **Not** a delivery/automation split. |
-| **E-2** | Inventory which current decisions fit small-business costs vs belong at later scale | Retune or move cards whose prices break the ~$10k-era fantasy; agents/copilot stay eligible early if costs fit. |
+| **E-1** | Split content into per-era JSON + `eras.json` with one-way **scale** entry criteria | Implements §2.1. First cut: put *all current* cards in `studio`; stub `company` + entry (modest grind and/or breakthrough placeholder) so loader/viewer are real. **Not** a delivery/automation split. Studio must stay short/exitable. |
+| **E-2** | Inventory which current decisions fit Studio costs vs belong in Company+ | Retune or move cards whose prices break the ~$10k Studio fantasy; agents/copilot stay eligible in Studio if costs fit. Most depth lands in Company. |
 | **V-1** | Local content-graph viewer (`make graph`) | Implements §2.2. Reads era JSON; shows requires / costs / era-entry edges (including OR entry paths). Authoring aid only. |
 
 ### Explicitly out of scope for P0.2 issue cut
@@ -213,74 +218,60 @@ for eras (docs/content shape only — not full sci-fi content).
 
 ## 5. Eras brainstorm (scale ladder)
 
-**Principle:** eras mark **how big the business is** (cost of decisions,
-stakes of challenges, size of contracts). They do **not** mark “you
-unlocked AI.” Capability mix (humans, agents, process) meanders *inside*
-each era. Old “tracks” tried to be parallel plays; eras are the same
-family of *identity words* used as **progression levels** instead.
+**Settled ladder (simple):**
 
-**Within** an era: many purchases and lucky events. **Between** eras:
-gated, irreversible entry.
+**Studio → Company → Megacorp → …**
+
+| Era | Role in the long session |
+| --- | --- |
+| **Studio** | Tutorial-scale. ~$10k start fits. Player can leave **fast**. Teaches the delivery loop; hires *and* early agents/copilot OK. |
+| **Company** | **Where most time is spent.** Depth, meander, governors, contract climb, breakthrough-or-grind toward Megacorp. |
+| **Megacorp** | Institutional scale; satire / heavier systems; gate into later weirdness. |
+| **…** | Later rungs TBD (false summit, sci-fi, world-eating at cost). |
+
+**Principle:** eras mark **how big the business is**. They do **not** mark
+“you unlocked AI.” Capability mix meanders *inside* each era. Old
+“tracks” were parallel plays; these are progression levels.
 
 ```mermaid
 flowchart LR
-  subgraph SB["Small business — ~$10k start"]
-    mix[Hires · agents/copilot · process · contracts]
+  subgraph ST["Studio — short / tutorial"]
+    mix[Hires · agents/copilot · process · small contracts]
   end
 
-  subgraph MB["Next scale — name TBD"]
-    bigger[Bigger shop · bigger bills · new problems]
+  subgraph CO["Company — most playtime"]
+    main[Depth · scale burn · real stakes]
   end
 
-  subgraph BB["Big business — name TBD"]
-    enterprise[Enterprise stakes]
-  end
-
-  subgraph MC["Megacorp — name TBD"]
+  subgraph MC["Megacorp"]
     mega[Institutional scale]
   end
 
-  subgraph LATE["Later — names TBD"]
+  subgraph LATE["Later — TBD"]
     alien[Deep futurism · world-eating]
   end
 
-  SB -->|"OR: grind to ~$5M · got funded · went viral · …"| MB
-  MB -->|one-way scale gate| BB
-  BB -->|one-way| MC
+  ST -->|"OR: modest grind · got funded · went viral · … fast exit OK"| CO
+  CO -->|"OR: earned grind · breakthrough · …"| MC
   MC -->|one-way| LATE
 ```
 
-| Era (working name) | Scale feel | What’s in the JSON shop | How you enter the *next* era |
-| --- | --- | --- | --- |
-| **Small business** | Starting $10k makes sense; local clients; payroll hurts | Current-ish loop: hires **and** early agents/copilot, test/CI/CD, debt work, small contracts. Order is meander (assistant-before-CI is fine). | **OR paths:** slow traditional (larger projects/reputation → e.g. **~$5M** banked); breakthrough rolls (“got funded”, “went viral”, … TBD). |
-| **Medium business?** | Grown-up burn; serious vendors; still founder-visible | Higher-cost decisions; scarier incidents; mid-tier contracts. Agents scale up *because money allows*, not because a new track opened. | Budget / reputation / event OR — thresholds TBD. |
-| **Big business?** | Org chart gravity; compliance-shaped pain | Expensive process, platform, headcount/compute at real scale. | TBD |
-| **Megacorp?** | Institutional; you are a system inside a system | Political/process governors; huge contracts; satire seeds OK. | TBD |
-| **Later…** | False summit then alien / world-eating | Sci-fi and Paperclips-energy mystery; dark-factory *consequences* at planetary cost. | Long grind; choices feel newly strange. |
+### Entry paths (open detail, schema shape settled)
 
-### Naming notes (open)
+- **Studio → Company:** keep the bar low or luck-skippable so Studio
+  stays a tutorial, not a second main game. Working ideas: modest budget/
+  reputation floor **or** “got funded” / “went viral” / similar.
+- **Company → Megacorp:** higher bar; most session length happens before
+  this gate. Exact $ / reputation / events TBD (earlier ~$5M sketch may
+  fit *here* better than out of Studio).
+- Schema: **multiple OR entry predicates** per era so grind and luck both
+  work without engine forks.
 
-“Medium / big business” is plain but clear. Alternatives to brainstorm:
+### Naming
 
-- **Scale language:** Studio → Firm → Enterprise → Megacorp → …
-- **Money language:** Bootstrap → Funded → Scale-up → Public / Megacorp → …
-- **Factory language:** Garage factory → Floor → Campus → Conglomerate → …
-
-Prefer names that read as **size**, not as a chosen fantasy. “Startup”
-as an *era name* is awkward if funding is an *entry roll* into the next
-era — better as an event (“got funded”) than as a rung label.
-
-### Breakthrough entries (open, content later)
-
-Lucky / high-variance OR paths out of small business (and maybe later):
-
-- Got funded (term sheet / round)
-- Went viral (reputation + inbound cash)
-- Acqui-hire / acqui-exit partial (maybe too early)
-- Whale contract signed
-
-Exact design deferred; schema should allow **multiple OR entry
-predicates** per era so grind and luck both work without engine forks.
+Studio / Company / Megacorp are **settled** for the first three rungs.
+Later names stay open. Prefer size language; keep “got funded” /
+“went viral” as **events**, not rung labels.
 
 ---
 

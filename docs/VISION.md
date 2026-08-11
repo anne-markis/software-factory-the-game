@@ -55,13 +55,12 @@ teaches a distinct systems idea, and until fun no longer fights the model.
 ### Meta direction
 
 1. **One long arc: scale eras → far future (Paperclips cadence).**
-   Early play is a credible **small business** software shop (~$10k start;
-   hires *and* early agents/assistants belong here — do not gate “AI” as
-   its own era). Eras advance by **scale of cost** (grind to a budget/
-   reputation gate, or breakthrough events like funding/viral), one-way.
-   Words like megacorp may reappear as **size rungs**, not parallel
-   tracks. Weirdness and world-eating intensify at later scale; loop
-   honesty stays in stocks, flows, and delays.
+   Settled early ladder: **Studio → Company → Megacorp → …**. Studio is
+   short/tutorial (~$10k start; hires *and* early agents belong here —
+   do not gate “AI” as its own era). **Company** is where most playtime
+   lives. Eras advance by **scale of cost** (grind gates and/or
+   breakthrough events), one-way. Megacorp and later intensify satire and
+   world-eating stakes; loop honesty stays in stocks, flows, and delays.
 
 2. **Treat the decision graph as the curriculum map (content-owned).**
    Requires / unlocks, synergies, costs, and categories — expressed in JSON
