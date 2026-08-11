@@ -162,8 +162,9 @@ first-class concepts, and leave a clean surface for later era content —
 without yet shipping the full sci-fi ladder.
 
 **In one sentence:** by the end of P0.2, progression is “what you bought
-and can afford,” expressed in JSON, with no track taxonomy — and the
-graph does not lie about synergies, gambles, or the release unlock path.
+and can afford *at this scale*,” expressed in JSON eras — with no track
+taxonomy — and the graph does not lie about synergies, gambles, or the
+release unlock path.
 
 ---
 

@@ -204,9 +204,10 @@ first; without it, nobody stays long enough to learn.
 - **Client-side sandbox, deterministic engine.** The educational value of
   reproducible runs and content-driven balance probes is part of the
   product's integrity.
-- **No first-class tracks or modes.** Journeys emerge from the decision
-  graph and resource pressure; the dark-factory far future is the long
-  spine, not one peer campaign among many.
+- **No first-class parallel tracks or modes.** Scale **eras** are one-way
+  progression levels (content JSON); capability mix meanders inside an
+  era. The dark-factory / world-eating far future is late *scale*, not a
+  peer campaign you pick on day one.
 - **The decision graph is the curriculum map — and it lives in JSON.**
   Prefer per-era content bundles and content-defined, one-way era entry
   over story-aware engine code. Grow depth and consequence before
