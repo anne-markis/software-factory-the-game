@@ -5,15 +5,17 @@ https://github.com/anne-markis/software-factory-the-game/issues.
 
 ## Scope
 
-- OPEN issues only (except Kanban sync of closed P0.1 issues → Done).
+- OPEN issues only (except Kanban sync of closed in-scope milestone
+  issues → Done).
 - **RICE / labels:** Skip issues that already have BOTH a type label
   (bug, enhancement, duplicate, etc.) AND a priority label (high, medium,
   low). Add only type + priority labels. Do NOT add rice:* labels.
 - **Milestones:** Separately, for every OPEN issue with no milestone,
   run the Milestones section below — even if type+priority already exist
   (do not skip milestone routing just because RICE is done).
-- **Kanban (P0.1 only):** Always run the Kanban board section below after
-  RICE + milestones — even when no labels/milestones need changing.
+- **Kanban (current + next-up milestones):** Always run the Kanban board
+  section below after RICE + milestones — even when no labels/milestones
+  need changing.
 
 ## RICE (comment only)
 
@@ -167,7 +169,7 @@ P0.1 or P0.2. Empty milestone is better than a wrong P2.
 - Do not create new milestones; only assign existing ones by exact title.
 - Do not remove type/priority labels.
 
-## Kanban board (P0.1 only)
+## Kanban board (current + next-up milestones)
 
 Project:
 https://github.com/users/anne-markis/projects/1
@@ -176,29 +178,56 @@ https://github.com/users/anne-markis/projects/1
 - Title: `@anne-markis's Software Factory the Game`
 - Status field options: **Backlog**, **Ready**, **In progress**,
   **In review**, **Done**
-- Milestone in scope: **P0.1 — Cockpit & watchability** only
 - Ready WIP limit: **5**
 
 Use `gh project` / GraphQL to list items, add issues, and set Status.
-Do not invent new Status options. Do not manage Ready for any other
-milestone yet.
+Do not invent new Status options.
 
-Also read `docs/superpowers/specs/2026-08-07-p01-cockpit-watchability-plan.md`
-for P0.1 sequencing / dependencies when choosing what fills Ready.
+### Resolve in-scope milestones (do this first every run)
 
-### 1. Represent every P0.1 issue on the board
+Vision sequence (highest priority first):
+`P0.1 → P0.2 → P1.1 → P1.2 → P1.3 → P1.4 → P2.1 → P2.2 → P2.3 → P2.4 → P2.5 → P2.6`
 
-1. List all issues (open + closed) on milestone
-   `P0.1 — Cockpit & watchability`.
+List open repo milestones (`gh api …/milestones?state=open`) and
+resolve:
+
+1. **Current milestone** — the earliest milestone in the vision
+   sequence that still has **open issues** (`open_issues > 0`). If
+   every earlier milestone is closed or has zero open issues, advance.
+   If none have open issues, current is the earliest still-open
+   milestone in the sequence (empty board is fine).
+2. **Next-up milestone** — the immediately following milestone in the
+   vision sequence after current (even when current still has open
+   work). This is the highest-priority milestone after current; it may
+   receive board sync and Ready promotion so work can start overlapping
+   as current winds down.
+3. **In-scope set** = `{current, next-up}` (one or two milestones).
+   Report both titles in the run summary.
+
+Do **not** manage Ready / Backlog sync for milestones beyond next-up.
+Cards already on the board from older/other milestones may stay; Ready
+filling ignores them except for the WIP count.
+
+Also read any matching product plan under `docs/superpowers/specs/` for
+each in-scope milestone (e.g. `*p01*cockpit*` for P0.1) when choosing
+what fills Ready — use that plan’s sequencing / dependencies / Must–
+Should–Could table. If no plan exists yet, fall back to priority labels
+and issue-body dependency notes only.
+
+### 1. Represent every in-scope issue on the board
+
+1. For each milestone in the in-scope set, list all issues (open +
+   closed) on that milestone.
 2. List all items currently on project `1`.
-3. For each P0.1 issue missing from the project:
+3. For each in-scope issue missing from the project:
    - Add it with `gh project item-add 1 --owner anne-markis --url <issue-url>`.
    - If the issue is **OPEN**: set Status to **Backlog** (new tickets
      always land in Backlog; never skip straight to Ready on add).
    - If the issue is **CLOSED**: set Status to **Done**.
-4. Do not remove non-P0.1 items in this step unless they are clearly
-   accidental duplicates of a P0.1 card. Ready-filling below ignores
-   non-P0.1 items.
+4. Do not remove out-of-scope items in this step unless they are clearly
+   accidental duplicates of an in-scope card. Ready-filling below
+   ignores out-of-scope items (except they still count toward the Ready
+   WIP limit of 5).
 
 ### 2. Ready gate (must pass before Backlog → Ready)
 
@@ -221,10 +250,11 @@ A ticket may move to **Ready** only if it passes its type gate:
   that pins the failure — e.g. exact UI state + code path called out).
 - Vague “it broke” / “sometimes wrong” without steps → not Ready.
 
-If the issue body is thin but the linked P0.1 plan section for that
-ticket already supplies the missing story / DoD / AC, treat those as
-satisfied only when the issue links or clearly references that plan
-section; otherwise leave it in Backlog and request the body be filled.
+If the issue body is thin but a linked in-scope milestone plan section
+for that ticket already supplies the missing story / DoD / AC, treat
+those as satisfied only when the issue links or clearly references that
+plan section; otherwise leave it in Backlog and request the body be
+filled.
 
 ### 3. Fill Ready up to 5
 
@@ -238,7 +268,7 @@ After syncing the board:
    alone.
 3. Only promote from **Backlog** → **Ready** (never from Done).
 4. Candidates must be:
-   - On milestone **P0.1 — Cockpit & watchability**
+   - On an **in-scope** milestone (current or next-up)
    - OPEN
    - Status **Backlog** (on the project)
    - Passing the Ready gate above
@@ -246,25 +276,23 @@ After syncing the board:
 
 **Ordering (highest first) when choosing who enters Ready:**
 
-1. **Dependencies / sequencing** from the P0.1 plan (and issue body
-   “Depends on” / “Best after” notes). Examples from the plan:
-   - Cockpit layout (#66 / NEW-C) early — unlocks full value of
-     interrupt (#40) and next-goal (#65).
-   - Delivery caption (#19) before or with bottleneck cue (#64).
-   - Next-goal (#65) best after cockpit (#66).
-   - Game feel (#67) after or with cockpit; confirm-remove (#16) and
-     microcopy (#20) anytime / last.
-   Prefer unblocked Must work over blocked Should/Could.
-2. **Priority label:** high → medium → low.
-3. **Milestone story priority** when tied: Must → Should → Could
-   (from the P0.1 plan user-story table).
-4. Lower issue number as final tie-break.
+1. **Milestone precedence:** prefer **current** over **next-up** when
+   filling Ready — drain current first; only pull next-up when Ready
+   still has room after all eligible current candidates are considered
+   (or current has none eligible).
+2. **Dependencies / sequencing** from that milestone’s plan (and issue
+   body “Depends on” / “Best after” notes). Prefer unblocked Must work
+   over blocked Should/Could.
+3. **Priority label:** high → medium → low.
+4. **Milestone story priority** when tied: Must → Should → Could
+   (from that milestone’s plan user-story table, when present).
+5. Lower issue number as final tie-break.
 
 Promote the top candidates until Ready has 5 items or no eligible
 candidates remain. Ready is a single column: **total Ready cards ≤ 5**.
-Only promote P0.1 issues; if Ready is already full (including any
-non-P0.1 cards already there), do not add more — note the contention
-in the run summary.
+Only promote in-scope issues; if Ready is already full (including any
+out-of-scope cards already there), do not add more — note the
+contention in the run summary.
 
 ### 4. Blocked Backlog → Ready: comment + @anne-markis
 
@@ -284,11 +312,13 @@ above) but **fails the Ready gate**:
 
 ### 5. Kanban hygiene
 
-- New P0.1 tickets always enter as **Backlog**, then may be promoted
+- New in-scope tickets always enter as **Backlog**, then may be promoted
   under the rules above in the same run if Ready has room and they pass
   the gate.
-- Closed P0.1 issues on the board should be **Done** (fix if needed).
+- Closed in-scope issues on the board should be **Done** (fix if
+  needed).
 - Do not move cards into **In progress** / **In review** yourself —
   those are claimed by implementation work.
-- Summarize Kanban actions in the run memory / final status (added,
-  promoted to Ready, blocked + commented, Done sync).
+- Summarize Kanban actions in the run memory / final status (resolved
+  current + next-up titles, added, promoted to Ready, blocked +
+  commented, Done sync).

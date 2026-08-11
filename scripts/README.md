@@ -18,8 +18,10 @@ inline in Cursor.
 **Kanban:** Issue fixers pick work from
 [project board #1](https://github.com/users/anne-markis/projects/1)
 (Ready → In progress on claim; In progress → In review when the
-non-draft PR is posted). Triage fills Ready; it does not move cards into
-In progress / In review.
+non-draft PR is posted). Triage fills Ready from the **current** vision
+milestone plus the **next-up** milestone; it does not move cards into
+In progress / In review. Fixers prefix issue and PR titles with
+`[Bug]` / `[Enhancement]`.
 
 **UX verification:** Both issue fixers run an optional Subagent D (UX
 Verifier) only when the change is Visual (player-facing UI). Visual PRs
