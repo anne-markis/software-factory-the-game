@@ -2,9 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   BINDING_INFLOW_RATIO,
   BINDING_SUSTAINED_DAYS,
+  DELIVERY_LOOP_CAPTION,
   bindingBottleneckStage,
   loopDiagramSvg,
 } from "./loopDiagram";
+import { inProgressPanelSvg } from "./inProgressPanel";
 import { Engine, initialState } from "../engine/engine";
 import { tick } from "../engine/tick";
 import { createRng } from "../engine/rng";
@@ -66,6 +68,41 @@ describe("loopDiagramSvg", () => {
     expect(svg).not.toContain(">Done<");
     expect(svg).toContain("continuous deploy");
     expect(svg.match(/<line /g)).toHaveLength(2); // pull, finish only
+  });
+
+  // Issue #19 / FR-2.1: Delivery loop needs terse teaching copy (steady vs
+  // growing) so players don't have to open the Progress panel for the lesson.
+  describe("issue #19: Delivery loop teaching caption", () => {
+    it("includes the steady-vs-growing caption on a fresh four-box Delivery loop", () => {
+      const content = emptyContent();
+      const svg = loopDiagramSvg(initialState(content), content);
+      expect(svg).toContain(DELIVERY_LOOP_CAPTION);
+      expect(DELIVERY_LOOP_CAPTION).toMatch(/steady/i);
+      expect(DELIVERY_LOOP_CAPTION).toMatch(/growing/i);
+      expect(DELIVERY_LOOP_CAPTION).toMatch(/bottleneck/i);
+      // Caption text itself must set fill=currentColor (issue #10).
+      expect(svg).toMatch(
+        new RegExp(`<text[^>]*fill="currentColor"[^>]*>${DELIVERY_LOOP_CAPTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+      );
+    });
+
+    it("keeps the caption once continuous deploy drops the Done box", () => {
+      const content = fullDecisionsContent();
+      const state = initialState(content);
+      state.decisions.push({ instanceId: "inst-cd", defId: "ci-cd" });
+      expect(loopDiagramSvg(state, content)).toContain(DELIVERY_LOOP_CAPTION);
+    });
+
+    it("does not change Progress-panel captions", () => {
+      const content = emptyContent();
+      const progress = inProgressPanelSvg(initialState(content), content);
+      expect(progress).toContain(
+        "The inner loop's pace sets outer throughput; its leak feeds outer backlog.",
+      );
+      expect(progress).toContain("refills the outer loop's Backlog");
+      expect(progress).toContain("rework leak");
+      expect(progress).not.toContain(DELIVERY_LOOP_CAPTION);
+    });
   });
 
   // Issue #10 follow-up: <rect>/<line>/<path> shapes use stroke="currentColor"
