@@ -479,47 +479,84 @@ If I were a solo starting today:
 1. ~~**Single AI seat vs ladder**~~ → **Settled (B):** one AI seat in
    Studio = keep **agent**, remove **copilot**. Heavier agent fleet /
    “runs while you sleep” is later-era depth, not a second day-one card.
-2. ~~**Income model**~~ → **Settled (A):** Studio money spine =
-   **contracts** + **subscription** + **one-time product purchases**
-   (marketplace / productized download — keep the fiction generic).
-   Donations/ads are not core. See §5.2.1 for the no-users compounding
-   assumption.
+2. ~~**Income model**~~ → **Settled (A) spine:** Studio money =
+   **contracts** + **subscription** + **one-time product purchases**.
+   **Users stock: reopened** — see §5.2.1 (was “no users”; now exploring
+   a real users stock coupled to reputation and product income).
 3. ~~**Hire gate**~~ → **Settled (C):** hire stays **visible** in the
    shop; no hide-until-ready gate. Player judges runway/budget. (May
    still teach via copy / soft cues later — not a hard lock.)
 4. **What replaces standup** if coordination isn’t a $ burn for one
    person — burnout? context-switch? “always-on Slack”?
-5. **Subscription / one-time product:** exact JSON shape for compounding
-   income (ramp rate, cap at era boundary, interaction with challenges).
+5. **Users system:** stocks, inflows/outflows, coupling to reputation /
+   product decisions / challenges — brainstorm in §5.2.1 before locking
+   JSON shape.
 
-### 5.2.1 Settled: Studio money without a user stock
+### 5.2.1 Studio product money + users (exploring)
 
-**Problem:** real subscriptions and one-time product sales depend on
-users. We will **not** model a users stock (or funnel chrome).
+**Money spine (settled):** contracts + subscription + one-time product
+(marketplace fiction OK).
 
-**Assumption (Studio):** product income is a **content-defined compounding
-drip** that trends upward over time while the decision stays owned, until
-the player leaves Studio (era boundary is a natural reset/re-spec point
-for Company-scale economics).
+**Users stock (reopened — interesting):** instead of faking growth with
+a blind time-ramp, track **users** as a real stock. Subscription and
+one-time product value then *read* users (and maybe reputation) rather
+than inventing customers offstage.
 
-Working shape (names TBD, must stay in JSON):
+#### Why it’s compelling (systems-wise)
 
-- **Subscription** decision: unlocks `incomePerDay` that **ramps** (e.g.
-  `+X per day` or multiplicative crawl) toward a Studio **cap** — fiction
-  = “users accumulate,” mechanics = time-based compound without entities.
-- **One-time product / marketplace** decision: either (i) periodic
-  burst sales on a content schedule/probability, or (ii) a slower ramp
-  with lumpier variance than subscription — still no user count.
-- **Contracts:** keep as project stock/flow money (already real).
+- New reinforcing loop: ship product → users → income → more build
+  capacity → better product / reputation → more users.
+- Reputation stops being “only for bigger contracts” — it can also be
+  **trust that acquires or retains users**.
+- Governors write themselves: outages, bad launches, debt-driven
+  incidents, pricing anger → user churn; support load → rate drag.
+- Studio→Company can re-interpret the same stock at a new scale without
+  a parallel “fake ramp” mechanic.
 
-Design pressures:
+#### Sketch (not locked)
 
-- Caps and ramp rates are **era-scoped** so Studio money cannot silently
-  fund Megacorp play without crossing the era gate.
-- Challenges can slap the drip (bad launch, refund spike, outage) without
-  needing users.
-- Player-facing copy can say “customers” / “buyers”; engine only sees
-  income modifiers + time.
+| Piece | Role |
+| --- | --- |
+| **Stock: `users`** | Non-negative; starts at 0 (or tiny after first launch). |
+| **Inflows** | Launch / marketing decisions; reputation-gated organic growth; viral challenge; shipping product updates (?) |
+| **Outflows** | Churn from incidents, neglect, bad support; competitor events |
+| **Subscription income** | ≈ `f(users)` per day (content formula: linear, diminishing, tier steps) |
+| **One-time product** | Bursts scaled by users (or by *new* users this window) — lumpier than sub |
+| **Contracts** | Mostly orthogonal (B2B projects), but rep still shared |
+| **Reputation** | Affects acquisition rate and/or churn; damaged by breaches/incidents |
+
+```mermaid
+flowchart LR
+  ship[Ship / launch / polish] --> users[users stock]
+  rep[reputation] --> users
+  users --> sub[subscription $/d]
+  users --> ot[one-time product bursts]
+  sub --> budget[budget]
+  ot --> budget
+  contracts[contracts] --> budget
+  contracts --> rep
+  incident[incidents / debt] -->|churn| users
+  incident -->|rep hit| rep
+```
+
+#### Open forks (Studio only)
+
+1. **When do users appear?** Only after a “launch product” decision, or
+   from day one as a dormant stock?
+2. **One product or many?** Single generic “your product” for Studio
+   simplicity vs separate subscription SKU and one-time SKU sharing one
+   user base.
+3. **Formula complexity:** start with `incomePerDay = users * k` and
+   `acquisition = g(reputation)` — enough? Or need satisfaction/churn
+   stocks immediately?
+4. **Era boundary:** users carry into Company (scaled problems) vs soft
+   reset / “market segment change” on era entry.
+5. **Engine cost:** new stock + a few effects is still JSON-friendly;
+   avoid a full marketing sim in Studio.
+
+**Previous “compound until era, no users” assumption** is demoted to a
+fallback if users proves too heavy for Studio. Prefer trying users if
+the loop stays watchable.
 
 ### 5.2.2 Settled so far (Studio shop spine)
 
@@ -527,13 +564,13 @@ Design pressures:
 | --- | --- |
 | **agent** as the one AI seat | **copilot** (remove) |
 | **contracts** (projects) | support-retainer as primary solo income |
-| **subscription** (new, compounding drip) | standup-as-$/d (replace or cut — open) |
-| **one-time product / marketplace** (new) | swarm / self-learning / eng-manager as Studio-default |
+| **subscription** + **one-time product** (priced off **users**) | standup-as-$/d (replace or cut — open) |
+| **users** stock (exploring — §5.2.1) | swarm / self-learning / eng-manager as Studio-default |
 | **basic-dev** visible anytime (player’s risk) | hide-until-ready hire gate |
 
-Next Studio pass: day-zero non-money plays (tooling, tests/CI, focus cost
-instead of standup) and how subscription vs one-time product should
-*feel* different under the same no-users rule.
+Next Studio pass: pressure-test the users loop (acquisition, churn, rep
+coupling) with a minimal formula — or day-zero non-money plays in
+parallel.
 
 ---
 
