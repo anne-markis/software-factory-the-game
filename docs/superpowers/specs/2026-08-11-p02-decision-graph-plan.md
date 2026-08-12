@@ -783,8 +783,8 @@ Shipped today (flat, not era-aware):
 | Working project | Size (sketch) | Role |
 | --- | --- | --- |
 | **Launch beta release** | **~300** | **Always the start project; $0 upfront.** Finish → users begin + **modest cash bonus (Model B)**. |
-| **Ship v1 / public launch** | ~800–1500? | Grows users harder; may pair with (but not auto-unlock) subscription / one-time product buys. |
-| **Tiny client gig** | **~100–500** | Optional cash inflow + **positive reputation**. Competes with beta/v1 via context-switch tax (slower main progress). |
+| **Ship v1 / v2 / … / v5** | escalating | Own-product versions after beta. Each completion grants **bonuses** (users and/or $ / rep — magnitudes TBD). Same family as beta; not client gigs. |
+| **Tiny client gig** | **~100–500** | Optional cash + **positive reputation**. Concurrency tax vs product versions. |
 
 Push out of Studio: small-crm @ 5k, mobile @ 9k, migrations, enterprise —
 those are **Company** (or later) shapes.
@@ -814,52 +814,22 @@ those are **Company** (or later) shapes.
 
 ### Settled (Studio projects)
 
-1. **Day one:** start on **Launch beta** only as the initial in-flight
-   project (****no upfront cost**** — game starts on it). **Tiny client
-   gigs (100–500 pts)** may be offered/startable for cash + reputation;
-   they slow main product progress via concurrency tax. **Not
-   mandatory** — see solvency rule below.
-2. **Sub / one-time product:** **separate buys** for now. Judge unlock
-   timing in a mockup — not locked to beta completion.
-3. **Own-product cash — Model B (hybrid), for now:** finishing beta/v1
-   grants a **modest completion bonus** (launch buzz / early sales
-   cushion) **plus** users. Ongoing scale still comes from subscription /
-   one-time product cards reading `users`. Revisit after mockup if B
-   makes monetization feel too optional.
+1. **Day one:** start on **Launch beta** (product **v0→beta**; **$0
+   upfront**). Finish → users begin + Model B cash bonus.
+2. **Version ladder:** after beta the player can ship **v1 → v2 → v3 →
+   v4 → v5**, each with **completion bonuses** (users and/or $ / rep —
+   tune in mockup). Optional parallel **tiny client gigs (100–500 pts)**
+   for cash + reputation at concurrency-tax cost. Gigs **not mandatory**.
+3. **Sub / one-time product:** **separate buys** (not auto-unlocked by
+   finishing beta or a version). They read `users` and do nothing useful
+   at `users == 0`. **Shop presence:** listed as normal purchasable cards
+   (no extra “appear after v1” gate) — already decided; only efficacy
+   waits on users.
+4. **Own-product cash — Model B:** version completions grant modest
+   bonuses **plus** user effects; ongoing scale from monetization cards.
 
-**Studio solvency rule (settled):** with starting budget (~$10k) and base
-burn, the player must be able to **finish Launch beta without taking any
-tiny gig** and without buying monetization. Tiny gigs are optional —
-either a bridge toward affording monetization cards, or miscellaneous
-cash/rep inflows — never a soft-required tax on the tutorial.
-
-### Open (narrow) — what “Ship v1 + monetization timing” was asking
-
-Two separate timing questions, not one:
-
-**A. Is there a second own-product project after beta (“Ship v1”)?**  
-Beta already unlocks `users` + launch $. Is the next product beat…
-
-- another project the player starts (bigger polish / public launch) that
-  grants more users or an acquire multiplier, or
-- skip it in Studio — growth is only organic + viral + monetization cards?
-
-**B. When do subscription / one-time show in the shop?**  
-They’re separate buys and useless at `users == 0`, but do they…
-
-- appear from day one (grey/useless until launch),
-- appear only after beta completes,
-- or appear only after some other beat (e.g. after v1, or after N users)?
-
-These only matter for shop clutter and teaching order — mockup can decide,
-but naming the fork avoids accidentally auto-gating monetization again.
-
-Other still-open Studio bits:
-
-- Harness vs orch **magnitudes** (orch larger speed — how much?).
-- Agent ×N stacking (additive vs diminishing).
-- Tiny-gig payout band.
-- Challenge candidate trim (§5.4 review).
+**Studio solvency rule (settled):** finish **Launch beta** on starting
+resources without any tiny gig and without monetization.
 
 ---
 
