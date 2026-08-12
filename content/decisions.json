@@ -3,9 +3,6 @@
     "id": "test-suite",
     "name": "Add test suite",
     "description": "Halves tech debt permanently and unlocks CI/CD. Work slows 50% for about a week while you write them.",
-    "tags": [
-      "process"
-    ],
     "category": "tame-debt",
     "cost": {
       "oneTime": 500
@@ -31,9 +28,6 @@
     "id": "ci-cd",
     "name": "CI/CD pipeline",
     "description": "Finished work ships continuously, removing the Done queue entirely. Costs a day of setup.",
-    "tags": [
-      "process"
-    ],
     "category": "change-structure",
     "cost": {
       "oneTime": 750
@@ -60,9 +54,6 @@
     "id": "basic-dev",
     "name": "Hire basic developer",
     "description": "Adds a developer, hopefully a strong one. It's a gamble, and they're gone for good if payroll fails.",
-    "tags": [
-      "human"
-    ],
     "category": "ship-faster",
     "human": true,
     "cost": {
@@ -148,9 +139,6 @@
     "id": "agent",
     "name": "Add coding agent",
     "description": "Speeds finishing work 20%. Adds 20% more tech debt unless you build a harness for it.",
-    "tags": [
-      "darkfactory"
-    ],
     "category": "ship-faster",
     "cost": {
       "oneTime": 10,
@@ -193,9 +181,6 @@
     "id": "agent-harness",
     "name": "Agent harness",
     "description": "Halves the extra tech debt your coding agents create. Ongoing cost to keep it running.",
-    "tags": [
-      "darkfactory"
-    ],
     "category": "tame-debt",
     "cost": {
       "oneTime": 250,
@@ -211,9 +196,6 @@
     "id": "better-tooling",
     "name": "Better tooling",
     "description": "Sharper editors and faster builds speed up every rate a little, for good.",
-    "tags": [
-      "solo"
-    ],
     "category": "ship-faster",
     "cost": {
       "oneTime": 150
@@ -233,9 +215,6 @@
     "id": "copilot",
     "name": "Copilot assistant",
     "description": "Speeds finishing work 15%. Adds 5% more tech debt in exchange.",
-    "tags": [
-      "solo"
-    ],
     "category": "ship-faster",
     "cost": {
       "oneTime": 20,
@@ -261,9 +240,6 @@
     "id": "senior-dev",
     "name": "Hire senior developer",
     "description": "Usually a big boost to the team, sometimes a dud. Hiring an engineering manager first improves the odds.",
-    "tags": [
-      "human"
-    ],
     "category": "ship-faster",
     "human": true,
     "cost": {
@@ -352,9 +328,6 @@
     "id": "contractor",
     "name": "Bring in contractor",
     "description": "A dependable +1 to pulling and finishing work, immune to sickness and poaching. Adds 10% more tech debt.",
-    "tags": [
-      "human"
-    ],
     "category": "ship-faster",
     "cost": {
       "perDay": 12
@@ -374,9 +347,6 @@
     "id": "eng-manager",
     "name": "Hire engineering manager",
     "description": "Improves the odds on every developer hire made while they're on staff. No output of their own.",
-    "tags": [
-      "human"
-    ],
     "category": "prevent-trouble",
     "cost": {
       "perDay": 8
@@ -392,10 +362,6 @@
     "id": "standup",
     "name": "Daily standup",
     "description": "Keeps work moving: pulling new work speeds up 15%. Costs everyone a little time each day.",
-    "tags": [
-      "human",
-      "process"
-    ],
     "category": "ship-faster",
     "cost": {
       "perDay": 3
@@ -415,9 +381,6 @@
     "id": "agent-swarm",
     "name": "Agent swarm",
     "description": "Agents pick up and ship work themselves: all work 80% faster. Tech debt grows 50% faster unless an orchestrator tames it.",
-    "tags": [
-      "darkfactory"
-    ],
     "category": "ship-faster",
     "cost": {
       "oneTime": 100,
@@ -463,9 +426,6 @@
     "id": "swarm-orchestrator",
     "name": "Swarm orchestrator",
     "description": "Swarms bought while this runs accumulate far less tech debt. No output on its own.",
-    "tags": [
-      "darkfactory"
-    ],
     "category": "tame-debt",
     "cost": {
       "oneTime": 150,
@@ -482,9 +442,6 @@
     "id": "self-learning-agents",
     "name": "Self-learning agents",
     "description": "Agents improve themselves every day, compounding into a large speed boost over time.",
-    "tags": [
-      "darkfactory"
-    ],
     "category": "ship-faster",
     "cost": {
       "oneTime": 350,
@@ -520,9 +477,6 @@
     "id": "support-retainer",
     "name": "Support retainer",
     "description": "Earns $8/day in support fees. The interruptions slow all work by 5%.",
-    "tags": [
-      "process"
-    ],
     "category": "earn-income",
     "cost": {},
     "incomePerDay": 8,
@@ -541,9 +495,6 @@
     "id": "ddos-protection",
     "name": "DDoS protection",
     "description": "Prevents DDoS attacks from ever hitting your factory.",
-    "tags": [
-      "process"
-    ],
     "category": "prevent-trouble",
     "cost": {
       "oneTime": 200,
@@ -557,9 +508,6 @@
     "id": "refactoring-sprint",
     "name": "Refactoring sprint",
     "description": "Pays down 30% of your tech debt in one sprint. Work slows 40% for about a week while you clean up.",
-    "tags": [
-      "process"
-    ],
     "category": "tame-debt",
     "cost": {
       "oneTime": 400
@@ -584,9 +532,6 @@
     "id": "redesign-rebuild",
     "name": "Redesign and rebuild",
     "description": "Wipes 90% of your tech debt. Work crawls at 40% speed for over three weeks while you rebuild.",
-    "tags": [
-      "process"
-    ],
     "category": "tame-debt",
     "cost": {
       "oneTime": 1200

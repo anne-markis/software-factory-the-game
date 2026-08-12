@@ -9,7 +9,6 @@ function base(overrides: Partial<DecisionDef>): DecisionDef {
     id: "x",
     name: "x",
     description: "x",
-    tags: [],
     category: "ship-faster",
     cost: {},
     effects: [],

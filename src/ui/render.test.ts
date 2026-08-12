@@ -241,7 +241,7 @@ describe("renderDecisions", () => {
     expect(html).toContain("Add coding agent");
     expect(html).toContain("Standalone");
     expect(html).toContain("&rarr;");
-    // Category tags (mapped from DecisionCategory to short labels).
+    // DecisionCategory values mapped to short player-facing labels.
     expect(html).toContain('<span class="tt-cat">speed</span>');
     expect(html).toContain('<span class="tt-cat">debt</span>');
   });

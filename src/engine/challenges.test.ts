@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rollChallenges, resolveChoice } from "./challenges";
 import { initialState } from "./engine";
-import { applyDecision } from "./decisions";
+import { applyDecision, removeDecision } from "./decisions";
 import { parseStartConfig, parseChallenges, parseDecisions } from "./content";
 import { createRng, hashRoll, type Rng } from "./rng";
 import startJson from "../../content/start.json";
@@ -44,9 +44,9 @@ describe("rollChallenges", () => {
     // challenges, only ddos rolls under its new probability:
     //   hashRoll(SEED, 155, "ddos") = 0.0003 < 0.005, day 155 >= its minDay 15,
     //   and lacksDecision "ddos-protection" holds (the idle player owns none).
-    // sickness/poached are gated out (0 human devs) and every darkfactory/human
-    // challenge is gated out (no decisions owned), so budget moves by exactly
-    // ddos's -$75.
+    // sickness/poached/human-headcount challenges are gated out (0 human devs)
+    // and every agent-line challenge is gated out (no decisions owned), so
+    // budget moves by exactly ddos's -$75.
     s.day = 155;
     expect(hashRoll(SEED, 155, "ddos")).toBeLessThan(0.005);
     rollChallenges(s, noRng, c);
@@ -304,11 +304,11 @@ describe("rollChallenges", () => {
   });
 });
 
-describe("model-deprecation (hasTag darkfactory)", () => {
-  it("fires and queues its choice on a firing day once a darkfactory decision is owned", () => {
+describe("model-deprecation (requiresAnyDecision)", () => {
+  it("fires and queues its choice on a firing day once an agent-line decision is owned", () => {
     const c = content();
     const s = initialState(c);
-    applyDecision(s, c, "agent", createRng(1)); // "agent" is tagged darkfactory, no gamble
+    applyDecision(s, c, "agent", createRng(1));
     // Day 15: hashRoll(SEED, 15, "model-deprecation") = 0.0036 < its 0.015 probability.
     s.day = 15;
     expect(hashRoll(SEED, 15, "model-deprecation")).toBeLessThan(0.015);
@@ -318,14 +318,31 @@ describe("model-deprecation (hasTag darkfactory)", () => {
     expect(pending!.expiresDay).toBe(19); // day 15 + expiresInDays 4
   });
 
-  it("is condition-gated: never fires without a darkfactory decision owned, even at probability 1.0", () => {
+  it("stays eligible when agent is removed while the later agent-harness card remains owned", () => {
+    const c = content();
+    const s = initialState(c);
+    applyDecision(s, c, "agent", createRng(1));
+    applyDecision(s, c, "agent-harness", createRng(2));
+    const agent = s.decisions.find((d) => d.defId === "agent")!;
+    removeDecision(s, c, agent.instanceId);
+    expect(s.decisions.map((d) => d.defId)).toContain("agent-harness");
+    expect(s.decisions.map((d) => d.defId)).not.toContain("agent");
+
+    s.day = 15;
+    rollChallenges(s, noRng, c);
+    expect(s.pendingChoices.some((pc) => pc.challengeId === "model-deprecation")).toBe(true);
+  });
+
+  it("is condition-gated: never fires without an agent-line decision owned, even at probability 1.0", () => {
     const challenges = parseChallenges([
       {
         id: "model-deprecation",
         name: "Model deprecation",
         description: "desc",
         probabilityPerDay: 1.0, // would always fire if the condition allowed a roll
-        condition: { hasTag: "darkfactory" },
+        condition: {
+          requiresAnyDecision: ["agent", "agent-harness", "agent-swarm", "swarm-orchestrator", "self-learning-agents"],
+        },
         cooldownDays: 90,
         effects: [],
         choice: {

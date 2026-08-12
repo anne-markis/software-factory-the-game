@@ -23,11 +23,9 @@ function conditionMet(def: ChallengeDef, state: GameState, content: GameContent)
   if (cond.maxHumanDevs !== undefined && humans > cond.maxHumanDevs) return false;
   if (cond.minTechDebt !== undefined && state.stocks.techDebt < cond.minTechDebt) return false;
   if (cond.minDay !== undefined && state.day < cond.minDay) return false;
-  if (cond.hasTag !== undefined) {
-    const ownedTags = new Set(
-      state.decisions.flatMap((inst) => content.decisions.find((d) => d.id === inst.defId)?.tags ?? []),
-    );
-    if (!ownedTags.has(cond.hasTag)) return false;
+  if (cond.requiresAnyDecision !== undefined) {
+    const required = new Set(cond.requiresAnyDecision);
+    if (!state.decisions.some((inst) => required.has(inst.defId))) return false;
   }
   if (cond.lacksDecision !== undefined) {
     if (state.decisions.some((inst) => inst.defId === cond.lacksDecision)) return false;

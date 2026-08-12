@@ -73,7 +73,6 @@ export interface DecisionDef {
   id: string;
   name: string;
   description: string;
-  tags: string[];
   category: DecisionCategory;
   human?: boolean;
   cost: { oneTime?: number; perDay?: number };
@@ -119,9 +118,12 @@ export interface ChallengeDef {
   condition?: {
     minHumanDevs?: number;
     maxHumanDevs?: number;
-    hasTag?: string;
     minTechDebt?: number;
     minDay?: number;
+    // Decision def ids: the challenge only fires while at least one owned
+    // instance has any listed defId. Cross-checked against content.decisions
+    // by validateContentGraph.
+    requiresAnyDecision?: string[];
     // A decision def id: the challenge only fires while NO owned instance has
     // this defId. Cross-checked against content.decisions by
     // validateContentGraph (parseChallenges alone has no access to decisions).

@@ -194,17 +194,17 @@ describe("detectArchetypes", () => {
     // under provider therefore mitigates nothing, so the archetype still fires
     // -- the per-(decision, provider) classification must not leak across defs.
     const raiser: DecisionDef = {
-      id: "raiser", name: "Raiser", description: "d", tags: [], category: "ship-faster", cost: {}, removable: true,
+      id: "raiser", name: "Raiser", description: "d", category: "ship-faster", cost: {}, removable: true,
       effects: [{ type: "modifyDebtMultiplier", op: "mul", value: 1.2 }],
       synergies: [{ ifOwned: "provider", effects: [{ type: "modifyRate", target: "all", op: "mul", value: 1.1 }] }],
     };
     const raiser2: DecisionDef = {
-      id: "raiser2", name: "Raiser 2", description: "d", tags: [], category: "ship-faster", cost: {}, removable: true,
+      id: "raiser2", name: "Raiser 2", description: "d", category: "ship-faster", cost: {}, removable: true,
       effects: [{ type: "modifyDebtMultiplier", op: "mul", value: 1.3 }],
       synergies: [{ ifOwned: "provider", effects: [{ type: "modifyDebtMultiplier", op: "mul", value: 1.05 }] }],
     };
     const provider: DecisionDef = {
-      id: "provider", name: "Provider", description: "d", tags: [], category: "ship-faster",
+      id: "provider", name: "Provider", description: "d", category: "ship-faster",
       cost: {}, removable: true, effects: [],
     };
     const c: GameContent = {
@@ -252,7 +252,7 @@ describe("detectArchetypes", () => {
     // the raiser's baseDebt (1.2)", so the synergy would be wrongly
     // classified as debt-mitigating. With the guard, it must not be.
     const raiser: DecisionDef = {
-      id: "raiser", name: "Raiser", description: "d", tags: [], category: "ship-faster", cost: {}, removable: true,
+      id: "raiser", name: "Raiser", description: "d", category: "ship-faster", cost: {}, removable: true,
       effects: [{ type: "modifyDebtMultiplier", op: "mul", value: 1.2 }],
       synergies: [
         {
@@ -262,11 +262,11 @@ describe("detectArchetypes", () => {
       ],
     };
     const raiser2: DecisionDef = {
-      id: "raiser2", name: "Raiser 2", description: "d", tags: [], category: "ship-faster", cost: {}, removable: true,
+      id: "raiser2", name: "Raiser 2", description: "d", category: "ship-faster", cost: {}, removable: true,
       effects: [{ type: "modifyDebtMultiplier", op: "mul", value: 1.3 }],
     };
     const rateOnlyProvider: DecisionDef = {
-      id: "rate-only-provider", name: "Rate only provider", description: "d", tags: [], category: "ship-faster",
+      id: "rate-only-provider", name: "Rate only provider", description: "d", category: "ship-faster",
       cost: {}, removable: true, effects: [{ type: "modifyRate", target: "all", op: "mul", value: 1.05 }],
     };
     const c: GameContent = {

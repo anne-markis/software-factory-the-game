@@ -126,14 +126,14 @@ describe("simulation", () => {
   // Full-content idle probe: same do-nothing player, challenges on. Events
   // steepen the mechanism's -$3/day (Release 9 baseline; see the mechanism
   // probe above). The idle player owns no decisions at all, so every
-  // hasTag-gated content-wave challenge (model-deprecation, api-price-hike,
-  // runaway-agent-loop, meeting-creep, team-conflict, cloud-credits) is
-  // condition-gated out and never fires; the only new challenge that reaches
-  // the idle player is open-source-windfall (minDay 15, +$400, 1%/day,
-  // 60-day cooldown), a pure income boost that softens the glide. ddos is
-  // additionally gated by lacksDecision "ddos-protection" (Release 9), which
-  // the idle player also satisfies (owns nothing) so it still fires, just far
-  // less often at its retuned 0.005 probability.
+  // ownership/headcount-gated content-wave challenge (model-deprecation,
+  // api-price-hike, runaway-agent-loop, meeting-creep, team-conflict,
+  // cloud-credits) is condition-gated out and never fires; the only new
+  // challenge that reaches the idle player is open-source-windfall (minDay
+  // 15, +$400, 1%/day, 60-day cooldown), a pure income boost that softens the
+  // glide. ddos is additionally gated by lacksDecision "ddos-protection"
+  // (Release 9), which the idle player also satisfies (owns nothing) so it
+  // still fires, just far less often at its retuned 0.005 probability.
   //
   // RE-PINNED for content wave (release 8, task 4.5): challenge rolls are now
   // hashed per challenge (hashRoll on gameSeed/day/id) instead of drawn
@@ -190,8 +190,9 @@ describe("simulation", () => {
   // touches that stream -- so both the challenge outcomes AND the purchase
   // gambles (which still draw from the stream) fall on a different, now
   // content-stable, deterministic sequence than under task 4's positional
-  // draws. This build owns basic-dev (tagged "human"), so it also satisfies
-  // meeting-creep's and team-conflict's hasTag conditions once it hires.
+  // draws. This build owns basic-dev (whose definition has `human: true`), so
+  // it also satisfies meeting-creep's and team-conflict's minHumanDevs
+  // conditions once it hires.
   //
   // RE-PINNED again for Release 9 (global event spacing, challengeSpacingDays
   // 50): with a 50-day floor between fires, the total event count over 2000
@@ -363,7 +364,7 @@ describe("simulation", () => {
   // mobile-app at day 2000; budget 5254 at day 500, 5963 at day 1000, 4332 at
   // day 2000; never hits the zero-clamp. Challenge exposure is the human set
   // (sickness 110, meeting-creep 5, team-conflict 5, poached 4) plus the
-  // universal ones; the human tag never triggers the darkfactory pool.
+  // universal ones; human staffing does not satisfy agent-line ownership gates.
   //
   // RE-PINNED for Release 9 (global event spacing, challengeSpacingDays 50).
   // Fewer, less frequent challenges mean a materially wider margin: completes
@@ -448,8 +449,8 @@ describe("simulation", () => {
   // Automation-heavy build. Observed trajectory under the tuned content:
   // completes first-contract on day 396 and small-crm on day 1643, is partway
   // through mobile-app at day 2000; budget 2198 at day 500, 4219 at day 1000,
-  // 3441 at day 2000; never hits the zero-clamp. The darkfactory tag opens its
-  // own challenge pool (api-price-hike 17, runaway-agent-loop 13,
+  // 3441 at day 2000; never hits the zero-clamp. Agent-line ownership opens
+  // its related challenge pool (api-price-hike 17, runaway-agent-loop 13,
   // model-deprecation 8, cloud-credits 9) and, owning no human devs, it eats
   // laptop-dies (14) but no sickness/poaching -- a materially different risk
   // profile from the human build at a similar destination, which is the
@@ -462,7 +463,7 @@ describe("simulation", () => {
   // 2000 (again roughly an order of magnitude more margin); still never hits
   // the zero-clamp. Measured fires: api-price-hike 7, scope-creep 7, ddos 6,
   // model-deprecation 4, runaway-agent-loop 4, prod-incident 4, laptop-dies
-  // 3, cloud-credits 2, open-source-windfall 2 -- the darkfactory pool and
+  // 3, cloud-credits 2, open-source-windfall 2 -- the agent-line pool and
   // laptop-dies (no human devs) still dominate, sickness/poaching still
   // absent, so the risk-profile contrast with the human-heavy build (the
   // track-parity design goal) survives the spacing change.
@@ -471,7 +472,7 @@ describe("simulation", () => {
   // payoutPerPoint 15->17, cheaper agent-harness 400->250, swarm-orchestrator
   // 250->150, self-learning-agents 500->350, on top of the challenge
   // probability/value cuts). Completes first-contract on day 394 (unchanged)
-  // and small-crm on day 1616 (essentially unchanged -- cheaper darkfactory
+  // and small-crm on day 1616 (essentially unchanged -- cheaper agent-line
   // decisions front-load spending sooner but the shopping-list gating on
   // requires/budget dominates timing more than one day's difference); budget
   // 13073.50 at day 500, 26185.37 at day 1000, 52016.90 at day 2000 (wider

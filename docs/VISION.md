@@ -34,11 +34,11 @@ that drags throughput and scales incidents. Context-switch tax on concurrent
 work. Reputation as Success to the Successful (with a real downward spiral).
 A decision graph (requires / unlocks, synergies, categories) that already
 steers builds — densest on the automation / agent ladder; thinner elsewhere.
-Legacy decision `tags` and challenge `hasTag` gates still exist in content
-but are **not** the intended curriculum model (see P0.2 plan: retire
-first-class tracks/tags). One-shot archetype narration for Limits to Growth
-and Shifting the Burden. Endless play with reputation milestones. Cockpit /
-watchability UX (P0.1) largely shipped so the machine stays watchable.
+Legacy decision tags and challenge tag gates have been retired; eligibility
+now uses stocks, human headcount, and live decision ownership. One-shot
+archetype narration for Limits to Growth and Shifting the Burden. Endless play
+with reputation milestones. Cockpit / watchability UX (P0.1) largely shipped
+so the machine stays watchable.
 
 The core thesis is already playable: **structure generates behavior**. The
 medium and long term are about deepening that thesis — not bolting on more

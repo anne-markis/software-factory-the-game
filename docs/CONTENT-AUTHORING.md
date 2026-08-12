@@ -46,14 +46,10 @@ A decision (`content/decisions.json`) is an object with these fields:
   list.
 - `description` (string, required) - shown under the buy button and echoed
   into the event log when the decision has no gamble table.
-- `tags` (string array, required) - free-form labels (`"process"`,
-  `"human"`, `"solo"`, `"darkfactory"` are the ones shipped today). Tags
-  drive challenges' `hasTag` condition (section 4) - a tag only "counts"
-  while at least one owned decision instance carries it.
 - `category` (string, required) - one of five fixed values (`DecisionCategory`
-  in `src/engine/types.ts`), unlike `tags` this is a closed enum, not
-  free-form, and the loader rejects an unknown value or a missing field
-  outright. It controls which section of the "Alter the loop" shop
+  in `src/engine/types.ts`). This is a closed enum, not free-form, and the
+  loader rejects an unknown value or a missing field outright. It controls
+  which section of the "Alter the loop" shop
   (`renderDecisions` in `src/ui/render.ts`) the decision renders under, so
   players can find levers for the stock they care about instead of reading
   every entry in one flat list. The five values, in shop display order,
@@ -75,8 +71,11 @@ A decision (`content/decisions.json`) is an object with these fields:
   visible in the shop (owned-unique and missing-`requires` entries are
   filtered out first, same as before categorization); an empty category
   produces no header. Pick the category by what the decision *does*, not
-  its `tags` - the two are independent and serve different UI surfaces
-  (tags gate challenge conditions; category only affects shop layout).
+  by which build it seems to belong to; challenge eligibility is authored
+  separately through live ownership conditions.
+- Free-form decision `tags` have been removed from the schema. The strict
+  loader rejects that legacy field; use `category` for shop layout and
+  challenge `requiresAnyDecision` for ownership-based eligibility.
 - `human` (boolean, optional) - marks the decision as a human developer.
   This is what challenges' `minHumanDevs`/`maxHumanDevs`/`perHumanDev`
   count against (see `humanDevInstances` in `src/engine/challenges.ts`).
@@ -385,19 +384,22 @@ A challenge (`content/challenges.json`) is an object with:
   the challenge to even be rolled that day:
   - `minHumanDevs` / `maxHumanDevs` (int >= 0) - count of currently-owned
     decision instances whose def has `human: true`.
-  - `hasTag` (string) - true if any currently-owned decision instance's
-    def lists this tag (tags come from `decisions.json`, evaluated live
-    against what's owned right now, not what was ever owned).
   - `minTechDebt` (number >= 0) - `state.stocks.techDebt` must be at
     least this.
   - `minDay` (int >= 0) - `state.day` must be at least this (used to keep
     early days quieter; most shipped challenges gate on `minDay: 15`).
+  - `requiresAnyDecision` (non-empty string array) - decision def ids. The
+    condition is true while at least one currently-owned instance has any
+    listed id. Ownership is evaluated live, so a later ladder card can keep
+    the condition true after an earlier prerequisite is removed. Every id
+    must exist in `decisions.json`, or `validateContentGraph` rejects the
+    content.
   - `lacksDecision` (string) - a decision def id: the challenge only fires
-    while no currently-owned instance has this def id (evaluated live,
-    same as `hasTag`). This is the counterpart to `hasTag`/`minHumanDevs`,
-    which all gate on *owning* something - `lacksDecision` gates on
-    *not* owning something, for content that lets the player buy their way
-    out of a challenge entirely. `ddos` uses it today:
+    while no currently-owned instance has this def id (evaluated live).
+    This is the counterpart to `requiresAnyDecision`/`minHumanDevs`, which
+    gate on *owning* something - `lacksDecision` gates on *not* owning
+    something, for content that lets the player buy their way out of a
+    challenge entirely. `ddos` uses it today:
     `"condition": { "minDay": 15, "lacksDecision": "ddos-protection" }`,
     paired with a `ddos-protection` decision (`content/decisions.json`)
     that has no direct rate or debt effects - its only job is to make this
@@ -507,11 +509,12 @@ From `parseChallenges` (`content/challenges.json`):
 - `rampRate` effects (wherever they appear, decisions or challenges)
   cannot target `"all"` - only `"pull"`, `"finish"`, `"deploy"` are
   accepted by the schema.
-- Every `condition.lacksDecision` id is checked against the decisions file
-  by `validateContentGraph`, a separate pass that runs after all four
-  files are parsed (not inside `parseChallenges` itself, since challenge
-  parsing alone has no access to `content/decisions.json`). An unknown id
-  throws, naming both the offending challenge and `content/challenges.json`.
+- Every id in `condition.requiresAnyDecision`, and the id in
+  `condition.lacksDecision`, is checked against the decisions file by
+  `validateContentGraph`, a separate pass that runs after all four files
+  are parsed (not inside `parseChallenges` itself, since challenge parsing
+  alone has no access to `content/decisions.json`). An unknown id throws,
+  naming both the offending challenge and `content/challenges.json`.
 
 From `parseProjects` (`content/projects.json`):
 
@@ -774,7 +777,6 @@ N days needs `durationDays: N + 1`.
   "id": "structure-cleanup",
   "name": "Structure cleanup",
   "description": "Slows all work 40% for 4 days while the team pays down structure. Permanently cuts tech debt accumulation by 20%.",
-  "tags": ["process"],
   "category": "tame-debt",
   "cost": { "oneTime": 350 },
   "effects": [
@@ -800,7 +802,7 @@ Walking through it:
 - `category: "tame-debt"` puts it in the "Tame tech debt" shop section
   alongside `test-suite`, `agent-harness`, `swarm-orchestrator`,
   `refactoring-sprint`, and `redesign-rebuild` - matching what it does
-  (cuts debt accumulation), not its `"process"` tag.
+  (cuts debt accumulation).
 
 To add it for real, you'd append this object to the array in
 `content/decisions.json` (mind the comma with the preceding entry), then
@@ -887,8 +889,8 @@ They currently check:
   the viability bar: each must complete at least 2 projects and never
   hit the zero-budget clamp over 2000 days. If you add or rebalance a
   decision or challenge that these shopping lists would buy or be
-  exposed to (check the `shoppingList` arrays in
-  `simulation.test.ts` against your new content's tags and ids), rerun
+  exposed to (check the `shoppingList` arrays and ownership conditions in
+  `simulation.test.ts` against your new content's ids), rerun
   the tests and watch for `everBroke` flipping to `true` or
   `completedProjects` dropping below 2.
 - **Greedy strategy** - buys everything affordable every day; only
