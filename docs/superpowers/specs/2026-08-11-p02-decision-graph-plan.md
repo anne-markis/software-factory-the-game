@@ -832,16 +832,33 @@ tiny gig** and without buying monetization. Tiny gigs are optional —
 either a bridge toward affording monetization cards, or miscellaneous
 cash/rep inflows — never a soft-required tax on the tutorial.
 
-### Open (narrow)
+### Open (narrow) — what “Ship v1 + monetization timing” was asking
 
-- Exact beta completion bonus $ and initial user grant on launch.
-- Tiny-gig payout band so they stay tempting but skippable.
-- When subscription / one-time appear in the shop relative to beta
-  (mockup).
-- Harness vs orchestration: distinct effects (orchestration already =
-  speed up + debt accrual down; harness must not be a clone).
-- Agent ×N stacking: additive rates? diminishing? debt per agent?
-- Tooling / tests→CI / ddos / refactor — still undecided for Studio.
+Two separate timing questions, not one:
+
+**A. Is there a second own-product project after beta (“Ship v1”)?**  
+Beta already unlocks `users` + launch $. Is the next product beat…
+
+- another project the player starts (bigger polish / public launch) that
+  grants more users or an acquire multiplier, or
+- skip it in Studio — growth is only organic + viral + monetization cards?
+
+**B. When do subscription / one-time show in the shop?**  
+They’re separate buys and useless at `users == 0`, but do they…
+
+- appear from day one (grey/useless until launch),
+- appear only after beta completes,
+- or appear only after some other beat (e.g. after v1, or after N users)?
+
+These only matter for shop clutter and teaching order — mockup can decide,
+but naming the fork avoids accidentally auto-gating monetization again.
+
+Other still-open Studio bits:
+
+- Harness vs orch **magnitudes** (orch larger speed — how much?).
+- Agent ×N stacking (additive vs diminishing).
+- Tiny-gig payout band.
+- Challenge candidate trim (§5.4 review).
 
 ---
 
@@ -929,20 +946,47 @@ knob in mockup). Fiction: attention arrived before the factory was ready.
 | security-breach | Long debt pile; heavy nuke |
 | meeting-creep, team-conflict, burnout | Org calendar — Company |
 | sickness, key-dev-poached | Cut; not re-adding as “fun realism” |
-| ddos (+ protection card) | Only if that decision stays in Studio |
+| ddos (+ protection card) | **Company** with that decision |
+| refactoring-sprint | **Company** |
 
 ### Quiet period
 
 Short quiet stretch (minDay and/or until beta is nearly done) so the
 opening isn’t a pile-on. Exact number TBD with ~300-pt beta.
 
+### Challenge candidate review (Studio)
+
+**Already in (settled):** scope-creep · prod-incident (users > 0) ·
+went-viral (spike + rate-drag capacity crisis).
+
+**Propose keep (small pool):**
+
+| id | Keep? | Note |
+| --- | --- | --- |
+| **runaway-agent-loop** | **Yes** | Core agent whimsy/governor |
+| **model-deprecation** | **Yes** | Choice teach; agent path |
+| **angry-users** | **Yes** | Users loop governor (with incidents) |
+| **laptop-dies** | **Yes** | Solo bus-factor; cheap clarity |
+| **cloud-credits** or **open-source-windfall** | **Pick one** | One light upside; two is noisy |
+
+**Propose cut or defer:**
+
+| id | Lean | Why |
+| --- | --- | --- |
+| **founder’s flu** | Cut | Overlaps “you are slow” without much game |
+| **api-price-hike** | Cut/defer | Thin cousin of runaway $ hit |
+| **orchestration-mess** | Defer | Orch already gated by ≥2 agents + cost; card may be enough |
+| **refund-wave** / **churn-spike** | Defer | Wait until monetization mockup; angry-users + incident may suffice |
+| **dependency-break** | Defer | Nice flavor; not needed if scope-creep covers delivery pain |
+| **sickness** / **poach** | Cut | Already settled |
+| **ddos** | Company | With protection card |
+
 ### Open forks (challenges) — narrowed
 
-1. Trim further (drop laptop / flu / some agent mishaps) for an even
-   smaller Studio pool?
-2. DDoS / hardening — Studio or skip until Company?
-3. Went-viral capacity crisis: **rate drag** (+ churn); optional
-   pay-to-scale choice still open for mockup.
+1. Confirm the keep/cut table above.
+2. Upside: **cloud-credits** (agent-gated) vs **OSS windfall** (anyone) —
+   which one for Studio?
+3. Viral: pay-to-scale choice in Studio v0 or rate-drag only?
 
 Shipped tag-gated hire/darkfactory pools are rewritten to the gates
 above when content lands.
