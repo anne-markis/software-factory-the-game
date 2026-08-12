@@ -930,12 +930,8 @@ opening isn’t a pile-on. Exact number TBD with ~300-pt beta.
 **Already in (settled):** scope-creep · prod-incident (users > 0) ·
 went-viral (spike + rate-drag capacity crisis).
 
-**“One upside” clarified:** among *lucky positive* challenges we had two
-candidates — **cloud-credits** (+$ when you have agents) and
-**open-source-windfall** (+$ for anyone). “Pick one” meant: keep **at
-most one** of those lottery-style cash gifts so Studio isn’t stuffed with
-free money events. Not related to went-viral (which is mixed
-users+crisis).
+**Lucky +$ challenges:** **none in Studio for now** (no cloud-credits, no
+OSS windfall). Can add later if the era feels too punishing.
 
 **Propose keep:**
 
@@ -945,15 +941,14 @@ users+crisis).
 | **model-deprecation** | **Yes** | Choice teach |
 | **angry-users** | **Yes** | Users-loop governor |
 | **laptop-dies** | **Yes** | Solo bus-factor |
-| **cloud-credits** and/or **OSS windfall** | **Your call** | Zero, one, or both lucky +$ events |
 
 **Propose cut/defer:** founder’s flu · api-price-hike · orchestration-mess ·
-refund-wave / churn-spike · dependency-break · hire drama · ddos
+refund-wave / churn-spike · dependency-break · hire drama · ddos ·
+**cloud-credits** · **open-source-windfall** (defer; may add later)
 
 ### Open forks (challenges) — narrowed
 
-1. Lucky +$ : none / cloud-credits / OSS windfall / both?
-2. Viral: pay-to-scale choice in Studio v0 or rate-drag only?
+1. Viral: pay-to-scale choice in Studio v0 or rate-drag only?
 
 Shipped tag-gated hire/darkfactory pools are rewritten to the gates
 above when content lands.
