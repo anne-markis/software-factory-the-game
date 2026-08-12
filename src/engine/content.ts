@@ -142,7 +142,6 @@ const decisionSchema = z
     id: z.string(),
     name: z.string(),
     description: z.string(),
-    tags: z.array(z.string()),
     category: decisionCategory,
     human: z.boolean().optional(),
     cost: z.object({ oneTime: z.number().min(0).optional(), perDay: z.number().min(0).optional() }).strict(),
@@ -204,9 +203,9 @@ const challengeSchema = z
       .object({
         minHumanDevs: z.number().int().min(0).optional(),
         maxHumanDevs: z.number().int().min(0).optional(),
-        hasTag: z.string().optional(),
         minTechDebt: z.number().min(0).optional(),
         minDay: z.number().int().min(0).optional(),
+        requiresAnyDecision: z.array(z.string()).min(1).optional(),
         lacksDecision: z.string().optional(),
       })
       .strict()
@@ -286,14 +285,20 @@ export function parseProjects(json: unknown): ProjectDef[] {
 }
 
 // Cross-file integrity check that parseChallenges cannot perform on its own
-// (it has no access to content.decisions): every challenge whose condition
-// sets lacksDecision must reference a real decision id. Called once at
-// content load time by the UI (src/ui/main.ts) after all four parse* calls
-// have assembled a GameContent, and directly by tests against both the
-// shipped content and fixtures.
+// (it has no access to content.decisions): every decision id referenced by a
+// challenge condition must exist. Called once at content load time by the UI
+// (src/ui/main.ts) after all four parse* calls have assembled a GameContent,
+// and directly by tests against both the shipped content and fixtures.
 export function validateContentGraph(content: GameContent): void {
   const decisionIds = new Set(content.decisions.map((d) => d.id));
   for (const def of content.challenges) {
+    for (const requiredDecision of def.condition?.requiresAnyDecision ?? []) {
+      if (!decisionIds.has(requiredDecision)) {
+        throw new Error(
+          `Invalid content in content/challenges.json: "${def.id}" condition.requiresAnyDecision references unknown decision id "${requiredDecision}"`,
+        );
+      }
+    }
     const lacksDecision = def.condition?.lacksDecision;
     if (lacksDecision !== undefined && !decisionIds.has(lacksDecision)) {
       throw new Error(

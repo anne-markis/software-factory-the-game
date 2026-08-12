@@ -81,7 +81,9 @@
     "name": "Model deprecation",
     "description": "Your AI vendor is sunsetting the model your agents run on. Pay to migrate now, or limp along on a degraded fallback.",
     "probabilityPerDay": 0.015,
-    "condition": { "hasTag": "darkfactory" },
+    "condition": {
+      "requiresAnyDecision": ["agent", "agent-harness", "agent-swarm", "swarm-orchestrator", "self-learning-agents"]
+    },
     "cooldownDays": 90,
     "effects": [],
     "choice": {
@@ -98,7 +100,9 @@
     "name": "API price hike",
     "description": "Your model provider raises prices overnight. Happens rarely, but costs $100 when it does.",
     "probabilityPerDay": 0.0025,
-    "condition": { "hasTag": "darkfactory" },
+    "condition": {
+      "requiresAnyDecision": ["agent", "agent-harness", "agent-swarm", "swarm-orchestrator", "self-learning-agents"]
+    },
     "cooldownDays": 365,
     "effects": [{ "type": "addToStock", "stock": "budget", "value": -100 }]
   },
@@ -107,7 +111,9 @@
     "name": "Runaway agent loop",
     "description": "An agent gets stuck retrying itself and burns through budget before anyone notices. Costs $200.",
     "probabilityPerDay": 0.008,
-    "condition": { "hasTag": "darkfactory" },
+    "condition": {
+      "requiresAnyDecision": ["agent", "agent-harness", "agent-swarm", "swarm-orchestrator", "self-learning-agents"]
+    },
     "cooldownDays": 45,
     "effects": [{ "type": "addToStock", "stock": "budget", "value": -200 }]
   },
@@ -116,7 +122,7 @@
     "name": "Meeting creep",
     "description": "The calendar fills up with syncs and status checks. All rates -10% for 60 days.",
     "probabilityPerDay": 0.02,
-    "condition": { "hasTag": "human" },
+    "condition": { "minHumanDevs": 1 },
     "cooldownDays": 90,
     "effects": [{ "type": "modifyRate", "target": "all", "op": "mul", "value": 0.9, "durationDays": 60 }]
   },
@@ -125,7 +131,7 @@
     "name": "Team conflict",
     "description": "Two developers clash over an approach. Mediate it, or let it fester.",
     "probabilityPerDay": 0.015,
-    "condition": { "hasTag": "human" },
+    "condition": { "minHumanDevs": 1 },
     "cooldownDays": 60,
     "effects": [],
     "choice": {
@@ -142,7 +148,9 @@
     "name": "Cloud credits",
     "description": "Your cloud provider grants a surprise credit for your agent workloads. +$250.",
     "probabilityPerDay": 0.015,
-    "condition": { "hasTag": "darkfactory" },
+    "condition": {
+      "requiresAnyDecision": ["agent", "agent-harness", "agent-swarm", "swarm-orchestrator", "self-learning-agents"]
+    },
     "cooldownDays": 60,
     "effects": [{ "type": "addToStock", "stock": "budget", "value": 250 }]
   },

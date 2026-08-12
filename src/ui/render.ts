@@ -32,7 +32,7 @@ export function renderDeliveryStats(state: Readonly<GameState>): string {
   return statsRowHtml(deliveryStatViews(state), "delivery-stats");
 }
 
-// Short player-facing labels for the tech-tree node tags. Every shipped
+// Short player-facing labels for the tech-tree node categories. Every shipped
 // decision carries a required category (see DecisionDef in ../engine/types),
 // so this map is exhaustive over DecisionCategory.
 const CATEGORY_LABELS: Record<DecisionCategory, string> = {
