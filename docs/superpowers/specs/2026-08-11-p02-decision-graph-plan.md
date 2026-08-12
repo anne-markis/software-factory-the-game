@@ -683,9 +683,10 @@ rate drag (content curve). Viral crisis can stack on top.
 | Keep / add | Drop / defer |
 | --- | --- |
 | **agent** — one AI seat type; **buy as many as you want** | **copilot** (remove) |
-| **agent-harness** — available in Studio; player balances cost vs debt/speed (like hire) | support-retainer as primary solo income |
-| **agent orchestration** (rename of agent-swarm) — Studio-allowed; **requires ≥2 agents** owned; improves speed **and** slows tech-debt accrual | standup / burnout / focus replacement → **Company** (not Studio) |
-| **basic-dev** — always listed, **no `requires`** | eng-manager / senior / self-learning as Studio-default (still open/push) |
+| **agent-harness** — **mul:** +speed and −debt accrual rate | support-retainer as primary solo income |
+| **agent orchestration** — requires **≥2 agents**; same kind of mul as harness, **larger +speed** | standup / burnout → **Company** |
+| **better-tooling**, **test-suite → ci-cd** | **ddos-protection**, **refactor** → **Company** |
+| **basic-dev** — always listed, **no `requires`** | eng-manager / senior / self-learning as Studio-default |
 | **subscription** + **one-time product** (priced off **users**) | |
 | **Launch beta ~300pts** + optional tiny gigs | |
 
@@ -694,24 +695,38 @@ rate drag (content curve). Viral crisis can stack on top.
 ```mermaid
 flowchart TB
   agent["agent — repeatable purchase<br/>N copies allowed"]
-  harness["agent-harness<br/>optional · budget tradeoff"]
-  orch["agent orchestration<br/>requires ≥2 agents"]
+  harness["agent-harness<br/>mul: +speed · −debt accrual"]
+  orch["agent orchestration<br/>requires ≥2 agents<br/>larger +speed · also −debt accrual"]
   agent -->|"own ≥2"| orch
-  agent -.->|optional mitigations / synergies TBD| harness
-  harness -.->|exact synergy TBD in mockup| agent
-  orch -->|"faster delivery + lower debt accrual rate"| loop[delivery loop]
+  agent --> harness
+  orch --> loop[delivery loop]
+  harness --> loop
 ```
 
-- **Many agents:** no unique cap — stack agents like parallel capacity (costs and debt stack; exact effect stacking TBD in balance).
-- **Orchestration** (ex–agent-swarm): gate is **headcount of agents ≥ 2**, not a long capability era. Improves **speed** and **reduces the rate of tech debt added** (not only a one-shot synergy on the next buy).
-- **Harness:** allowed in Studio; same philosophy as hire — visible when affordable enough to consider; player decides if the burn is worth it. Exact effect vs orchestration split TBD in mockup (avoid two cards that do the same job).
-- **Hire (`basic-dev`):** confirmed — **no `requires`**. Always in the shop; runway is the real gate.
-- **Standup / burnout replacement:** **out of Studio** — revisit in **Company**.
+- **Many agents:** no unique cap — stack agents (costs and debt stack;
+  stacking math still open: additive vs diminishing).
+- **Harness:** **multiplier** — increases delivery speed **and** reduces
+  the rate at which tech debt accumulates. Player-timed budget tradeoff.
+- **Orchestration** (ex–agent-swarm): requires **≥2 agents**. Same *kind*
+  of effect as harness (speed up + slower debt accrual), but a **larger
+  improvement to delivery speed**. Must stay worth the ≥2-agent gate and
+  higher burn vs harness alone.
+- **Hire (`basic-dev`):** **no `requires`**. Always in the shop.
+- **Standup / burnout:** **out of Studio** → Company.
 
 ### 5.2.3 Intended Studio graph (decisions + projects)
 
 **Status: accepted as Studio starting point** (2026-08-11). Expand later;
 not a ticket cut yet.
+
+Also settled for Studio shop leftovers:
+
+| Card | Studio |
+| --- | --- |
+| **better-tooling** | **Keep** |
+| **test-suite → ci-cd** | **Keep** |
+| **ddos-protection** (+ ddos challenge) | **Push to Company** |
+| **refactoring-sprint** / redesign-rebuild | **Push to Company** (refactor; redesign already out) |
 
 ```mermaid
 flowchart TB
@@ -736,7 +751,9 @@ flowchart TB
   end
 ```
 
-Still open on this graph: tooling / test→CI / ddos / refactor; harness vs orchestration effect split; exact agent stacking math; when sub/one-time appear (mockup).
+Still open on this graph: agent ×N stacking math; when sub/one-time
+appear and whether **Ship v1** exists (see §5.3 open — expanded below);
+exact mul magnitudes for harness vs orchestration.
 
 ---
 
