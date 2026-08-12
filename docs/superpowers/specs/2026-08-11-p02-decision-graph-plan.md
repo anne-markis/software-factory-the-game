@@ -667,8 +667,9 @@ rate drag (content curve). Viral crisis can stack on top.
 
 1. Support drag curve exact shape (linear vs steps) — mockup.
 2. One-time burst schedule (daily p vs weekly lump).
-3. Ship v1 — second user grant / acquire multiplier, or mostly flavor + $?
-4. Viral: include pay-to-scale choice in Studio v0 or rate-drag only?
+3. Ship v1…v5 — version ladder **settled**; per-version bonus magnitudes
+   still open for mockup.
+4. ~~Viral capacity / users carry / trial numbers / support drag~~ — settled.
 
 #### Resolved this pass
 
@@ -959,34 +960,30 @@ opening isn’t a pile-on. Exact number TBD with ~300-pt beta.
 **Already in (settled):** scope-creep · prod-incident (users > 0) ·
 went-viral (spike + rate-drag capacity crisis).
 
-**Propose keep (small pool):**
+**“One upside” clarified:** among *lucky positive* challenges we had two
+candidates — **cloud-credits** (+$ when you have agents) and
+**open-source-windfall** (+$ for anyone). “Pick one” meant: keep **at
+most one** of those lottery-style cash gifts so Studio isn’t stuffed with
+free money events. Not related to went-viral (which is mixed
+users+crisis).
+
+**Propose keep:**
 
 | id | Keep? | Note |
 | --- | --- | --- |
-| **runaway-agent-loop** | **Yes** | Core agent whimsy/governor |
-| **model-deprecation** | **Yes** | Choice teach; agent path |
-| **angry-users** | **Yes** | Users loop governor (with incidents) |
-| **laptop-dies** | **Yes** | Solo bus-factor; cheap clarity |
-| **cloud-credits** or **open-source-windfall** | **Pick one** | One light upside; two is noisy |
+| **runaway-agent-loop** | **Yes** | Agent governor |
+| **model-deprecation** | **Yes** | Choice teach |
+| **angry-users** | **Yes** | Users-loop governor |
+| **laptop-dies** | **Yes** | Solo bus-factor |
+| **cloud-credits** and/or **OSS windfall** | **Your call** | Zero, one, or both lucky +$ events |
 
-**Propose cut or defer:**
-
-| id | Lean | Why |
-| --- | --- | --- |
-| **founder’s flu** | Cut | Overlaps “you are slow” without much game |
-| **api-price-hike** | Cut/defer | Thin cousin of runaway $ hit |
-| **orchestration-mess** | Defer | Orch already gated by ≥2 agents + cost; card may be enough |
-| **refund-wave** / **churn-spike** | Defer | Wait until monetization mockup; angry-users + incident may suffice |
-| **dependency-break** | Defer | Nice flavor; not needed if scope-creep covers delivery pain |
-| **sickness** / **poach** | Cut | Already settled |
-| **ddos** | Company | With protection card |
+**Propose cut/defer:** founder’s flu · api-price-hike · orchestration-mess ·
+refund-wave / churn-spike · dependency-break · hire drama · ddos
 
 ### Open forks (challenges) — narrowed
 
-1. Confirm the keep/cut table above.
-2. Upside: **cloud-credits** (agent-gated) vs **OSS windfall** (anyone) —
-   which one for Studio?
-3. Viral: pay-to-scale choice in Studio v0 or rate-drag only?
+1. Lucky +$ : none / cloud-credits / OSS windfall / both?
+2. Viral: pay-to-scale choice in Studio v0 or rate-drag only?
 
 Shipped tag-gated hire/darkfactory pools are rewritten to the gates
 above when content lands.
