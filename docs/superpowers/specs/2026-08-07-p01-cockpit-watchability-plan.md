@@ -299,7 +299,7 @@ writing on the milestone.
 | `docs/VISION.md` | Why P0.1 exists (watch the machine) |
 | `docs/superpowers/specs/2026-07-22-ux-arc.md` | Ordered UX increments; this plan binds them to DoD |
 | `docs/superpowers/specs/2026-07-22-speed-controls-design.md` | Speed already shipped; #40 extends living with speed |
-| P0.2 plan (future) | Unlock telegraph (#39), decision honesty — not this milestone |
+| `docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md` | Unlock telegraph (#39), decision honesty, tag/track retirement — not this milestone |
 
 When a near-term implementation spec conflicts with this plan, update one
 deliberately before coding.

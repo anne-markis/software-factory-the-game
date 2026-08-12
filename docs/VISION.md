@@ -32,12 +32,13 @@ recognizes the same pattern in hiring, healthcare, or climate work.
 A working stocks-and-flows delivery loop. Tech debt as a regenerating stock
 that drags throughput and scales incidents. Context-switch tax on concurrent
 work. Reputation as Success to the Successful (with a real downward spiral).
-Emergent track attractors sketched in content (solo / human / dark factory
-stronger than startup / megacorp). A decision graph (requires / unlocks,
-synergies, tags, categories) that already steers builds, but unevenly —
-some branches dense, others thin. One-shot archetype narration for Limits
-to Growth and Shifting the Burden. Endless play with reputation milestones.
-An UX arc underway so the machine stays watchable as content grows.
+A decision graph (requires / unlocks, synergies, categories) that already
+steers builds — densest on the automation / agent ladder; thinner elsewhere.
+Legacy decision `tags` and challenge `hasTag` gates still exist in content
+but are **not** the intended curriculum model (see P0.2 plan: retire
+first-class tracks/tags). One-shot archetype narration for Limits to Growth
+and Shifting the Burden. Endless play with reputation milestones. Cockpit /
+watchability UX (P0.1) largely shipped so the machine stays watchable.
 
 The core thesis is already playable: **structure generates behavior**. The
 medium and long term are about deepening that thesis — not bolting on more
@@ -53,20 +54,20 @@ teaches a distinct systems idea, and until fun no longer fights the model.
 
 ### Meta direction
 
-1. **Finish the attractors as different system characters.**
-   Solo, startup, megacorp, and dark factory should remain emergent from
-   purchases — not selectable modes — but each should pull the player into
-   a different family of loops and failure modes. Same engine grammar;
-   different lived lessons (bus-factor fragility, growth-under-quota,
-   process-as-product, humans-as-optional).
+1. **One long arc: scale eras → far future (Paperclips cadence).**
+   Settled early ladder: **Studio → Company → Megacorp → …**. Studio is
+   short/tutorial (~$10k start; hires *and* early agents belong here —
+   do not gate “AI” as its own era). **Company** is where most playtime
+   lives. Eras advance by **scale of cost** (grind gates and/or
+   breakthrough events), one-way. Megacorp and later intensify satire and
+   world-eating stakes; loop honesty stays in stocks, flows, and delays.
 
-2. **Treat the decision graph as the curriculum map.**
-   Requires / unlocks, synergies, tags, and categories are how players
-   navigate into attractors. Medium-term ambition: denser structure and
-   clearer attractor pull — decisions that commit you toward a system
-   character — without turning tracks into campaigns or the shop into a
-   checklist. Depth and consequence of the tree matter more than width of
-   the catalog; every major branch should change what problems find you.
+2. **Treat the decision graph as the curriculum map (content-owned).**
+   Requires / unlocks, synergies, costs, and categories — expressed in JSON
+   — are how players navigate the journey. No first-class track/tag
+   taxonomy. Medium-term ambition: a cleaner, honest graph first, then
+   deeper era steps that change what problems find you. Depth and
+   consequence before catalog width; the shop is not a checklist.
 
 3. **Promote delays from afterthought to first-class experience.**
    Meadows: people underestimate delays. Hires that ramp, refactors that
@@ -94,20 +95,24 @@ teaches a distinct systems idea, and until fun no longer fights the model.
    morale, compute cost, quota — whatever stocks arrive — should exist
    because the reinforcing loop would otherwise lie about how systems work.
 
-7. **Preserve emergence over authored "tracks as campaigns."**
-   The engine stays ignorant of which story the player is in. Content tags,
-   synergies, and challenge pools do the steering. Medium-term ambition is
-   richer identity through interaction density, not cutscenes or mode locks.
+7. **Preserve emergence over authored campaign modes.**
+   The engine stays ignorant of which story the player is in. Owned
+   decisions, synergies, stocks, and challenge/project gates in content do
+   the steering — not a track enum or tag curriculum. Medium-term ambition
+   is richer identity through interaction density and era pacing, not
+   cutscenes or mode locks.
 
 ### What "done enough" for medium term feels like
 
-A thoughtful player can complete several distinct builds, feel different
-system personalities, and articulate at least a few Meadows-shaped insights
-in their own words — without the game having explained systems theory to
-them. Reading the decision tree should feel like reading commitments:
-early choices visibly open some worlds and close others. Fun holds across
-a long session because bottlenecks move, recovery is possible but not free,
-and milestones give the endless loop something to lean toward.
+A thoughtful player can meander inside a scale era, cross into the next
+by grind or breakthrough, hit false summits that felt earned, and
+articulate at least a few Meadows-shaped insights in their own words —
+without the game having explained systems theory to them. Reading the
+decision tree should feel like reading commitments at *this* scale:
+early choices visibly open later costs and close others. Fun holds
+across a long session because bottlenecks move, recovery is possible but
+not free, and the next era’s entry is always expensive or lucky enough
+to stay interesting.
 
 ---
 
@@ -130,7 +135,7 @@ ground, but the transferable skill as the product.
 2. **Let the decision space climb that ladder with the player.**
    Late-tree decisions should increasingly change structure and goals, not
    just add rate: new stocks unlocked by commitment, rules rewritten,
-   attractor end-states reached through the graph rather than a mode
+   late-arc end-states reached through the graph rather than a mode
    switch. The tech tree becomes leverage space — where you stand in it
    is what kind of system you have become.
 
@@ -178,10 +183,10 @@ ground, but the transferable skill as the product.
 ### What "arrived" for long term feels like
 
 Players talk about their factories the way systems thinkers talk about
-systems: stocks, delays, goals, boundaries. Different attractors feel like
-different worlds with different ethics of optimization. The SDLC remains
-recognizable, but the takeaway travels. Fun still comes first; without it,
-nobody stays long enough to learn.
+systems: stocks, delays, goals, boundaries. Early delivery-shop play still
+reads as software; late eras feel alien without abandoning the loop grammar.
+The SDLC remains the on-ramp, but the takeaway travels. Fun still comes
+first; without it, nobody stays long enough to learn.
 
 ---
 
@@ -198,10 +203,14 @@ nobody stays long enough to learn.
 - **Client-side sandbox, deterministic engine.** The educational value of
   reproducible runs and content-driven balance probes is part of the
   product's integrity.
-- **Tracks emerge; they are not modes.**
-- **The decision graph is the curriculum map.** Grow depth and
-  consequence before catalog width; shop sprawl without attractor pull
-  is not progress.
+- **No first-class parallel tracks or modes.** Scale **eras** are one-way
+  progression levels (content JSON); capability mix meanders inside an
+  era. The dark-factory / world-eating far future is late *scale*, not a
+  peer campaign you pick on day one.
+- **The decision graph is the curriculum map — and it lives in JSON.**
+  Prefer per-era content bundles and content-defined, one-way era entry
+  over story-aware engine code. Grow depth and consequence before
+  catalog width; shop sprawl without era pull is not progress.
 
 ---
 
@@ -210,6 +219,7 @@ nobody stays long enough to learn.
 | Doc | Role |
 | --- | --- |
 | `docs/VISION.md` (this file) | Medium / long-term *direction* |
+| `docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md` | P0.2: retire tags/tracks, honesty tickets, era sketch |
 | `docs/superpowers/specs/*` | Concrete design for a near change |
 | `docs/superpowers/plans/*` | Implementation sequencing |
 | `docs/OPEN-DECISIONS.md` | Deferred tactical choices |
