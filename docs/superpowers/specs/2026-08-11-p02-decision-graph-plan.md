@@ -577,117 +577,108 @@ beta — retune in mockup.
 
 | Piece | Working rule |
 | --- | --- |
-| **Stock** | `users` ≥ 0; **0 until Launch beta completes**. |
-| **One audience** | Single shared user base. Subscription and one-time product are **two monetization decisions** reading the same `users` — not two products with two populations. |
+| **Stock** | **`users` is a real stock** (≥ 0). **0 until Launch beta completes**. There is **no separate subscriber stock** — subscription/one-time are decisions that *read* `users`, not a second population. |
+| **One audience** | Single shared `users` base. Subscription and one-time product are **two monetization decisions** on that stock. |
 | **Beta complete (Model B)** | Modest **cash bonus** + **initial user grant** + organic acquisition turns on. No upfront cost to start beta. |
 | **Monetization cards** | Separate buys; do nothing useful while `users == 0`. No auto-unlock from beta (timing still mockup). |
 | **Client gigs** | Cash + rep; **no direct users**. |
 | **Income while cards unowned** | Launch bonus + gigs + windfalls only — still enough to finish beta without gigs (solvency rule). |
+| **Support drag** | **In Studio v0** — users above a free band apply light delivery-rate drag (tickets/load). Rhymes with viral capacity crisis. |
+| **Era boundary** | **`users` carries into Company** (problems scale; no soft reset). |
+| **Trial numbers (first mockup)** | See table below — locked as starting point, retune in play. |
+
+#### Trial numbers (locked for first mockup)
+
+| Knob | Value |
+| --- | --- |
+| `U0` (users on beta complete) | **30** |
+| `B_launch` (Model B cash bonus) | **$800** |
+| Organic `baseAcquire` | **1.5 users/day** |
+| `repBonus` | **reputation × 0.1** users/day |
+| Baseline `churnRate` | **1%/day** |
+| `k_sub` | **$0.75 / user / day** |
+| One-time expected EV | **below** sub for same users (bursty; exact p/`k_ot` in mockup) |
+| Support free band | **first ~25 users** no drag |
+| Support drag | light finish (or all-rate) mul as users exceed band — exact curve in mockup |
+
+At 30 users + sub owned ≈ **$22.5/day** before burn/upkeep — meaningful vs $20 base burn, not automatic win.
 
 #### Loop (tick sketch)
 
 ```mermaid
 flowchart TB
-  betaDone[beta complete] -->|grant U0 users| users[(users)]
+  betaDone[beta complete] -->|grant U0=30| users[(users stock)]
   organic[organic acquisition /day] --> users
-  viral[went-viral challenge] -->|spike + capacity crisis| users
-  users -->|if sub owned| sub["subscription income = users × k_sub $/day"]
-  users -->|if one-time owned| ot["one-time bursts ≈ f users"]
+  viral[went-viral] -->|user spike + capacity crisis| users
+  users -->|if sub owned| sub["income = users × 0.75 $/day"]
+  users -->|if one-time owned| ot["bursty f users"]
+  users -->|above free band| support[support drag on rates]
   incident[prod-incident / angry-users] -->|churn| users
-  debt[tech debt] -->|raises incident odds + churn| users
-  rep[reputation] -->|boosts acquisition · lowers churn| organic
-  users -.->|optional support drag| rates[delivery rates]
+  debt[tech debt] -->|incident odds + churn| users
+  rep[reputation] --> organic
 ```
 
-#### Formulas (Studio v0 — propose)
+#### Formulas (Studio v0)
 
 **On Launch beta complete**
 
-- `users += U0` (working: **20–50**)
-- `budget += B_launch` (working: **$500–1500** modest Model B cushion)
-- maybe `reputation += 1` (tiny)
-- set flag `productLaunched = true` (content/engine: acquisition eligible)
+- `users += 30`
+- `budget += 800`
+- optional `reputation += 1`
+- acquisition becomes eligible
 
-**Organic acquisition (each day, only if launched)**
-
-```
-grossGain = baseAcquire + repBonus
-baseAcquire ≈ 1–2 users/day early Studio
-repBonus   ≈ reputation × 0.1  (soft; rep 10 → +1/day)
-netGain    = max(0, grossGain - churn)
-users     += netGain
-```
-
-No separate “satisfaction” stock in Studio v0.
-
-**Churn (each day, only if users > 0)**
+**Organic acquisition (each day, if launched)**
 
 ```
-churnRate ≈ 0.01                  # 1%/day baseline soft leak
-         + debtFactor             # e.g. excess debt / bigN → up to +2%/day
-         + incidentSpike          # when prod-incident / capacity crisis fires
-         - repComfort             # small reduction from reputation
-users    -= floor(users × churnRate)   # or probabilistic; keep deterministic-friendly
+grossGain = 1.5 + reputation × 0.1
+netGain   = max(0, grossGain - churnAmount)
+users    += netGain
 ```
 
-Went-viral: **add** a burst of users (e.g. +50–150) **and** apply capacity
-crisis (primary knob TBD: −$ lump, or rate ×0.7 for N days, or debt spike).
-Crisis may also jump churn for a few days.
-
-**Subscription (if owned)**
+**Churn (each day, if users > 0)**
 
 ```
-incomePerDay += users × k_sub
+churnRate ≈ 0.01 + debtFactor + incidentSpike - repComfort
+churnAmount from users × churnRate   # prefer deterministic-friendly
 ```
 
-Working `k_sub ≈ $0.5–1.0 / user / day` at Studio scale so 50 users ≈
-$25–50/day — meaningful vs $20 base burn + agent upkeep, not Megacorp.
-Optional soft cap later; prefer reputation/churn as the governor first.
+**Went viral** (settled earlier + knob locked): **user spike** (working
+**+80**) **and capacity crisis** expressed primarily as **delivery rate
+drag** (servers can’t keep up — e.g. finish/all rates ×0.6–0.7 for N
+days), with elevated churn while the crisis lasts. Optional choice later:
+pay $ to shorten crisis (scale up). **Not** a pure cash windfall.
 
-**One-time product / marketplace (if owned)**
+**Subscription (if owned):** `incomePerDay += users × 0.75`
 
-Lumpier than sub — same audience:
+**One-time product (if owned):** bursty `f(users)` with expected $/day
+below sub.
 
-```
-each day (or every N days): with content probability p,
-  budget += users × k_ot × burstMul
-```
-
-Working: lower expected $/day than sub for same users, higher variance
-(feels like “sales days”). Alternative v0: once per week, `users × k_ot`.
-
-**Support load (optional Studio v0)**
-
-If `users` above a small free band, light finish-rate drag (support
-tickets). Makes viral capacity crisis rhyme with everyday scale. Can
-defer if too many knobs.
+**Support drag (Studio v0):** if `users > ~25`, apply escalating light
+rate drag (content curve). Viral crisis can stack on top.
 
 #### Explicitly not in Studio v0
 
 - Funnel (visitors → signups → paid)
-- Separate subscriber count vs freemium users
+- Separate subscriber count (paid vs free split)
 - Price slider / packaging UI
-- Ads/donations as core (already out)
+- Ads/donations as core
 
-#### Open forks (monetization)
+#### Open forks (monetization) — narrowed
 
-1. **Support drag** — include in Studio v0 or wait for Company?
-2. **Viral capacity primary knob** — lump $, rate drag, or debt? (from
-   challenges §5.4)
-3. **Ship v1** — second user grant / acquisition multiplier, or only
-   flavor + modest $?
-4. **Users into Company** — carry stock vs soft reset? (lean **carry**)
-5. Working numbers: lock a single trial set (`U0=30`, `B_launch=800`,
-   `k_sub=0.75`, …) for the first mockup?
+1. Support drag curve exact shape (linear vs steps) — mockup.
+2. One-time burst schedule (daily p vs weekly lump).
+3. Ship v1 — second user grant / acquire multiplier, or mostly flavor + $?
+4. Viral: include pay-to-scale choice in Studio v0 or rate-drag only?
 
-#### Still open (carried from before)
+#### Resolved this pass
 
-3. ~~One product or many?~~ → **Settled this pass:** one audience, two
-   monetization cards.
-4. ~~Formula complexity?~~ → **Settled lean:** linear `users × k` + soft
-   churn/rep; no satisfaction stock in Studio v0.
-5. Era boundary carry — still open (lean carry).
-6. Beta grant sizes — open fork #5 above.
+- ~~One audience / two cards~~ — yes; **`users` stock exists**; no
+  subscriber stock.
+- ~~Formula complexity~~ — linear `users × k` + churn/rep + support drag.
+- ~~Support drag~~ — **in Studio**.
+- ~~Viral~~ — capacity crisis = **rate drag** (+ churn); spike users.
+- ~~Trial numbers~~ — table above.
+- ~~Company carry~~ — **yes**.
 
 | Keep / add | Drop / defer |
 | --- | --- |
@@ -933,7 +924,8 @@ opening isn’t a pile-on. Exact number TBD with ~300-pt beta.
 1. Trim further (drop laptop / flu / some agent mishaps) for an even
    smaller Studio pool?
 2. DDoS / hardening — Studio or skip until Company?
-3. Went-viral capacity crisis primary knob: pay-$ vs rate-drag vs debt?
+3. Went-viral capacity crisis: **rate drag** (+ churn); optional
+   pay-to-scale choice still open for mockup.
 
 Shipped tag-gated hire/darkfactory pools are rewritten to the gates
 above when content lands.
