@@ -8,15 +8,25 @@ so if something here ever disagrees with those files, the code wins.
 
 ## 1. Where content lives, and how it is checked
 
-Human-editable content is three JSON files, plus one config file:
+Human-editable content follows the per-era layout (ADR §2.1 / issue #90):
 
-- `content/start.json` - starting stocks, base rates, the seed, the first project.
-- `content/decisions.json` - things the player can buy to alter the loop.
-- `content/challenges.json` - random events.
-- `content/projects.json` - contracts the player can start.
+- `content/start.json` — era-agnostic starting stocks, base rates, seed, first project.
+- `content/eras.json` — ordered era ids, starting era, and one-way entry criteria
+  (entry predicates are authored for later milestones / the content-graph viewer;
+  P0.2 does not advance the player out of Studio).
+- `content/eras/<eraId>/decisions.json` — shop cards for that era.
+- `content/eras/<eraId>/challenges.json` — random events for that era.
+- `content/eras/<eraId>/projects.json` — contracts for that era.
+- `content/eras/<eraId>/meta.json` — optional id/name/blurb for authoring tools.
+
+P0.2 ships Studio filled and empty Company / Megacorp shells. The loader
+(`loadShippedContent` / `loadActiveContent`) merges `start` + the **active**
+era only; tick stays graph-dumb and never hardcodes era names or advances
+eras this milestone.
 
 Every file is parsed through a Zod schema in `src/engine/content.ts`
-(`parseStartConfig`, `parseDecisions`, `parseChallenges`, `parseProjects`).
+(`parseStartConfig`, `parseErasConfig`, `parseDecisions`, `parseChallenges`,
+`parseProjects`).
 The schemas are declared `.strict()`, which means an unknown or misspelled
 key is a hard error, not a silently-ignored typo. When something is wrong,
 the loader throws with the file name and the offending entry's id, for

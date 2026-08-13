@@ -300,16 +300,46 @@ export interface StartConfig {
   milestones: { id: string; reputation: number; name: string; message: string }[];
 }
 
+// One scale era in content/eras.json (ADR §2.1 / issue #90). Entry predicates
+// are authored for the content-graph viewer and future advancement; P0.2 does
+// not evaluate them in tick.
+export interface EraEntryPredicate {
+  minBudget?: number;
+  minReputation?: number;
+  minCompletedProjects?: number;
+  minUsers?: number;
+}
+
+export interface EraDef {
+  id: string;
+  name: string;
+  entryAnyOf?: EraEntryPredicate[];
+}
+
+export interface ErasConfig {
+  startingEraId: string;
+  eras: EraDef[];
+}
+
 export interface GameContent {
   start: StartConfig;
   decisions: DecisionDef[];
   challenges: ChallengeDef[];
   projects: ProjectDef[];
+  // Active era id + catalog from content/eras.json (issue #90). Always set by
+  // loadShippedContent / loadActiveContent. Optional on hand-built test
+  // fixtures so unit tests can keep assembling partial graphs.
+  eraId?: string;
+  eras?: ErasConfig;
 }
 
 export interface GameState {
   day: number;
   paused: boolean;
+  // Active content era id (issue #90). Copied from GameContent.eraId at init.
+  // P0.2 never advances it. Legacy saves predate the field; Engine backfills
+  // from content.eraId.
+  eraId: string;
   stocks: Stocks;
   baseRates: Record<RateId, number>;
   debtMultiplierBase: number;

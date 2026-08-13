@@ -16,10 +16,7 @@ import { describe, it, expect, vi } from "vitest";
 import { mountAppView, type AppView } from "./appView";
 import { Engine, initialState } from "../engine/engine";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
-import challengesJson from "../../content/challenges.json";
-import projectsJson from "../../content/projects.json";
+import { startJson, decisionsJson, challengesJson, projectsJson } from "../engine/loadShippedContent";
 import type { GameContent, GameState } from "../engine/types";
 import type { Speed } from "./tickDriver";
 

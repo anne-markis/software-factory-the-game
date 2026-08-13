@@ -10,6 +10,12 @@ export function initialState(content: GameContent): GameState {
   return {
     day: 0,
     paused: false,
+    // Per-era content (issue #90): hold the active era id from content. Tick
+    // does not advance eras in P0.2 — Studio is sticky until a later milestone
+    // wires entry evaluation. Hand-built fixtures may omit era metadata; fall
+    // back to eras.startingEraId, then to the shipped starting id from the
+    // eras catalog when present on content.
+    eraId: content.eraId ?? content.eras?.startingEraId ?? "_fixture",
     stocks: { ...s.stocks },
     baseRates: { ...s.baseRates },
     debtMultiplierBase: s.debtMultiplier,
@@ -93,6 +99,11 @@ export class Engine {
       }
       if (restored.stockDrags === undefined) {
         restored.stockDrags = (content.start.stockDrags ?? []).map((d) => ({ ...d }));
+      }
+      // Per-era content (issue #90): legacy saves predate eraId; backfill from
+      // the active content bundle (Studio in P0.2).
+      if (restored.eraId === undefined) {
+        restored.eraId = content.eraId ?? content.eras?.startingEraId ?? "_fixture";
       }
       this.rng = createRng(restored.rngState, true);
     } else {

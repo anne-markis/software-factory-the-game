@@ -3,10 +3,8 @@ import { rollChallenges, resolveChoice } from "./challenges";
 import { initialState } from "./engine";
 import { applyDecision, removeDecision } from "./decisions";
 import { parseStartConfig, parseChallenges, parseDecisions } from "./content";
+import { challengesJson, decisionsJson, startJson } from "./loadShippedContent";
 import { createRng, hashRoll, type Rng } from "./rng";
-import startJson from "../../content/start.json";
-import challengesJson from "../../content/challenges.json";
-import decisionsJson from "../../content/decisions.json";
 import type { GameContent } from "./types";
 
 // The challenge phase no longer draws from the shared rng stream: each

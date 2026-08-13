@@ -2,20 +2,11 @@ import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
-import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "./content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
-import challengesJson from "../../content/challenges.json";
-import projectsJson from "../../content/projects.json";
+import { loadShippedContent } from "./loadShippedContent";
 import type { Effect, GameContent, GameState } from "./types";
 
 function fullContent(): GameContent {
-  return {
-    start: parseStartConfig(startJson),
-    decisions: parseDecisions(decisionsJson),
-    challenges: parseChallenges(challengesJson),
-    projects: parseProjects(projectsJson),
-  };
+  return loadShippedContent();
 }
 
 function assertInvariants(s: Readonly<GameState>, day: number): void {

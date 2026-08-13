@@ -1,21 +1,13 @@
-import { parseStartConfig, parseDecisions, parseChallenges, parseProjects, validateContentGraph } from "../engine/content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
-import challengesJson from "../../content/challenges.json";
-import projectsJson from "../../content/projects.json";
+import { loadShippedContent } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 import { mountAppView } from "./appView";
 import { createPlayerEngine } from "./playerEngine";
 import { saveGame, loadGame, clearSave, saveSpeed, loadSpeed } from "./storage";
 import { advance, type Speed } from "./tickDriver";
 
-const content: GameContent = {
-  start: parseStartConfig(startJson),
-  decisions: parseDecisions(decisionsJson),
-  challenges: parseChallenges(challengesJson),
-  projects: parseProjects(projectsJson),
-};
-validateContentGraph(content);
+// Per-era loader (issue #90): start.json + active Studio era. Tick never
+// advances eras in P0.2, so the player stays in Studio for this milestone.
+const content: GameContent = loadShippedContent();
 
 // Fresh load and Reset (clearSave → reload with no save) start paused so the
 // player can read the factory without burning days (issue #38). Mid-game

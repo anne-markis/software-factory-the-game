@@ -3,7 +3,7 @@ import { applyEffects } from "./effects";
 import { serialize, deserialize } from "./save";
 import { initialState } from "./engine";
 import { parseStartConfig } from "./content";
-import startJson from "../../content/start.json";
+import { startJson } from "./loadShippedContent";
 import { effectiveRate, effectiveDebtMultiplier } from "./modifiers";
 import { tick } from "./tick";
 import { createRng } from "./rng";

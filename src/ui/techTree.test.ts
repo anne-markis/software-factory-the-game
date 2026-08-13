@@ -1,19 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { buildTechTree } from "./techTree";
-import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
-import challengesJson from "../../content/challenges.json";
-import projectsJson from "../../content/projects.json";
+import { loadShippedContent } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 
 function content(): GameContent {
-  return {
-    start: parseStartConfig(startJson),
-    decisions: parseDecisions(decisionsJson),
-    challenges: parseChallenges(challengesJson),
-    projects: parseProjects(projectsJson),
-  };
+  return loadShippedContent();
 }
 
 describe("buildTechTree", () => {

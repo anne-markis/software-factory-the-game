@@ -1,9 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { parseStartConfig, parseDecisions, parseChallenges, parseProjects, validateContentGraph } from "./content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
-import challengesJson from "../../content/challenges.json";
-import projectsJson from "../../content/projects.json";
+import {
+  parseStartConfig,
+  parseDecisions,
+  parseChallenges,
+  parseProjects,
+  parseErasConfig,
+  validateContentGraph,
+  loadActiveContent,
+} from "./content";
+import { Engine } from "./engine";
+import {
+  challengesJson,
+  decisionsJson,
+  erasJson,
+  loadShippedContent,
+  projectsJson,
+  startJson,
+} from "./loadShippedContent";
 import type { GameContent } from "./types";
 
 describe("parseStartConfig", () => {
@@ -703,12 +716,7 @@ describe("parseProjects", () => {
 
 describe("validateContentGraph", () => {
   it("passes for shipped content when every challenge condition references real decision ids", () => {
-    const content: GameContent = {
-      start: parseStartConfig(startJson),
-      decisions: parseDecisions(decisionsJson),
-      challenges: parseChallenges(challengesJson),
-      projects: parseProjects(projectsJson),
-    };
+    const content: GameContent = loadShippedContent();
     expect(() => validateContentGraph(content)).not.toThrow();
   });
 
@@ -744,5 +752,67 @@ describe("validateContentGraph", () => {
     expect(() => validateContentGraph(content)).toThrow(/agent-event/);
     expect(() => validateContentGraph(content)).toThrow(/content\/challenges\.json/);
     expect(() => validateContentGraph(content)).toThrow(/no-such-decision/);
+  });
+});
+
+describe("per-era content layout (issue #90)", () => {
+  it("parses eras.json with Studio start and later-era entry shells", () => {
+    const eras = parseErasConfig(erasJson);
+    expect(eras.startingEraId).toBe("studio");
+    expect(eras.eras.map((e) => e.id)).toEqual(["studio", "company", "megacorp"]);
+    expect(eras.eras[0].entryAnyOf).toBeUndefined();
+    expect(eras.eras[1].entryAnyOf!.length).toBeGreaterThan(0);
+    expect(eras.eras[2].entryAnyOf!.length).toBeGreaterThan(0);
+  });
+
+  it("rejects a starting era that declares entry criteria", () => {
+    expect(() =>
+      parseErasConfig({
+        startingEraId: "studio",
+        eras: [{ id: "studio", name: "Studio", entryAnyOf: [{ minBudget: 1 }] }],
+      }),
+    ).toThrow(/starting era/);
+  });
+
+  it("loadShippedContent serves Studio cards and empty Company/Megacorp shells", () => {
+    const studio = loadShippedContent();
+    expect(studio.eraId).toBe("studio");
+    expect(studio.decisions.length).toBeGreaterThan(0);
+    expect(studio.challenges.length).toBeGreaterThan(0);
+    expect(studio.projects.length).toBeGreaterThan(0);
+
+    const company = loadShippedContent("company");
+    expect(company.eraId).toBe("company");
+    expect(company.decisions).toEqual([]);
+    expect(company.challenges).toEqual([]);
+    expect(company.projects).toEqual([]);
+
+    const megacorp = loadShippedContent("megacorp");
+    expect(megacorp.eraId).toBe("megacorp");
+    expect(megacorp.decisions).toEqual([]);
+  });
+
+  it("loadActiveContent refuses unknown era ids without hardcoding names in tick", () => {
+    expect(() =>
+      loadActiveContent(startJson, erasJson, { studio: { decisions: [], challenges: [], projects: [] } }, "nope"),
+    ).toThrow(/Unknown era id/);
+  });
+
+  it("loadActiveContent refuses an era listed in eras.json with no registered bundle", () => {
+    expect(() =>
+      loadActiveContent(
+        startJson,
+        erasJson,
+        { studio: { decisions: decisionsJson, challenges: challengesJson, projects: projectsJson } },
+        "company",
+      ),
+    ).toThrow(/No content bundle registered/);
+  });
+
+  it("keeps the player in Studio across ticks (P0.2 does not advance eras)", () => {
+    const e = new Engine(loadShippedContent());
+    expect(e.getState().eraId).toBe("studio");
+    for (let i = 0; i < 50; i++) e.tick();
+    expect(e.getState().eraId).toBe("studio");
   });
 });

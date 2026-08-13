@@ -11,8 +11,7 @@ import { Engine, initialState } from "../engine/engine";
 import { tick } from "../engine/tick";
 import { createRng } from "../engine/rng";
 import { parseStartConfig, parseDecisions } from "../engine/content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
+import { decisionsJson, startJson } from "../engine/loadShippedContent";
 import type { GameContent, GameState } from "../engine/types";
 
 function emptyContent(): GameContent {

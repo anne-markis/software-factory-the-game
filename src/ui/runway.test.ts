@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseStartConfig, parseDecisions } from "../engine/content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
+import { decisionsJson, startJson } from "../engine/loadShippedContent";
 import { Engine } from "../engine/engine";
 import type { GameContent } from "../engine/types";
 import { budgetRunwayDays, netRecurringBurnPerDay, RUNWAY_WARN_DAYS } from "./runway";

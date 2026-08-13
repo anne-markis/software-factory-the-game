@@ -1,20 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { createPlayerEngine } from "./playerEngine";
 import { Engine, initialState } from "../engine/engine";
-import { parseStartConfig, parseDecisions, parseChallenges, parseProjects, validateContentGraph } from "../engine/content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
-import challengesJson from "../../content/challenges.json";
-import projectsJson from "../../content/projects.json";
+import { validateContentGraph } from "../engine/content";
+import { loadShippedContent } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 
 function content(): GameContent {
-  const c: GameContent = {
-    start: parseStartConfig(startJson),
-    decisions: parseDecisions(decisionsJson),
-    challenges: parseChallenges(challengesJson),
-    projects: parseProjects(projectsJson),
-  };
+  const c: GameContent = loadShippedContent();
   validateContentGraph(c);
   return c;
 }

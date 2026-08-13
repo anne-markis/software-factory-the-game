@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { detectMilestones } from "./milestones";
 import { initialState } from "./engine";
 import { parseStartConfig } from "./content";
-import startJson from "../../content/start.json";
+import { startJson } from "./loadShippedContent";
 import type { GameContent, GameState } from "./types";
 
 function content(): GameContent {

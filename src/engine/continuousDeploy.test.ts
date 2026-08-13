@@ -2,8 +2,7 @@ import { describe, it, expect } from "vitest";
 import { continuousDeployActive } from "./continuousDeploy";
 import { Engine } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
+import { decisionsJson, startJson } from "./loadShippedContent";
 import type { GameContent, GameState } from "./types";
 
 function content(): GameContent {

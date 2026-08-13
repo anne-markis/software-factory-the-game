@@ -1,0 +1,26 @@
+{
+  "startingEraId": "studio",
+  "eras": [
+    {
+      "id": "studio",
+      "name": "Studio"
+    },
+    {
+      "id": "company",
+      "name": "Company",
+      "entryAnyOf": [
+        { "minBudget": 25000 },
+        { "minReputation": 40 },
+        { "minCompletedProjects": 4 }
+      ]
+    },
+    {
+      "id": "megacorp",
+      "name": "Megacorp",
+      "entryAnyOf": [
+        { "minBudget": 250000 },
+        { "minUsers": 10000 }
+      ]
+    }
+  ]
+}

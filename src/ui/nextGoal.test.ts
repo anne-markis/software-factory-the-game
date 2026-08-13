@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseStartConfig, parseDecisions, parseProjects } from "../engine/content";
+import { decisionsJson, projectsJson, startJson } from "../engine/loadShippedContent";
 import { Engine } from "../engine/engine";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
-import projectsJson from "../../content/projects.json";
 import type { GameContent, GameState } from "../engine/types";
 import {
   nextContractGoal,

@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
 import { parseStartConfig, parseProjects } from "./content";
-import startJson from "../../content/start.json";
-import projectsJson from "../../content/projects.json";
+import { projectsJson, startJson } from "./loadShippedContent";
 import { effectiveRate, contextSwitchTax } from "./modifiers";
 import { applyEffects } from "./effects";
 import type { GameContent, GameState, ProjectDef } from "./types";
