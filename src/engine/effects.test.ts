@@ -21,14 +21,15 @@ describe("applyEffects", () => {
   it("modifyRate creates a modifier that changes effective rate", () => {
     const s = freshState();
     applyEffects(s, [{ type: "modifyRate", target: "all", op: "mul", value: 0.5, durationDays: 5 }], "src-1");
-    expect(effectiveRate(s, "pull")).toBe(0.5);
+    expect(effectiveRate(s, "pull")).toBe(1); // base pull 2 (issue #89) x 0.5
+    expect(effectiveRate(s, "finish")).toBe(0.5); // base finish 1 x 0.5
     expect(s.modifiers[0].expiresDay).toBe(5); // day 0 + 5
   });
 
   it("modifyRate with a specific target and add op only affects that rate", () => {
     const s = freshState();
     applyEffects(s, [{ type: "modifyRate", target: "pull", op: "add", value: 1 }], "src-1");
-    expect(effectiveRate(s, "pull")).toBe(2);
+    expect(effectiveRate(s, "pull")).toBe(3); // base pull 2 + 1
     expect(effectiveRate(s, "finish")).toBe(1);
   });
 
@@ -178,11 +179,11 @@ describe("applyEffects", () => {
     applyEffects(s, [{ type: "modifyRate", target: "all", op: "mul", value: 0.5, durationDays: 5 }], "src-1");
     for (let i = 0; i < 4; i++) tick(s, rng, content, noChallenges);
     expect(s.day).toBe(4);
-    expect(effectiveRate(s, "pull")).toBe(0.5);
+    expect(effectiveRate(s, "pull")).toBe(1); // base pull 2 x 0.5 while live
     tick(s, rng, content, noChallenges);
     expect(s.day).toBe(5);
     expect(s.modifiers).toHaveLength(0);
-    expect(effectiveRate(s, "pull")).toBe(1);
+    expect(effectiveRate(s, "pull")).toBe(2); // back to base
   });
 
   it("rampRate creates a 0-value add modifier and leaves the rate unchanged on the day it is applied", () => {

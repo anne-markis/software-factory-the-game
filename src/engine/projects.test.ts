@@ -28,7 +28,8 @@ describe("projects", () => {
     expect(contextSwitchTax(e.getState())).toBe(1);
     e.startProject("small-crm");
     expect(contextSwitchTax(e.getState())).toBeCloseTo(0.85);
-    expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(0.85);
+    expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(1.7); // base pull 2 x 0.85
+    expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(0.85); // base finish 1 x 0.85
   });
 
   it("gates projects on completedProjects and budget", () => {

@@ -18,6 +18,13 @@ export interface TechTree {
   standalone: DecisionDef[];
 }
 
+// Both ownership gates read as the same prerequisite arrow to a player, so
+// the tree treats them alike: agent-orchestration's "2x agent" count gate
+// (issue #89) puts it downstream of agent exactly as a plain requires would.
+function prerequisiteIds(def: DecisionDef): string[] {
+  return [...(def.requires ?? []), ...(def.requiresCounts ?? []).map((r) => r.id)];
+}
+
 export function buildTechTree(content: GameContent): TechTree {
   const decisions = content.decisions;
   const indexById = new Map(decisions.map((d, i) => [d.id, i]));
@@ -29,7 +36,7 @@ export function buildTechTree(content: GameContent): TechTree {
   const adj = new Map<string, Set<string>>();
   for (const d of decisions) adj.set(d.id, new Set());
   for (const d of decisions) {
-    for (const req of d.requires ?? []) {
+    for (const req of prerequisiteIds(d)) {
       if (!byId.has(req)) continue; // defensive: no dangling requires in shipped content
       adj.get(d.id)!.add(req);
       adj.get(req)!.add(d.id);
@@ -73,7 +80,7 @@ export function buildTechTree(content: GameContent): TechTree {
       const cached = tierCache.get(id);
       if (cached !== undefined) return cached;
       const def = byId.get(id)!;
-      const reqsInComp = (def.requires ?? []).filter((r) => compSet.has(r));
+      const reqsInComp = prerequisiteIds(def).filter((r) => compSet.has(r));
       const tier = reqsInComp.length === 0 ? 0 : 1 + Math.max(...reqsInComp.map(tierOf));
       tierCache.set(id, tier);
       return tier;

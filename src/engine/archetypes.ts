@@ -13,34 +13,53 @@ import { debtDragMultiplier } from "./modifiers";
 // there is no tick <-> archetypes import cycle (mirroring the reasoning in
 // continuousDeploy.ts).
 
-// A decision "raises the debt multiplier" if a base effect multiplies it above
-// 1 (agent, copilot, contractor, agent-swarm in shipped content). Derived from
-// effects, not a hardcoded id list, so new content is classified automatically.
+// A decision "raises the debt multiplier" if a base effect pushes it upward:
+// a mul above 1, or an add above 0 (the stacking agent card, issue #89 --
+// linear stacking made add the natural op, and an additive raiser is every bit
+// as much of a raiser as a multiplicative one). Derived from effects, not a
+// hardcoded id list, so new content is classified automatically.
 function raisesDebt(content: GameContent, defId: string): boolean {
   const def = content.decisions.find((d) => d.id === defId);
-  return def?.effects.some((e) => e.type === "modifyDebtMultiplier" && e.op === "mul" && e.value > 1) ?? false;
+  return (
+    def?.effects.some(
+      (e) => e.type === "modifyDebtMultiplier" && (e.op === "mul" ? e.value > 1 : e.value > 0),
+    ) ?? false
+  );
 }
 
-// Product of a def's base debt-multiplier mul effects (1 if none), used to
-// compare a synergy's debt against its base and spot structural mitigators.
-function debtMulProduct(effects: readonly { type: string; op?: string; value?: number }[]): number {
-  let p = 1;
+// Where a set of effects leaves the debt multiplier, starting from `base`.
+// Evaluated exactly the way effectiveDebtMultiplier does it -- adds first, then
+// muls -- so an additive debt term counts here the same as it does in the
+// simulation (issue #89: the stacking agent card made add a real op on this
+// target, and the old mul-only product silently ignored it, which would read a
+// +0.1 raiser as debt-neutral). Used to compare a synergy variant against the
+// base effects it replaces.
+function debtMulOutcome(base: number, effects: readonly { type: string; op?: string; value?: number }[]): number {
+  let value = base;
   for (const e of effects) {
-    if (e.type === "modifyDebtMultiplier" && e.op === "mul" && typeof e.value === "number") p *= e.value;
+    if (e.type === "modifyDebtMultiplier" && e.op === "add" && typeof e.value === "number") value += e.value;
   }
-  return p;
+  for (const e of effects) {
+    if (e.type === "modifyDebtMultiplier" && e.op === "mul" && typeof e.value === "number") value *= e.value;
+  }
+  return value;
 }
 
 // The set of decision ids that lower debt directly through their own base
-// effects: a base effect multiplies debt below 1 (e.g. test-suite), or a base
-// effect shrinks the techDebt stock via scaleStock with factor < 1 (e.g.
-// refactoring-sprint/redesign-rebuild, Release 16). Ownership alone is proof
-// of mitigation here, since the effect landed when the instance was bought.
+// effects: a base effect pushes the debt multiplier down (a mul below 1, e.g.
+// test-suite or the agent harness; or an add below 0), or a base effect shrinks
+// the techDebt stock via scaleStock with factor < 1 (Release 16's
+// refactor/rebuild pair, now out of Studio). Ownership alone is proof of
+// mitigation here, since the effect landed when the instance was bought.
 // Derived entirely from content so the archetypes stay data-driven.
 function directDebtLowererIds(content: GameContent): Set<string> {
   const ids = new Set<string>();
   for (const def of content.decisions) {
-    if (def.effects.some((e) => e.type === "modifyDebtMultiplier" && e.op === "mul" && e.value < 1)) {
+    if (
+      def.effects.some(
+        (e) => e.type === "modifyDebtMultiplier" && (e.op === "mul" ? e.value < 1 : e.value < 0),
+      )
+    ) {
       ids.add(def.id);
     }
     if (def.effects.some((e) => e.type === "scaleStock" && e.stock === "techDebt" && e.factor < 1)) {
@@ -56,34 +75,38 @@ function synergyKey(defId: string, ifOwned: string): string {
 
 // Keys for the (decision, synergy provider) pairs whose synergy variant
 // mitigates debt: the variant's debt-multiplier product comes out below the
-// def's base product (agent under agent-harness, agent-swarm under
-// swarm-orchestrator in shipped content).
+// def's base product. No Studio card ships a synergy any more (issue #89
+// replaced the agent/harness synergy with global multipliers), but content can
+// still author them, so the classification stays.
 //
 // Structural mitigation like this is only real for an instance that was
 // actually purchased under the synergy -- synergies are selected at purchase
 // time and recorded as DecisionInstance.appliedSynergyIfOwned -- so owning the
-// provider proves nothing on its own (issue #14: agent-harness requires agent,
-// so the very first agent can never have been bought under the harness
-// synergy, yet owning the harness used to suppress shifting-the-burden).
+// provider proves nothing on its own (issue #14: when agent-harness carried the
+// mitigating synergy, the very first agent could never have been bought under
+// it, yet owning the harness used to suppress shifting-the-burden).
 // Keyed per pair rather than by provider id so a provider whose synergy is
 // debt-mitigating on one decision cannot credit an instance of another
 // decision whose synergy with it leaves debt untouched.
 function debtMitigatingSynergyKeys(content: GameContent): Set<string> {
   const keys = new Set<string>();
+  // The content's own starting debt multiplier: comparing both variants at the
+  // real base is what makes an add-op term's weight relative to a mul-op one
+  // come out the way it will in play.
+  const base = content.start.debtMultiplier;
   for (const def of content.decisions) {
-    const baseDebt = debtMulProduct(def.effects);
+    const baseDebt = debtMulOutcome(base, def.effects);
     for (const syn of def.synergies ?? []) {
-      // Guard (Release 15 final review): only compare debt products when the
+      // Guard (Release 15 final review): only compare outcomes when the
       // synergy's effects actually contain a modifyDebtMultiplier term. A
-      // rate-only synergy (e.g. a bonus-speed swap on a debt-raiser) would
-      // otherwise default its debt product to 1 via debtMulProduct's
-      // no-matching-terms fallback, which reads as "lower than any raiser's
-      // baseDebt > 1" and misclassifies the synergy as a mitigator even
-      // though it never touches the debt multiplier at all.
+      // rate-only synergy (e.g. a bonus-speed swap on a debt-raiser) leaves the
+      // debt multiplier at `base`, which reads as "lower than any raiser's
+      // baseDebt" and would misclassify the synergy as a mitigator even though
+      // it never touches the debt multiplier at all.
       if (
         syn.effects &&
         syn.effects.some((e) => e.type === "modifyDebtMultiplier") &&
-        debtMulProduct(syn.effects) < baseDebt
+        debtMulOutcome(base, syn.effects) < baseDebt
       ) {
         keys.add(synergyKey(def.id, syn.ifOwned));
       }

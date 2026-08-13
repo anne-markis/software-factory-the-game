@@ -98,6 +98,19 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(otp)).toBe("~8%/day burst of $1.2/user");
   });
 
+  // Issue #89: the agent ladder is the shop's headline retune, so pin what its
+  // three cards claim on their own faces -- a stacking agent reads as a flat
+  // per-copy delta, the two force multipliers as multipliers.
+  it("the shipped agent ladder summarises stacking adds and global multipliers", () => {
+    const decisions = parseDecisions(decisionsJson);
+    const agent = decisions.find((d) => d.id === "agent")!;
+    expect(summarizeDecisionEffects(agent)).toBe("finish +0.2/day, debt +0.1");
+    const harness = decisions.find((d) => d.id === "agent-harness")!;
+    expect(summarizeDecisionEffects(harness)).toBe("finish x1.25, debt x0.7");
+    const orchestration = decisions.find((d) => d.id === "agent-orchestration")!;
+    expect(summarizeDecisionEffects(orchestration)).toBe("finish x1.45, debt x0.55");
+  });
+
   it("joins multiple effects with a comma", () => {
     const def = base({
       effects: [
@@ -115,11 +128,10 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(def)).toBe("all rates x0.5 for 5d");
   });
 
-  // Synergy targets and challenge gates (agent-harness, swarm-orchestrator,
-  // eng-manager, ddos-protection) genuinely have no direct effects. They
-  // summarise to "" so the caller omits the line entirely rather than
-  // printing "no direct effect", which reads as "this does nothing" on a
-  // purchase that costs real money.
+  // No shipped Studio card is effect-free any more (issue #89), but the
+  // summariser still has to handle one: it returns "" so the caller omits the
+  // line entirely rather than printing "no direct effect", which reads as
+  // "this does nothing" on a purchase that costs real money.
   it("a decision with no effects, gamble, or incomePerDay summarises to empty so the line is omitted", () => {
     const def = base({ effects: [] });
     expect(summarizeDecisionEffects(def)).toBe("");
@@ -207,13 +219,16 @@ describe("summarizeDecisionEffects", () => {
       }
     });
 
-    // Pins the intended empty set. If a future release gives one of these a
-    // real effect, this fails and prompts a look rather than silently
-    // changing what the card shows.
-    it("only the synergy targets and challenge gates summarise to empty", () => {
+    // Issue #89 emptied the intended empty set: the lean Studio shop dropped
+    // the pure synergy targets and challenge-gate cards, and agent-harness /
+    // agent-orchestration now carry their own multipliers. Every shipped card
+    // therefore has numbers of its own to show. A future card that summarises
+    // to blank fails here and prompts a look at whether the summariser needs
+    // teaching, rather than silently shipping an empty derived line.
+    it("no shipped Studio card summarises to empty", () => {
       const decisions = parseDecisions(decisionsJson);
       const empty = decisions.filter((d) => summarizeDecisionEffects(d) === "").map((d) => d.id).sort();
-      expect(empty).toEqual(["agent-harness", "ddos-protection", "eng-manager", "swarm-orchestrator"]);
+      expect(empty).toEqual([]);
     });
   });
 });

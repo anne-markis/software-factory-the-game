@@ -94,51 +94,12 @@
         ]
       }
     ],
-    "synergies": [
-      {
-        "ifOwned": "eng-manager",
-        "gamble": [
-          {
-            "probability": 0.55,
-            "label": "Strong hire",
-            "effects": [
-              { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
-              { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 }
-            ]
-          },
-          {
-            "probability": 0.3,
-            "label": "Decent hire",
-            "effects": [
-              { "type": "modifyRate", "target": "pull", "op": "add", "value": 0.5 },
-              { "type": "modifyRate", "target": "finish", "op": "add", "value": 0.5 }
-            ]
-          },
-          {
-            "probability": 0.13,
-            "label": "Net-negative hire",
-            "effects": [
-              { "type": "modifyRate", "target": "pull", "op": "add", "value": -0.5 },
-              { "type": "modifyRate", "target": "finish", "op": "add", "value": -0.5 }
-            ]
-          },
-          {
-            "probability": 0.02,
-            "label": "Disaster hire",
-            "effects": [
-              { "type": "modifyRate", "target": "pull", "op": "add", "value": -1.0 },
-              { "type": "modifyRate", "target": "finish", "op": "add", "value": -1.0 }
-            ]
-          }
-        ]
-      }
-    ],
     "removable": true
   },
   {
     "id": "agent",
     "name": "Add coding agent",
-    "description": "Speeds finishing work 20%. Adds 20% more tech debt unless you build a harness for it.",
+    "description": "Each agent finishes another 0.2 points of work a day and adds a little more tech debt. Buy as many as you can feed.",
     "category": "ship-faster",
     "cost": {
       "oneTime": 10,
@@ -148,31 +109,13 @@
       {
         "type": "modifyRate",
         "target": "finish",
-        "op": "mul",
-        "value": 1.2
+        "op": "add",
+        "value": 0.2
       },
       {
         "type": "modifyDebtMultiplier",
-        "op": "mul",
-        "value": 1.2
-      }
-    ],
-    "synergies": [
-      {
-        "ifOwned": "agent-harness",
-        "effects": [
-          {
-            "type": "modifyRate",
-            "target": "finish",
-            "op": "mul",
-            "value": 1.2
-          },
-          {
-            "type": "modifyDebtMultiplier",
-            "op": "mul",
-            "value": 1.1
-          }
-        ]
+        "op": "add",
+        "value": 0.1
       }
     ],
     "removable": true
@@ -180,7 +123,7 @@
   {
     "id": "agent-harness",
     "name": "Agent harness",
-    "description": "Halves the extra tech debt your coding agents create. Ongoing cost to keep it running.",
+    "description": "Tests and guardrails around every agent you run: finishing work 25% faster and tech debt grows 30% slower. Ongoing cost to keep it running.",
     "category": "tame-debt",
     "cost": {
       "oneTime": 250,
@@ -189,8 +132,49 @@
     "requires": [
       "agent"
     ],
-    "effects": [],
-    "removable": true
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "finish",
+        "op": "mul",
+        "value": 1.25
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 0.7
+      }
+    ],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "agent-orchestration",
+    "name": "Agent orchestration",
+    "description": "A planner splits work across your agents and reviews what comes back: finishing work 45% faster and tech debt grows 45% slower. Needs at least two agents to coordinate.",
+    "category": "ship-faster",
+    "cost": {
+      "oneTime": 400,
+      "perDay": 12
+    },
+    "requiresCounts": [
+      { "id": "agent", "count": 2 }
+    ],
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "finish",
+        "op": "mul",
+        "value": 1.45
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 0.55
+      }
+    ],
+    "removable": true,
+    "unique": true
   },
   {
     "id": "better-tooling",
@@ -209,268 +193,6 @@
       }
     ],
     "removable": false,
-    "unique": true
-  },
-  {
-    "id": "copilot",
-    "name": "Copilot assistant",
-    "description": "Speeds finishing work 15%. Adds 5% more tech debt in exchange.",
-    "category": "ship-faster",
-    "cost": {
-      "oneTime": 20,
-      "perDay": 2
-    },
-    "effects": [
-      {
-        "type": "modifyRate",
-        "target": "finish",
-        "op": "mul",
-        "value": 1.15
-      },
-      {
-        "type": "modifyDebtMultiplier",
-        "op": "mul",
-        "value": 1.05
-      }
-    ],
-    "removable": true,
-    "unique": true
-  },
-  {
-    "id": "senior-dev",
-    "name": "Hire senior developer",
-    "description": "Usually a big boost to the team, sometimes a dud. Hiring an engineering manager first improves the odds.",
-    "category": "ship-faster",
-    "human": true,
-    "cost": {
-      "perDay": 12
-    },
-    "requires": [
-      "basic-dev"
-    ],
-    "effects": [],
-    "gamble": [
-      {
-        "probability": 0.4,
-        "label": "Exceptional hire",
-        "effects": [
-          { "type": "modifyRate", "target": "pull", "op": "add", "value": 2.0 },
-          { "type": "modifyRate", "target": "finish", "op": "add", "value": 2.0 }
-        ]
-      },
-      {
-        "probability": 0.3,
-        "label": "Strong hire",
-        "effects": [
-          { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
-          { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 }
-        ]
-      },
-      {
-        "probability": 0.2,
-        "label": "Solid hire",
-        "effects": [
-          { "type": "modifyRate", "target": "pull", "op": "add", "value": 0.5 },
-          { "type": "modifyRate", "target": "finish", "op": "add", "value": 0.5 }
-        ]
-      },
-      {
-        "probability": 0.1,
-        "label": "Poor fit",
-        "effects": [
-          { "type": "modifyRate", "target": "pull", "op": "add", "value": -0.5 },
-          { "type": "modifyRate", "target": "finish", "op": "add", "value": -0.5 }
-        ]
-      }
-    ],
-    "synergies": [
-      {
-        "ifOwned": "eng-manager",
-        "gamble": [
-          {
-            "probability": 0.5,
-            "label": "Exceptional hire",
-            "effects": [
-              { "type": "modifyRate", "target": "pull", "op": "add", "value": 2.0 },
-              { "type": "modifyRate", "target": "finish", "op": "add", "value": 2.0 }
-            ]
-          },
-          {
-            "probability": 0.35,
-            "label": "Strong hire",
-            "effects": [
-              { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
-              { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 }
-            ]
-          },
-          {
-            "probability": 0.13,
-            "label": "Solid hire",
-            "effects": [
-              { "type": "modifyRate", "target": "pull", "op": "add", "value": 0.5 },
-              { "type": "modifyRate", "target": "finish", "op": "add", "value": 0.5 }
-            ]
-          },
-          {
-            "probability": 0.02,
-            "label": "Poor fit",
-            "effects": [
-              { "type": "modifyRate", "target": "pull", "op": "add", "value": -0.5 },
-              { "type": "modifyRate", "target": "finish", "op": "add", "value": -0.5 }
-            ]
-          }
-        ]
-      }
-    ],
-    "removable": true
-  },
-  {
-    "id": "contractor",
-    "name": "Bring in contractor",
-    "description": "A dependable +1 to pulling and finishing work, immune to sickness and poaching. Adds 10% more tech debt.",
-    "category": "ship-faster",
-    "cost": {
-      "perDay": 12
-    },
-    "effects": [
-      { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
-      { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 },
-      {
-        "type": "modifyDebtMultiplier",
-        "op": "mul",
-        "value": 1.1
-      }
-    ],
-    "removable": true
-  },
-  {
-    "id": "eng-manager",
-    "name": "Hire engineering manager",
-    "description": "Improves the odds on every developer hire made while they're on staff. No output of their own.",
-    "category": "prevent-trouble",
-    "cost": {
-      "perDay": 8
-    },
-    "requires": [
-      "basic-dev"
-    ],
-    "effects": [],
-    "removable": true,
-    "unique": true
-  },
-  {
-    "id": "standup",
-    "name": "Daily standup",
-    "description": "Keeps work moving: pulling new work speeds up 15%. Costs everyone a little time each day.",
-    "category": "ship-faster",
-    "cost": {
-      "perDay": 3
-    },
-    "effects": [
-      {
-        "type": "modifyRate",
-        "target": "pull",
-        "op": "mul",
-        "value": 1.15
-      }
-    ],
-    "removable": true,
-    "unique": true
-  },
-  {
-    "id": "agent-swarm",
-    "name": "Agent swarm",
-    "description": "Agents pick up and ship work themselves: all work 80% faster. Tech debt grows 50% faster unless an orchestrator tames it.",
-    "category": "ship-faster",
-    "cost": {
-      "oneTime": 100,
-      "perDay": 20
-    },
-    "requires": [
-      "agent-harness"
-    ],
-    "effects": [
-      {
-        "type": "modifyRate",
-        "target": "all",
-        "op": "mul",
-        "value": 1.8
-      },
-      {
-        "type": "modifyDebtMultiplier",
-        "op": "mul",
-        "value": 1.5
-      }
-    ],
-    "synergies": [
-      {
-        "ifOwned": "swarm-orchestrator",
-        "effects": [
-          {
-            "type": "modifyRate",
-            "target": "all",
-            "op": "mul",
-            "value": 1.8
-          },
-          {
-            "type": "modifyDebtMultiplier",
-            "op": "mul",
-            "value": 1.2
-          }
-        ]
-      }
-    ],
-    "removable": true
-  },
-  {
-    "id": "swarm-orchestrator",
-    "name": "Swarm orchestrator",
-    "description": "Swarms bought while this runs accumulate far less tech debt. No output on its own.",
-    "category": "tame-debt",
-    "cost": {
-      "oneTime": 150,
-      "perDay": 8
-    },
-    "requires": [
-      "agent-harness"
-    ],
-    "effects": [],
-    "removable": true,
-    "unique": true
-  },
-  {
-    "id": "self-learning-agents",
-    "name": "Self-learning agents",
-    "description": "Agents improve themselves every day, compounding into a large speed boost over time.",
-    "category": "ship-faster",
-    "cost": {
-      "oneTime": 350,
-      "perDay": 10
-    },
-    "requires": [
-      "agent-swarm"
-    ],
-    "effects": [
-      {
-        "type": "rampRate",
-        "target": "pull",
-        "perDay": 0.02,
-        "cap": 1.4
-      },
-      {
-        "type": "rampRate",
-        "target": "finish",
-        "perDay": 0.02,
-        "cap": 1.4
-      },
-      {
-        "type": "rampRate",
-        "target": "deploy",
-        "perDay": 0.02,
-        "cap": 1.4
-      }
-    ],
-    "removable": true,
     "unique": true
   },
   {
@@ -505,84 +227,5 @@
     "effects": [],
     "removable": true,
     "unique": true
-  },
-  {
-    "id": "support-retainer",
-    "name": "Support retainer",
-    "description": "Earns $8/day in support fees. The interruptions slow all work by 5%.",
-    "category": "earn-income",
-    "cost": {},
-    "incomePerDay": 8,
-    "effects": [
-      {
-        "type": "modifyRate",
-        "target": "all",
-        "op": "mul",
-        "value": 0.95
-      }
-    ],
-    "removable": true,
-    "unique": true
-  },
-  {
-    "id": "ddos-protection",
-    "name": "DDoS protection",
-    "description": "Prevents DDoS attacks from ever hitting your factory.",
-    "category": "prevent-trouble",
-    "cost": {
-      "oneTime": 200,
-      "perDay": 2
-    },
-    "effects": [],
-    "removable": true,
-    "unique": true
-  },
-  {
-    "id": "refactoring-sprint",
-    "name": "Refactoring sprint",
-    "description": "Pays down 30% of your tech debt in one sprint. Work slows 40% for about a week while you clean up.",
-    "category": "tame-debt",
-    "cost": {
-      "oneTime": 400
-    },
-    "effects": [
-      {
-        "type": "modifyRate",
-        "target": "all",
-        "op": "mul",
-        "value": 0.6,
-        "durationDays": 8
-      },
-      {
-        "type": "scaleStock",
-        "stock": "techDebt",
-        "factor": 0.7
-      }
-    ],
-    "removable": true
-  },
-  {
-    "id": "redesign-rebuild",
-    "name": "Redesign and rebuild",
-    "description": "Wipes 90% of your tech debt. Work crawls at 40% speed for over three weeks while you rebuild.",
-    "category": "tame-debt",
-    "cost": {
-      "oneTime": 1200
-    },
-    "effects": [
-      {
-        "type": "modifyRate",
-        "target": "all",
-        "op": "mul",
-        "value": 0.4,
-        "durationDays": 25
-      },
-      {
-        "type": "scaleStock",
-        "stock": "techDebt",
-        "factor": 0.1
-      }
-    ],
-    "removable": true
   }
 ]

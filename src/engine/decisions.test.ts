@@ -16,7 +16,9 @@ describe("decisions", () => {
     e.applyDecision("test-suite");
     const s = e.getState();
     expect(s.stocks.budget).toBe(9500);
-    expect(effectiveRate(s, "pull")).toBe(0.5);
+    // test-suite's setup slowdown halves every rate: base pull 2 -> 1, finish 1 -> 0.5.
+    expect(effectiveRate(s, "pull")).toBe(1);
+    expect(effectiveRate(s, "finish")).toBe(0.5);
     expect(effectiveDebtMultiplier(s)).toBe(0.25);
   });
 
@@ -46,64 +48,91 @@ describe("decisions", () => {
   });
 
   it("uses the synergy variant when the synergy decision is owned", () => {
-    const e = new Engine(content());
-    e.applyDecision("agent"); // base: debt mul 1.2
-    e.applyDecision("agent-harness");
-    e.applyDecision("agent"); // synergy: debt mul 1.1
+    // Shipped Studio content has no synergies any more (issue #89 replaced the
+    // agent/harness synergy with global multipliers), so the engine's
+    // purchase-time synergy selection is pinned against a fixture instead.
+    const c = content();
+    c.decisions = [
+      { id: "provider", name: "Provider", description: "p", category: "tame-debt", cost: {}, effects: [], removable: true, unique: true },
+      {
+        id: "worker", name: "Worker", description: "w", category: "ship-faster", cost: {}, removable: true,
+        effects: [{ type: "modifyDebtMultiplier", op: "mul", value: 1.2 }],
+        synergies: [{ ifOwned: "provider", effects: [{ type: "modifyDebtMultiplier", op: "mul", value: 1.1 }] }],
+      },
+    ];
+    const e = new Engine(c);
+    e.applyDecision("worker"); // base: debt mul 1.2
+    e.applyDecision("provider");
+    e.applyDecision("worker"); // synergy: debt mul 1.1
     const s = e.getState();
     const debtMods = s.modifiers.filter((m) => m.target === "debtMultiplier").map((m) => m.value).sort();
     expect(debtMods).toEqual([1.1, 1.2]);
     // The applied variant is recorded on the instance that got it, and only on
-    // that one: the first agent predates the harness, so it kept the base
+    // that one: the first worker predates the provider, so it kept the base
     // effects (see archetypes.ts's debt mitigation check, issue #14).
-    const agents = s.decisions.filter((d) => d.defId === "agent");
-    expect(agents.map((d) => d.appliedSynergyIfOwned)).toEqual([undefined, "agent-harness"]);
-    expect(s.decisions.find((d) => d.defId === "agent-harness")!.appliedSynergyIfOwned).toBeUndefined();
+    const workers = s.decisions.filter((d) => d.defId === "worker");
+    expect(workers.map((d) => d.appliedSynergyIfOwned)).toEqual([undefined, "provider"]);
+    expect(s.decisions.find((d) => d.defId === "provider")!.appliedSynergyIfOwned).toBeUndefined();
   });
 
-  it("buying refactoring-sprint pays down 30% of tech debt and slows all rates 40% for 8 days", () => {
-    const c = content();
-    c.start.stocks.techDebt = 1000;
-    const e = new Engine(c);
-    e.applyDecision("refactoring-sprint");
+  it("stacks agents linearly: N copies are worth N times one copy (issue #89)", () => {
+    const e = new Engine(content());
+    const base = effectiveRate(e.getState(), "finish");
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    e.applyDecision("agent");
     const s = e.getState();
-    expect(s.stocks.techDebt).toBe(700);
-    expect(s.stocks.budget).toBe(9600); // 10000 - 400
-    // Note: effectiveRate(s, "pull") is NOT 0.6 here -- techDebt 700 is past
-    // freeDebt (400), so the debtDrag multiplier also bites on top of this
-    // modifier (a separate, already-tested mechanism). Assert the modifier
-    // itself instead of the drag-entangled effective rate.
-    const mod = s.modifiers.find((m) => m.source === s.decisions[0].instanceId && m.target === "allRates")!;
-    expect(mod).toMatchObject({ op: "mul", value: 0.6, expiresDay: 8 }); // day 0 + 8
-    // scaleStock creates no modifier of its own -- only the paired modifyRate does.
-    expect(s.modifiers.filter((m) => m.source === s.decisions[0].instanceId)).toHaveLength(1);
+    // agent is not unique, so three instances coexist -- each with its own
+    // +0.2 finish and +0.1 debt-multiplier modifier.
+    expect(s.decisions.filter((d) => d.defId === "agent")).toHaveLength(3);
+    expect(effectiveRate(s, "finish")).toBeCloseTo(base + 0.6);
+    // debtMultiplier: base 0.5 + 3 x 0.1
+    expect(effectiveDebtMultiplier(s)).toBeCloseTo(0.8);
+    // Other rates are untouched: agents write code, they do not run releases.
+    expect(effectiveRate(s, "deploy")).toBeCloseTo(base);
   });
 
-  it("buying redesign-rebuild wipes 90% of tech debt and slows all rates 60% for 25 days", () => {
-    const c = content();
-    c.start.stocks.techDebt = 1000;
-    const e = new Engine(c);
-    e.applyDecision("redesign-rebuild");
+  it("harness and orchestration multiply every agent, including ones bought before them (issue #89)", () => {
+    const e = new Engine(content());
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    e.applyDecision("agent-harness");
+    e.applyDecision("agent-orchestration");
     const s = e.getState();
-    expect(s.stocks.techDebt).toBe(100);
-    expect(s.stocks.budget).toBe(8800); // 10000 - 1200
-    expect(effectiveRate(s, "pull")).toBe(0.4);
-    const mod = s.modifiers.find((m) => m.source === s.decisions[0].instanceId && m.target === "allRates")!;
-    expect(mod).toMatchObject({ op: "mul", value: 0.4, expiresDay: 25 }); // day 0 + 25
-    expect(s.modifiers.filter((m) => m.source === s.decisions[0].instanceId)).toHaveLength(1);
+    // finish: (1 base + 2 x 0.2) x 1.25 x 1.45
+    expect(effectiveRate(s, "finish")).toBeCloseTo(1.4 * 1.25 * 1.45);
+    // debt: (0.5 base + 2 x 0.1) x 0.7 x 0.55 -- the pair more than cancels
+    // the debt two agents add, which is the point of buying them.
+    expect(effectiveDebtMultiplier(s)).toBeCloseTo(0.7 * 0.7 * 0.55);
+    expect(effectiveDebtMultiplier(s)).toBeLessThan(0.5); // below the un-agented base
   });
 
-  it("refactoring-sprint is not unique: it can be bought repeatedly as debt regrows", () => {
-    const c = content();
-    c.start.stocks.techDebt = 1000;
-    const e = new Engine(c);
-    e.applyDecision("refactoring-sprint");
-    expect(() => e.applyDecision("refactoring-sprint")).not.toThrow();
-    const s = e.getState();
-    expect(s.decisions.filter((d) => d.defId === "refactoring-sprint")).toHaveLength(2);
-    // 1000 -> 700 (first) -> 490 (second, factor 0.7 applied again). Float
-    // multiplication lands at 489.99999999999994, not exactly 490.
-    expect(s.stocks.techDebt).toBeCloseTo(490);
+  it("gates agent-orchestration on owning at least two agents (requiresCounts, issue #89)", () => {
+    const e = new Engine(content());
+    // No agents: the reason spells the count out, since "requires Add coding
+    // agent" would read as satisfied to a player who owns one.
+    expect(() => e.applyDecision("agent-orchestration")).toThrow(/requires 2x Add coding agent/);
+    e.applyDecision("agent");
+    expect(() => e.applyDecision("agent-orchestration")).toThrow(/requires 2x Add coding agent/);
+    expect(
+      e.availableDecisions().find((a) => a.def.id === "agent-orchestration")!,
+    ).toMatchObject({ purchasable: false, code: "missing-requires" });
+    e.applyDecision("agent");
+    expect(e.availableDecisions().find((a) => a.def.id === "agent-orchestration")!.purchasable).toBe(true);
+    expect(() => e.applyDecision("agent-orchestration")).not.toThrow();
+    // Still unique despite the count gate.
+    expect(() => e.applyDecision("agent-orchestration")).toThrow(/already owned/);
+  });
+
+  it("re-locks a count gate when an owned instance is removed", () => {
+    const e = new Engine(content());
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    expect(e.availableDecisions().find((a) => a.def.id === "agent-orchestration")!.purchasable).toBe(true);
+    e.removeDecision(e.getState().decisions[0].instanceId);
+    const entry = e.availableDecisions().find((a) => a.def.id === "agent-orchestration")!;
+    expect(entry.purchasable).toBe(false);
+    expect(entry.code).toBe("missing-requires");
   });
 
   it("removeDecision drops effects and upkeep", () => {
@@ -146,43 +175,65 @@ describe("decisions", () => {
     expect(() => e.removeDecision("inst-999")).toThrow(/Unknown instance/);
   });
 
-  it("tightens the basic-dev gamble table when a manager is owned", () => {
-    // Seed 20260714 (observed): first gamble roll 0.1269, second 0.8411.
-    // eng-manager has no gamble, so buying it consumes no rng draw and both
-    // engines see 0.8411 for their second dev. That roll diverges: base table
-    // (0.5/0.25/0.2/0.05) lands in Net-negative hire (-0.5); tightened table
-    // (0.55/0.30/0.13/0.02) lands in Decent hire (+0.5).
-    const withManager = new Engine(content());
-    withManager.applyDecision("basic-dev"); // roll 1: Strong hire on either table
-    withManager.applyDecision("eng-manager"); // no gamble: no rng draw
-    withManager.applyDecision("basic-dev"); // roll 2 against the tightened table
-    const sA = withManager.getState();
-    const secondDev = sA.decisions.filter((d) => d.defId === "basic-dev")[1];
-    expect(secondDev.gambleLabel).toBe("Decent hire");
-    const tightened = [1.0, 0.5, -0.5, -1.0]; // tightened table outcome values
-    const modA = sA.modifiers.find((m) => m.source === secondDev.instanceId)!;
-    expect(tightened).toContain(modA.value);
-    expect(modA.value).toBe(0.5);
+  it("swaps in a synergy's gamble table when its provider is owned", () => {
+    // Fixture-based since Studio content ships no synergies (the eng-manager
+    // odds-tightener left with the org ladder, issue #89). Both engines share
+    // seed 20260714, whose second gamble roll is 0.8411 (observed): the base
+    // table (0.5/0.5) lands in "Bad" and the tightened one (0.9/0.1) in "Good".
+    const withProvider = () => {
+      const c = content();
+      c.decisions = [
+        { id: "manager", name: "Manager", description: "m", category: "prevent-trouble", cost: {}, effects: [], removable: true, unique: true },
+        {
+          id: "hire", name: "Hire", description: "h", category: "ship-faster", cost: {}, effects: [], removable: true,
+          gamble: [
+            { probability: 0.5, label: "Good", effects: [{ type: "modifyRate", target: "finish", op: "add", value: 1 }] },
+            { probability: 0.5, label: "Bad", effects: [{ type: "modifyRate", target: "finish", op: "add", value: -1 }] },
+          ],
+          synergies: [
+            {
+              ifOwned: "manager",
+              gamble: [
+                { probability: 0.9, label: "Good", effects: [{ type: "modifyRate", target: "finish", op: "add", value: 1 }] },
+                { probability: 0.1, label: "Bad", effects: [{ type: "modifyRate", target: "finish", op: "add", value: -1 }] },
+              ],
+            },
+          ],
+        },
+      ];
+      return c;
+    };
 
-    const control = new Engine(content());
-    control.applyDecision("basic-dev"); // roll 1
-    control.applyDecision("basic-dev"); // roll 2 against the base table
+    const tightened = new Engine(withProvider());
+    tightened.applyDecision("hire"); // roll 1
+    tightened.applyDecision("manager"); // no gamble: no rng draw
+    tightened.applyDecision("hire"); // roll 2 against the tightened table
+    const sA = tightened.getState();
+    const secondHire = sA.decisions.filter((d) => d.defId === "hire")[1];
+    expect(secondHire.gambleLabel).toBe("Good");
+    expect(secondHire.appliedSynergyIfOwned).toBe("manager");
+
+    const control = new Engine(withProvider());
+    control.applyDecision("hire"); // roll 1
+    control.applyDecision("hire"); // roll 2 against the base table
     const sB = control.getState();
-    const controlSecond = sB.decisions[1];
-    expect(controlSecond.gambleLabel).toBe("Net-negative hire");
-    const modB = sB.modifiers.find((m) => m.source === controlSecond.instanceId)!;
-    expect(modB.value).toBe(-0.5);
+    expect(sB.decisions[1].gambleLabel).toBe("Bad");
+    expect(sB.decisions[1].appliedSynergyIfOwned).toBeUndefined();
   });
 
-  it("senior-dev requires a basic developer first", () => {
+  it("ci-cd requires the test suite first", () => {
     const e = new Engine(content());
-    expect(() => e.applyDecision("senior-dev")).toThrow(/requires/);
+    expect(() => e.applyDecision("ci-cd")).toThrow(/requires Add test suite/);
   });
 
-  it("contractor is not human, so per-human-dev challenge rolls ignore it", () => {
+  it("the agent ladder is not human, so payroll-loss and human gates ignore it", () => {
     const defs = parseDecisions(decisionsJson);
-    const contractor = defs.find((d) => d.id === "contractor")!;
-    expect(contractor.human).not.toBe(true);
+    // basic-dev is the only human in the Studio shop; the challenge pool's
+    // human gates and removeHuman all key on this flag.
+    expect(defs.filter((d) => d.human === true).map((d) => d.id)).toEqual(["basic-dev"]);
+    for (const id of ["agent", "agent-harness", "agent-orchestration"]) {
+      expect(defs.find((d) => d.id === id)!.human).not.toBe(true);
+    }
   });
 
   it("payroll failure removes the decision permanently during tick", () => {

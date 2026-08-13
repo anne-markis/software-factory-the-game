@@ -42,7 +42,7 @@ export type Effect =
   // Removes one owned human developer instance (DecisionDef.human === true)
   // and strips its modifiers. Prefer EffectContext.instanceId when that
   // instance is still a living human; otherwise the first human in roster
-  // order. Used by challenge choice options (key-dev-poached let-them-go).
+  // order. For challenge choice options: no Studio challenge uses it today.
   // Requires EffectContext.content; silently no-ops without content or humans.
   | { type: "removeHuman" };
 
@@ -113,6 +113,12 @@ export interface DecisionDef {
   effects: Effect[];
   gamble?: GambleOutcome[];
   requires?: string[];
+  // Ownership gates that count instances rather than just presence (issue
+  // #89): each entry demands at least `count` owned instances of `id`. Used by
+  // agent-orchestration, which only makes sense once there are >= 2 agents to
+  // coordinate. Composes with `requires` (both must hold); ids are
+  // cross-checked by parseDecisions like `requires` ids are.
+  requiresCounts?: { id: string; count: number }[];
   removable: boolean;
   unique?: boolean; // at most one owned instance at a time
   synergies?: Synergy[];
@@ -153,6 +159,11 @@ export interface ChallengeDef {
     maxHumanDevs?: number;
     minTechDebt?: number;
     minDay?: number;
+    // Completed-project floor (issue #89): the challenge only fires once the
+    // player has finished at least this many projects. Studio uses it to hold
+    // scope-creep back until the Launch beta has shipped, keeping the opening
+    // tutorial stretch quiet without pinning a calendar day.
+    minCompletedProjects?: number;
     // Decision def ids: the challenge only fires while at least one owned
     // instance has any listed defId. Cross-checked against content.decisions
     // by validateContentGraph.

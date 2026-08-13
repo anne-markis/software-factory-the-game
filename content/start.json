@@ -1,7 +1,7 @@
 {
   "seed": 20260714,
   "stocks": { "backlog": 300, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0, "reputation": 0, "users": 0 },
-  "baseRates": { "pull": 1, "finish": 1, "deploy": 1 },
+  "baseRates": { "pull": 2, "finish": 1, "deploy": 1 },
   "debtMultiplier": 0.5,
   "baseBurnPerDay": 20,
   "contextSwitchFactor": 0.85,
@@ -27,7 +27,7 @@
     "reputationReward": 1,
     "completionStockGrants": [{ "stock": "users", "amount": 30 }]
   },
-  "challengeSpacingDays": 50,
+  "challengeSpacingDays": 35,
   "milestones": [
     { "id": "trusted", "reputation": 5, "name": "Trusted vendor", "message": "Milestone: Trusted vendor. Bigger contracts are opening up." },
     { "id": "established", "reputation": 15, "name": "Established shop", "message": "Milestone: Established shop. Enterprise clients will take your calls now." },

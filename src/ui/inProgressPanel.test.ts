@@ -114,11 +114,30 @@ describe("inProgressPanelSvg", () => {
     expect(svg).toContain("x0.25");
   });
 
-  it("shows only refactoring-sprint's temporary slowdown under Friction (scaleStock creates no modifier, Release 16)", () => {
-    const e = new Engine(content());
+  it("shows only a debt-paydown card's temporary slowdown under Friction (scaleStock creates no modifier, Release 16)", () => {
+    // The lean Studio shop has no scaleStock card left (issue #89 cut
+    // refactoring-sprint and redesign-rebuild), so the pairing this pins --
+    // scaleStock alongside a temporary modifyRate -- comes from a fixture.
+    const c = content();
+    c.decisions = [
+      ...c.decisions,
+      {
+        id: "refactoring-sprint",
+        name: "Refactoring sprint",
+        description: "r",
+        category: "tame-debt",
+        cost: {},
+        effects: [
+          { type: "scaleStock", stock: "techDebt", factor: 0.7 },
+          { type: "modifyRate", target: "all", op: "mul", value: 0.6, durationDays: 8 },
+        ],
+        removable: false,
+      },
+    ];
+    const e = new Engine(c);
     e.applyDecision("refactoring-sprint");
     const s = e.getState();
-    const svg = inProgressPanelSvg(s, content());
+    const svg = inProgressPanelSvg(s, c);
     // The paired modifyRate all-mul-0.6 effect is drag (mul < 1), so it lands
     // under Friction as an instance-sourced contributor.
     expect(inFrictionGroup(svg, "Refactoring sprint: x0.6")).toBe(true);
@@ -181,15 +200,15 @@ describe("inProgressPanelSvg", () => {
   });
 
   it("labels a ramping add-op modifier under Cycle speed with its rounded value and a (ramping) suffix", () => {
-    // Real purchase chain for self-learning-agents runs through agent-harness
-    // -> agent-swarm -> self-learning-agents, which is expensive to set up
-    // and would tie this test to gamble rng along the way. Instead, inject
-    // the owned instance and its ramp modifier directly via the mutable-state
-    // escape hatch, matching source to instanceId so it renders through the
-    // owned-decision branch exactly as the real ramp modifier would.
+    // No shipped Studio card ramps any more (issue #89 cut
+    // self-learning-agents), but rampRate is still an engine effect content can
+    // use, and the panel has to label it. Inject the owned instance and its ramp
+    // modifier directly via the mutable-state escape hatch, matching source to
+    // instanceId so it renders through the owned-decision branch exactly as a
+    // real ramp modifier would.
     const e = new Engine(content());
     const s = e.getState() as MutableState;
-    s.decisions.push({ instanceId: "inst-99", defId: "self-learning-agents" });
+    s.decisions.push({ instanceId: "inst-99", defId: "agent" });
     s.modifiers.push({
       id: "mod-test-ramp",
       source: "inst-99",
@@ -200,7 +219,7 @@ describe("inProgressPanelSvg", () => {
       rampCap: 2.0,
     });
     const svg = inProgressPanelSvg(s, content());
-    expect(inSpeedGroup(svg, "Self-learning agents: +0.4/day (ramping)")).toBe(true);
+    expect(inSpeedGroup(svg, "Add coding agent: +0.4/day (ramping)")).toBe(true);
     expect(svg).not.toContain("0.39999");
     expect(svg).not.toContain("0.4/day (ramping)/day"); // no double suffix/unit
   });
