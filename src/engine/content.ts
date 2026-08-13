@@ -205,6 +205,11 @@ const decisionSchema = z
     effects: z.array(effectSchema),
     gamble: z.array(gambleOutcomeSchema).optional(),
     requires: z.array(z.string()).optional(),
+    // count >= 1: a 0-count gate is always satisfied, which is content noise
+    // rather than a gate (omit the entry instead).
+    requiresCounts: z
+      .array(z.object({ id: z.string(), count: z.number().int().min(1) }).strict())
+      .optional(),
     removable: z.boolean(),
     unique: z.boolean().optional(),
     synergies: z
@@ -239,6 +244,18 @@ export function parseDecisions(json: unknown): DecisionDef[] {
     for (const req of def.requires ?? []) {
       if (!ids.has(req)) throw new Error(`Invalid content in content/decisions.json: "${def.id}" requires unknown id "${req}"`);
     }
+    for (const req of def.requiresCounts ?? []) {
+      if (!ids.has(req.id)) {
+        throw new Error(`Invalid content in content/decisions.json: "${def.id}" requiresCounts references unknown id "${req.id}"`);
+      }
+      // A count gate above 1 on a unique decision can never be satisfied.
+      const target = defs.find((d) => d.id === req.id)!;
+      if (target.unique && req.count > 1) {
+        throw new Error(
+          `Invalid content in content/decisions.json: "${def.id}" requiresCounts ${req.count}x "${req.id}", which is unique (at most 1 can be owned)`,
+        );
+      }
+    }
     for (const syn of def.synergies ?? []) {
       if (!ids.has(syn.ifOwned)) throw new Error(`Invalid content in content/decisions.json: "${def.id}" synergy references unknown id "${syn.ifOwned}"`);
     }
@@ -261,6 +278,7 @@ const challengeSchema = z
         maxHumanDevs: z.number().int().min(0).optional(),
         minTechDebt: z.number().min(0).optional(),
         minDay: z.number().int().min(0).optional(),
+        minCompletedProjects: z.number().int().min(0).optional(),
         requiresAnyDecision: z.array(z.string()).min(1).optional(),
         lacksDecision: z.string().optional(),
       })

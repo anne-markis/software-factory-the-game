@@ -16,6 +16,10 @@ function owned(state: GameState, defId: string): boolean {
   return state.decisions.some((d) => d.defId === defId);
 }
 
+function ownedCount(state: GameState, defId: string): number {
+  return state.decisions.filter((d) => d.defId === defId).length;
+}
+
 function defName(content: GameContent, defId: string): string {
   return content.decisions.find((d) => d.id === defId)?.name ?? defId;
 }
@@ -25,10 +29,17 @@ export function availability(state: GameState, content: GameContent): Availabili
     if (def.unique && owned(state, def.id)) {
       return { def, purchasable: false, code: "already-owned" as const, reason: "already owned" };
     }
-    const missing = (def.requires ?? []).filter((r) => !owned(state, r));
+    const missing = (def.requires ?? []).filter((r) => !owned(state, r)).map((id) => defName(content, id));
+    // Count gates (issue #89) are the same kind of lock as `requires`, so they
+    // share its reason line -- the count is spelled out because "requires Add
+    // coding agent" would read as satisfied to a player who owns one.
+    for (const gate of def.requiresCounts ?? []) {
+      if (ownedCount(state, gate.id) < gate.count) {
+        missing.push(`${gate.count}x ${defName(content, gate.id)}`);
+      }
+    }
     if (missing.length > 0) {
-      const names = missing.map((id) => defName(content, id));
-      return { def, purchasable: false, code: "missing-requires" as const, reason: `requires ${names.join(", ")}` };
+      return { def, purchasable: false, code: "missing-requires" as const, reason: `requires ${missing.join(", ")}` };
     }
     const oneTime = def.cost.oneTime ?? 0;
     if (state.stocks.budget < oneTime) {

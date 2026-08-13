@@ -1,12 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
 import { applyEffects } from "./effects";
+import { effectiveRate } from "./modifiers";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "./content";
 import startJson from "../../content/start.json";
 import decisionsJson from "../../content/decisions.json";
 import challengesJson from "../../content/challenges.json";
 import projectsJson from "../../content/projects.json";
-import type { GameContent, GameState } from "./types";
+import type { Effect, GameContent, GameState } from "./types";
 
 function fullContent(): GameContent {
   return {
@@ -110,17 +111,16 @@ describe("simulation", () => {
     expect(e.getState().stocks.reputation).toBe(1); // no challenges, so it never drops
   });
 
-  // Full-content idle probe: same do-nothing player, challenges on. Events
-  // steepen the mechanism's -$3/day (Release 9 baseline; see the mechanism
-  // probe above). The idle player owns no decisions at all, so every
-  // ownership/headcount-gated content-wave challenge (model-deprecation,
-  // api-price-hike, runaway-agent-loop, meeting-creep, team-conflict,
-  // cloud-credits) is condition-gated out and never fires; the only new
-  // challenge that reaches the idle player is open-source-windfall (minDay
-  // 15, +$400, 1%/day, 60-day cooldown), a pure income boost that softens the
-  // glide. ddos is additionally gated by lacksDecision "ddos-protection"
-  // (Release 9), which the idle player also satisfies (owns nothing) so it
-  // still fires, just far less often at its retuned 0.005 probability.
+  // Full-content idle probe: same do-nothing player, challenges on.
+  //
+  // RE-PINNED for the lean Studio pool (issue #89). The pool is now three
+  // events, two of which (model-deprecation, runaway-agent-loop) are gated on
+  // owning something from the agent ladder -- so the idle player, which owns
+  // nothing, only ever sees scope-creep, and only after the beta ships
+  // (minCompletedProjects 1). Scope creep adds backlog, never cash, and the
+  // project tracks points shipped rather than the backlog stock, so the idle
+  // trajectory is nearly the challenge-free one: the beta still completes on
+  // day 302 and the +$800 bonus is still the only income the run ever sees.
   //
   // RE-PINNED for content wave (release 8, task 4.5): challenge rolls are now
   // hashed per challenge (hashRoll on gameSeed/day/id) instead of drawn
@@ -130,32 +130,14 @@ describe("simulation", () => {
   // point of the refactor is that these values no longer move when a
   // challenge is added or reordered in content.
   //
-  // RE-PINNED again for Release 9 (challenge retune: ddos 0.03->0.005 with a
-  // 60-day cooldown and the new lacksDecision "ddos-protection" gate,
-  // api-price-hike 0.02->0.0025 with a 365-day cooldown, prod-incident base
-  // 0.01->0.005, laptop-dies value -400->-300, runaway-agent-loop
-  // 0.015->0.008; plus the economy-slack retune, payoutPerPoint 15->17 --
-  // see the mechanism probe above). Both changes push the glide gentler and
-  // the margin wider. Measured over this run: 19 scope-creep, 2 ddos, 6
-  // prod-incident, 3 laptop-dies, 2 open-source-windfall, plus the
-  // first-contract completion -- about 32 events across 2000 days (similar
-  // count to the spacing-only baseline, but ddos collapses from 14 fires to
-  // 2 thanks to its much lower probability and 60-day cooldown). The glide is
-  // visibly gentler as a result: broke by ~day 1826 (was ~1633 pre-retune),
-  // day 300 = 8766 (was 8111), day 600 = 7491 (was 5952). Assertions leave
-  // headroom but pin the shape: meaningful decline off the starting 10,000,
-  // no instant death, broke well within the horizon, near-empty long-run.
-  // Studio spine (issue #88): same do-nothing player, challenges on. The idle
-  // player owns no monetization decisions, so its +30 users (and organic
-  // growth after the beta) never turn into income -- the beta's $800 bonus and
-  // the odd windfall are the only cash it ever sees, against a steady -$20/day
-  // base burn. So even with challenges it drains to zero well within the
-  // horizon (observed first clamp ~day 507; challenges' net drain plus the
-  // absence of contract payout make it slightly faster than the
-  // challenge-free day-540). The beta still completes on day 302 (300 points
-  // ship one per day regardless of any backlog the challenges pile on -- the
-  // project tracks points shipped, not the backlog stock). This pins the
-  // shape, not exact challenge-dependent values.
+  // Studio spine (issue #88): the idle player owns no monetization decisions,
+  // so its +30 users (and organic growth after the beta) never turn into
+  // income -- the beta's $800 bonus is the only cash the run ever sees against
+  // a steady -$20/day base burn, and it drains to zero well within the horizon.
+  // The Release 9 challenge-retune measurements that used to live here (fire
+  // counts for ddos/prod-incident/laptop-dies/open-source-windfall) are gone
+  // with those challenges; the assertions below pin the shape, not exact
+  // challenge-dependent values.
   it("idle with full content: no monetization means the users grant never pays off; drains to zero within the horizon", () => {
     const e = new Engine(fullContent());
     let budgetAt300 = NaN;
@@ -170,9 +152,9 @@ describe("simulation", () => {
     }
     expect(completionDay).toBe(302); // the beta completes on schedule
     expect(sawUsers).toBe(true); // the users economy did switch on at launch
-    expect(budgetAt300).toBeLessThan(4200); // pre-completion glide, well off 10,000 (observed ~3700)
+    expect(budgetAt300).toBeLessThan(4200); // pre-completion glide, well off 10,000 (observed 4000: no cash event reaches an idle Studio)
     expect(budgetAt300).toBeGreaterThan(0); // no instant death
-    expect(e.getState().stocks.budget).toBeLessThan(100); // broke by day 2000 (observed 0, first clamp ~day 507)
+    expect(e.getState().stocks.budget).toBeLessThan(100); // broke by day 2000 (observed 0, first clamp ~day 540)
   });
 
   // Smart-strategy probe: a modest, sensible plan (test-suite day 1, ci-cd
@@ -247,7 +229,22 @@ describe("simulation", () => {
   // engages late. It does not narrate an archetype (its drag never reaches the
   // limits-to-growth threshold of 0.8). Still solvency-shaped only on
   // completedProjects >= 1; the budget checkpoints remain observations.
-  it("smart strategy (mid-tier observation): completes the first contract; under Release 9's retune this narrow build now stays solvent throughout", () => {
+  //
+  // RE-PINNED for the lean Studio shop (issue #89), and the "choices matter"
+  // point this probe originally made is back: this build buys delivery
+  // (test-suite, ci-cd) and two hires but NO monetization, and monetization is
+  // the Studio money spine. Observed now: the Launch beta completes on day 205
+  // (each hire's gamble lifts pull and finish by the same amount, so this build
+  // ships 2.5 pt/day and beats idle's day 302), then it works small-crm at
+  // $20/pt -- but the two hires' payroll plus base burn outrun that trickle and
+  // it hits the zero clamp on day 279 and stays there (budgetAt1000 0, end 0,
+  // post-completion peak 601, ~1508 points shipped over the run). Scope creep is
+  // the only event it ever sees; nothing else in the lean pool is eligible for a
+  // build with no agents. Unchanged by the pull headroom this issue added, since
+  // finish is this build's binding stage either way. The existing assertions are
+  // loose enough to hold unchanged (they never asserted solvency); this stays an
+  // observation probe, and the viability bars are the two probes below.
+  it("smart strategy (mid-tier observation): completes the beta, then runs dry without monetization", () => {
     const content = fullContent();
     const e = new Engine(content);
     let hires = 0;
@@ -301,7 +298,11 @@ describe("simulation", () => {
   //
   // Deliberately NO cross-probe dominance assertion: track speed is emergent
   // (spec section 2); these pin viability floors only.
-  function runBuildProbe(shoppingList: string[]): {
+  //
+  // Issue #89: the list is count-aware. `agent` is stackable now, so a repeated
+  // id means "own that many copies" -- the nth occurrence is only satisfied
+  // once n instances are owned. Non-repeated ids behave exactly as before.
+  function runBuildProbe(shoppingList: string[], opts: { onlyAfterLaunch?: boolean } = {}): {
     completedProjects: number;
     completionDays: number[];
     budgetAtDay: Record<number, number>;
@@ -325,9 +326,16 @@ describe("simulation", () => {
     for (let day = 1; day <= 2000; day++) {
       e.tick();
       const s = e.getState();
-      const owned = (id: string) => s.decisions.some((d) => d.defId === id);
-      for (const id of shoppingList) {
-        if (owned(id)) continue;
+      const ownedCount = (id: string) => s.decisions.filter((d) => d.defId === id).length;
+      const wanted = new Map<string, number>();
+      // onlyAfterLaunch: hold every purchase until the Launch beta ships. A
+      // strategy parameter, not an engine knob -- pre-launch there is no
+      // revenue at all (the beta pays $0/pt), so a player who spends into
+      // upkeep before launch is spending down a fixed starting purse.
+      const list = opts.onlyAfterLaunch && s.completedProjects < 1 ? [] : shoppingList;
+      for (const id of list) {
+        wanted.set(id, (wanted.get(id) ?? 0) + 1);
+        if (ownedCount(id) >= wanted.get(id)!) continue;
         const a = e.availableDecisions().find((x) => x.def.id === id);
         if (!a || a.code === "missing-requires") break; // wait for the prerequisite
         const oneTime = a.def.cost.oneTime ?? 0;
@@ -381,16 +389,21 @@ describe("simulation", () => {
   // ladder belongs to later eras / issue #89; here the viability bar is the
   // Studio one: finish the beta and stay solvent via monetization.
   //
-  // Observed: completes the Launch beta on day 93, then works small-crm the
-  // rest of the run without finishing it (completedProjects stays 1). The
-  // subscription (users * $0.75/day at ~150 users ≈ $112/day) dwarfs the
-  // ~$20-60/day burn, so budget climbs steadily -- 40545 at day 500, 99568 at
-  // day 1000, 216085 at day 2000 -- and it never hits the zero-clamp. Users
-  // grow to the ~150 steady state. Reputation ends at 0 (the beta's +1 is
-  // eaten by incident/breach losses and no rep-earning contract completes), so
-  // no milestone is crossed -- that is a consequence of the reworked money
-  // spine, not a regression. Loose bounds pin the shape (solvent + monetized),
-  // not challenge-knife-edge exact values.
+  // RE-PINNED for the lean Studio shop (issue #89): the org ladder
+  // (eng-manager, senior-dev, standup, contractor) left Studio, so "human
+  // heavy" is now better-tooling plus two basic-dev hires -- the only cards that
+  // lift several rates at once (better-tooling all three, each hire pull and
+  // finish together), which is why this build ships fastest of the three.
+  //
+  // Observed: completes the Launch beta on day 149, then works small-crm the
+  // rest of the run without finishing it (completedProjects stays 1, ~2823 of
+  // 5000 points shipped). The subscription (users * $0.75/day at the ~160-user
+  // steady state ≈ $120/day) dwarfs the ~$34-54/day burn, so budget climbs
+  // steadily -- 37269 at day 500, 100435 at day 1000, 229276 at day 2000 --
+  // and it never hits the zero-clamp. Reputation ends at 1 (the beta's grant;
+  // the lean pool has no reputation hit left, and no rep-earning contract
+  // completes), so no milestone is crossed. Loose bounds pin the shape
+  // (solvent + monetized), not challenge-knife-edge exact values.
   it("human-heavy strategy: finishes the beta and stays solvent via monetization over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
@@ -399,56 +412,235 @@ describe("simulation", () => {
       "one-time-product",
       "better-tooling",
       "basic-dev",
-      "eng-manager",
-      "senior-dev",
-      "standup",
-      "contractor",
+      "basic-dev",
     ]);
-    expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 93)
+    expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 149)
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.peakUsers).toBeGreaterThan(100); // users economy switched on and grew (observed ~150)
+    expect(r.peakUsers).toBeGreaterThan(100); // users economy switched on and grew (observed ~160)
     // Monetization is the money spine: subscription income lifts the budget far
-    // above the starting 10,000 (observed end ~216,085). Loose lower bound.
+    // above the starting 10,000 (observed end ~229,276). Loose lower bound.
     expect(r.endBudget).toBeGreaterThan(50000);
     expect(r.budgetAtDay[2000]).toBeGreaterThan(r.budgetAtDay[500]!); // still climbing on subscription income
   });
 
-  // Automation-heavy build, RE-PINNED wholesale for the Studio spine (issue
-  // #88). Same Studio adaptation as the human-heavy probe: the sensible player
-  // buys the two monetization cards early (after ci-cd), then the agent ladder.
-  // Agent-line ownership still opens its own challenge pool (api-price-hike,
-  // runaway-agent-loop, model-deprecation, cloud-credits) and, owning no human
-  // devs, it eats laptop-dies but no sickness/poaching -- a materially
-  // different risk profile from the human build, the track-parity design goal
-  // (viable, not identical). As with the human build the 5000-point small-crm
-  // does not finish under the ~150-user support drag within the horizon
-  // (observed ~4690 of 5000 shipped); the Studio bar is the beta + solvency.
+  // Automation-heavy build, RE-PINNED for the lean Studio shop (issue #89).
+  // The shopping list is now the Studio agent ladder -- 2 agents, harness,
+  // orchestration (which the ≥2-agent count gate opens), then 2 more agents --
+  // plus the two monetization cards and the delivery pair.
   //
-  // Observed: completes the Launch beta on day 103, works small-crm for the
-  // rest of the run without finishing it. Subscription income (≈$112/day at
-  // ~150 users) again dominates burn, so budget climbs -- 36077 at day 500,
-  // 99392 at day 1000, 213542 at day 2000 -- and it never zero-clamps. Users
-  // reach the ~150 steady state; reputation ends at 0 (beta's +1 eaten by
-  // incidents/breaches, no rep-earning contract completes). Loose bounds pin
-  // the shape (solvent + monetized), not challenge-knife-edge exact values.
+  // WHY IT IS LAUNCH-GATED (onlyAfterLaunch): the ladder is affordable from day
+  // 1 and does speed the beta up, but paying for it out of the starting purse is
+  // what breaks. The Launch beta pays $0/pt, so pre-launch income is exactly $0
+  // against a $20/day base burn, and the ladder's upkeep (4 agents x $4 +
+  // harness $5 + orchestration $12 = $33/day) nearly triples it. Measured on the
+  // un-gated list: the beta lands early (day 175, against 302 patient) but the
+  // budget hits the zero clamp on day 133 first, and payroll failure strips the
+  // agents, the harness and orchestration over days 133-134. It recovers after
+  // launch and re-buys them, so it is a real (if bruising) strategy rather than a
+  // dead end -- but it does hit the clamp, which is what this viability bar is
+  // about, so the probe plays the patient version.
+  //
+  // Holding purchases until the beta ships (day 302 on starting resources alone,
+  // which is the Studio solvency rule) and buying the ladder out of subscription
+  // income keeps it clear of the clamp: budget 12415 at day 500, 65095 at day
+  // 1000, 171501 at day 2000, users at the ~160 steady state, all 10 cards owned
+  // at the end.
+  //
+  // As in the human-heavy probe the 5000-point small-crm does not finish inside
+  // the horizon (observed ~2519 points shipped in total): the Studio bar is the
+  // beta plus solvency, and the big client ladder is a later era. Loose bounds
+  // pin the shape (solvent + monetized), not exact values.
   it("automation-heavy strategy: finishes the beta and stays solvent via monetization over 2000 days", () => {
-    const r = runBuildProbe([
-      "test-suite",
-      "ci-cd",
-      "subscription",
-      "one-time-product",
-      "agent",
-      "agent-harness",
-      "swarm-orchestrator",
-      "agent-swarm",
-      "self-learning-agents",
-      "support-retainer",
-    ]);
-    expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 103)
+    const r = runBuildProbe(
+      [
+        "subscription",
+        "one-time-product",
+        "agent",
+        "agent",
+        "agent-harness",
+        "agent-orchestration",
+        "agent",
+        "agent",
+        "test-suite",
+        "ci-cd",
+      ],
+      { onlyAfterLaunch: true },
+    );
+    expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 302)
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.peakUsers).toBeGreaterThan(100); // users economy switched on and grew (observed ~150)
-    expect(r.endBudget).toBeGreaterThan(50000); // monetization lifts budget far above 10,000 (observed ~213,542)
+    expect(r.peakUsers).toBeGreaterThan(100); // users economy switched on and grew (observed ~160)
+    expect(r.endBudget).toBeGreaterThan(50000); // monetization lifts budget far above 10,000 (observed ~171,501)
     expect(r.budgetAtDay[2000]).toBeGreaterThan(r.budgetAtDay[500]!); // still climbing on subscription income
+  });
+
+  // The agent ladder's payoff, measured in two halves (issue #89). The locked
+  // agent knobs (#86) are all finish-side -- each agent adds +0.2 finish, the
+  // harness multiplies finish x1.25, orchestration x1.45 -- and throughput in
+  // tick.ts is the minimum across the three stages. So what the ladder buys
+  // depends entirely on which stage is binding, and the shop only makes sense if
+  // finish-side capacity can eventually reach the shipped stock.
+  //
+  // Base rates are pull 2, finish 1, deploy 1 (the pull headroom this issue
+  // added). Nothing in the lean shop lifts pull except better-tooling (+0.1) and
+  // the hire (whose gamble adds the same amount to pull and finish), so pull's
+  // extra point is what the ladder eats into. Deploy is the wall behind it, and
+  // the way past that wall is structural rather than a rate: test-suite -> ci-cd
+  // switches on continuous deploy, which drops the Done stage entirely.
+  //
+  // Two builds, both isolated from challenges so no event luck enters a
+  // two-build comparison, both run for 120 days -- inside the beta (no
+  // debt->backlog regen yet) and well before the ladder's upkeep runs it dry, so
+  // these compare throughput rather than survival.
+  const ladderWindow = 120;
+  function ladderBuild(opts: { ladder: boolean; continuousDeploy: boolean }): Engine {
+    const content = fullContent();
+    content.challenges = [];
+    const e = new Engine(content);
+    if (opts.continuousDeploy) {
+      e.applyDecision("test-suite");
+      e.applyDecision("ci-cd");
+    }
+    if (opts.ladder) {
+      for (let i = 0; i < 4; i++) e.applyDecision("agent");
+      e.applyDecision("agent-harness");
+      e.applyDecision("agent-orchestration");
+    }
+    return e;
+  }
+
+  // Half one: before ci-cd, the ladder ships no more than an idle factory --
+  // deploy's 1.0/day is the wall. That is not a lie in the shop as long as the
+  // player can SEE what they bought, and they can: the pile moves. Idle piles up
+  // In Progress (finish is the constraint); the ladder drains In Progress and
+  // piles up Done instead (deploy is now the constraint). The loop diagram reads
+  // a growing box as the bottleneck, so this is the game pointing at the
+  // test-suite -> ci-cd branch as the next thing to buy.
+  it("without continuous deploy, the agent ladder moves the bottleneck from finish to deploy rather than shipping more", () => {
+    const idle = ladderBuild({ ladder: false, continuousDeploy: false });
+    const ladder = ladderBuild({ ladder: true, continuousDeploy: false });
+
+    // Finish capacity is more than tripled, and now exceeds every other stage.
+    expect(effectiveRate(ladder.getState(), "finish")).toBeCloseTo(3.2625, 4);
+    expect(effectiveRate(ladder.getState(), "pull")).toBe(2);
+    expect(effectiveRate(ladder.getState(), "deploy")).toBe(1);
+    expect(effectiveRate(idle.getState(), "finish")).toBe(1);
+
+    for (let day = 1; day <= ladderWindow; day++) {
+      idle.tick();
+      ladder.tick();
+    }
+    const i = idle.getState();
+    const l = ladder.getState();
+    expect(l.stocks.shipped).toBe(i.stocks.shipped); // observed: 118 both -- deploy-bound
+    expect(l.stocks.budget).toBeLessThan(i.stocks.budget); // 2950 vs 7600: the upkeep is real
+    // The teaching: the pile the player is staring at moves downstream.
+    expect(i.stocks.inProgress).toBeGreaterThan(100); // 121: finish cannot keep up with pull
+    expect(i.stocks.done).toBeLessThan(2); // 1: deploy clears everything finish hands it
+    expect(l.stocks.inProgress).toBeLessThan(3); // 2: the agents absorb all of pull
+    expect(l.stocks.done).toBeGreaterThan(100); // 120: finished work waiting on a deploy
+    // And the debt half of the ladder lands regardless of the bottleneck.
+    expect(l.stocks.techDebt).toBeLessThan(i.stocks.techDebt); // 41 vs 59
+  });
+
+  // Half two: with continuous deploy bought, the Done stage is gone and
+  // throughput is min(pull, finish) -- so the ladder finally spends its finish
+  // capacity, up to pull's 2.0/day ceiling. Roughly double an idle factory's
+  // output over the same window: the ladder is not a trap, it is the second half
+  // of a two-part purchase.
+  it("with ci-cd owned, the full agent ladder ships about twice what an idle factory does", () => {
+    const idle = ladderBuild({ ladder: false, continuousDeploy: true });
+    const ladder = ladderBuild({ ladder: true, continuousDeploy: true });
+    for (let day = 1; day <= ladderWindow; day++) {
+      idle.tick();
+      ladder.tick();
+    }
+    const i = idle.getState();
+    const l = ladder.getState();
+    expect(l.stocks.shipped).toBeGreaterThan(i.stocks.shipped * 1.9); // observed 230.5 vs 116
+    expect(l.pointsPerDay).toBeCloseTo(2, 5); // pull's ceiling, not finish's 3.26
+    expect(i.pointsPerDay).toBeCloseTo(1, 5); // finish's, unimproved
+    // Debt cuts both ways once the capacity is real: the ladder's multiplier is
+    // far lower per point (0.35 vs 0.5), but it ships twice the points, so the
+    // stock still grows faster in absolute terms -- the Limits to Growth loop
+    // arrives sooner for the fast factory, which is the intended lesson.
+    expect(l.stocks.techDebt).toBeGreaterThan(i.stocks.techDebt); // 40 vs 29
+  });
+
+  // Issue #89 acceptance: a SHORT Studio session on the lean shop has to hold
+  // together end to end. This plays the sensible one -- monetize first, ship the
+  // Launch beta on starting resources, then buy the agent ladder out of
+  // subscription income -- and pins what a player sees along the way:
+  //
+  //   d1-d2   subscription + one-time-product (one-time cost, no upkeep, and
+  //           worth nothing yet at 0 users -- the setup a Studio player makes
+  //           before there is anything to sell)
+  //   d302    Launch beta completes: +$800, +1 reputation, +30 users, and the
+  //           users economy (and with it the subscription) switches on
+  //   d302-05 the agent ladder, one card a day, in the order the gates imply:
+  //           agent, agent, then the harness, then orchestration -- which is
+  //           only offered once the second agent lands (requiresCounts 2x)
+  //   end     solvent the whole way after launch (budget bottoms out at ~3129
+  //           and ends ~11925 at day 500) with all six cards still owned
+  //
+  // The pre-launch-spend version of this session is the one that hurts, and it
+  // is measured in the automation-heavy probe above rather than duplicated here.
+  it("short Studio session: monetize, ship the beta, then unlock the agent ladder in gate order", () => {
+    const content = fullContent();
+    const e = new Engine(content);
+    const monetization = ["subscription", "one-time-product"];
+    const ladder = ["agent", "agent", "agent-harness", "agent-orchestration"];
+    const buys: string[] = [];
+    let completedDay = 0;
+    let minBudgetAfterLaunch = Infinity;
+    let orchestrationOfferedWithOneAgent = false;
+    for (let day = 1; day <= 500; day++) {
+      e.tick();
+      const s = e.getState();
+      if (completedDay === 0 && s.completedProjects >= 1) completedDay = day;
+      const ownedCount = (id: string) => s.decisions.filter((d) => d.defId === id).length;
+      // The count gate must never open early: one agent is not two.
+      if (ownedCount("agent") === 1) {
+        const orch = e.availableDecisions().find((a) => a.def.id === "agent-orchestration")!;
+        if (orch.purchasable) orchestrationOfferedWithOneAgent = true;
+      }
+      const wanted = new Map<string, number>();
+      for (const id of s.completedProjects >= 1 ? [...monetization, ...ladder] : monetization) {
+        wanted.set(id, (wanted.get(id) ?? 0) + 1);
+        if (ownedCount(id) >= wanted.get(id)!) continue;
+        const a = e.availableDecisions().find((x) => x.def.id === id)!;
+        if (a.purchasable && s.stocks.budget >= (a.def.cost.oneTime ?? 0) + 800) {
+          e.applyDecision(id);
+          buys.push(`d${day}:${id}`);
+        }
+        break; // strict priority: one purchase a day, never skip ahead
+      }
+      for (const pc of [...s.pendingChoices]) {
+        const def = content.challenges.find((c) => c.id === pc.challengeId)!;
+        e.resolveChoice(pc.challengeId, def.choice!.options[0].id);
+      }
+      if (completedDay > 0) minBudgetAfterLaunch = Math.min(minBudgetAfterLaunch, s.stocks.budget);
+      assertInvariants(s, day);
+    }
+    expect(buys).toEqual([
+      "d1:subscription",
+      "d2:one-time-product",
+      "d302:agent",
+      "d303:agent",
+      "d304:agent-harness",
+      "d305:agent-orchestration",
+    ]);
+    expect(orchestrationOfferedWithOneAgent).toBe(false);
+    expect(completedDay).toBe(302); // the Studio beta spine (issue #88) is untouched by the shop retune
+    const s = e.getState();
+    expect(s.decisions.filter((d) => d.defId === "agent")).toHaveLength(2); // stackable, and both survived payroll
+    expect(minBudgetAfterLaunch).toBeGreaterThan(1000); // never near the zero clamp (observed ~3129)
+    expect(s.stocks.budget).toBeGreaterThan(10000); // subscription outruns the ladder's upkeep (observed ~11,925)
+    // Only the lean pool can fire, and scope-creep waits for the launch
+    // (minCompletedProjects 1) rather than a calendar day.
+    for (const id of Object.keys(s.challengeLastFired)) {
+      expect(["scope-creep", "model-deprecation", "runaway-agent-loop"]).toContain(id);
+    }
+    expect(s.challengeLastFired["scope-creep"] ?? Infinity).toBeGreaterThan(completedDay);
   });
 
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {
@@ -502,23 +694,30 @@ describe("simulation", () => {
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
 
-    // Release 15 -- Limits to Growth made visible. Greedy buys every decision
-    // affordable each day, which stacks debt-raising capacity (agents, swarm,
-    // contractor) far faster than the mitigation it also buys can offset, so
-    // its tech debt balloons and the tech-debt drag deepens over the run. Its
-    // throughput therefore PEAKS early (observed ~8.36 pt/day around day 73,
-    // before the debt has piled up) and is a fraction of that by day 2000
-    // (observed ~1.94 pt/day). This is the "limits-to-growth" archetype the
-    // engine also narrates into the log around day 501 for this build: the
-    // faster it shipped, the more debt it grew; the more debt, the slower it
-    // ships. Pinned as a margin, not an exact value (the exact peak/end move
-    // with any challenge/gamble-draw change), so it captures the lesson
-    // without over-constraining.
-    expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay * 0.5);
-    expect(peakPointsPerDay).toBeGreaterThan(5); // the early peak really was high
+    // RE-PINNED for the lean Studio shop (issue #89). This probe's loop buys
+    // at most ONE instance of each def, and the lean shop is nine cards, of
+    // which exactly one (the single agent it allows itself) raises debt while
+    // three cut it (test-suite, agent-harness, and -- unreachable here, since
+    // the count gate wants two agents -- orchestration). So greedy's debt no
+    // longer balloons: 794 techDebt at day 2000, not far past the 400 free
+    // band, and no archetype narrates at all (archetypesSeen is empty). The old
+    // Release 15 assertions -- an early peak above 5 pt/day collapsing to under
+    // half of it -- described a shop with agent-swarm (x1.8 all rates),
+    // self-learning ramps and three hire tiers, none of which is in Studio:
+    // measured peak is now 2.80 pt/day (day 130) and end 1.76 pt/day, and the
+    // decline is the users support drag as much as debt.
+    //
+    // Rather than re-pin a lesson this content does not teach, the throughput
+    // assertions are reduced to what greedy still demonstrates here: capacity
+    // above the base 1 pt/day, and a decline from its own peak by day 2000.
+    // The limits-to-growth lesson lives in the archetype unit tests.
+    expect(peakPointsPerDay).toBeGreaterThan(1.5); // observed 2.80 (day 130)
+    expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay); // observed 1.76 at day 2000
     // No solvency or completion assertions here, deliberately -- this test
     // exercises engine invariants under maximal purchasing pressure, not
-    // balance.
+    // balance. (Observed: 1 completion, shipped ~3782, budget ~246,058 --
+    // subscription income at the ~160-user steady state dwarfs the lean shop's
+    // upkeep, so buying everything is comfortably solvent in Studio.)
     //
     // RE-PINNED for Release 17 (reputation) -- and the one probe where the
     // downward spiral bites HARD, which is the intended lesson. Greedy stacks
@@ -587,7 +786,13 @@ describe("simulation", () => {
   // with the reputation reason, live, no un-start mechanism needed. This is the
   // income you needed to recover becoming unreachable precisely because an
   // incident cost you the standing that unlocked it.
-  it("downward spiral: a security-breach reputation hit re-locks a tier the build had unlocked", () => {
+  //
+  // RE-PINNED for the lean Studio pool (issue #89): security-breach, the
+  // challenge that used to supply the reputation hit, is out of Studio, so the
+  // hit is applied as a literal effects pair here. The mechanism under test is
+  // projectAvailability's live reputation gate, not any one challenge, and the
+  // -5/-300 shape is the one a later era's breach card is expected to carry.
+  it("downward spiral: a reputation hit re-locks a tier the build had unlocked", () => {
     const content = fullContent();
     const e = new Engine(content);
     // Cast past the Readonly view to stage a build sitting exactly on the top
@@ -603,10 +808,13 @@ describe("simulation", () => {
     expect(enterpriseAt().startable).toBe(true);
     expect(enterpriseAt().reason).toBeUndefined();
 
-    // Apply the real security-breach effects (budget -300, reputation -5). The
-    // -5 drops reputation from 15 to 10, below enterprise's 15 gate.
-    const breach = content.challenges.find((c) => c.id === "security-breach")!;
-    applyEffects(s, breach.effects, "spiral-test");
+    // Apply a breach-shaped hit (budget -300, reputation -5). The -5 drops
+    // reputation from 15 to 10, below enterprise's 15 gate.
+    const breachEffects: Effect[] = [
+      { type: "addToStock", stock: "budget", value: -300 },
+      { type: "addToStock", stock: "reputation", value: -5 },
+    ];
+    applyEffects(s, breachEffects, "spiral-test");
     expect(s.stocks.reputation).toBe(10);
 
     // The tier re-locks live, and the reason names the reputation shortfall
@@ -620,7 +828,7 @@ describe("simulation", () => {
     // requires re-earning reputation through completions, which the breach loop
     // also threatens. The trap is real (by design); the balance sweep keeps it
     // survivable for a mitigated build (see the automation-heavy probe).
-    applyEffects(s, breach.effects, "spiral-test-2");
+    applyEffects(s, breachEffects, "spiral-test-2");
     expect(s.stocks.reputation).toBe(5);
     expect(enterpriseAt().startable).toBe(false);
     expect(enterpriseAt().reason).toBe("requires 15 reputation");
@@ -644,8 +852,8 @@ describe("simulation", () => {
     // Isolate the invariant under test (isStalled reachability) from three
     // confounds that are each real, deliberate engine behavior but would
     // otherwise make a true stall unreachable within a short tick budget:
-    //  - challenges.json fires random events (e.g. scope-creep: +200 backlog)
-    //    unconditionally, regardless of the player's budget.
+    //  - challenges.json fires random events (e.g. scope-creep: +75 backlog)
+    //    regardless of the player's budget.
     //  - debtMultiplier > 0 regenerates a fraction of every shipped point
     //    back into backlog forever, so backlog+inProgress+done only decays
     //    asymptotically and never hits exact 0 in a realistic tick count.

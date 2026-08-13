@@ -286,6 +286,19 @@ export function mountAppView(deps: AppViewDeps): AppView {
       engine.removeDecision(target.dataset.remove);
     } else if (target.dataset.choice && target.dataset.option) {
       engine.resolveChoice(target.dataset.choice, target.dataset.option);
+      // Issue #89: answering the interrupt hands time back. The soft pause
+      // (issue #40) is what stopped the clock when the choice appeared, so
+      // without this the day counter stays frozen after the player has already
+      // dealt with it -- and the pause reads as a bug rather than a courtesy.
+      // Resuming here also matches the speed buttons' resume-on-click.
+      //
+      // Only once the last interrupt is answered: with two choices queued,
+      // resuming on the first would start the clock ticking down the second
+      // one's expiry while the player is still reading it, which is the
+      // opposite of what the soft pause is for.
+      if (engine.getState().paused && engine.getState().pendingChoices.length === 0) {
+        engine.resume();
+      }
     } else if (target.dataset.project) {
       try {
         engine.startProject(target.dataset.project);

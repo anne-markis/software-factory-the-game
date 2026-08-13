@@ -57,10 +57,10 @@ A decision (`content/decisions.json`) is an object with these fields:
   - `"ship-faster"` ("Ship faster (points/day)") - speeds up `pull`,
     `finish`, or `deploy` (hires, tooling, agents, process tweaks).
   - `"earn-income"` ("Earn income (budget)") - adds `incomePerDay` or
-    otherwise grows budget directly (`support-retainer` today).
+    otherwise grows budget directly (`subscription`, `one-time-product`).
   - `"tame-debt"` ("Tame tech debt (debt and incident risk)") - reduces
     `modifyDebtMultiplier` or otherwise manages tech-debt growth
-    (`test-suite`, `agent-harness`, `swarm-orchestrator`).
+    (`test-suite`, `agent-harness`, `agent-orchestration`).
   - `"prevent-trouble"` ("Prevent trouble (events and gambles)") - improves
     gamble odds or closes off a challenge's `condition` (`eng-manager`,
     `ddos-protection`).
@@ -79,11 +79,11 @@ A decision (`content/decisions.json`) is an object with these fields:
 - `human` (boolean, optional) - marks the decision as a human developer.
   This is what challenges' `minHumanDevs`/`maxHumanDevs`/`perHumanDev`
   count against (see `humanDevInstances` in `src/engine/challenges.ts`).
-  Only `basic-dev` and `senior-dev` set this today.
+  Only `basic-dev` sets this today.
 - `cost` (object, required, may be `{}`) - `oneTime` (number >= 0,
   optional) charged once at purchase, and/or `perDay` (number >= 0,
-  optional) charged every tick while owned. A decision with neither (like
-  `support-retainer`) is free to acquire.
+  optional) charged every tick while owned. A decision with neither is
+  free to acquire; no shipped Studio card is, but the shape is supported.
 - `incomePerDay` (number >= 0, optional) - credited every tick while
   owned. All income across all owned decisions is credited before any
   payroll is charged that same tick, so a decision's own income can save
@@ -101,6 +101,17 @@ A decision (`content/decisions.json`) is an object with these fields:
   owned before this one is purchasable. All listed ids must be owned (not
   just one). Every id must exist elsewhere in `decisions.json`, or the
   loader rejects the file.
+- `requiresCounts` (array, optional) - the same kind of gate as `requires`,
+  but counting instances instead of just presence: each entry is
+  `{ id, count }` (count an int >= 1) and demands at least `count` owned
+  instances of `id`. Composes with `requires` - both must hold - and the
+  shop's lock reason spells the count out ("requires 2x Add coding agent"),
+  since "requires Add coding agent" would read as already satisfied to a
+  player who owns one. Only useful against a stackable (non-`unique`) def:
+  a count above 1 on a `unique` id can never be satisfied, so the loader
+  rejects it, as it does an id that names no decision in the file.
+  `agent-orchestration` uses it today (`{ "id": "agent", "count": 2 }`) -
+  a planner needs at least two agents to have anything to coordinate.
 - `removable` (boolean, required) - whether the player can manually remove
   an owned instance from the "Owned" panel. This only gates the manual
   Remove button; it does **not** protect a `perDay`-cost decision from
@@ -327,8 +338,9 @@ does not pass `content` in the effect context today, so it would no-op.
 `target` is restricted to `"pull"`, `"finish"`, or `"deploy"` - **`"all"`
 is not accepted here** (the schema literally excludes it: a ramp grows
 one rate's own additive modifier, not a shared cross-rate one, so it
-needs one effect object per rate you want to ramp, as `self-learning-agents`
-does with three separate `rampRate` effects). The modifier starts at
+needs one effect object per rate you want to ramp: the retired
+`self-learning-agents` card used three separate `rampRate` effects to grow
+all three rates). The modifier starts at
 `0` and grows by `perDay` every tick (after expired modifiers are pruned,
 before challenges roll) up to `cap`, for as long as the owning decision
 instance is owned. It behaves as an ordinary `add`-op modifier once
@@ -387,7 +399,13 @@ A challenge (`content/challenges.json`) is an object with:
   - `minTechDebt` (number >= 0) - `state.stocks.techDebt` must be at
     least this.
   - `minDay` (int >= 0) - `state.day` must be at least this (used to keep
-    early days quieter; most shipped challenges gate on `minDay: 15`).
+    early days quieter).
+  - `minCompletedProjects` (int >= 0) - `state.completedProjects` must be at
+    least this. The progress-shaped alternative to `minDay` for holding an
+    event back through the opening stretch: `scope-creep` uses
+    `minCompletedProjects: 1` so a client cannot "just remember" a few
+    requirements before there is a shipped product to bolt them onto,
+    however long that first project takes.
   - `requiresAnyDecision` (non-empty string array) - decision def ids. The
     condition is true while at least one currently-owned instance has any
     listed id. Ownership is evaluated live, so a later ladder card can keep
@@ -399,12 +417,13 @@ A challenge (`content/challenges.json`) is an object with:
     This is the counterpart to `requiresAnyDecision`/`minHumanDevs`, which
     gate on *owning* something - `lacksDecision` gates on *not* owning
     something, for content that lets the player buy their way out of a
-    challenge entirely. `ddos` uses it today:
+    challenge entirely. No shipped challenge uses it today; the retired
+    `ddos` event is the shape to copy:
     `"condition": { "minDay": 15, "lacksDecision": "ddos-protection" }`,
-    paired with a `ddos-protection` decision (`content/decisions.json`)
-    that has no direct rate or debt effects - its only job is to make this
-    condition false once owned, permanently removing `ddos` from the
-    challenge pool for the rest of that game. The referenced id must name
+    paired with a `ddos-protection` decision with no direct rate or debt
+    effects, whose only job is to make this condition false once owned,
+    permanently removing `ddos` from the challenge pool for the rest of
+    that game. The referenced id must name
     a real decision in `content/decisions.json`; this is checked by
     `validateContentGraph` (see section 5) rather than by `parseChallenges`
     itself, since challenge parsing alone has no access to the decisions
@@ -412,8 +431,9 @@ A challenge (`content/challenges.json`) is an object with:
 - `probScaling` (optional) - `{ stat: "techDebt", per, add }` (only
   `"techDebt"` is supported today). Adds
   `floor(techDebt / per) * add` to `probabilityPerDay`, capped at 1
-  overall. `prod-incident` uses `{ "per": 500, "add": 0.01 }`: every 500
-  tech debt adds another 1% to its daily chance.
+  overall. No shipped challenge scales today; the retired `prod-incident`
+  used `{ "per": 500, "add": 0.01 }`, i.e. every 500 tech debt added
+  another 1% to its daily chance.
 - `effects` (array, required) - applied when the challenge fires, unless
   it has a `choice` block (see below), in which case `effects` **must**
   be `[]` - the loader rejects a challenge that defines both, since the
@@ -494,6 +514,9 @@ From `parseDecisions` (`content/decisions.json`):
 - Duplicate `id` across entries is rejected.
 - A `gamble` table's probabilities must sum to `1` (tolerance `1e-9`).
 - Every `requires` id must name another decision id present in the file.
+- Every `requiresCounts[].id` must name another decision id present in the
+  file, and its `count` must be an int >= 1 - and above 1 only for a
+  non-`unique` id, since a unique def can never reach two instances.
 - Every `synergies[].ifOwned` id must name another decision id present in
   the file.
 
@@ -899,6 +922,18 @@ They currently check:
 - **Upgrades matter** and **stall reachability** - narrower mechanism
   checks (test-suite reduces tech debt vs. idle; an empty, zeroed-out
   content set can actually reach and stay in a stalled state).
+- **Agent ladder payoff** (the two `agent ladder` probes) - these pin the
+  reason `start.json`'s `baseRates` are asymmetric (`pull: 2` against
+  `finish: 1`, `deploy: 1`). Throughput is the *minimum* across the three
+  stages, so a card that only lifts `finish` buys nothing unless some
+  other stage has headroom above it: with all three base rates equal, the
+  whole finish-side agent ladder shipped exactly as many points as an idle
+  factory while charging full upkeep. The pull surplus is what the ladder
+  spends, and `test-suite` -> `ci-cd` (continuous deploy) is what clears
+  the deploy wall behind it. Before touching `baseRates`, or before adding
+  a card that lifts one stage in isolation, check which stage is binding
+  first - the probes assert both halves of that story (bottleneck moves
+  from finish to deploy without ci-cd; roughly double throughput with it).
 
 If a probe fails after a content edit:
 

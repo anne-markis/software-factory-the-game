@@ -15,8 +15,16 @@ describe("parseStartConfig", () => {
     expect(cfg.stocks.users).toBe(0);
     expect(cfg.stocks.budget).toBe(10000);
     expect(cfg.debtMultiplier).toBe(0.5);
-    expect(cfg.baseRates.pull).toBe(1);
-    expect(cfg.challengeSpacingDays).toBe(50);
+    // Pull headroom (issue #89): pull runs at 2/day against finish and deploy at
+    // 1/day, so the slowest stage is downstream of pull and the shop's
+    // finish-side agent ladder has somewhere to put its capacity. With pull also
+    // at 1 the ladder bought nothing: throughput is the min across the stages,
+    // so a tripled finish rate could not move a single extra point.
+    expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, deploy: 1 });
+    // Studio lean challenge pool (issue #89): a 35-day global gap, down from
+    // 50 -- the pool shrank to three events, so a shorter gap keeps them from
+    // disappearing entirely without crowding a short era.
+    expect(cfg.challengeSpacingDays).toBe(35);
   });
 
   it("parses the Studio spine start config: launch-beta project, stock drags and flows (issue #88)", () => {
@@ -150,34 +158,29 @@ describe("parseStartConfig", () => {
 });
 
 describe("parseDecisions", () => {
-  it("parses the shipped decisions.json", () => {
+  it("parses the shipped decisions.json: the lean Studio shop (issue #89)", () => {
     const defs = parseDecisions(decisionsJson);
     const ids = defs.map((d) => d.id);
+    // The Studio spine's whole shop, in content order. Everything else (the
+    // copilot, the org ladder, agent-swarm/self-learning, ddos-protection, the
+    // refactor/rebuild pair, support-retainer) is pushed to a later era.
     expect(ids).toEqual([
       "test-suite",
       "ci-cd",
       "basic-dev",
       "agent",
       "agent-harness",
+      "agent-orchestration",
       "better-tooling",
-      "copilot",
-      "senior-dev",
-      "contractor",
-      "eng-manager",
-      "standup",
-      "agent-swarm",
-      "swarm-orchestrator",
-      "self-learning-agents",
       "subscription",
       "one-time-product",
-      "support-retainer",
-      "ddos-protection",
-      "refactoring-sprint",
-      "redesign-rebuild",
     ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(7);
     expect(dev.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
+    // The hire is always in the shop: no requires, no count gate (§5.2.2).
+    expect(dev.requires).toBeUndefined();
+    expect(dev.requiresCounts).toBeUndefined();
     // Release 13: every shipped decision must carry a required category so
     // the shop can group them into sections.
     expect(defs.every((d) => d.category)).toBe(true);
@@ -186,56 +189,86 @@ describe("parseDecisions", () => {
   it("categorizes every shipped decision for the shop's sectioned layout (Release 13)", () => {
     const defs = parseDecisions(decisionsJson);
     expect(defs.find((d) => d.id === "test-suite")!.category).toBe("tame-debt");
-    expect(defs.find((d) => d.id === "support-retainer")!.category).toBe("earn-income");
+    expect(defs.find((d) => d.id === "subscription")!.category).toBe("earn-income");
     expect(defs.find((d) => d.id === "ci-cd")!.category).toBe("change-structure");
   });
 
-  it("pins the content-wave decision values", () => {
+  it("pins the Studio agent ladder: stackable agents, unique harness, count-gated orchestration (issue #89)", () => {
     const defs = parseDecisions(decisionsJson);
-    // senior-dev: base and manager-tightened gamble tables both sum to 1
-    const senior = defs.find((d) => d.id === "senior-dev")!;
-    expect(senior.gamble!.map((o) => o.probability)).toEqual([0.4, 0.3, 0.2, 0.1]);
-    expect(senior.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
-    expect(senior.synergies![0].ifOwned).toBe("eng-manager");
-    expect(senior.synergies![0].gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
-    // basic-dev gained a manager synergy with a full restated table summing to 1
-    const dev = defs.find((d) => d.id === "basic-dev")!;
-    expect(dev.synergies![0].ifOwned).toBe("eng-manager");
-    expect(dev.synergies![0].gamble!.map((o) => o.probability)).toEqual([0.55, 0.3, 0.13, 0.02]);
-    // support-retainer is the first content use of incomePerDay
-    const retainer = defs.find((d) => d.id === "support-retainer")!;
-    expect(retainer.incomePerDay).toBe(8);
-    expect(retainer.cost.oneTime).toBeUndefined();
-    // self-learning-agents ramps the whole pipeline (Task 6 balance: a
-    // finish-only ramp left automation builds pull/deploy-bound at ~1 pt/day
-    // and structurally insolvent; per-rate cap 1.4 keeps the matured build
-    // from overwhelming the human track)
-    const sla = defs.find((d) => d.id === "self-learning-agents")!;
-    expect(sla.effects).toEqual([
-      { type: "rampRate", target: "pull", perDay: 0.02, cap: 1.4 },
-      { type: "rampRate", target: "finish", perDay: 0.02, cap: 1.4 },
-      { type: "rampRate", target: "deploy", perDay: 0.02, cap: 1.4 },
+
+    // agent is the only repeatable card in the shop: no `unique`, and its
+    // effects are additive so N copies are worth N times one copy. +0.2
+    // finish/day and +0.1 debt multiplier per copy carry the power the old
+    // single mul (x1.2 finish on a base rate of 1) used to hold.
+    const agent = defs.find((d) => d.id === "agent")!;
+    expect(agent.unique).toBeUndefined();
+    expect(agent.effects).toEqual([
+      { type: "modifyRate", target: "finish", op: "add", value: 0.2 },
+      { type: "modifyDebtMultiplier", op: "add", value: 0.1 },
     ]);
-    // agent-swarm's synergy forward-references swarm-orchestrator, which
-    // appears later in the array; parseDecisions collects ids first, so the
-    // shipped file must parse with the reference intact
-    const swarm = defs.find((d) => d.id === "agent-swarm")!;
-    expect(swarm.synergies![0].ifOwned).toBe("swarm-orchestrator");
+    // No synergies: harness and orchestration are global multipliers now, so
+    // an agent bought before them still gets their benefit.
+    expect(agent.synergies).toBeUndefined();
+    expect(agent.description).toMatch(/each agent/i);
+
+    // agent-harness: one global multiplier pair, unique, gated on owning any
+    // agent. Its old shape (empty effects + a synergy on agent) meant only
+    // agents bought AFTER it were ever tamed.
+    const harness = defs.find((d) => d.id === "agent-harness")!;
+    expect(harness.unique).toBe(true);
+    expect(harness.requires).toEqual(["agent"]);
+    expect(harness.effects).toEqual([
+      { type: "modifyRate", target: "finish", op: "mul", value: 1.25 },
+      { type: "modifyDebtMultiplier", op: "mul", value: 0.7 },
+    ]);
+    expect(harness.synergies).toBeUndefined();
+
+    // agent-orchestration (replacing swarm-orchestrator): the same KIND of
+    // effect as the harness with a bigger speed multiplier and a deeper debt
+    // cut, gated on >= 2 agents rather than on the harness.
+    const orch = defs.find((d) => d.id === "agent-orchestration")!;
+    expect(orch.unique).toBe(true);
+    expect(orch.requires).toBeUndefined();
+    expect(orch.requiresCounts).toEqual([{ id: "agent", count: 2 }]);
+    expect(orch.effects).toEqual([
+      { type: "modifyRate", target: "finish", op: "mul", value: 1.45 },
+      { type: "modifyDebtMultiplier", op: "mul", value: 0.55 },
+    ]);
+    // Worth the gate: strictly more speed than the harness, and a higher
+    // ongoing burn so it stays a real budget decision rather than a strict
+    // upgrade you buy the moment you can afford it.
+    expect(orch.cost.perDay!).toBeGreaterThan(harness.cost.perDay!);
+  });
+
+  it("pins the Studio monetization and delivery cards (issues #88, #89)", () => {
+    const defs = parseDecisions(decisionsJson);
     // Release 11: ci-cd's permanent deploy speedup (modifyRate mul 1.1) is
     // replaced by the structural continuousDeploy marker; the temporary
     // setup slowdown is unchanged.
     const cicd = defs.find((d) => d.id === "ci-cd")!;
+    expect(cicd.requires).toEqual(["test-suite"]);
     expect(cicd.effects).toEqual([
       { type: "modifyRate", target: "all", op: "mul", value: 0.5, durationDays: 2 },
       { type: "continuousDeploy" },
     ]);
+    // Both monetization cards read the users stock and are ordinary purchases
+    // (no project gate) -- they simply do nothing at 0 users.
+    const sub = defs.find((d) => d.id === "subscription")!;
+    expect(sub.incomeFromStock).toEqual({ stock: "users", perUnit: 0.75 });
+    expect(sub.requires).toBeUndefined();
+    const oneTime = defs.find((d) => d.id === "one-time-product")!;
+    expect(oneTime.burstFromStock).toEqual({ stock: "users", probabilityPerDay: 0.08, perUnit: 1.2 });
+    expect(oneTime.requires).toBeUndefined();
+    // Nothing in the lean shop uses the flat incomePerDay any more
+    // (support-retainer, its only user, is out of Studio).
+    expect(defs.every((d) => d.incomePerDay === undefined)).toBe(true);
   });
 
-  it("pins the Release 15 deploy-bottleneck split: dev/senior/contractor boost pull+finish, not deploy", () => {
+  it("keeps the Release 15 deploy-bottleneck split on the hire, and \"all\" on tooling", () => {
     const defs = parseDecisions(decisionsJson);
-    // A hire's every rate-boosting outcome now targets pull and finish with
-    // the same value (human capacity no longer speeds deploy). No "all"
-    // modifyRate survives on these three; deploy is left to ci-cd's scaling.
+    // A hire's every rate-boosting outcome targets pull and finish with the
+    // same value (human capacity does not speed deploy). No "all" modifyRate
+    // survives on it; deploy is left to ci-cd's structural change.
     const splitTargets = (effects: { type: string; target?: string }[]) =>
       effects.filter((e) => e.type === "modifyRate").map((e) => e.target).sort();
 
@@ -246,54 +279,55 @@ describe("parseDecisions", () => {
       { type: "modifyRate", target: "finish", op: "add", value: 1.0 },
     ]);
     for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "pull"]);
-    for (const o of dev.synergies![0].gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "pull"]);
+    // The eng-manager odds synergy left Studio with the manager itself.
+    expect(dev.synergies).toBeUndefined();
 
-    const senior = defs.find((d) => d.id === "senior-dev")!;
-    for (const o of senior.gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "pull"]);
-    for (const o of senior.synergies![0].gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "pull"]);
-
-    // contractor: base effects split, debt modifier retained
-    const contractor = defs.find((d) => d.id === "contractor")!;
-    expect(contractor.effects).toEqual([
-      { type: "modifyRate", target: "pull", op: "add", value: 1.0 },
-      { type: "modifyRate", target: "finish", op: "add", value: 1.0 },
-      { type: "modifyDebtMultiplier", op: "mul", value: 1.1 },
-    ]);
+    // The agent ladder is finish-only for the same reason: agents write code,
+    // they do not run the release.
+    for (const id of ["agent", "agent-harness", "agent-orchestration"]) {
+      expect(splitTargets(defs.find((d) => d.id === id)!.effects)).toEqual(["finish"]);
+    }
 
     // better-tooling deliberately KEEPS "all" (tooling plausibly speeds
-    // releases too); support-retainer's slowdown likewise stays "all".
+    // releases too).
     expect(defs.find((d) => d.id === "better-tooling")!.effects).toEqual([
       { type: "modifyRate", target: "all", op: "add", value: 0.1 },
     ]);
-    expect(defs.find((d) => d.id === "support-retainer")!.effects).toEqual([
-      { type: "modifyRate", target: "all", op: "mul", value: 0.95 },
-    ]);
   });
 
-  it("pins the Release 16 debt-recovery decisions (refactoring-sprint, redesign-rebuild)", () => {
-    const defs = parseDecisions(decisionsJson);
-
-    const sprint = defs.find((d) => d.id === "refactoring-sprint")!;
-    expect(sprint.category).toBe("tame-debt");
-    expect(sprint.unique).toBeUndefined(); // repeat purchases are the point: debt regrows
-    expect(sprint.removable).toBe(true);
-    expect(sprint.cost).toEqual({ oneTime: 400 });
-    expect(sprint.effects).toEqual([
-      { type: "modifyRate", target: "all", op: "mul", value: 0.6, durationDays: 8 },
-      { type: "scaleStock", stock: "techDebt", factor: 0.7 },
+  it("parses a requiresCounts gate and rejects malformed ones (issue #89)", () => {
+    const base = { name: "x", description: "x", category: "ship-faster" as const, cost: {}, effects: [], removable: true };
+    const defs = parseDecisions([
+      { ...base, id: "seat" },
+      { ...base, id: "planner", requiresCounts: [{ id: "seat", count: 2 }] },
     ]);
-    expect(sprint.requires).toBeUndefined(); // purchasable anytime
+    expect(defs[1].requiresCounts).toEqual([{ id: "seat", count: 2 }]);
 
-    const rebuild = defs.find((d) => d.id === "redesign-rebuild")!;
-    expect(rebuild.category).toBe("tame-debt");
-    expect(rebuild.unique).toBeUndefined();
-    expect(rebuild.removable).toBe(true);
-    expect(rebuild.cost).toEqual({ oneTime: 1200 });
-    expect(rebuild.effects).toEqual([
-      { type: "modifyRate", target: "all", op: "mul", value: 0.4, durationDays: 25 },
-      { type: "scaleStock", stock: "techDebt", factor: 0.1 },
-    ]);
-    expect(rebuild.requires).toBeUndefined();
+    // unknown id, named in the error like `requires` does
+    expect(() =>
+      parseDecisions([{ ...base, id: "planner", requiresCounts: [{ id: "ghost", count: 2 }] }]),
+    ).toThrow(/ghost/);
+    // count below 1 is not a gate at all
+    expect(() =>
+      parseDecisions([
+        { ...base, id: "seat" },
+        { ...base, id: "planner", requiresCounts: [{ id: "seat", count: 0 }] },
+      ]),
+    ).toThrow(/content\/decisions\.json/);
+    // a >1 count on a unique decision can never be satisfied
+    expect(() =>
+      parseDecisions([
+        { ...base, id: "seat", unique: true },
+        { ...base, id: "planner", requiresCounts: [{ id: "seat", count: 2 }] },
+      ]),
+    ).toThrow(/unique/);
+    // strict schema: no stray keys on a gate
+    expect(() =>
+      parseDecisions([
+        { ...base, id: "seat" },
+        { ...base, id: "planner", requiresCounts: [{ id: "seat", count: 2, typo: 1 }] },
+      ]),
+    ).toThrow(/content\/decisions\.json/);
   });
 
   it("parses a valid scaleStock effect", () => {
@@ -413,74 +447,73 @@ describe("parseDecisions", () => {
 });
 
 describe("parseChallenges", () => {
-  it("parses the shipped challenges.json", () => {
+  it("ships exactly the three lean Studio challenges (issue #89)", () => {
     const defs = parseChallenges(challengesJson);
-    const ids = defs.map((c) => c.id);
-    expect(ids).toContain("sickness");
-    expect(ids).toContain("ddos");
-    const poached = defs.find((c) => c.id === "key-dev-poached")!;
-    expect(poached.choice!.options.map((o) => o.id)).toContain(poached.choice!.defaultOptionId);
-    const sickness = defs.find((c) => c.id === "sickness")!;
-    expect(sickness.probabilityPerDay).toBe(0.1);
-    expect(sickness.perHumanDev).toBe(true);
-    const incident = defs.find((c) => c.id === "prod-incident")!;
-    expect(incident.probScaling).toEqual({ stat: "techDebt", per: 500, add: 0.01 });
-    // Release 17: prod-incident now also bleeds reputation alongside its
-    // budget hit and rate slowdown.
-    const incidentRep = incident.effects.find((e) => e.type === "addToStock" && e.stock === "reputation")!;
-    expect(incidentRep).toMatchObject({ stock: "reputation", value: -2 });
+    // The lean pool: one delivery event, one agent choice, one agent cash
+    // hit. Hire drama (sickness, key-dev-poached), org/calendar pain
+    // (meeting-creep, team-conflict), free money (cloud-credits,
+    // open-source-windfall), ddos, security-breach, api-price-hike,
+    // laptop-dies and prod-incident all leave Studio (§5.4).
+    expect(defs.map((c) => c.id)).toEqual(["scope-creep", "model-deprecation", "runaway-agent-loop"]);
+    // Nothing left in the pool rolls per human dev or scales on tech debt, so
+    // the hire is a pure budget/delivery tradeoff and debt bites only through
+    // the always-on drag.
+    expect(defs.every((c) => c.perHumanDev === undefined)).toBe(true);
+    expect(defs.every((c) => c.probScaling === undefined)).toBe(true);
+    // Every event is spaced by its own cooldown on top of the global gap.
+    expect(defs.every((c) => c.cooldownDays !== undefined)).toBe(true);
   });
 
-  it("pins the Release 17 security-breach challenge (the spiral's teeth)", () => {
+  it("pins the playtest-locked lean challenge rates (issue #86 knobs)", () => {
     const defs = parseChallenges(challengesJson);
-    const breach = defs.find((c) => c.id === "security-breach")!;
-    // Debt-gated: only high-debt builds are exposed (minTechDebt 800), with a
-    // day-15 grace band. Probability scales with tech debt, so the reinforcing
-    // loop's governor is the debt drag already in play.
-    expect(breach.condition).toEqual({ minTechDebt: 800, minDay: 15 });
-    expect(breach.probScaling).toEqual({ stat: "techDebt", per: 500, add: 0.008 });
-    expect(breach.cooldownDays).toBe(120);
-    // A plain (non-choice) event: no choice, effects apply directly.
-    expect(breach.choice).toBeUndefined();
-    // Budget hit AND a 5-point reputation hit -- the largest reputation loss
-    // in content, enough to drop a mid-tier build back below the 5 gate.
-    expect(breach.effects.find((e) => e.type === "addToStock" && e.stock === "budget")).toMatchObject({ value: -300 });
-    expect(breach.effects.find((e) => e.type === "addToStock" && e.stock === "reputation")).toMatchObject({ value: -5 });
-    // Description names the reputation cost.
-    expect(breach.description).toMatch(/reputation/i);
-  });
 
-  it("pins the content-wave challenge values", () => {
-    const defs = parseChallenges(challengesJson);
-    const ids = defs.map((c) => c.id);
-    expect(ids).toEqual([
-      "sickness", "ddos", "scope-creep", "prod-incident", "security-breach", "laptop-dies", "key-dev-poached",
-      "model-deprecation", "api-price-hike", "runaway-agent-loop", "meeting-creep", "team-conflict",
-      "cloud-credits", "open-source-windfall",
-    ]);
+    // scope-creep: 1%/day, 45-day cooldown, and held back until the Launch
+    // beta has shipped so the opening tutorial stretch stays quiet (the old
+    // minDay 15 gate could fire mid-beta).
+    const scope = defs.find((c) => c.id === "scope-creep")!;
+    expect(scope.probabilityPerDay).toBe(0.01);
+    expect(scope.cooldownDays).toBe(45);
+    expect(scope.condition).toEqual({ minCompletedProjects: 1 });
+    expect(scope.effects).toEqual([{ type: "addToStock", stock: "backlog", value: 75 }]);
 
+    // model-deprecation: 0.4%/day, 80-day cooldown, gated on owning anything
+    // from the agent ladder (the cut swarm/self-learning ids are gone).
     const deprecation = defs.find((c) => c.id === "model-deprecation")!;
+    expect(deprecation.probabilityPerDay).toBe(0.004);
+    expect(deprecation.cooldownDays).toBe(80);
     expect(deprecation.condition).toEqual({
-      requiresAnyDecision: ["agent", "agent-harness", "agent-swarm", "swarm-orchestrator", "self-learning-agents"],
+      requiresAnyDecision: ["agent", "agent-harness", "agent-orchestration"],
     });
-    expect(deprecation.cooldownDays).toBe(90);
-    const defaultOption = deprecation.choice!.options.find((o) => o.id === deprecation.choice!.defaultOptionId);
-    expect(defaultOption).toBeDefined();
-    expect(defaultOption!.id).toBe("pay-migration");
+    expect(deprecation.choice!.defaultOptionId).toBe("pay-migration");
+    expect(deprecation.choice!.options.map((o) => o.id)).toEqual(["pay-migration", "degraded-fallback"]);
 
-    expect(defs.find((c) => c.id === "meeting-creep")!.condition).toEqual({ minHumanDevs: 1 });
-    expect(defs.find((c) => c.id === "team-conflict")!.condition).toEqual({ minHumanDevs: 1 });
+    // runaway-agent-loop: same agent gate; the cash hit came down from $200 to
+    // $60 (a survivable slip on a Studio budget) and the copy names the amount.
+    const runaway = defs.find((c) => c.id === "runaway-agent-loop")!;
+    expect(runaway.condition).toEqual({
+      requiresAnyDecision: ["agent", "agent-harness", "agent-orchestration"],
+    });
+    expect(runaway.cooldownDays).toBe(45);
+    expect(runaway.effects).toEqual([{ type: "addToStock", stock: "budget", value: -60 }]);
+    expect(runaway.description).toContain("$60");
+  });
 
-    const windfall = defs.find((c) => c.id === "open-source-windfall")!;
-    const windfallEffect = windfall.effects.find((e) => e.type === "addToStock")!;
-    expect(windfallEffect).toMatchObject({ stock: "budget", value: 400 });
-    expect(windfallEffect.value).toBeGreaterThan(0);
-
-    const poached = defs.find((c) => c.id === "key-dev-poached")!;
-    expect(poached.cooldownDays).toBe(60);
-    const letGo = poached.choice!.options.find((o) => o.id === "let-them-go")!;
-    expect(letGo.effects.some((e) => e.type === "removeHuman")).toBe(true);
-    expect(letGo.label).toMatch(/lose the developer/i);
+  it("parses a minCompletedProjects condition and rejects a fractional one (issue #89)", () => {
+    const defs = parseChallenges([
+      {
+        id: "x", name: "x", description: "x", probabilityPerDay: 0.1, effects: [],
+        condition: { minCompletedProjects: 2 },
+      },
+    ]);
+    expect(defs[0].condition).toEqual({ minCompletedProjects: 2 });
+    expect(() =>
+      parseChallenges([
+        {
+          id: "x", name: "x", description: "x", probabilityPerDay: 0.1, effects: [],
+          condition: { minCompletedProjects: 1.5 },
+        },
+      ]),
+    ).toThrow(/content\/challenges\.json/);
   });
 
   it("pins the mobile-app project gate", () => {

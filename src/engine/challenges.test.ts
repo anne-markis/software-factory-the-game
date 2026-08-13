@@ -39,27 +39,42 @@ describe("rollChallenges", () => {
   it("fires a challenge on a day whose hashed roll lands under its probability", () => {
     const c = content();
     const s = initialState(c);
-    // RE-PINNED for Release 9 (ddos retune: 0.03 -> 0.005 probability). Day
-    // 155 is the pinned day on which, among the idle player's eligible
-    // challenges, only ddos rolls under its new probability:
-    //   hashRoll(SEED, 155, "ddos") = 0.0003 < 0.005, day 155 >= its minDay 15,
-    //   and lacksDecision "ddos-protection" holds (the idle player owns none).
-    // sickness/poached/human-headcount challenges are gated out (0 human devs)
-    // and every agent-line challenge is gated out (no decisions owned), so
-    // budget moves by exactly ddos's -$75.
-    s.day = 155;
-    expect(hashRoll(SEED, 155, "ddos")).toBeLessThan(0.005);
+    // RE-PINNED for the lean Studio pool (issue #89: scope-creep 1%/day, gated
+    // on a completed project instead of minDay). Day 86 is the pinned day on
+    // which, among this player's eligible challenges, only scope-creep rolls
+    // under its probability: hashRoll(SEED, 86, "scope-creep") = 0.0089 < 0.01,
+    // while model-deprecation (0.09) and runaway-agent-loop (0.82) are both
+    // over theirs -- and gated out anyway with no agent owned. So backlog moves
+    // by exactly scope-creep's +75.
+    s.completedProjects = 1; // Launch beta shipped: scope-creep is live
+    s.day = 86;
+    expect(hashRoll(SEED, 86, "scope-creep")).toBeLessThan(0.01);
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9925);
-    expect(s.log.some((l) => l.message.includes("DDoS"))).toBe(true);
+    expect(s.stocks.backlog).toBe(375); // Studio start backlog 300 + 75
+    expect(s.log.some((l) => l.message.includes("Scope creep"))).toBe(true);
   });
 
-  it("respects conditions: sickness never fires with zero human devs (no instances to roll for)", () => {
+  it("respects minCompletedProjects: scope-creep stays quiet until the first project ships (issue #89)", () => {
     const c = content();
     const s = initialState(c);
-    s.day = 1;
+    // Same pinned firing day as above, but nothing has shipped yet.
+    s.day = 86;
+    expect(hashRoll(SEED, 86, "scope-creep")).toBeLessThan(0.01);
     rollChallenges(s, noRng, c);
-    expect(s.decisions.every((d) => d.sickUntilDay === undefined)).toBe(true);
+    expect(s.stocks.backlog).toBe(300); // gated out entirely: no backlog spike
+    expect(s.lastChallengeDay).toBeUndefined(); // nothing fired at all
+  });
+
+  it("respects conditions: agent challenges never fire with no agent owned", () => {
+    const c = content();
+    const s = initialState(c);
+    s.completedProjects = 1;
+    // Day 149 (pinned): runaway-agent-loop's roll is 0.0026 < its 0.008, so
+    // only its requiresAnyDecision gate can keep it from firing.
+    s.day = 149;
+    expect(hashRoll(SEED, 149, "runaway-agent-loop")).toBeLessThan(0.008);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.budget).toBe(10000);
   });
 
   it("scales probability with tech debt: a probScaling challenge fires only once debt lifts its probability", () => {
@@ -129,14 +144,61 @@ describe("rollChallenges", () => {
   it("resolveChoice applies the chosen option and clears the pending choice", () => {
     const c = content();
     const s = initialState(c);
-    s.pendingChoices.push({ challengeId: "key-dev-poached", expiresDay: 10 });
-    resolveChoice(s, c, "key-dev-poached", "match-offer");
-    expect(s.stocks.budget).toBe(9850); // 10000 - 150
+    s.pendingChoices.push({ challengeId: "model-deprecation", expiresDay: 10 });
+    resolveChoice(s, c, "model-deprecation", "pay-migration");
+    expect(s.stocks.budget).toBe(9700); // 10000 - 300
     expect(s.pendingChoices).toHaveLength(0);
   });
 
-  it("key-dev-poached let-them-go removes the targeted human and keeps the disruption mul", () => {
+  it("resolveChoice's other option applies its modifier instead of the cash cost", () => {
     const c = content();
+    const s = initialState(c);
+    s.pendingChoices.push({ challengeId: "model-deprecation", expiresDay: 10 });
+    resolveChoice(s, c, "model-deprecation", "degraded-fallback");
+    expect(s.stocks.budget).toBe(10000); // no cash paid
+    expect(s.modifiers.some((m) => m.target === "finish" && m.op === "mul" && m.value === 0.7)).toBe(true);
+  });
+
+  // The shipped Studio pool has no removeHuman challenge (hire drama left with
+  // issue #89's lean pool), so the effect's engine wiring is pinned against a
+  // fixture rather than content. It stays supported for later eras.
+  function poachChallenge() {
+    return parseChallenges([
+      {
+        id: "key-dev-poached",
+        name: "Key developer poached",
+        description: "desc",
+        probabilityPerDay: 1.0,
+        condition: { minHumanDevs: 1 },
+        cooldownDays: 60,
+        effects: [],
+        choice: {
+          expiresInDays: 3,
+          defaultOptionId: "let-them-go",
+          options: [
+            { id: "match-offer", label: "Match the offer ($150)", effects: [{ type: "addToStock", stock: "budget", value: -150 }] },
+            {
+              id: "let-them-go",
+              label: "Let them go",
+              effects: [{ type: "removeHuman" }, { type: "modifyRate", target: "all", op: "mul", value: 0.85, durationDays: 10 }],
+            },
+          ],
+        },
+      },
+    ]);
+  }
+
+  function poachContent(): GameContent {
+    return {
+      start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 },
+      decisions: parseDecisions(decisionsJson),
+      challenges: poachChallenge(),
+      projects: [],
+    };
+  }
+
+  it("a let-them-go choice removes the targeted human and keeps the disruption mul", () => {
+    const c = poachContent();
     const s = initialState(c);
     applyDecision(s, c, "basic-dev", createRng(1));
     const human = s.decisions.find((d) => d.defId === "basic-dev")!;
@@ -160,8 +222,8 @@ describe("rollChallenges", () => {
     expect(s.log.some((l) => l.message.startsWith("Lost:"))).toBe(true);
   });
 
-  it("key-dev-poached expiry default also removes a human (let-them-go is defaultOptionId)", () => {
-    const c = content();
+  it("an expiry default that removes a human still removes one (let-them-go is defaultOptionId)", () => {
+    const c = poachContent();
     const s = initialState(c);
     applyDecision(s, c, "basic-dev", createRng(1));
     const human = s.decisions.find((d) => d.defId === "basic-dev")!;
@@ -177,36 +239,8 @@ describe("rollChallenges", () => {
     expect(s.modifiers.some((m) => m.value === 0.85)).toBe(true);
   });
 
-  it("queuing key-dev-poached pins targetInstanceId to a human on staff", () => {
-    const challenges = parseChallenges([
-      {
-        id: "key-dev-poached",
-        name: "Key developer poached",
-        description: "desc",
-        probabilityPerDay: 1.0,
-        condition: { minHumanDevs: 1 },
-        cooldownDays: 60,
-        effects: [],
-        choice: {
-          expiresInDays: 3,
-          defaultOptionId: "let-them-go",
-          options: [
-            { id: "match-offer", label: "Match", effects: [] },
-            {
-              id: "let-them-go",
-              label: "Let go",
-              effects: [{ type: "removeHuman" }, { type: "modifyRate", target: "all", op: "mul", value: 0.85, durationDays: 10 }],
-            },
-          ],
-        },
-      },
-    ]);
-    const c: GameContent = {
-      start: { ...parseStartConfig(startJson), challengeSpacingDays: 0 },
-      decisions: parseDecisions(decisionsJson),
-      challenges,
-      projects: [],
-    };
+  it("queuing a removeHuman choice pins targetInstanceId to a human on staff", () => {
+    const c = poachContent();
     const s = initialState(c);
     applyDecision(s, c, "basic-dev", createRng(1));
     const humanId = s.decisions.find((d) => d.defId === "basic-dev")!.instanceId;
@@ -216,8 +250,28 @@ describe("rollChallenges", () => {
     expect(s.pendingChoices[0].targetInstanceId).toBe(humanId);
   });
 
-  it("sickness rolls each human dev independently: same day, one instance sick and the other not", () => {
-    const c = content();
+  it("perHumanDev challenges roll each human dev independently: same day, one instance sick and the other not", () => {
+    // Fixture: the lean Studio pool ships no perHumanDev challenge (sickness
+    // left with the hire drama, issue #89), but the per-instance roll keying is
+    // engine behavior later eras rely on. The fixture keeps the "sickness" id so
+    // the pinned rolls below are the same ones this test has always used.
+    const challenges = parseChallenges([
+      {
+        id: "sickness",
+        name: "Sickness",
+        description: "desc",
+        probabilityPerDay: 0.1,
+        perHumanDev: true,
+        condition: { minHumanDevs: 1 },
+        effects: [{ type: "sickness", factor: 0.7, durationDays: 5 }],
+      },
+    ]);
+    const c: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: parseDecisions(decisionsJson),
+      challenges,
+      projects: [],
+    };
     const s = initialState(c);
     s.decisions.push({ instanceId: "i1", defId: "basic-dev" }, { instanceId: "i2", defId: "basic-dev" });
     // Day 30 is pinned so the two per-instance rolls land on opposite sides of
@@ -309,9 +363,10 @@ describe("model-deprecation (requiresAnyDecision)", () => {
     const c = content();
     const s = initialState(c);
     applyDecision(s, c, "agent", createRng(1));
-    // Day 15: hashRoll(SEED, 15, "model-deprecation") = 0.0036 < its 0.015 probability.
+    // Day 15: hashRoll(SEED, 15, "model-deprecation") = 0.0036, still under the
+    // retuned 0.4%/day probability (issue #89 dropped it from 1.5%).
     s.day = 15;
-    expect(hashRoll(SEED, 15, "model-deprecation")).toBeLessThan(0.015);
+    expect(hashRoll(SEED, 15, "model-deprecation")).toBeLessThan(0.004);
     rollChallenges(s, noRng, c);
     const pending = s.pendingChoices.find((pc) => pc.challengeId === "model-deprecation");
     expect(pending).toBeDefined();
@@ -341,9 +396,9 @@ describe("model-deprecation (requiresAnyDecision)", () => {
         description: "desc",
         probabilityPerDay: 1.0, // would always fire if the condition allowed a roll
         condition: {
-          requiresAnyDecision: ["agent", "agent-harness", "agent-swarm", "swarm-orchestrator", "self-learning-agents"],
+          requiresAnyDecision: ["agent", "agent-harness", "agent-orchestration"],
         },
-        cooldownDays: 90,
+        cooldownDays: 80,
         effects: [],
         choice: {
           expiresInDays: 4,

@@ -18,9 +18,26 @@ describe("netRecurringBurnPerDay", () => {
 
   it("adds owned perDay upkeep and subtracts incomePerDay", () => {
     const c = content();
+    // The lean Studio shop has no flat-incomePerDay card left (issue #89 cut
+    // support-retainer; subscription scales with users instead), so the flat
+    // branch is pinned against a fixture card bolted onto shipped content.
+    c.decisions = [
+      ...c.decisions,
+      {
+        id: "retainer",
+        name: "Support retainer",
+        description: "r",
+        category: "earn-income",
+        cost: {},
+        incomePerDay: 8,
+        effects: [],
+        removable: true,
+        unique: true,
+      },
+    ];
     const e = new Engine(c);
     e.applyDecision("basic-dev"); // perDay 7
-    e.applyDecision("support-retainer"); // incomePerDay 8
+    e.applyDecision("retainer"); // incomePerDay 8
     // 20 base + 7 payroll - 8 income
     expect(netRecurringBurnPerDay(e.getState(), c)).toBe(19);
   });
@@ -55,8 +72,10 @@ describe("budgetRunwayDays", () => {
     const c = content();
     c.start.baseBurnPerDay = 0;
     const e = new Engine(c);
-    e.applyDecision("support-retainer"); // income 8, no payroll
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-8);
+    e.applyDecision("subscription"); // recurring income, no payroll
+    const s = e.getState() as import("../engine/types").GameState;
+    s.stocks.users = 40; // 40 users x $0.75 = $30/day
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-30);
     expect(budgetRunwayDays(e.getState(), c)).toBeNull();
   });
 

@@ -43,15 +43,15 @@ describe("loopDiagramSvg", () => {
   it("issue #9: on a fresh game's first tick, shows each arrow's realized flow, not its raw capacity", () => {
     const content = emptyContent();
     const state = initialState(content);
-    // First tick: backlog (1500) is plentiful so pull saturates its 1.0/day
+    // First tick: the backlog is plentiful so pull saturates its 2.0/day
     // capacity, but inProgress and done both start at 0, so nothing was
     // actually there yet for finish/deploy to move -- their realized flow is
-    // genuinely 0 this tick even though their base capacity is also 1.0/day.
-    // Buggy behavior (pre-fix): all three arrows print the uncapped
-    // 1.0/day capacity regardless of what actually moved.
+    // genuinely 0 this tick even though their base capacity is 1.0/day.
+    // Buggy behavior (pre-fix): all three arrows print their uncapped
+    // capacity regardless of what actually moved.
     tick(state, createRng(content.start.seed), content, () => {});
     const svg = loopDiagramSvg(state, content);
-    expect(svg).toContain("1.0/day"); // pull: realized flow == capacity here, backlog wasn't the constraint
+    expect(svg).toContain("2.0/day"); // pull: realized flow == capacity here, backlog wasn't the constraint
     expect(svg.match(/0\.0\/day/g)).toHaveLength(2); // finish AND deploy: realized flow, not capacity
   });
 

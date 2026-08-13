@@ -23,6 +23,7 @@ function conditionMet(def: ChallengeDef, state: GameState, content: GameContent)
   if (cond.maxHumanDevs !== undefined && humans > cond.maxHumanDevs) return false;
   if (cond.minTechDebt !== undefined && state.stocks.techDebt < cond.minTechDebt) return false;
   if (cond.minDay !== undefined && state.day < cond.minDay) return false;
+  if (cond.minCompletedProjects !== undefined && state.completedProjects < cond.minCompletedProjects) return false;
   if (cond.requiresAnyDecision !== undefined) {
     const required = new Set(cond.requiresAnyDecision);
     if (!state.decisions.some((inst) => required.has(inst.defId))) return false;

@@ -60,8 +60,8 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // Immediate, like addToStock: no modifier is created, so a scaled
         // stock does not show up as a Friction/Cycle-speed/Leak-size
         // contributor in the Progress loop panel -- only a paired
-        // modifyRate effect in the same purchase (as refactoring-sprint and
-        // redesign-rebuild both do) would surface there. factor 0 wipes the
+        // modifyRate effect in the same purchase (the shape the retired
+        // refactor/rebuild cards used) would surface there. factor 0 wipes the
         // stock entirely; factor > 1 (a future challenge doubling backlog,
         // say) is schema-legal too. Clamped at 0 like every other stock write.
         state.stocks[effect.stock] = Math.max(0, state.stocks[effect.stock] * effect.factor);
@@ -82,9 +82,9 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // ramp-growth pass. It is otherwise an ordinary add-op modifier, so
         // removal-by-source (removeDecision, payroll failure) strips it free.
         // Note: add-op modifiers are scaled by their source instance's
-        // sickFactor (modifiers.ts). Today no ramp source is sick-able
-        // (self-learning agents are not human); a future sick-able ramp
-        // source would have its ramped contribution scaled while sick.
+        // sickFactor (modifiers.ts). No shipped card ramps today, and a ramp is
+        // a machine rather than a person, so no ramp source is sick-able; a
+        // future sick-able one would have its contribution scaled while sick.
         pushModifier(state, source, effect.target, "add", 0, undefined, { perDay: effect.perDay, cap: effect.cap });
         break;
       case "continuousDeploy":
@@ -93,7 +93,8 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // via continuousDeployActive, so there is nothing to apply here.
         break;
       case "removeHuman": {
-        // Challenge-driven roster loss (key-dev-poached let-them-go). Ignores
+        // Challenge-driven roster loss (a poaching-style choice option; no
+        // Studio challenge uses it today, see challenges.json). Ignores
         // DecisionDef.removable the same way payroll failure does -- the
         // person left, whether or not the player could have clicked Remove.
         // No-ops without content or when no human remains (defensive: the

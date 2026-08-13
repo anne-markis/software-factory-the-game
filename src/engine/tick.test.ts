@@ -17,19 +17,29 @@ function ciCdContent(): GameContent {
 }
 
 describe("tick", () => {
-  it("moves points downstream one stage per day at base rates", () => {
+  // Base rates are pull 2, finish 1, deploy 1 (issue #89 gave pull headroom so
+  // the finish-side agent ladder has a stage to feed), so the stages do NOT move
+  // in lockstep: pull runs at twice the pace the rest of the line can absorb and
+  // In Progress grows, which is the loop diagram's "growing box marks the
+  // bottleneck" telling the player where to spend.
+  it("moves points downstream at base rates, with pull outrunning finish", () => {
     const e = new Engine(testContent());
-    e.tick(); // day 1: pull moves 1 point into inProgress
+    e.tick(); // day 1: pull moves 2 points into inProgress
     let s = e.getState();
-    expect(s.stocks.backlog).toBe(299); // Studio start backlog 300
-    expect(s.stocks.inProgress).toBe(1);
+    expect(s.stocks.backlog).toBe(298); // Studio start backlog 300
+    expect(s.stocks.inProgress).toBe(2);
     expect(s.stocks.shipped).toBe(0);
 
-    e.tick(); // day 2
+    e.tick(); // day 2: finish moves its first point to done
     e.tick(); // day 3: first point ships (downstream-first prevents same-day pass-through)
     s = e.getState();
     expect(s.stocks.shipped).toBe(1);
-    expect(s.pointsPerDay).toBe(1);
+    expect(s.pointsPerDay).toBe(1); // throughput is the slowest stage, not pull
+    // Pull has put 6 points in; finish has only pulled 2 of them through, so the
+    // surplus sits in In Progress.
+    expect(s.stocks.backlog).toBe(294);
+    expect(s.stocks.inProgress).toBe(4);
+    expect(s.stocks.done).toBe(1);
   });
 
   // Issue #9: pullFlow/finishFlow mirror pointsPerDay's realized-flow
@@ -38,26 +48,26 @@ describe("tick", () => {
   // in-progress panel can show what actually moved instead of raw capacity.
   it("persists realized pull/finish flow, capped by the stock actually available that tick", () => {
     const e = new Engine(testContent());
-    e.tick(); // day 1: backlog (1500) is plentiful, so pull saturates its 1.0/day
+    e.tick(); // day 1: the backlog is plentiful, so pull saturates its 2.0/day
     // capacity; but inProgress/done both started at 0, so finish and deploy
     // had nothing to move yet -- their realized flow is genuinely 0.
     let s = e.getState();
-    expect(s.pullFlow).toBe(1);
+    expect(s.pullFlow).toBe(2);
     expect(s.finishFlow).toBe(0);
     expect(s.pointsPerDay).toBe(0);
 
-    e.tick(); // day 2: the point pulled on day 1 is now in inProgress, so finish
-    // now has something to move.
+    e.tick(); // day 2: the points pulled on day 1 are now in inProgress, so finish
+    // has something to move -- capped at its own 1.0/day, not the 2 waiting.
     s = e.getState();
-    expect(s.pullFlow).toBe(1);
+    expect(s.pullFlow).toBe(2);
     expect(s.finishFlow).toBe(1);
   });
 
   // Studio spine (issue #88, AC2): tech debt STILL accrues before the first
   // project completes, but it does NOT refill the backlog yet -- the Launch
   // beta gets a clean 300-point burndown. So after 3 ticks the shipped point
-  // grows techDebt by 0.5 but the backlog is pure pull drawdown (300 - 3),
-  // with no debt added back (completedProjects is still 0).
+  // grows techDebt by 0.5 but the backlog is pure pull drawdown (300 - 6 at the
+  // 2.0/day base pull), with no debt added back (completedProjects is still 0).
   it("shipped points grow tech debt but do NOT refill the backlog before the first project completes", () => {
     const e = new Engine(testContent());
     e.tick();
@@ -66,7 +76,7 @@ describe("tick", () => {
     const s = e.getState();
     expect(s.stocks.techDebt).toBe(0.5); // debt accrues pre-launch
     expect(s.completedProjects).toBe(0); // the 300-pt beta is nowhere near done
-    expect(s.stocks.backlog).toBe(297); // 300 - 3 pulled; NO debt refill yet (the gate)
+    expect(s.stocks.backlog).toBe(294); // 300 - 6 pulled; NO debt refill yet (the gate)
   });
 
   // Once the first project has completed the debt->backlog refill turns on, so
@@ -276,10 +286,15 @@ describe("tick", () => {
         const inProgressBefore = before.stocks.inProgress;
         const doneBefore = before.stocks.done;
         const shippedBefore = before.stocks.shipped;
-        const finishRate = effectiveRate(before, "finish");
         e.tick();
         const after = e.getState();
-        const expectedFinishFlow = Math.min(inProgressBefore, finishRate);
+        // The finish rate is read AFTER the tick: expired modifiers are pruned
+        // at the START of a tick (the day increments first), so the post-tick
+        // modifier set is the one this tick actually ran on, while the pre-tick
+        // set still holds a modifier expiring on this very day. Nothing else
+        // moves the rate here -- debt stays far below freeDebt and there are no
+        // projects, so no drag is in play.
+        const expectedFinishFlow = Math.min(inProgressBefore, effectiveRate(after, "finish"));
         expect(after.stocks.shipped, `day ${day}`).toBeCloseTo(shippedBefore + doneBefore, 10);
         expect(after.stocks.done, `day ${day}`).toBeCloseTo(expectedFinishFlow, 10);
       }
@@ -362,30 +377,32 @@ describe("tick", () => {
   });
 
   // Issue #13: chargeUpkeep used to clamp budget to 0 against baseBurnPerDay
-  // BEFORE crediting incomePerDay, instead of netting burn against income in
-  // the same step. Once budget had already been driven to 0, that clamp threw
-  // away the burn deficit entirely, so any owned income decision (e.g.
-  // support-retainer, free to acquire, incomePerDay 8) got added on top of a
-  // clean 0 with nothing left to net against -- turning insolvency into a
-  // permanent, risk-free income stream of exactly incomePerDay per day
-  // forever, instead of the intended steady 0 (burn of 20/day still exceeds
-  // income of 8/day, so the correct steady state is 0, not 8).
+  // BEFORE crediting income, instead of netting burn against income in the
+  // same step. Once budget had already been driven to 0, that clamp threw away
+  // the burn deficit entirely, so any owned income decision got added on top
+  // of a clean 0 with nothing left to net against -- turning insolvency into a
+  // permanent, risk-free income stream instead of the intended steady 0.
+  // Probed here with the subscription card at 10 users ($7.50/day, well under
+  // the $20/day burn); issue #89's lean shop dropped support-retainer, the
+  // flat-incomePerDay card this test used to buy, and the netting is the same
+  // for either income shape.
   describe("insolvency does not monetize owned income decisions (issue #13)", () => {
-    it("stabilizes budget at 0, not at incomePerDay, once burn has driven the player insolvent", () => {
+    it("stabilizes budget at 0, not at the income amount, once burn has driven the player insolvent", () => {
       const content = ciCdContent();
       // No pipeline flow at all, so no shipped-point revenue can leak into
       // budget and contaminate the probe: this isolates chargeUpkeep's
       // burn-vs-income netting from attributeShipped entirely.
       content.start.stocks.backlog = 0;
       const e = new Engine(content);
-      e.applyDecision("support-retainer"); // free (cost {}), incomePerDay 8, no perDay payroll cost
+      e.applyDecision("subscription"); // $0.75/user/day, no perDay payroll cost
       const state = e.getState() as GameState;
+      state.stocks.users = 10; // income 7.5/day, below the 20/day burn
       state.stocks.budget = 0; // manufacture insolvency directly, matching this file's other escape-hatch tests
 
       for (let day = 1; day <= 5; day++) {
         e.tick();
-        // Buggy code stabilizes at incomePerDay (8) from day 1 onward; the
-        // fix must keep netting burn (20) against income (8) before the
+        // Buggy code stabilizes at the income amount (7.5) from day 1 onward;
+        // the fix must keep netting burn (20) against income (7.5) before the
         // zero-floor clamp, so budget stays pinned at 0.
         expect(e.getState().stocks.budget, `day ${day}`).toBe(0);
       }

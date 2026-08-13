@@ -93,7 +93,9 @@ describe("renderStats", () => {
     const c = content();
     c.start.baseBurnPerDay = 0;
     const e = new Engine(c);
-    e.applyDecision("support-retainer");
+    e.applyDecision("subscription");
+    const s = e.getState() as import("../engine/types").GameState;
+    s.stocks.users = 40; // 40 users x $0.75/day of recurring income, no payroll
     const html = renderStats(e.getState(), c);
     expect(html).toContain('class="stat-value v-budget">$');
     expect(html).not.toContain(" days)");
@@ -161,7 +163,7 @@ describe("renderDecisions", () => {
     c.start.stocks.budget = 0;
     const e = new Engine(c);
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], c);
-    expect(html).toContain('data-buy="ddos-protection" disabled');
+    expect(html).toContain('data-buy="better-tooling" disabled');
     expect(html).toContain("cannot afford");
   });
 
@@ -179,26 +181,18 @@ describe("renderDecisions", () => {
   it("shows cost and derived effects on each Owned entry", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
-    e.applyDecision("contractor");
+    e.applyDecision("agent");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     const ownedHtml = html.slice(html.indexOf("<h3>Owned</h3>"));
     expect(ownedHtml).toContain("owned-item");
     expect(ownedHtml).toContain('<div class="owned-cost">$7/day</div>');
-    expect(ownedHtml).toContain('<div class="owned-cost">$12/day</div>');
-    // Gamble range (basic-dev) and deterministic contractor effects both
+    expect(ownedHtml).toContain('<div class="owned-cost">$10 once + $4/day</div>');
+    // Gamble range (basic-dev) and the agent's deterministic effects both
     // reuse the shop's .tt-effects line inside the Owned panel.
     expect(ownedHtml).toMatch(/owned-item[\s\S]*tt-effects[\s\S]*all rates/);
-    expect(ownedHtml).toContain("Bring in contractor");
-    expect(ownedHtml).toContain("pull +1/day, finish +1/day, debt x1.1");
+    expect(ownedHtml).toContain("Add coding agent");
+    expect(ownedHtml).toContain("finish +0.2/day, debt +0.1");
     expect(ownedHtml).toContain('data-remove=');
-  });
-
-  it("shows one-time + per-day cost on Owned agent entries", () => {
-    const e = new Engine(content());
-    e.applyDecision("agent");
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    const ownedHtml = html.slice(html.indexOf("<h3>Owned</h3>"));
-    expect(ownedHtml).toContain('<div class="owned-cost">$10 once + $4/day</div>');
   });
 
   it("escapes content-derived strings", () => {
@@ -225,20 +219,25 @@ describe("renderDecisions", () => {
 
   it("shows a repeatable decision's owned count while keeping the Buy button live", () => {
     const e = new Engine(content());
-    e.applyDecision("contractor");
-    e.applyDecision("contractor");
+    // agent is the Studio shop's stackable card (issue #89): buying a second
+    // copy shows the count without retiring the Buy button.
+    e.applyDecision("agent");
+    e.applyDecision("agent");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     expect(html).toContain("owned x2");
-    expect(html).toContain('data-buy="contractor"');
+    expect(html).toContain('data-buy="agent"');
   });
 
   it("renders each node's chain (or standalone) placement and a short category tag", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // Chain headers, named after each chain's root.
+    // Chain headers, named after each chain's root (issue #89 leaves two:
+    // test-suite -> ci-cd and the agent ladder).
     expect(html).toContain("Add test suite");
-    expect(html).toContain("Hire basic developer");
     expect(html).toContain("Add coding agent");
+    // basic-dev lost its senior-dev/eng-manager tiers, so it renders as a
+    // standalone card rather than a chain root.
+    expect(html).toContain("Hire basic developer");
     expect(html).toContain("Standalone");
     expect(html).toContain("&rarr;");
     // DecisionCategory values mapped to short player-facing labels.
@@ -255,13 +254,13 @@ describe("renderDecisions", () => {
   it("renders a card's authored description in full, with no first-sentence truncation, plus a derived effects line", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // agent-swarm's description (>110 chars, multiple sentences) is a known
-    // long-ish entry -- assert it appears whole, not clipped to its first
+    // agent-orchestration's description (>110 chars, multiple sentences) is a
+    // known long-ish entry -- assert it appears whole, not clipped to its first
     // sentence or an ellipsis (Release 20 removes the old 87-char truncation).
-    const agentSwarmDesc =
-      "Agents pick up and ship work themselves: all work 80% faster. Tech debt grows 50% faster unless an orchestrator tames it.";
-    expect(agentSwarmDesc.length).toBeGreaterThan(110);
-    expect(html).toContain(`<div class="tt-node-desc">${agentSwarmDesc}</div>`);
+    const orchestrationDesc =
+      "A planner splits work across your agents and reviews what comes back: finishing work 45% faster and tech debt grows 45% slower. Needs at least two agents to coordinate.";
+    expect(orchestrationDesc.length).toBeGreaterThan(110);
+    expect(html).toContain(`<div class="tt-node-desc">${orchestrationDesc}</div>`);
     expect(html).not.toContain("...");
     // The derived effects line sits beneath the description, terse and
     // numbers-only, generated from structured effects (see effectSummary.ts)
@@ -272,10 +271,11 @@ describe("renderDecisions", () => {
   it("flags gamble decisions with a chip and omits it from deterministic ones", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // basic-dev and senior-dev are the only shipped gamble hires; their cards
-    // carry the chip. A deterministic decision (test-suite) does not.
+    // basic-dev is the lean shop's only gamble hire (issue #89 cut senior-dev),
+    // so exactly one card carries the chip. A deterministic decision
+    // (test-suite) does not.
     const gambleChips = html.match(/class="tt-gamble"/g) ?? [];
-    expect(gambleChips.length).toBe(2);
+    expect(gambleChips.length).toBe(1);
     expect(html).toContain('<span class="tt-gamble"');
     // The "(gamble)" suffix moved out of the derived line onto the chip, so a
     // gamble card shows the range alone.
@@ -304,29 +304,29 @@ describe("renderChoicesScaffold", () => {
 
   it("renders option buttons and a countdown placeholder for a pending choice", () => {
     const challenges = parseChallenges(challengesJson);
-    const html = renderChoicesScaffold([{ challengeId: "key-dev-poached", expiresDay: 8 }], challenges);
-    expect(html).toContain('data-choice="key-dev-poached" data-option="match-offer"');
+    const html = renderChoicesScaffold([{ challengeId: "model-deprecation", expiresDay: 8 }], challenges);
+    expect(html).toContain('data-choice="model-deprecation" data-option="pay-migration"');
     expect(html).toContain("Decision needed");
     // Issue #40: interrupt affordance uses class chrome + alertdialog role.
     expect(html).toContain('class="panel choice-interrupt"');
     expect(html).toContain('role="alert"');
     // The countdown is patched separately (issue #6) so the day ticking down
     // does not rebuild the option buttons: the scaffold carries only its slot.
-    expect(html).toContain(`<em data-section="${choiceCountdownSection("key-dev-poached")}"></em>`);
+    expect(html).toContain(`<em data-section="${choiceCountdownSection("model-deprecation")}"></em>`);
     expect(html).not.toContain("days left");
   });
 
   it("keeps the same scaffold string as days pass, so the memo holds", () => {
     const challenges = parseChallenges(challengesJson);
-    const pending = [{ challengeId: "key-dev-poached", expiresDay: 8 }];
+    const pending = [{ challengeId: "model-deprecation", expiresDay: 8 }];
     expect(renderChoicesScaffold(pending, challenges)).toBe(renderChoicesScaffold(pending, challenges));
   });
 });
 
 describe("renderChoiceCountdown", () => {
   it("renders the remaining days", () => {
-    expect(renderChoiceCountdown({ challengeId: "key-dev-poached", expiresDay: 8 }, 5)).toBe("(3 days left)");
-    expect(renderChoiceCountdown({ challengeId: "key-dev-poached", expiresDay: 8 }, 6)).toBe("(2 days left)");
+    expect(renderChoiceCountdown({ challengeId: "model-deprecation", expiresDay: 8 }, 5)).toBe("(3 days left)");
+    expect(renderChoiceCountdown({ challengeId: "model-deprecation", expiresDay: 8 }, 6)).toBe("(2 days left)");
   });
 });
 
