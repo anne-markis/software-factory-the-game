@@ -1,18 +1,31 @@
 {
   "seed": 20260714,
-  "stocks": { "backlog": 1500, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0, "reputation": 0 },
+  "stocks": { "backlog": 300, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0, "reputation": 0, "users": 0 },
   "baseRates": { "pull": 1, "finish": 1, "deploy": 1 },
   "debtMultiplier": 0.5,
   "baseBurnPerDay": 20,
   "contextSwitchFactor": 0.85,
   "debtDrag": { "freeDebt": 400, "dragPerPoint": 0.00015, "maxDrag": 0.4 },
+  "stockDrags": [
+    { "stock": "users", "freeBand": 25, "dragPerPoint": 0.004, "maxDrag": 0.35, "target": "all" }
+  ],
+  "stockFlows": [
+    {
+      "stock": "users",
+      "condition": { "minCompletedProjects": 1 },
+      "acquirePerDay": 1.5,
+      "acquirePerStock": { "stock": "reputation", "perUnit": 0.1 },
+      "churnRatePerDay": 0.01
+    }
+  ],
   "initialProject": {
-    "id": "first-contract",
-    "name": "First Contract",
-    "sizePoints": 1500,
-    "payoutPerPoint": 17,
-    "completionBonus": 2000,
-    "reputationReward": 1
+    "id": "launch-beta",
+    "name": "Launch beta",
+    "sizePoints": 300,
+    "payoutPerPoint": 0,
+    "completionBonus": 800,
+    "reputationReward": 1,
+    "completionStockGrants": [{ "stock": "users", "amount": 30 }]
   },
   "challengeSpacingDays": 50,
   "milestones": [

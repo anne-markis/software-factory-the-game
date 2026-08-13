@@ -246,7 +246,7 @@ describe("rollChallenges", () => {
     expect(hashRoll(SEED, 3, "chalA")).toBeLessThan(0.5);
     expect(hashRoll(SEED, 3, "chalB")).toBeGreaterThanOrEqual(0.5);
     rollChallenges(s, noRng, c);
-    expect(s.stocks.backlog).toBe(1510); // chalA fired: +10
+    expect(s.stocks.backlog).toBe(310); // chalA fired: +10 (Studio start backlog 300)
     expect(s.stocks.done).toBe(0); // chalB did not
   });
 
@@ -527,14 +527,14 @@ describe("global event spacing (challengeSpacingDays)", () => {
     s.day = 20;
     rollChallenges(s, noRng, c);
     expect(s.stocks.budget).toBe(9900); // challengeA fired
-    expect(s.stocks.backlog).toBe(1500); // challengeB never got a turn: same-tick break
+    expect(s.stocks.backlog).toBe(300); // challengeB never got a turn: same-tick break (Studio start backlog 300)
     expect(s.lastChallengeDay).toBe(20);
 
     for (let day = 21; day <= 29; day++) {
       s.day = day;
       rollChallenges(s, noRng, c);
       expect(s.stocks.budget).toBe(9900); // gap active: no challenge rolled at all
-      expect(s.stocks.backlog).toBe(1500);
+      expect(s.stocks.backlog).toBe(300);
       expect(s.lastChallengeDay).toBe(20); // untouched while the gap holds
     }
 
@@ -606,7 +606,7 @@ describe("global event spacing (challengeSpacingDays)", () => {
     s.day = 20;
     rollChallenges(s, noRng, c);
     expect(s.stocks.budget).toBe(9900); // challengeA fired
-    expect(s.stocks.backlog).toBe(1550); // challengeB ALSO fired: no break when spacing is 0
+    expect(s.stocks.backlog).toBe(350); // challengeB ALSO fired: no break when spacing is 0 (Studio start backlog 300)
     expect(s.lastChallengeDay).toBe(20); // still tracked even though it's inert at spacing 0
 
     s.day = 21; // day after a fire: would be blocked at spacing > 0, but 0 disables the gap

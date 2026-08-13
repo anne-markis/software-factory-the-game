@@ -336,7 +336,7 @@ describe("renderProjectsStatus", () => {
     const e = new Engine(c);
     const html = renderProjectsStatus([...e.getState().projects], e.getState());
     expect(html).toContain("Projects (efficiency 100%)");
-    expect(html).toContain("First Contract: 1,500 points left");
+    expect(html).toContain("Launch beta: 300 points left");
     // Fresh engine has not ticked yet — realized Points/Day is 0 → stalled
     // (issue #17 / FR-3.2).
     expect(html).toContain("· stalled");
@@ -353,8 +353,8 @@ describe("renderProjectsStatus", () => {
     // set the rate directly so this asserts the derived line, not tick lag.
     s.pointsPerDay = 1;
     const html = renderProjectsStatus([...s.projects], s);
-    expect(html).toContain("First Contract: 1,500 points left");
-    expect(html).toContain("· ~1,500 days at current rate");
+    expect(html).toContain("Launch beta: 300 points left");
+    expect(html).toContain("· ~300 days at current rate");
   });
 
   it("updates the estimate when Points/Day changes", () => {

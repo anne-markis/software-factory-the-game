@@ -18,6 +18,10 @@ export function initialState(content: GameContent): GameState {
     debtDragFreeDebt: s.debtDrag.freeDebt,
     debtDragPerPoint: s.debtDrag.dragPerPoint,
     debtDragMaxDrag: s.debtDrag.maxDrag,
+    // Copied from content like the debtDrag config, so effectiveRate's
+    // stockDragMultiplier stays content-free (issue #88). Default [] when
+    // content ships no drags.
+    stockDrags: (s.stockDrags ?? []).map((d) => ({ ...d })),
     archetypesSeen: [],
     milestonesSeen: [],
     modifiers: [],
@@ -30,6 +34,11 @@ export function initialState(content: GameContent): GameState {
         payoutPerPoint: s.initialProject.payoutPerPoint,
         completionBonus: s.initialProject.completionBonus,
         reputationReward: s.initialProject.reputationReward,
+        // Studio spine: the Launch beta's user grant is carried on the seeded
+        // ActiveProject so completion pays it (users 0 -> 30).
+        ...(s.initialProject.completionStockGrants
+          ? { completionStockGrants: s.initialProject.completionStockGrants.map((g) => ({ ...g })) }
+          : {}),
       },
     ],
     completedProjects: 0,
@@ -74,6 +83,16 @@ export class Engine {
       // access.
       if (restored.stocks.reputation === undefined) {
         restored.stocks.reputation = content.start.stocks.reputation;
+      }
+      // Studio spine (issue #88): users stock and always-on stockDrags config.
+      // The SAVE_VERSION bump to 2 means real legacy saves are rejected before
+      // reaching here, but these defensive backfills keep a hand-constructed or
+      // mid-migration state safe (users defaults to 0, drags from content).
+      if (restored.stocks.users === undefined) {
+        restored.stocks.users = content.start.stocks.users;
+      }
+      if (restored.stockDrags === undefined) {
+        restored.stockDrags = (content.start.stockDrags ?? []).map((d) => ({ ...d }));
       }
       this.rng = createRng(restored.rngState, true);
     } else {

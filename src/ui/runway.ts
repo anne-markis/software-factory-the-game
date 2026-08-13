@@ -16,6 +16,14 @@ export function netRecurringBurnPerDay(state: Readonly<GameState>, content: Game
     if (!def) continue;
     payroll += def.cost.perDay ?? 0;
     income += def.incomePerDay ?? 0;
+    // Studio monetization (issue #88): steady per-day income scaled by a stock
+    // (subscription reads users) counts as recurring income at the current
+    // stock level, so runway reflects the user-driven subscription revenue.
+    // burstFromStock is deliberately excluded here -- it is occasional, not
+    // recurring, matching how one-time costs are excluded (issue #37).
+    if (def.incomeFromStock) {
+      income += state.stocks[def.incomeFromStock.stock] * def.incomeFromStock.perUnit;
+    }
   }
   return state.baseBurnPerDay + payroll - income;
 }

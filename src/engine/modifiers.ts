@@ -38,6 +38,24 @@ export function debtDragMultiplier(state: GameState): number {
   return 1 - drag;
 }
 
+// Always-on stock drag (Studio support drag, issue #88). Mirrors
+// debtDragMultiplier but keyed on an arbitrary stock and pointed at a rate (or
+// "all"). Multiplies the drags that target this rate: every point of a
+// dragging stock above its freeBand slows the rate by dragPerPoint, capped at
+// that drag's maxDrag. Reads state.stockDrags (copied from content at init, so
+// this stays content-free like debtDragMultiplier). Returns 1 when nothing
+// drags this rate. Pure.
+export function stockDragMultiplier(state: GameState, rate: RateId): number {
+  let mul = 1;
+  for (const d of state.stockDrags) {
+    if (d.target !== rate && d.target !== "all") continue;
+    const excess = Math.max(0, state.stocks[d.stock] - d.freeBand);
+    const drag = Math.min(d.maxDrag, excess * d.dragPerPoint);
+    mul *= 1 - drag;
+  }
+  return mul;
+}
+
 export function effectiveRate(state: GameState, rate: RateId): number {
   let value = state.baseRates[rate];
   // Sickness deliberately scales only add-op modifiers (an instance's additive
@@ -51,6 +69,7 @@ export function effectiveRate(state: GameState, rate: RateId): number {
   }
   value *= contextSwitchTax(state);
   value *= debtDragMultiplier(state);
+  value *= stockDragMultiplier(state, rate);
   return Math.max(0, value);
 }
 

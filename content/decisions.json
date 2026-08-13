@@ -474,6 +474,39 @@
     "unique": true
   },
   {
+    "id": "subscription",
+    "name": "Subscription plan",
+    "description": "Charge your users a recurring fee. Earns $0.75 per user per day, so it scales with your user base and does nothing while you have no users.",
+    "category": "earn-income",
+    "cost": {
+      "oneTime": 500
+    },
+    "incomeFromStock": {
+      "stock": "users",
+      "perUnit": 0.75
+    },
+    "effects": [],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "one-time-product",
+    "name": "One-time product",
+    "description": "Sell a paid add-on. Occasional sales bursts scale with your user base; lumpier than a subscription and worth nothing at zero users.",
+    "category": "earn-income",
+    "cost": {
+      "oneTime": 400
+    },
+    "burstFromStock": {
+      "stock": "users",
+      "probabilityPerDay": 0.08,
+      "perUnit": 1.2
+    },
+    "effects": [],
+    "removable": true,
+    "unique": true
+  },
+  {
     "id": "support-retainer",
     "name": "Support retainer",
     "description": "Earns $8/day in support fees. The interruptions slow all work by 5%.",

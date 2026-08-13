@@ -98,7 +98,7 @@ function pauseButton(root: HTMLElement): HTMLElement {
 }
 
 describe("appView delivery-column stats layout (issue #8)", () => {
-  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other five under Delivery loop", () => {
+  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
     const h = mount();
     const top = h.root.querySelector(".stats")!;
     expect(top).toBeTruthy();
@@ -115,7 +115,7 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     const statsHost = deliveryCol.querySelector(".panel")!.nextElementSibling!;
     expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
-    expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation"]);
+    expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users"]);
 
     // Progress loop remains a sibling of the delivery column, not a parent of those stats.
     const loops = h.root.querySelector(".loops")!;
@@ -265,14 +265,14 @@ describe("appView node identity across renders (issue #6)", () => {
     const h = mount();
     const before = h.root.querySelector<HTMLElement>('[data-project="small-crm"]')!;
     expect(before).toBeTruthy();
-    const remainingBefore = h.root.textContent!.match(/First Contract: [\d,.]+ points left/)![0];
+    const remainingBefore = h.root.textContent!.match(/Launch beta: [\d,.]+ points left/)![0];
     for (let i = 0; i < 10; i++) {
       h.engine.tick();
       h.view.render();
       expect(h.root.querySelector('[data-project="small-crm"]')).toBe(before);
     }
     // The volatile in-flight line beside the button did update.
-    const remainingAfter = h.root.textContent!.match(/First Contract: [\d,.]+ points left/)![0];
+    const remainingAfter = h.root.textContent!.match(/Launch beta: [\d,.]+ points left/)![0];
     expect(remainingAfter).not.toBe(remainingBefore);
   });
 

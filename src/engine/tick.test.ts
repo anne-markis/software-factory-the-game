@@ -21,7 +21,7 @@ describe("tick", () => {
     const e = new Engine(testContent());
     e.tick(); // day 1: pull moves 1 point into inProgress
     let s = e.getState();
-    expect(s.stocks.backlog).toBe(1499);
+    expect(s.stocks.backlog).toBe(299); // Studio start backlog 300
     expect(s.stocks.inProgress).toBe(1);
     expect(s.stocks.shipped).toBe(0);
 
@@ -53,24 +53,59 @@ describe("tick", () => {
     expect(s.finishFlow).toBe(1);
   });
 
-  it("shipped points regenerate tech debt into the backlog", () => {
+  // Studio spine (issue #88, AC2): tech debt STILL accrues before the first
+  // project completes, but it does NOT refill the backlog yet -- the Launch
+  // beta gets a clean 300-point burndown. So after 3 ticks the shipped point
+  // grows techDebt by 0.5 but the backlog is pure pull drawdown (300 - 3),
+  // with no debt added back (completedProjects is still 0).
+  it("shipped points grow tech debt but do NOT refill the backlog before the first project completes", () => {
     const e = new Engine(testContent());
     e.tick();
     e.tick();
     e.tick(); // 1 point shipped, debt multiplier 0.5
     const s = e.getState();
-    expect(s.stocks.techDebt).toBe(0.5);
-    // start backlog 1500, 3 days of pull (-1 each) plus 0.5 debt regen from the 1 shipped point
-    expect(s.stocks.backlog).toBe(1497 + 0.5);
+    expect(s.stocks.techDebt).toBe(0.5); // debt accrues pre-launch
+    expect(s.completedProjects).toBe(0); // the 300-pt beta is nowhere near done
+    expect(s.stocks.backlog).toBe(297); // 300 - 3 pulled; NO debt refill yet (the gate)
   });
 
-  it("pays revenue per shipped point and charges base burn", () => {
+  // Once the first project has completed the debt->backlog refill turns on, so
+  // a shipped point grows both techDebt and backlog again (the reinforcing
+  // rework loop for every project after the beta). Isolated via the mutable
+  // escape hatch: an empty backlog (no pull) and a done stock to ship, so the
+  // only backlog change is the debt refill itself.
+  it("refills the backlog with debt gain once completedProjects >= 1 (gate flips on)", () => {
+    const gated = new Engine(testContent());
+    const g = gated.getState() as GameState;
+    g.stocks.backlog = 0;
+    g.stocks.inProgress = 0;
+    g.stocks.done = 10;
+    g.completedProjects = 0; // gate closed
+    gated.tick();
+    expect(gated.getState().stocks.techDebt).toBeCloseTo(0.5, 10); // debt still accrues
+    expect(gated.getState().stocks.backlog).toBe(0); // ...but no refill while gate is closed
+
+    const open = new Engine(testContent());
+    const o = open.getState() as GameState;
+    o.stocks.backlog = 0;
+    o.stocks.inProgress = 0;
+    o.stocks.done = 10;
+    o.completedProjects = 1; // gate open
+    open.tick();
+    expect(open.getState().stocks.backlog).toBeCloseTo(0.5, 10); // debt gain refilled the backlog
+  });
+
+  // Studio spine (issue #88): the Launch beta is a $0-ish client fiction --
+  // payoutPerPoint is 0 (money comes from the completion bonus + users
+  // monetization, not per-point client revenue), so shipping a beta point pays
+  // nothing and the budget is pure base-burn drawdown until completion.
+  it("pays revenue per shipped point and charges base burn (Launch beta pays $0/pt)", () => {
     const e = new Engine(testContent());
     e.tick(); // no shipping yet: 10000 - 20 burn (release-7 baseBurnPerDay)
     expect(e.getState().stocks.budget).toBe(9980);
     e.tick();
-    e.tick(); // ships 1 point at $17 (initialProject.payoutPerPoint): 10000 - 3*20 burn + 17
-    expect(e.getState().stocks.budget).toBe(10000 - 60 + 17);
+    e.tick(); // ships 1 point at $0 (launch-beta payoutPerPoint): 10000 - 3*20 burn + 0
+    expect(e.getState().stocks.budget).toBe(10000 - 60 + 0);
   });
 
   // Release 17: reputation is paid at the same completion point as the
@@ -124,6 +159,100 @@ describe("tick", () => {
       b.tick();
     }
     expect(b.getState()).toEqual(a.getState());
+  });
+
+  // Studio spine (issue #88): the users economy. Users stay 0 until the Launch
+  // beta completes (its completionStockGrants add +30), organic acquisition is
+  // gated on the first completion, and monetization decisions read the stock.
+  describe("Studio users economy (issue #88)", () => {
+    it("users stay 0 until the beta completes, then grant +30 and $800, and organic acquisition turns on", () => {
+      const content = testContent(); // start.json: launch-beta, +30 users, +$800
+      content.start.initialProject.sizePoints = 2;
+      content.start.stocks.backlog = 2;
+      const e = new Engine(content);
+
+      // AC1: users are pinned at 0 for every tick before completion, even
+      // though the organic stockFlow exists -- its minCompletedProjects gate
+      // keeps it off until the beta ships.
+      let completed = false;
+      let budgetBeforeCompletion = 0;
+      for (let i = 0; i < 20 && !completed; i++) {
+        budgetBeforeCompletion = e.getState().stocks.budget;
+        const usersBefore = e.getState().stocks.users;
+        e.tick();
+        const s = e.getState();
+        if (s.completedProjects >= 1) {
+          completed = true;
+          // The completion tick grants +30 users and then runs one organic
+          // day (grossGain 1.5 + reputation 1 * 0.1 = 1.6, churn 30 * 0.01 =
+          // 0.3): 30 + 1.6 - 0.3 = 31.3.
+          expect(s.stocks.users).toBeCloseTo(31.3, 5);
+          expect(s.stocks.budget).toBeCloseTo(budgetBeforeCompletion - 20 + 800, 5); // +$800 bonus, -$20 burn
+          expect(s.log.some((l) => l.message.includes("+30 users"))).toBe(true);
+        } else {
+          expect(usersBefore).toBe(0);
+          expect(s.stocks.users).toBe(0);
+        }
+      }
+      expect(completed).toBe(true);
+
+      // Organic acquisition keeps growing users after launch (toward the ~160
+      // steady state: 1.6/day gain vs 1% churn).
+      const afterCompletion = e.getState().stocks.users;
+      e.tick();
+      expect(e.getState().stocks.users).toBeGreaterThan(afterCompletion);
+    });
+
+    it("subscription incomeFromStock scales income with the users stock", () => {
+      const content = ciCdContent(); // real decisions incl. subscription
+      content.start.stocks.backlog = 0; // no shipping revenue to muddy the probe
+      const withSub = new Engine(content);
+      const withoutSub = new Engine(content);
+      withSub.applyDecision("subscription"); // -$500 oneTime
+      for (const e of [withSub, withoutSub]) {
+        (e.getState() as GameState).stocks.users = 100;
+      }
+      const subBudgetBefore = withSub.getState().stocks.budget;
+      const noSubBudgetBefore = withoutSub.getState().stocks.budget;
+      withSub.tick();
+      withoutSub.tick();
+      const subDelta = withSub.getState().stocks.budget - subBudgetBefore;
+      const noSubDelta = withoutSub.getState().stocks.budget - noSubBudgetBefore;
+      // The only difference is the subscription's incomeFromStock: 100 users *
+      // $0.75/user/day = $75/day on top of whatever the no-sub engine did.
+      expect(subDelta - noSubDelta).toBeCloseTo(75, 5);
+    });
+
+    it("subscription earns nothing at zero users (useless until launch)", () => {
+      const content = ciCdContent();
+      content.start.stocks.backlog = 0;
+      const e = new Engine(content);
+      e.applyDecision("subscription");
+      const before = e.getState().stocks.budget; // users still 0
+      e.tick();
+      // Pure base burn, no stock income: 0 users * 0.75 = 0.
+      expect(e.getState().stocks.budget).toBe(before - content.start.baseBurnPerDay);
+    });
+
+    it("one-time-product burstFromStock produces probabilistic income scaled by users", () => {
+      const content = ciCdContent();
+      content.start.stocks.backlog = 0;
+      const e = new Engine(content);
+      e.applyDecision("one-time-product");
+      (e.getState() as GameState).stocks.users = 100; // burst = 100 * 1.2 = $120 on a hit
+      let bursts = 0;
+      for (let i = 0; i < 300; i++) {
+        (e.getState() as GameState).stocks.users = 100; // hold users flat to isolate the burst
+        const before = e.getState().stocks.budget;
+        e.tick();
+        // A burst day nets +$120 income - $20 burn = +$100; a quiet day is -$20.
+        if (e.getState().stocks.budget > before) bursts += 1;
+      }
+      // At probabilityPerDay 0.08 over 300 days, expect ~24 bursts; assert some
+      // fired and that the burst was logged.
+      expect(bursts).toBeGreaterThan(5);
+      expect(e.getState().log.some((l) => l.message.includes("product sale burst"))).toBe(true);
+    });
   });
 
   describe("continuous deploy (ci-cd owned)", () => {

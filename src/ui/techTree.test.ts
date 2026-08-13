@@ -17,17 +17,21 @@ function content(): GameContent {
 }
 
 describe("buildTechTree", () => {
-  it("groups the real content into the three known chains and 8 standalone decisions", () => {
+  it("groups the real content into the three known chains and 10 standalone decisions", () => {
     const tree = buildTechTree(content());
     expect(tree.chains).toHaveLength(3);
     expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Hire basic developer", "Add coding agent"]);
-    expect(tree.standalone).toHaveLength(8);
+    // Studio spine (issue #88): subscription + one-time-product are standalone
+    // monetization cards (no requires, not required by anything).
+    expect(tree.standalone).toHaveLength(10);
     expect(tree.standalone.map((d) => d.id).sort()).toEqual(
       [
         "better-tooling",
         "copilot",
         "contractor",
         "standup",
+        "subscription",
+        "one-time-product",
         "support-retainer",
         "ddos-protection",
         "refactoring-sprint",

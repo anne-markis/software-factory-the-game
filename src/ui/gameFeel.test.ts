@@ -78,6 +78,24 @@ describe("gameFeel stat flash (issue #67)", () => {
     expect(root.querySelector(".v-flow")!.classList.contains("stat-flash")).toBe(true);
   });
 
+  it("includes a Users delivery stat after Reputation (Studio spine, issue #88)", () => {
+    const content = makeContent();
+    const state = initialState(content);
+    const views = deliveryStatViews(state);
+    const labels = views.map((v) => v.label);
+    expect(labels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users"]);
+    const users = views.find((v) => v.label === "Users")!;
+    expect(users.value).toBe("0"); // starts at 0 until the beta completes
+    expect(users.widthClass).toBe("v-users");
+    // A material change to users flashes in place like the other stats.
+    const root = document.createElement("div");
+    const flash = createFlashController(() => 0);
+    syncStatRow(root, "delivery-stats", deliveryStatViews(state), flash);
+    state.stocks.users = 30;
+    syncStatRow(root, "delivery-stats", deliveryStatViews(state), flash);
+    expect(root.querySelector(".v-users")!.classList.contains("stat-flash")).toBe(true);
+  });
+
   it("flashes delivery-stat material changes in place", () => {
     const content = makeContent();
     const state = initialState(content);
