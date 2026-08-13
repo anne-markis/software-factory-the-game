@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { initialState } from "./engine";
-import { debtDragMultiplier, effectiveRate, contextSwitchTax } from "./modifiers";
+import { debtDragMultiplier, stockDragMultiplier, effectiveRate, contextSwitchTax } from "./modifiers";
 import { parseStartConfig } from "./content";
 import startJson from "../../content/start.json";
-import type { GameContent, GameState } from "./types";
+import type { GameContent, GameState, StockDrag } from "./types";
 
 // Build a state with clean drag constants (freeDebt 100, dragPerPoint 0.001,
 // maxDrag 0.5) so the arithmetic below is exact rather than tied to whatever
@@ -56,5 +56,48 @@ describe("debtDragMultiplier", () => {
   it("does not drag at all when debt sits below the band (effectiveRate unchanged)", () => {
     const s = stateWithDebt(50);
     expect(effectiveRate(s, "pull")).toBe(s.baseRates.pull); // multiplier is exactly 1
+  });
+});
+
+// Studio spine (issue #88): the users support drag. Mirrors debtDrag but keyed
+// on a stock and pointed at a rate (or "all"). Uses clean fixture constants
+// rather than the shipped tuning so the arithmetic is exact.
+describe("stockDragMultiplier", () => {
+  function stateWithUsers(users: number, drags: StockDrag[]): GameState {
+    const content: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [] };
+    const s = initialState(content);
+    s.stocks.users = users;
+    s.stockDrags = drags;
+    return s;
+  }
+
+  const usersDrag: StockDrag = { stock: "users", freeBand: 25, dragPerPoint: 0.004, maxDrag: 0.35, target: "all" };
+
+  it("is exactly 1 at or below the free band", () => {
+    expect(stockDragMultiplier(stateWithUsers(0, [usersDrag]), "pull")).toBe(1);
+    expect(stockDragMultiplier(stateWithUsers(25, [usersDrag]), "finish")).toBe(1);
+  });
+
+  it("drags linearly with excess users above the free band, until the cap", () => {
+    // excess 50 * 0.004 = 0.2 drag -> 0.8; excess 75 * 0.004 = 0.3 -> 0.7.
+    expect(stockDragMultiplier(stateWithUsers(75, [usersDrag]), "pull")).toBeCloseTo(0.8, 10);
+    expect(stockDragMultiplier(stateWithUsers(100, [usersDrag]), "pull")).toBeCloseTo(0.7, 10);
+    // Past the cap (excess 200 * 0.004 = 0.8, capped at 0.35 -> 0.65) it holds.
+    expect(stockDragMultiplier(stateWithUsers(225, [usersDrag]), "pull")).toBeCloseTo(0.65, 10);
+    expect(stockDragMultiplier(stateWithUsers(100000, [usersDrag]), "pull")).toBeCloseTo(0.65, 10);
+  });
+
+  it("only drags the rates its target names", () => {
+    const finishOnly: StockDrag = { ...usersDrag, target: "finish" };
+    const s = stateWithUsers(100, [finishOnly]);
+    expect(stockDragMultiplier(s, "finish")).toBeCloseTo(0.7, 10);
+    expect(stockDragMultiplier(s, "pull")).toBe(1); // untouched: not its target
+  });
+
+  it("is applied inside effectiveRate above the free band, stacking with the context-switch tax", () => {
+    const s = stateWithUsers(100, [usersDrag]); // multiplier 0.7 on all rates
+    expect(effectiveRate(s, "finish")).toBeCloseTo(0.7, 10); // base 1.0 * 0.7
+    s.projects.push({ ...s.projects[0], defId: "second", name: "Second" });
+    expect(effectiveRate(s, "finish")).toBeCloseTo(0.85 * 0.7, 10); // stacks with the tax
   });
 });

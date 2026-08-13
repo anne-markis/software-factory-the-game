@@ -37,6 +37,9 @@ export function startProject(state: GameState, content: GameContent, defId: stri
     payoutPerPoint: def.payoutPerPoint,
     completionBonus: def.completionBonus,
     reputationReward: def.reputationReward,
+    // Studio spine (issue #88): carry the def's stock grants onto the live
+    // project so completion pays them from the values recorded at start.
+    ...(def.completionStockGrants ? { completionStockGrants: def.completionStockGrants.map((g) => ({ ...g })) } : {}),
   });
   log(state, `Started project: ${def.name} (+${def.sizePoints} points, -$${def.upfrontCost})`);
 }

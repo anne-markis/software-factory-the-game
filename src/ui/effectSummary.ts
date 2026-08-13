@@ -33,6 +33,8 @@ function rateLabel(target: "pull" | "finish" | "deploy" | "all"): string {
 const STOCK_LABELS: Record<string, string> = {
   techDebt: "debt",
   inProgress: "in progress",
+  // Singular for per-unit income/burst lines ("+$0.75/user/day").
+  users: "user",
 };
 function stockLabel(stock: string): string {
   return STOCK_LABELS[stock] ?? stock;
@@ -161,6 +163,17 @@ export function summarizeDecisionEffects(def: DecisionDef): string {
     if (s) parts.push(s);
   }
   if (def.incomePerDay) parts.push(`+$${fmtNum(def.incomePerDay)}/day`);
+  // Studio monetization (issue #88): telegraph that these cards scale with a
+  // stock (users), so a card at 0 users reads as "0 income for now" rather
+  // than a blank line. incomeFromStock is steady per-day; burstFromStock is
+  // occasional, so it is labelled as a chance-based burst.
+  if (def.incomeFromStock) {
+    parts.push(`+$${fmtNum(def.incomeFromStock.perUnit)}/${stockLabel(def.incomeFromStock.stock)}/day`);
+  }
+  if (def.burstFromStock) {
+    const pct = Math.round(def.burstFromStock.probabilityPerDay * 100);
+    parts.push(`~${pct}%/day burst of $${fmtNum(def.burstFromStock.perUnit)}/${stockLabel(def.burstFromStock.stock)}`);
+  }
   if (def.gamble && def.gamble.length > 0) parts.push(summarizeGamble(def.gamble));
   // Empty for decisions whose only job is to be a synergy target or a
   // challenge gate (agent-harness, swarm-orchestrator, eng-manager,

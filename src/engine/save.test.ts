@@ -34,6 +34,26 @@ describe("save/load", () => {
     expect(() => deserialize(bad)).toThrow(/version/);
   });
 
+  // Studio spine (issue #88): SAVE_VERSION bumped to 2 so pre-Studio v1 saves
+  // (no users stock, 1500 backlog, First Contract economy) are rejected rather
+  // than resumed into an inconsistent state. The UI's loadGame swallows this
+  // error and starts fresh, so old saves are wiped silently.
+  it("is version 2 and rejects a legacy v1 save so old saves start fresh", () => {
+    expect(SAVE_VERSION).toBe(2);
+    const legacyV1 = JSON.stringify({ version: 1, state: {} });
+    expect(() => deserialize(legacyV1)).toThrow(/version 1/);
+  });
+
+  // A fresh Studio save round-trips its users stock and always-on stockDrags.
+  it("round-trips the users stock and stockDrags (Studio spine)", () => {
+    const c = content();
+    const a = new Engine(c);
+    a.tick();
+    const restored = deserialize(serialize(a.getState()));
+    expect(restored.stocks.users).toBe(a.getState().stocks.users);
+    expect(restored.stockDrags).toEqual(a.getState().stockDrags);
+  });
+
   // Release-7 bug fix: main.ts only autosaved every 10 days, so the paused
   // flag (part of saved state) was usually stale on reload and the game
   // would un-pause itself. The fix is event-driven saving in the UI layer

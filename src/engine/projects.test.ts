@@ -19,7 +19,7 @@ describe("projects", () => {
     e.startProject("small-crm");
     const s = e.getState();
     expect(s.stocks.budget).toBe(8000);
-    expect(s.stocks.backlog).toBe(6500); // start backlog 1500 + small-crm sizePoints 5000
+    expect(s.stocks.backlog).toBe(5300); // Studio start backlog 300 + small-crm sizePoints 5000
     expect(s.projects).toHaveLength(2);
   });
 
@@ -50,7 +50,7 @@ describe("projects", () => {
     expect(s.completedProjects).toBe(1);
     expect(s.projects).toHaveLength(1);
     expect(s.projects[0].defId).toBe("small-crm");
-    expect(s.log.some((l) => l.message.includes("Project complete: First Contract"))).toBe(true);
+    expect(s.log.some((l) => l.message.includes("Project complete: Launch beta"))).toBe(true);
   });
 
   it("rejects starting a project already in flight", () => {

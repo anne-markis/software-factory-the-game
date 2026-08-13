@@ -1,6 +1,12 @@
 import type { GameState } from "./types";
 
-export const SAVE_VERSION = 1;
+// Bumped to 2 for the Studio spine (issue #88): the users stock, the
+// launch-beta starting project, the 300-point backlog, and the always-on
+// stockDrags/stockFlows change the shape and balance of a game enough that a
+// v1 save cannot be meaningfully migrated. deserialize rejects mismatched
+// versions, and the UI's loadGame swallows that error and starts fresh, so
+// old saves are wiped silently rather than resumed into an inconsistent state.
+export const SAVE_VERSION = 2;
 
 export function serialize(state: Readonly<GameState>): string {
   return JSON.stringify({ version: SAVE_VERSION, state });
@@ -64,6 +70,13 @@ export function deserialize(json: string): GameState {
   // realized flow (see tick.ts which sets state.pointsPerDay = shippedFlow).
   if (state.pointsPerDay === undefined) {
     state.pointsPerDay = 0;
+  }
+  // Defensive default for the users stock (issue #88). The SAVE_VERSION bump to
+  // 2 means genuine v1 saves are rejected before reaching here, so this only
+  // guards hand-built or in-flight v2 states missing the field: 0 is the
+  // correct baseline (users start at 0 until the Launch beta completes).
+  if (state.stocks.users === undefined) {
+    state.stocks.users = 0;
   }
   // DecisionInstance.appliedSynergyIfOwned (issue #14) needs no defaulting:
   // undefined already means "bought under the base effects", and which synergy

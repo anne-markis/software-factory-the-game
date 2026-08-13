@@ -78,6 +78,26 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(def)).toBe("+$8/day");
   });
 
+  // Studio monetization (issue #88): cards telegraph that they scale with a
+  // stock so a 0-users card reads as "income per user", not a blank line.
+  it("incomeFromStock summarises as per-unit-of-stock income", () => {
+    const def = base({ effects: [], incomeFromStock: { stock: "users", perUnit: 0.75 } });
+    expect(summarizeDecisionEffects(def)).toBe("+$0.75/user/day");
+  });
+
+  it("burstFromStock summarises as a chance-based burst per unit of stock", () => {
+    const def = base({ effects: [], burstFromStock: { stock: "users", probabilityPerDay: 0.08, perUnit: 1.2 } });
+    expect(summarizeDecisionEffects(def)).toBe("~8%/day burst of $1.2/user");
+  });
+
+  it("the shipped subscription and one-time-product cards summarise their user-scaled income", () => {
+    const decisions = parseDecisions(decisionsJson);
+    const sub = decisions.find((d) => d.id === "subscription")!;
+    expect(summarizeDecisionEffects(sub)).toBe("+$0.75/user/day");
+    const otp = decisions.find((d) => d.id === "one-time-product")!;
+    expect(summarizeDecisionEffects(otp)).toBe("~8%/day burst of $1.2/user");
+  });
+
   it("joins multiple effects with a comma", () => {
     const def = base({
       effects: [

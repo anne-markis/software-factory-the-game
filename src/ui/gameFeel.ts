@@ -66,6 +66,9 @@ export function deliveryStatViews(state: Readonly<GameState>): StatView[] {
     { label: "Shipped", value: fmt(state.stocks.shipped), widthClass: "v-flow", material: true },
     { label: "Tech Debt", value: fmt(state.stocks.techDebt), widthClass: "v-debt", material: true },
     { label: "Reputation", value: fmt(state.stocks.reputation), widthClass: "v-rep", material: true },
+    // Studio spine (issue #88): the users stock sits after Reputation. Stays
+    // 0 until the Launch beta completes, then drives monetization.
+    { label: "Users", value: fmt(state.stocks.users), widthClass: "v-users", material: true },
   ];
 }
 

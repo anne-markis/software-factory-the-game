@@ -13,6 +13,7 @@ const stocksSchema = z
     budget: z.number(),
     techDebt: z.number().min(0),
     reputation: z.number().min(0),
+    users: z.number().min(0),
   })
   .strict();
 
@@ -24,6 +25,15 @@ const milestoneSchema = z
     message: z.string(),
   })
   .strict();
+
+const rateTarget = z.enum(["pull", "finish", "deploy", "all"]);
+const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt", "reputation", "users"]);
+
+// Stocks granted on project completion (Studio spine, issue #88). Shared by
+// ProjectDef and StartConfig.initialProject.
+const completionStockGrantsSchema = z
+  .array(z.object({ stock: stockName, amount: z.number() }).strict())
+  .optional();
 
 const startSchema = z
   .object({
@@ -44,6 +54,36 @@ const startSchema = z
         maxDrag: z.number().gt(0).lt(1),
       })
       .strict(),
+    // Always-on stock drags (Studio support drag, issue #88). freeBand >= 0,
+    // dragPerPoint > 0 (must bite), maxDrag in (0, 1) (a cap that neither
+    // vanishes nor stalls throughput -- same bounds as debtDrag).
+    stockDrags: z
+      .array(
+        z
+          .object({
+            stock: stockName,
+            freeBand: z.number().min(0),
+            dragPerPoint: z.number().gt(0),
+            maxDrag: z.number().gt(0).lt(1),
+            target: rateTarget,
+          })
+          .strict(),
+      )
+      .optional(),
+    // Always-on stock flows (Studio organic acquisition, issue #88).
+    stockFlows: z
+      .array(
+        z
+          .object({
+            stock: stockName,
+            condition: z.object({ minCompletedProjects: z.number().int().min(0).optional() }).strict().optional(),
+            acquirePerDay: z.number().min(0).optional(),
+            acquirePerStock: z.object({ stock: stockName, perUnit: z.number() }).strict().optional(),
+            churnRatePerDay: z.number().min(0).optional(),
+          })
+          .strict(),
+      )
+      .optional(),
     initialProject: z
       .object({
         id: z.string(),
@@ -52,6 +92,7 @@ const startSchema = z
         payoutPerPoint: z.number().min(0),
         completionBonus: z.number().min(0),
         reputationReward: z.number().min(0),
+        completionStockGrants: completionStockGrantsSchema,
       })
       .strict(),
     challengeSpacingDays: z.number().int().min(0),
@@ -89,9 +130,6 @@ export function parseStartConfig(json: unknown): StartConfig {
   }
   return cfg;
 }
-
-const rateTarget = z.enum(["pull", "finish", "deploy", "all"]);
-const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt", "reputation"]);
 
 const effectSchema = z.discriminatedUnion("type", [
   z
@@ -146,6 +184,24 @@ const decisionSchema = z
     human: z.boolean().optional(),
     cost: z.object({ oneTime: z.number().min(0).optional(), perDay: z.number().min(0).optional() }).strict(),
     incomePerDay: z.number().min(0).optional(),
+    // Studio monetization (issue #85): income scaled by a stock's level.
+    incomeFromStock: z.object({ stock: stockName, perUnit: z.number().min(0) }).strict().optional(),
+    burstFromStock: z
+      .object({ stock: stockName, probabilityPerDay: z.number().min(0).max(1), perUnit: z.number().min(0) })
+      .strict()
+      .optional(),
+    // Forward-compat additive stock-flow nudges (ADR 0006). Studio ships none.
+    stockFlowMods: z
+      .array(
+        z
+          .object({
+            stock: stockName,
+            acquirePerDayDelta: z.number().optional(),
+            churnRateDelta: z.number().optional(),
+          })
+          .strict(),
+      )
+      .optional(),
     effects: z.array(effectSchema),
     gamble: z.array(gambleOutcomeSchema).optional(),
     requires: z.array(z.string()).optional(),
@@ -266,6 +322,7 @@ const projectSchema = z
     requiresCompleted: z.number().int().min(0).optional(),
     reputationReward: z.number().min(0),
     requiresReputation: z.number().min(0).optional(),
+    completionStockGrants: completionStockGrantsSchema,
   })
   .strict();
 

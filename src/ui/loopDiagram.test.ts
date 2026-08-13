@@ -30,7 +30,7 @@ describe("loopDiagramSvg", () => {
     const svg = loopDiagramSvg(state, content);
     expect(svg).toContain("<svg");
     for (const label of ["Backlog", "In Progress", "Done", "Shipped"]) expect(svg).toContain(label);
-    expect(svg).toContain("1,500"); // backlog value
+    expect(svg).toContain("300"); // backlog value (Studio start backlog 300)
     // Issue #9: before any tick has run, no flow has actually happened yet on
     // any stage, even though every stage's base capacity is 1.0/day. The
     // arrows must show the realized (zero) flow, not the uncapped rate.

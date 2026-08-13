@@ -46,7 +46,7 @@ describe("applyEffects", () => {
     applyEffects(s, [{ type: "addToStock", stock: "techDebt", value: -5 }], "src-1");
     expect(s.stocks.techDebt).toBe(0);
     applyEffects(s, [{ type: "addToStock", stock: "backlog", value: 200 }], "src-1");
-    expect(s.stocks.backlog).toBe(1700); // start backlog 1500 + 200
+    expect(s.stocks.backlog).toBe(500); // Studio start backlog 300 + 200
   });
 
   it("scaleStock multiplies the target stock immediately, clamped at zero, leaving siblings untouched", () => {
@@ -54,7 +54,7 @@ describe("applyEffects", () => {
     s.stocks.techDebt = 1000;
     applyEffects(s, [{ type: "scaleStock", stock: "techDebt", factor: 0.7 }], "src-1");
     expect(s.stocks.techDebt).toBe(700); // reduction
-    expect(s.stocks.backlog).toBe(1500); // sibling stock unaffected
+    expect(s.stocks.backlog).toBe(300); // sibling stock unaffected (Studio start backlog 300)
 
     applyEffects(s, [{ type: "scaleStock", stock: "techDebt", factor: 0 }], "src-1");
     expect(s.stocks.techDebt).toBe(0); // factor 0 wipes it entirely

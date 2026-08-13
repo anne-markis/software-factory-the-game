@@ -34,93 +34,80 @@ describe("simulation", () => {
     }
   });
 
-  // Release-7 idle-drain mechanism probe. The structural requirement: doing
-  // nothing must lose money on NET, not merely be exposed to challenge
-  // events. With baseBurnPerDay 20 and the first contract at $17/pt (Release
-  // 9 economy-slack retune) on the 1 pt/day idle throughput, steady idle
-  // cashflow is 17 - 20 = -$3/day. Challenges are stripped here to pin that
-  // mechanism in isolation (the full-content trajectory is probed below).
+  // Studio spine idle-mechanism probe (issue #88). RE-PINNED wholesale: the
+  // Studio economy replaces the 1500-pt First Contract ($17/pt) with a 300-pt
+  // Launch beta that pays NOTHING per point (payoutPerPoint 0) and a $800
+  // completion bonus. So an idle player earns $0 while shipping the beta and
+  // $0 after (idle starts no follow-on project), which makes the whole budget
+  // trajectory a clean piecewise-linear -$20/day base burn with a single +$800
+  // bump when the beta completes. Challenges are stripped to isolate this.
   //
-  // RE-PINNED for Release 15 (tech-debt drag, debtDrag = freeDebt 400,
-  // dragPerPoint 0.00015, maxDrag 0.4). The probe is NO LONGER closed-form
-  // linear once drag engages, so it now pins the clean pre-drag region
-  // exactly and the drag/tail region against observed checkpoints, with the
-  // mechanism explained (per CONTENT-AUTHORING section 8: closed-form where
-  // the arithmetic stays clean, observed-with-comment where drag makes it
-  // unwieldy).
+  // Tech-debt drag never engages here: the beta is only 300 points, so idle
+  // ships at most ~150 techDebt (0.5/pt) before the pipeline empties -- far
+  // below the freeDebt 400 grace band -- and payout is $0 anyway, so even if
+  // it did drag, it could not move the budget. Hence the exact linear pins.
   //
-  // PHASE 1 -- pre-drag, still exactly linear. The idle player ships exactly
-  // 1 pt/day and grows techDebt 0.5/day (debtMultiplier 0.5). techDebt only
-  // crosses freeDebt (400) at ~day 803, so while 2 <= d <~ 803 the old
-  // formula holds exactly (integer flows, toBe is safe):
-  //   budget(d) = 10000 - 20d + 17(d - 2) = 9966 - 3d
-  // Day 500: 8466. Day 800: 7566. (Day 803 is still 7557 -- the drag on that
-  // first day past the grace band is ~0.00015, far too small to move an
-  // integer payout yet.)
+  // PHASE 1 -- pre-completion, exactly linear: budget(d) = 10000 - 20d (no
+  // payout during the beta). Day 50 = 9000, 100 = 8000, 200 = 6000, 300 =
+  // 4000. This is the Studio solvency rule made concrete: the beta finishes
+  // (day 302) with the budget still comfortably positive (~4000 at day 300),
+  // on starting resources alone, no gigs and no monetization.
   //
-  // PHASE 2 -- drag engaged. Once techDebt > 400 the drag multiplier drops
-  // below 1 and idle ships < 1 pt/day, so every subsequent day earns slightly
-  // less payout than the -$3/day line would predict; the glide steepens. This
-  // region is a feedback loop (less shipping -> less debt growth -> less
-  // drag), so it is pinned against observed values, not a closed form. Day
-  // 1000 is 6941.26 (BELOW the no-drag line's 6966 -- that gap is the drag
-  // biting) and day 1500 is 5161.18 (below the no-drag 5466 -- a wider gap as
-  // the drag deepens). The 1500-pt contract, which used to complete on day
-  // 1502 at a clean 1 pt/day, now completes ~20 days later (day 1522) because
-  // the last stretch ships slower than 1/day.
+  // COMPLETION -- day 302 (300 points ship one per day, first ships day 3):
+  // +$800 bonus and +1 reputation land, budget jumps to 4760, and the beta's
+  // completionStockGrants add +30 users (the users economy switches on here;
+  // organic acquisition then runs the same tick).
   //
-  // PHASE 3 -- post-completion tail. Idle starts no new project, so after the
-  // contract completes (budget ~7060 at day 1522, including the $2000 bonus)
-  // there is no payout at all and the drain is the clean full -$20/day again,
-  // independent of drag: budget(d) = 7060 - 20(d - 1522). Day 1700 = 3500,
-  // day 1874 = 20 (last day before the clamp), day 1875 is the first zero and
-  // it stays 0 through day 2000.
-  it("idle mechanism: -$3/day pre-drag glide, tech-debt drag steepens it, then -$20/day tail to zero", () => {
+  // PHASE 2 -- post-completion tail: still -$20/day (no project, no income),
+  // so budget(d) = 4760 - 20(d - 302), hitting 0 on day 540 and clamped after.
+  //
+  // USERS -- 0 until day 302, then grow from 30 toward the steady state where
+  // organic gain (1.5 + reputation 1 * 0.1 = 1.6/day) equals churn
+  // (users * 0.01), i.e. 160 users, and hold there.
+  it("idle mechanism: $0/pt Launch beta, clean -$20/day burn with a +$800 completion bump, then drains to zero", () => {
     const c = fullContent();
     c.challenges = [];
     const e = new Engine(c);
     const at: Record<number, number> = {};
     let completionDay = 0;
-    // Reputation pins (Release 17): with challenges stripped there is no
-    // reputation loss anywhere, so reputation is a pure step function -- 0 until
-    // the initial contract completes, then exactly its reputationReward forever
-    // (idle starts no new project, so nothing else earns). Capture it either
-    // side of the completion day to pin that the ONLY reputation event here is
-    // the initialProject reward landing at completion.
+    let firstZeroDay = 0;
     let repBeforeCompletion = NaN;
     let repAfterCompletion = NaN;
+    let usersBeforeCompletion = NaN;
+    let usersAfterCompletion = NaN;
     for (let day = 1; day <= 2000; day++) {
       e.tick();
       const s = e.getState();
       if (completionDay === 0 && s.completedProjects >= 1) {
         completionDay = day;
         repAfterCompletion = s.stocks.reputation;
+        usersAfterCompletion = s.stocks.users;
       }
-      if (day === 1521) repBeforeCompletion = s.stocks.reputation; // one day before completion
-      if ([500, 800, 1000, 1500, 1700, 1874].includes(day)) at[day] = s.stocks.budget;
+      if (firstZeroDay === 0 && s.stocks.budget === 0) firstZeroDay = day;
+      if (day === 301) { repBeforeCompletion = s.stocks.reputation; usersBeforeCompletion = s.stocks.users; }
+      if ([50, 100, 200, 300, 302, 540].includes(day)) at[day] = s.stocks.budget;
     }
-    // Reputation stays 0 through the whole pre-completion glide, then steps to
-    // exactly initialProject.reputationReward (1) the moment the contract
-    // completes and holds there -- no drift from the new field.
+    // Users and reputation stay at 0 through the whole beta, then step up the
+    // moment it completes -- nothing invents users offstage before launch.
+    expect(usersBeforeCompletion).toBe(0);
     expect(repBeforeCompletion).toBe(0);
+    expect(completionDay).toBe(302);
     expect(repAfterCompletion).toBe(c.start.initialProject.reputationReward); // 1
-    expect(e.getState().stocks.reputation).toBe(1); // unchanged from completion (day 1522) through day 2000
-    // Phase 1: exactly linear before the drag engages.
-    expect(at[500]).toBe(8466); // 9966 - 3 * 500
-    expect(at[800]).toBe(7566); // 9966 - 3 * 800
-    // Phase 2: drag has engaged; budget is below the no-drag line and falling
-    // further behind it. These are observed values (feedback loop, no closed
-    // form) but the < assertions pin the mechanism, not just the number.
-    expect(at[1000]).toBeCloseTo(6941.26, 1);
-    expect(at[1000]).toBeLessThan(6966); // strictly below the no-drag -$3/day line
-    expect(at[1500]).toBeCloseTo(5161.18, 1);
-    expect(at[1500]).toBeLessThan(5466); // the gap widens as the drag deepens
-    // Drag delayed the first-contract completion past the old day-1502.
-    expect(completionDay).toBe(1522);
-    // Phase 3: clean -$20/day tail from ~7060 at completion.
-    expect(at[1700]).toBeCloseTo(3500, 0); // 7060 - 20 * 178
-    expect(at[1874]).toBeCloseTo(20, 0); // 7060 - 20 * 352
-    expect(e.getState().stocks.budget).toBe(0); // clamped from day 1875 on
+    expect(usersAfterCompletion).toBeCloseTo(31.3, 1); // 30 grant + first organic day (1.6 - 0.3 churn)
+    // Phase 1: exactly linear -$20/day, no payout during the $0/pt beta.
+    expect(at[50]).toBe(9000);
+    expect(at[100]).toBe(8000);
+    expect(at[200]).toBe(6000);
+    expect(at[300]).toBe(4000); // solvency rule: beta finishes with budget to spare
+    // Completion bump: +$800 bonus lands on day 302.
+    expect(at[302]).toBe(4760); // (10000 - 20*302) + 800
+    // Phase 2: clean -$20/day tail to zero. 4760 / 20 = 238 -> day 540.
+    expect(firstZeroDay).toBe(540);
+    expect(at[540]).toBe(0);
+    expect(e.getState().stocks.budget).toBe(0); // clamped through day 2000
+    // Users grow to and hold the 160 steady state (1.6/day gain == 1% churn).
+    expect(e.getState().stocks.users).toBeCloseTo(160, 0);
+    expect(e.getState().stocks.reputation).toBe(1); // no challenges, so it never drops
   });
 
   // Full-content idle probe: same do-nothing player, challenges on. Events
@@ -158,18 +145,34 @@ describe("simulation", () => {
   // day 300 = 8766 (was 8111), day 600 = 7491 (was 5952). Assertions leave
   // headroom but pin the shape: meaningful decline off the starting 10,000,
   // no instant death, broke well within the horizon, near-empty long-run.
-  it("idle with full content: challenges steepen the glide; broke by ~day 1826", () => {
+  // Studio spine (issue #88): same do-nothing player, challenges on. The idle
+  // player owns no monetization decisions, so its +30 users (and organic
+  // growth after the beta) never turn into income -- the beta's $800 bonus and
+  // the odd windfall are the only cash it ever sees, against a steady -$20/day
+  // base burn. So even with challenges it drains to zero well within the
+  // horizon (observed first clamp ~day 507; challenges' net drain plus the
+  // absence of contract payout make it slightly faster than the
+  // challenge-free day-540). The beta still completes on day 302 (300 points
+  // ship one per day regardless of any backlog the challenges pile on -- the
+  // project tracks points shipped, not the backlog stock). This pins the
+  // shape, not exact challenge-dependent values.
+  it("idle with full content: no monetization means the users grant never pays off; drains to zero within the horizon", () => {
     const e = new Engine(fullContent());
     let budgetAt300 = NaN;
-    let budgetAt600 = NaN;
+    let completionDay = 0;
+    let sawUsers = false;
     for (let day = 1; day <= 2000; day++) {
       e.tick();
-      if (day === 300) budgetAt300 = e.getState().stocks.budget;
-      if (day === 600) budgetAt600 = e.getState().stocks.budget;
+      const s = e.getState();
+      if (completionDay === 0 && s.completedProjects >= 1) completionDay = day;
+      if (s.stocks.users > 0) sawUsers = true;
+      if (day === 300) budgetAt300 = s.stocks.budget;
     }
-    expect(budgetAt300).toBeLessThan(9200); // observed 8766: well off the starting 10,000
-    expect(budgetAt600).toBeGreaterThan(0); // observed 7491: breathing room, no instant death
-    expect(e.getState().stocks.budget).toBeLessThan(100); // observed 0 at day 2000 (first clamp day 1826)
+    expect(completionDay).toBe(302); // the beta completes on schedule
+    expect(sawUsers).toBe(true); // the users economy did switch on at launch
+    expect(budgetAt300).toBeLessThan(4200); // pre-completion glide, well off 10,000 (observed ~3700)
+    expect(budgetAt300).toBeGreaterThan(0); // no instant death
+    expect(e.getState().stocks.budget).toBeLessThan(100); // broke by day 2000 (observed 0, first clamp ~day 507)
   });
 
   // Smart-strategy probe: a modest, sensible plan (test-suite day 1, ci-cd
@@ -305,6 +308,8 @@ describe("simulation", () => {
     endBudget: number;
     everBroke: boolean;
     endReputation: number;
+    endUsers: number;
+    peakUsers: number;
     milestonesSeen: string[];
   } {
     const BUY_BUFFER = 800; // keep this much cash on hand beyond any oneTime cost
@@ -314,6 +319,7 @@ describe("simulation", () => {
     let startedSmallCrm = false;
     let lastCompleted = 0;
     let everBroke = false;
+    let peakUsers = 0;
     const completionDays: number[] = [];
     const budgetAtDay: Record<number, number> = {};
     for (let day = 1; day <= 2000; day++) {
@@ -345,6 +351,7 @@ describe("simulation", () => {
         lastCompleted = s.completedProjects;
       }
       if (s.stocks.budget === 0) everBroke = true;
+      peakUsers = Math.max(peakUsers, s.stocks.users);
       if ([500, 1000, 2000].includes(day)) budgetAtDay[day] = s.stocks.budget;
       assertInvariants(s, day);
     }
@@ -355,78 +362,41 @@ describe("simulation", () => {
       endBudget: e.getState().stocks.budget,
       everBroke,
       endReputation: e.getState().stocks.reputation,
+      endUsers: e.getState().stocks.users,
+      peakUsers,
       milestonesSeen: [...e.getState().milestonesSeen],
     };
   }
 
-  // Human-heavy build. Observed trajectory under the tuned content: completes
-  // first-contract on day 412 and small-crm on day 1804, is partway through
-  // mobile-app at day 2000; budget 5254 at day 500, 5963 at day 1000, 4332 at
-  // day 2000; never hits the zero-clamp. Challenge exposure is the human set
-  // (sickness 110, meeting-creep 5, team-conflict 5, poached 4) plus the
-  // universal ones; human staffing does not satisfy agent-line ownership gates.
+  // Human-heavy build, RE-PINNED wholesale for the Studio spine (issue #88).
+  // The Studio money spine is monetization (subscription + one-time product
+  // reading the users stock), NOT the client-contract ladder, so a sensible
+  // human-heavy player now buys the two monetization cards early (right after
+  // ci-cd) alongside the hire track. The support drag on users (above the
+  // 25-user free band) is the cost of that growth: at the ~150-user steady
+  // state it cancels 35% of every delivery rate, which -- combined with the
+  // 5000-point small-crm being an order of magnitude larger than the 300-point
+  // beta -- means the follow-on contract does NOT finish inside the 2000-day
+  // horizon (observed ~4530 of 5000 points shipped). The big client-contract
+  // ladder belongs to later eras / issue #89; here the viability bar is the
+  // Studio one: finish the beta and stay solvent via monetization.
   //
-  // RE-PINNED for Release 9 (global event spacing, challengeSpacingDays 50).
-  // Fewer, less frequent challenges mean a materially wider margin: completes
-  // first-contract on day 387 and small-crm on day 1624 (both slightly
-  // earlier -- fewer drains let cash accumulate toward the next purchase
-  // sooner); budget 9817 at day 500, 21702 at day 1000, 43375 at day 2000
-  // (roughly 8-10x the pre-spacing margin); still never hits the zero-clamp.
-  // Measured fires: sickness 19, scope-creep 6, prod-incident 4, meeting-creep
-  // 4, ddos 3, team-conflict 2, key-dev-poached 2, open-source-windfall 1.
-  //
-  // RE-PINNED again for Release 9 (challenge retune + economy slack:
-  // payoutPerPoint 15->17, ddos/api-price-hike/prod-incident/laptop-dies/
-  // runaway-agent-loop all less frequent and/or cheaper -- see
-  // content/challenges.json). The margin widens again, further: completes
-  // first-contract on day 387 (unchanged) and small-crm on day 1625
-  // (essentially unchanged -- the human track's speed is governed by hires,
-  // not challenge drag); budget 12917.04 at day 500, 24802.35 at day 1000,
-  // 47313.99 at day 2000 (roughly 8-10% wider than the spacing-only figures
-  // above, on top of that 8-10x jump). Measured fires: sickness 23,
-  // scope-creep 6, meeting-creep 4, prod-incident 2, key-dev-poached 1,
-  // team-conflict 1, open-source-windfall 1 -- ddos and laptop-dies did not
-  // get a turn in this run (ddos's own probability dropped to 0.005; the
-  // human build carries devs the whole time so laptop-dies, gated on zero
-  // human devs, was never eligible). Still never hits the zero-clamp, with
-  // headroom to spare.
-  //
-  // RE-CHECKED for Release 11 (continuousDeploy replaces ci-cd's old deploy
-  // x1.1 modifyRate): re-run bit-for-bit identical -- completion days 387
-  // and 1625, budget 12917.04/24802.35/47313.99 at day 500/1000/2000, still
-  // never zero-clamped. This build's human-hire rate stacking never pushed
-  // finish rate above the old 1.1/day deploy cap either, so the structural
-  // change is invisible to this probe.
-  //
-  // RE-PINNED for Release 15 (tech-debt drag + deploy-bottleneck rework: hires
-  // now boost pull+finish only, not deploy). This build owns test-suite (halves
-  // debt growth) and does no agent work, but contractor's +10% debt and the
-  // sheer volume it ships still push techDebt to ~1985 by day 2000, so the
-  // drag bites -- but mildly: the multiplier bottoms out at ~0.76 (24% of
-  // capacity cancelled at worst), and the "limits-to-growth" archetype narrates
-  // around day 1713. The system pushing back visibly narrows the margin
-  // (end budget 29275.94, was 47313.99) and pushes small-crm's completion out
-  // to day 1774 (was 1625), but the build stays comfortably viable: completes
-  // 2 projects (days 387, 1774), budget 12812/22148/29275 at day 500/1000/2000,
-  // never zero-clamped. The deploy-rework is invisible here (this build's finish
-  // rate was never deploy-bound; continuous deploy via ci-cd ships Done anyway).
-  //
-  // RE-PINNED for Release 17 (reputation). The build earns reputation on
-  // completion (first-contract +1, small-crm +5) and loses it to incidents
-  // (prod-incident -2, security-breach -5). Its techDebt (~1985) crosses
-  // security-breach's minTechDebt 800 gate only late, so it takes exactly ONE
-  // breach, at day 1746 -- shaving end budget by that breach's $300 (29275.94
-  // -> 28975.94) and nothing else; day 500/1000 budgets are bit-identical to
-  // Release 15 (12812.28 / 22148.66) and both completion days are unchanged
-  // (387, 1774). Incident reputation losses eat the +1 from first-contract, so
-  // reputation lands at exactly small-crm's +5 by day 2000 -- precisely the
-  // "trusted" milestone threshold. The reputation gate does NOT wall this build
-  // off any contract it reached pre-reputation: it completes small-crm (ungated)
-  // and rolls into mobile-app (gate 5) with reputation exactly 5.
-  it("human-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
+  // Observed: completes the Launch beta on day 93, then works small-crm the
+  // rest of the run without finishing it (completedProjects stays 1). The
+  // subscription (users * $0.75/day at ~150 users ≈ $112/day) dwarfs the
+  // ~$20-60/day burn, so budget climbs steadily -- 40545 at day 500, 99568 at
+  // day 1000, 216085 at day 2000 -- and it never hits the zero-clamp. Users
+  // grow to the ~150 steady state. Reputation ends at 0 (the beta's +1 is
+  // eaten by incident/breach losses and no rep-earning contract completes), so
+  // no milestone is crossed -- that is a consequence of the reworked money
+  // spine, not a regression. Loose bounds pin the shape (solvent + monetized),
+  // not challenge-knife-edge exact values.
+  it("human-heavy strategy: finishes the beta and stays solvent via monetization over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
       "ci-cd",
+      "subscription",
+      "one-time-product",
       "better-tooling",
       "basic-dev",
       "eng-manager",
@@ -434,95 +404,39 @@ describe("simulation", () => {
       "standup",
       "contractor",
     ]);
-    expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 28975.94 -- one $300 breach below the pre-reputation 29275.94
+    expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 93)
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 387, 1774
-    // The reinforcing loop is exercised: completing lower contracts earns
-    // reputation (observed end 5). Assert only that reputation was earned at
-    // all; the exact end value is knife-edge on incident timing relative to the
-    // last completion, so the sticky milestone below is the robust loop proof.
-    expect(r.endReputation).toBeGreaterThanOrEqual(1);
-    expect(r.milestonesSeen).toContain("trusted"); // crossed the first milestone by day 2000
+    expect(r.peakUsers).toBeGreaterThan(100); // users economy switched on and grew (observed ~150)
+    // Monetization is the money spine: subscription income lifts the budget far
+    // above the starting 10,000 (observed end ~216,085). Loose lower bound.
+    expect(r.endBudget).toBeGreaterThan(50000);
+    expect(r.budgetAtDay[2000]).toBeGreaterThan(r.budgetAtDay[500]!); // still climbing on subscription income
   });
 
-  // Automation-heavy build. Observed trajectory under the tuned content:
-  // completes first-contract on day 396 and small-crm on day 1643, is partway
-  // through mobile-app at day 2000; budget 2198 at day 500, 4219 at day 1000,
-  // 3441 at day 2000; never hits the zero-clamp. Agent-line ownership opens
-  // its related challenge pool (api-price-hike 17, runaway-agent-loop 13,
-  // model-deprecation 8, cloud-credits 9) and, owning no human devs, it eats
-  // laptop-dies (14) but no sickness/poaching -- a materially different risk
-  // profile from the human build at a similar destination, which is the
-  // track-parity design goal (viable, not identical).
+  // Automation-heavy build, RE-PINNED wholesale for the Studio spine (issue
+  // #88). Same Studio adaptation as the human-heavy probe: the sensible player
+  // buys the two monetization cards early (after ci-cd), then the agent ladder.
+  // Agent-line ownership still opens its own challenge pool (api-price-hike,
+  // runaway-agent-loop, model-deprecation, cloud-credits) and, owning no human
+  // devs, it eats laptop-dies but no sickness/poaching -- a materially
+  // different risk profile from the human build, the track-parity design goal
+  // (viable, not identical). As with the human build the 5000-point small-crm
+  // does not finish under the ~150-user support drag within the horizon
+  // (observed ~4690 of 5000 shipped); the Studio bar is the beta + solvency.
   //
-  // RE-PINNED for Release 9 (global event spacing, challengeSpacingDays 50).
-  // Same widening effect as the human-heavy build: completes first-contract
-  // on day 394 and small-crm on day 1615 (essentially unchanged from
-  // pre-spacing); budget 8623 at day 500, 20465 at day 1000, 45548 at day
-  // 2000 (again roughly an order of magnitude more margin); still never hits
-  // the zero-clamp. Measured fires: api-price-hike 7, scope-creep 7, ddos 6,
-  // model-deprecation 4, runaway-agent-loop 4, prod-incident 4, laptop-dies
-  // 3, cloud-credits 2, open-source-windfall 2 -- the agent-line pool and
-  // laptop-dies (no human devs) still dominate, sickness/poaching still
-  // absent, so the risk-profile contrast with the human-heavy build (the
-  // track-parity design goal) survives the spacing change.
-  //
-  // RE-PINNED again for Release 9 (challenge retune + economy slack:
-  // payoutPerPoint 15->17, cheaper agent-harness 400->250, swarm-orchestrator
-  // 250->150, self-learning-agents 500->350, on top of the challenge
-  // probability/value cuts). Completes first-contract on day 394 (unchanged)
-  // and small-crm on day 1616 (essentially unchanged -- cheaper agent-line
-  // decisions front-load spending sooner but the shopping-list gating on
-  // requires/budget dominates timing more than one day's difference); budget
-  // 13073.50 at day 500, 26185.37 at day 1000, 52016.90 at day 2000 (wider
-  // still than the spacing-only figures above). Measured fires:
-  // model-deprecation 3, cloud-credits 3, open-source-windfall 3, scope-creep
-  // 12, laptop-dies 2, ddos 1, prod-incident 10, runaway-agent-loop 2 --
-  // notably prod-incident fires far more here than in the human-heavy build
-  // (2 there vs. 10 here) because this build's tech debt is much higher
-  // (agents/swarm compound debt faster than test-suite alone offsets), and
-  // prod-incident's probScaling adds probability per 500 debt carried; that
-  // debt-exposure contrast is a real, intentional difference between the two
-  // tracks, not an artifact. Still never hits the zero-clamp.
-  //
-  // RE-CHECKED for Release 11 (continuousDeploy replaces ci-cd's old deploy
-  // x1.1 modifyRate): re-run bit-for-bit identical -- completion days 394
-  // and 1616, budget 13073.50/26185.37/52016.90 at day 500/1000/2000, still
-  // never zero-clamped. Like the human-heavy build, this track's finish
-  // rate (agent/swarm additive contributions, self-learning-agents' ramp
-  // capped at 1.4/day) never actually exceeded the old 1.1/day deploy cap,
-  // so the structural change is invisible to this probe too.
-  //
-  // RE-PINNED for Release 15 (tech-debt drag). This build ships the most and
-  // carries the most debt-raising capacity (agent + agent-swarm), so even with
-  // its full mitigation stack (test-suite, agent-harness, swarm-orchestrator)
-  // its techDebt reaches ~2489 by day 2000 -- the highest of any viable probe
-  // -- and the drag multiplier bottoms out near 0.69 (31% cancelled), with the
-  // "limits-to-growth" archetype narrating earlier, around day 1308. As with
-  // the human build this narrows the margin (end budget 26562.84, was 52016.90)
-  // and delays small-crm to day 1856 (was 1616), but the mitigation keeps the
-  // drag off its 0.6 floor and the build stays solvent: completes 2 projects
-  // (days 395, 1856), budget 12698/21770/26562 at day 500/1000/2000, never
-  // zero-clamped.
-  //
-  // RE-PINNED for Release 17 (reputation). This build carries the highest
-  // techDebt of any viable probe (~2490), so it is the most breach-exposed: it
-  // takes FOUR security breaches (days 607, 1124, 1633, 1845), each -$300 and
-  // -5 reputation. Those four $300 hits (plus their earlier timing dragging on
-  // compounding) pull end budget from 26562.84 to 25187.30 and day-1000 budget
-  // from 21770 to 21470.89; day 500 (12698.68) and both completion days (395,
-  // 1856) are unchanged (debt only reaches the 800 breach gate after day 500).
-  // Despite the breach reputation bleed, completing first-contract (+1) and
-  // small-crm (+5) lands reputation at exactly 5 by day 2000 -- the "trusted"
-  // milestone -- so the reinforcing loop is exercised and the build is not
-  // walled off the mobile-app tier (gate 5) it rolls into. This is the spiral
-  // held at a survivable amplitude for a well-mitigated build: real cost, no
-  // collapse (contrast the greedy build below, where it does bite hard).
-  it("automation-heavy strategy: completes multiple projects and stays solvent over 2000 days", () => {
+  // Observed: completes the Launch beta on day 103, works small-crm for the
+  // rest of the run without finishing it. Subscription income (≈$112/day at
+  // ~150 users) again dominates burn, so budget climbs -- 36077 at day 500,
+  // 99392 at day 1000, 213542 at day 2000 -- and it never zero-clamps. Users
+  // reach the ~150 steady state; reputation ends at 0 (beta's +1 eaten by
+  // incidents/breaches, no rep-earning contract completes). Loose bounds pin
+  // the shape (solvent + monetized), not challenge-knife-edge exact values.
+  it("automation-heavy strategy: finishes the beta and stays solvent via monetization over 2000 days", () => {
     const r = runBuildProbe([
       "test-suite",
       "ci-cd",
+      "subscription",
+      "one-time-product",
       "agent",
       "agent-harness",
       "swarm-orchestrator",
@@ -530,15 +444,11 @@ describe("simulation", () => {
       "self-learning-agents",
       "support-retainer",
     ]);
-    expect(r.completedProjects).toBeGreaterThanOrEqual(2);
-    expect(r.endBudget).toBeGreaterThan(0); // observed 25187.30 -- four $300 breaches below the pre-reputation 26562.84
+    expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 103)
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
-    expect(r.completionDays.length).toBeGreaterThanOrEqual(2); // observed days 395, 1856
-    // Reinforcing loop exercised even under the heaviest breach load
-    // (observed end 5). Knife-edge on breach timing, so assert only that
-    // reputation was earned; the sticky milestone below is the robust proof.
-    expect(r.endReputation).toBeGreaterThanOrEqual(1);
-    expect(r.milestonesSeen).toContain("trusted"); // crossed the first milestone by day 2000
+    expect(r.peakUsers).toBeGreaterThan(100); // users economy switched on and grew (observed ~150)
+    expect(r.endBudget).toBeGreaterThan(50000); // monetization lifts budget far above 10,000 (observed ~213,542)
+    expect(r.budgetAtDay[2000]).toBeGreaterThan(r.budgetAtDay[500]!); // still climbing on subscription income
   });
 
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {

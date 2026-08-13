@@ -9,11 +9,41 @@ import type { GameContent } from "./types";
 describe("parseStartConfig", () => {
   it("parses the shipped start.json", () => {
     const cfg = parseStartConfig(startJson);
-    expect(cfg.stocks.backlog).toBe(1500);
+    // Studio spine (issue #88): backlog matches the 300-point Launch beta so
+    // the beta gets a clean burndown; users start at 0.
+    expect(cfg.stocks.backlog).toBe(300);
+    expect(cfg.stocks.users).toBe(0);
     expect(cfg.stocks.budget).toBe(10000);
     expect(cfg.debtMultiplier).toBe(0.5);
     expect(cfg.baseRates.pull).toBe(1);
     expect(cfg.challengeSpacingDays).toBe(50);
+  });
+
+  it("parses the Studio spine start config: launch-beta project, stock drags and flows (issue #88)", () => {
+    const cfg = parseStartConfig(startJson);
+    // Launch beta: $0-ish client fiction (payoutPerPoint 0), a cash bonus, and
+    // a users grant on completion -- the only thing that lifts users off 0.
+    expect(cfg.initialProject.id).toBe("launch-beta");
+    expect(cfg.initialProject.name).toBe("Launch beta");
+    expect(cfg.initialProject.sizePoints).toBe(300);
+    expect(cfg.initialProject.payoutPerPoint).toBe(0);
+    expect(cfg.initialProject.completionBonus).toBe(800);
+    expect(cfg.initialProject.reputationReward).toBe(1);
+    expect(cfg.initialProject.completionStockGrants).toEqual([{ stock: "users", amount: 30 }]);
+    // Always-on support drag on users above a 25-user free band.
+    expect(cfg.stockDrags).toEqual([
+      { stock: "users", freeBand: 25, dragPerPoint: 0.004, maxDrag: 0.35, target: "all" },
+    ]);
+    // Organic acquisition only after the first project completes.
+    expect(cfg.stockFlows).toEqual([
+      {
+        stock: "users",
+        condition: { minCompletedProjects: 1 },
+        acquirePerDay: 1.5,
+        acquirePerStock: { stock: "reputation", perUnit: 0.1 },
+        churnRatePerDay: 0.01,
+      },
+    ]);
   });
 
   it("names the file in validation errors", () => {
@@ -138,6 +168,8 @@ describe("parseDecisions", () => {
       "agent-swarm",
       "swarm-orchestrator",
       "self-learning-agents",
+      "subscription",
+      "one-time-product",
       "support-retainer",
       "ddos-protection",
       "refactoring-sprint",

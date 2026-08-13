@@ -24,6 +24,20 @@ describe("netRecurringBurnPerDay", () => {
     // 20 base + 7 payroll - 8 income
     expect(netRecurringBurnPerDay(e.getState(), c)).toBe(19);
   });
+
+  // Studio spine (issue #88): subscription income scales with the users stock,
+  // so runway reflects the user-driven recurring revenue at the current level.
+  it("subtracts subscription incomeFromStock at the current users level", () => {
+    const c = content();
+    const e = new Engine(c);
+    e.applyDecision("subscription"); // incomeFromStock users * 0.75
+    const s = e.getState() as import("../engine/types").GameState;
+    s.stocks.users = 0;
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(20); // 0 users -> no income yet
+    s.stocks.users = 100;
+    // 20 base burn - (100 users * 0.75) = 20 - 75 = -55 (net income)
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-55);
+  });
 });
 
 describe("budgetRunwayDays", () => {
