@@ -500,8 +500,9 @@ them harder.
 | Need | Already exists? | Lean |
 | --- | --- | --- |
 | Paid-tier churn | `stockFlowMods` | **Use it** on that one card — first shipped consumer |
-| Onboarding delay | `rampRate` | **Use it** on senior |
-| Hire-quality process | synergies | **Use it** on eng-manager → basic/senior gambles |
+| Compounding agents | `rampRate` | **Use it** on self-learning, not on a senior hire |
+| Autonomous pull | `modifyRate` pull | Unique flat pull (lean). Per-agent pull is fork 3 |
+| Hire-quality synergies | synergies | **Unused in v0** — manager is out |
 | Support-drag relief | **No** `stockDragMods` | **Out of v0.** Organic growth + existing drag is already the users governor. Do not add engine for a marketing buy we cut |
 | Era advancement | `entryAnyOf` authored, not evaluated | **Required to play Company** — generic predicate eval + one-way `eraId` + reload active bundle. No era-name branches in tick |
 | `eraEnteredDay` | No | **Out of v0** — global spacing is enough |
