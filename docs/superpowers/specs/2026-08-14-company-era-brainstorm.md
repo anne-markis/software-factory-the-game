@@ -1,6 +1,6 @@
 # Company era — brainstorm
 
-Date: 2026-08-14
+Date: 2026-08-14 (revised same day: lesson-and-fun filter)
 Status: Brainstorm (not a ticket cut, not an implementation spec)
 Extends: `docs/VISION.md`, `docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md` §5
 Stance: Fill the P0.2 plan’s “Company — light sketch, fill later” hole now that Studio is a playable spine
@@ -9,6 +9,12 @@ This document holds direction for the **Studio → Company** step. It does
 not author cards, retune balance, or wire era advancement. Implementation
 specs and content waves come after the forks in §13 are settled enough to
 cut tickets.
+
+**North star (non-negotiable, same as `docs/VISION.md`):** optimize fun
+while teaching systems thinking, using the SDLC as the playground. The
+delivery loop stays the home base. Company is a new *cost of play* on
+that loop, not a simulation of a real firm. If a card’s best defense is
+“companies actually do this,” it does not ship.
 
 ---
 
@@ -77,7 +83,8 @@ From VISION + P0.2 plan:
    inside** Company.
 3. **`users` carries.** No soft reset, no second population.
 4. Company is the **long session**. Studio stays short / exitable.
-5. Depth and consequence before catalog width.
+5. Depth and consequence before catalog width. **Lesson and fun before
+   realism.** A wider shop that buries the loop is a failed era.
 6. Governors on every reinforcing loop. Delays should start to be *felt*.
 7. No first-class tracks. No hire-drama challenges as “fun realism”
    (Studio cut sickness / poach; do not sneak them back without a new
@@ -92,9 +99,11 @@ From VISION + P0.2 plan:
 and “users exist after you launch.” It should be leaveable before the
 player has a real org.
 
-**Company** is the first time the factory is a *firm*: payroll is a
-structure, calendar is a tax, clients have names, the product has a
-market, and last era’s clever trick becomes this era’s load.
+**Company** is the same loop at a cost of play Studio could not show
+without becoming a second tutorial: headcount that taxes itself,
+reputation that finally gates work, debt you can *pay down* (and feel
+the delay), users you can extract from. It is not “year one of a real
+company.” Org-chart completeness is how this era fails.
 
 The player should be able to say, in their own words:
 
@@ -104,7 +113,28 @@ The player should be able to say, in their own words:
 - “I still don’t have CI/CD and Done is a warehouse.”
 
 That is Limits to Growth, Success to the Successful, and delay — lived,
-not lectured.
+not lectured. If a proposed card does not help the player say one of
+those things (or a new sentence as sharp as those), it is catalog.
+
+### 3.1 Lesson-and-fun filter (every new card)
+
+Ask all three. “No” on any of them is a cut, including when the fiction
+is accurate.
+
+1. **Which loop does the player watch change?** Backlog / Done / debt /
+   users / reputation / rates on the cockpit — not a side meter we
+   invent so the card has somewhere to land.
+2. **What systems idea is distinct from a card we already have?** If it
+   is “hire, but contractor” or “incident, but DDoS,” it is the
+   copilot-vs-agent trap again.
+3. **Is it fun to watch?** Bottleneck moves, recovery is possible but
+   not free, the shop does not bury the diagram. Unfun honesty gets
+   redesigned; it does not get a realism exception, and it does not get
+   replaced by a lecture.
+
+Complexity is a privilege the loop and the player must be ready for.
+Company is long so the *same* loops can deepen — not so we can finally
+fit the industry.
 
 ```mermaid
 flowchart LR
@@ -113,10 +143,10 @@ flowchart LR
   end
 
   subgraph CO["Company — most playtime"]
-    org[Org + calendar]
-    market[Users at scale + clients]
-    debt[Debt you finally pay down]
-    meander[Hire / agent / process mix]
+    org[Hires tax their own rates]
+    market[Extract vs retain users]
+    debt[Pay debt down · feel the delay]
+    meander[Same mix, higher cost]
   end
 
   subgraph MC["Megacorp"]
@@ -136,17 +166,18 @@ tax, and a users reinforcing loop with support drag. Company should
 **re-interpret those stocks at a new cost of play**, and add only the
 patterns the current grammar can honestly show.
 
-| Pattern | How Company shows it | Avoid |
+| Pattern | How Company shows it (one lever) | Avoid |
 | --- | --- | --- |
-| **Limits to Growth** | Headcount and meetings tax the same rates the hires just boosted | A morale stock on day one of the era |
-| **Delay** | Onboarding ramps (`rampRate`); refactor slows before it helps | Instant senior = 3× basic-dev |
-| **Success to the Successful** | Reputation finally gates real contracts; incidents can re-lock them | Milestones as victory |
-| **Shifting the Burden** | Another agent vs a refactor; another hire vs a manager | A track label that says which is “correct” |
-| **Drift** | Meeting-creep / burnout that accumulate if ignored | Permanent un-clearable rot |
-| **Wrong goal (light)** | Paid tier raises `$/user` and churn | Full valuation / lifestyle mode (P2.2) |
+| **Limits to Growth** | Meeting-creep taxes the same rates the hires just boosted | Morale stock; three flavors of “org pain” |
+| **Delay** | Senior ramps (`rampRate`); refactor slows before it helps | Instant senior = 3× basic-dev |
+| **Success to the Successful** | Reputation gates real contracts; a Company-sized incident can re-lock them | A second “breach” fiction of the same hit |
+| **Shifting the Burden** | Another agent vs a refactor | A track label that says which is “correct” |
+| **Wrong goal (light)** | Paid tier raises `$/user` and churn | Marketing + CS + ads as a growth department |
 
 Fun governor: if a card’s only job is to name a pattern, cut it. The
-simulation has to produce the feeling first.
+simulation has to produce the feeling first. Drift / burnout / policy
+resistance wait until the sim already produces them — they are not a
+reason to author three calendar events.
 
 ---
 
@@ -239,49 +270,55 @@ own, and the safety net if they don’t.
 
 ### 6.2 New Company plays (draft — not cards yet)
 
-First-principles prompt: *I just left the studio. I have some users, a
-loop I understand, and maybe a person or a few agents. What do I
-actually do in the first year of a real company — and what breaks?*
+First-principles prompt: *What can the player see on the loop at this
+scale that Studio could not show without stopping being a tutorial?*
+Not: *what does a real company buy in year one?*
 
-**People / org**
+Pass the §3.1 filter. The table’s “why” column is the systems reason;
+realism is not a reason.
 
-| Play | Why it’s real | Systems hook | Lean |
+**People / org — two cards, two lessons**
+
+| Play | Distinct lesson | Systems hook | Lean |
 | --- | --- | --- | --- |
-| Senior hire | Expensive, variance, not day-one Studio | `human`, gamble, **`rampRate` onboarding** (delay) | **In** |
-| Contractor | Fast capacity, messier, not on the org chart | Deterministic rate, debt add, **not** `human` | **In** |
-| Eng manager | Coordination, better hiring, not more tickets | Unique; **synergy tightens hire gambles**; little or no direct rate | **In** |
-| Standup-as-$/day | Ritual is time, not payroll | — | **Out** (same Studio critique) |
-| Standup / cadence as process | Meetings that help *and* cost attention | Unique; small rate mul **or** `lacksDecision` shield vs meeting-creep | **Maybe** — only if meeting-creep ships |
+| Senior hire | Delay: capacity arrives late, and you already paid | `human`, gamble, **`rampRate` onboarding** | **In** |
+| Eng manager | Process changes *variance*, not rate (structure, not more tickets) | Unique; **synergy tightens hire gambles**; little or no direct rate | **In** — cut if the synergy is too quiet to watch |
+| Contractor | “Hire, but not on the org chart” | Deterministic rate, debt, not `human` | **Out** — copilot-vs-agent trap |
+| Standup-as-$/day | — | — | **Out** |
+| Standup / cadence shield | Second calendar card | `lacksDecision` vs meeting-creep | **Out** — meeting-creep *is* the lesson |
 
-**Debt you can finally pay**
+**Debt you can finally pay — one recovery button**
 
-| Play | Why it waited | Systems hook | Lean |
+| Play | Distinct lesson | Systems hook | Lean |
 | --- | --- | --- | --- |
-| Refactoring sprint | Studio had no recovery button | Repeatable; temporary slowdown + `addToStock` techDebt down | **In** — the delay teach |
-| Redesign / rebuild | Bet-the-company rewrite | Long slowdown, bigger debt cut | **Push late Company / Megacorp** |
+| Refactoring sprint | Hurt before help; debt is payable | Repeatable; temporary slowdown + techDebt down | **In** |
+| Redesign / rebuild | Same lesson, bigger | Long slowdown | **Out of v0** — false-summit later, not a second refactor |
 
-**Users at scale** (stock-linked; no new stock)
+**Users — one new goal, not a growth department**
 
-| Play | Why it’s real | Systems hook | Lean |
+Organic acquire + support drag already run. Do not add a marketing
+team so the era “has growth.”
+
+| Play | Distinct lesson | Systems hook | Lean |
 | --- | --- | --- | --- |
-| Marketing / launch push | Growth is a buy, not a time-ramp | `stockFlowMods` +acquire (engine-ready, Studio unused) | **In** |
-| Customer success / docs | Retention is a buy | `stockFlowMods` −churn | **In** |
-| Paid tier / annual plan | Extract more per user | Higher `incomeFromStock` perUnit; **+churn** as governor | **In** |
-| Support capacity | Drag free-band is 25 and already brutal at 80+ users | No `stockDragMods` today | **Open** — see §9. Do not fake it with a raw `modifyRate` unless we say so |
+| Paid tier | Seeking the wrong goal: `$/user` up, churn up | `incomeFromStock` + `stockFlowMods` +churn | **In** — the one new users card |
+| Marketing / launch push | Buy more of the acquire flow that already exists | `stockFlowMods` +acquire | **Out of v0** — same loop, extra knob |
+| Customer success / docs | Buy less of the churn that already exists | `stockFlowMods` −churn | **Out of v0** — paid tier already makes churn the governor |
+| Support capacity | Relief valve on drag | needs `stockDragMods` | **Out of v0** — do not add engine for a growth buy we just cut |
 
-**Agents, one rung deeper**
+**Agents — one deeper rung**
 
-| Play | Why it waited | Systems hook | Lean |
+| Play | Distinct lesson | Systems hook | Lean |
 | --- | --- | --- | --- |
-| Self-learning agents | Compounding, false summit | `rampRate` on finish; requires orchestration (now listable because carry) | **In** |
-| GPU / compute stock | Real, but a new stock | — | **Out of Company v0** — keep agent pain in $ and debt |
+| Self-learning agents | Compounding delay on the agent loop; false summit | `rampRate` on finish; requires orchestration | **In** |
+| GPU / compute stock | New meter | — | **Out** |
 
-**Hardening**
+**Hardening — none in v0**
 
-| Play | Why it waited | Systems hook | Lean |
-| --- | --- | --- | --- |
-| DDoS protection | Public product at company traffic | `prevent-trouble`; `lacksDecision` on a ddos challenge | **In** as a pair |
-| Security program | Breach is a Company-scale nuke | Unique; reduces breach odds or severity via `lacksDecision` / debt | **Maybe** — only with security-breach |
+DDoS protection + DDoS, security program + breach, are “public
+companies get attacked.” Prod-incident already hits the live-product
+loop. A buy-out card for a new event is catalog. `prevent-trouble` can
+wait until a challenge exists that is not just another incident.
 
 ```mermaid
 flowchart TB
@@ -296,9 +333,8 @@ flowchart TB
     test --> cicd
   end
 
-  subgraph people["People"]
+  subgraph people["People — delay + process"]
     senior[senior-dev · gamble + ramp]
-    contractor[contractor]
     mgr[eng-manager · synergy on hires]
     hire --> senior
     hire --> mgr
@@ -306,38 +342,34 @@ flowchart TB
     mgr -.->|tighter gamble| senior
   end
 
-  subgraph agents["Agents"]
+  subgraph agents["Agents — one deeper rung"]
     sla[self-learning-agents · rampRate]
     orch --> sla
   end
 
-  subgraph product["Users / money"]
-    mkt[marketing · +acquire]
-    cs[customer-success · −churn]
+  subgraph product["Users — one new goal"]
     tier[paid-tier · $/user up · churn up]
     sub --> tier
   end
 
-  subgraph debt["Debt / harden"]
+  subgraph debt["Debt — one recovery"]
     refactor[refactoring-sprint]
-    ddos[ddos-protection]
   end
 ```
 
-**Target width:** carry (hidden once owned) + about **8–12 new uniques**
-and the two stackables. If a card does not change a loop or a governor,
-it does not get in. This is not the place to restore every Release 8
-shop item.
+**Target width:** carry (hidden once owned) + **five new uniques**
+(senior, manager, refactor, paid-tier, self-learning). If a sixth card
+cannot name a *new* loop sentence, it does not get in. This is not the
+place to restore every Release 8 shop item.
 
 ### 6.3 Explicitly not Company-default
 
+- Contractor, standup, marketing, CS, support-hire, DDoS pair, security
+  program — realism / second knobs on loops we already teach.
 - Morale / compute / valuation as stocks (VISION long-term; not earned
   yet).
-- Standup as daily cash burn.
-- Hire-drama as a challenge genre (poach / flu) unless a later pass
-  finds a *gameable* version.
-- World-eating / self-learning-that-hires-itself / dark-factory endgame
-  — that is Megacorp and later, at a cost you can only pay then.
+- Hire-drama as a challenge genre (poach / flu).
+- World-eating / self-learning-that-hires-itself — Megacorp and later.
 - A second AI seat type that is mechanically “agent but cheaper.”
 
 ---
@@ -348,37 +380,40 @@ shop item.
 
 `content/eras/studio/projects.json` currently holds Company-shaped
 work. That makes Studio long and makes `minCompletedProjects: 4` look
-affordable for the wrong reason. **Lean:** those four contracts are
-Company (or Megacorp-adjacent) content. Studio projects become whatever
-the Studio follow-up actually ships (tiny gigs / v1–v5) or stay empty
-aside from `start.json`’s Launch beta.
+affordable for the wrong reason. **Lean:** move the ladder out of
+Studio; Company v0 keeps **two** client rungs. Studio projects become
+whatever the Studio follow-up actually ships (tiny gigs / v1–v5) or
+stay empty aside from `start.json`’s Launch beta.
 
 | id | Size | Role in Company |
 | --- | --- | --- |
-| **small-crm** | 5k / $2k up | Early Company client; cash + rep |
-| **mobile-app** | 9k / $3k | Mid client; Trusted-vendor-ish gate |
-| **big-migration** | 20k / $5k | Serious delivery; debt will show |
-| **enterprise-replatform** | 50k / $12k | **Late Company or Megacorp** — do not require it to *enter* Company, and think twice before requiring it to *leave* |
+| **small-crm** | 5k / $2k up | Early client; cash + rep. The first time reputation *means* work |
+| **big-migration** | 20k / $5k | Serious delivery; debt and concurrency will show |
+| **mobile-app** | 9k / $3k | Same lesson as CRM at a different size — **out of v0** |
+| **enterprise-replatform** | 50k / $12k | **Megacorp-adjacent** — do not require it to enter or leave Company |
 
-Reputation gates on these (5 / 15) finally mean something: they are
+Two client rungs are enough for Success to the Successful to be
+visible. Reputation gates (5 / 15) finally mean something: they are
 Company landmarks, not Studio exits. `start.json` milestones
 (“Trusted vendor”, “Established shop”) already speak this fiction.
 
 ### 7.2 Own-product work at Company scale
 
-Users already exist. Company product projects should **move the users
-loop**, not invent customers.
+Users already exist. At most **one** own-product project in v0, and
+only if it moves the users loop in a way the paid-tier *decision*
+cannot. A growth-launch / paid-tier-ship / marketplace trio is a
+product org, not a lesson.
 
-| Working project | Role | Hook |
+| Working project | Role | Lean |
 | --- | --- | --- |
-| Growth / onboarding push | Own-product | `completionStockGrants` users and/or a one-shot acquire burst |
-| Paid-tier launch | Own-product | Bonus users or $; pairs with the paid-tier *decision* (decision still separate, same as Studio sub) |
-| Marketplace / platform listing | Own-product or hybrid | Users + burst income |
+| Paid-tier launch | Completing it makes the paid-tier decision *matter* (users or $ grant) | **Maybe** — skip if the decision alone is watchable |
+| Growth / onboarding push | Extra acquire burst | **Out of v0** — organic flow already acquires |
+| Marketplace / platform listing | Another income fiction | **Out of v0** |
 
-Keep the two families from the P0.2 plan: **own-product** (touches
-users) vs **client contracts** (cash + rep, no direct users).
-Concurrency tax is the teach: taking CRM *and* a growth launch is how
-Company players stall themselves.
+Two families still hold: **own-product** (touches users) vs **client
+contracts** (cash + rep, no direct users). Concurrency tax is the
+teach: CRM *and* a product launch is how Company players stall
+themselves — if we even ship the second family in v0.
 
 ### 7.3 Studio project follow-up (out of this era, but blocking honesty)
 
@@ -391,54 +426,45 @@ that move already happened.
 
 ## 8. Challenges
 
-Studio’s pool is small on purpose. Company is allowed to be denser, but
-every card still has to hit a loop we teach. Gates use stocks,
-headcount, and live ownership — not tracks.
+Studio’s pool is small on purpose. Company may fire *harder*, not
+*wider*. Three org slaps and three incident fictions are the same
+lesson in different hats. Gates use stocks, headcount, and live
+ownership — not tracks.
 
-### 8.1 Carry-shaped (same loops, new scale)
+### 8.1 The v0 pool (five)
 
-| Working id | Gate | Effect sketch | Lean |
+| Working id | Gate | Loop it hits | Lean |
 | --- | --- | --- | --- |
-| **scope-creep** | Any in-flight project | Backlog +N (bigger than Studio’s +75) | **In — all eras** |
-| **prod-incident** | `users > 0`; debt scales | $, rep, short slowdown, user hit (`scaleStock` / `addToStock`) | **In** (Studio-settled, unshipped — Company must have it even if Studio stays quiet) |
-| **model-deprecation** | ≥1 agent | Pay vs degraded finish | **In** if agents are carried |
-| **runaway-agent-loop** | ≥1 agent | −$ (can scale later) | **In** |
-| **api-price-hike** | ≥1 agent | −$ or a long upkeep-shaped budget hit | **In** — Company agent governor |
+| **scope-creep** | Any in-flight project | Backlog / WIP | **In — all eras** (bigger +N is enough scale) |
+| **prod-incident** | `users > 0`; debt scales | Live product: $, **rep**, users, short slowdown | **In** — the one Company-sized teeth; Studio-settled and still unshipped |
+| **meeting-creep** | `minHumanDevs ≥ 2` | Hire loop taxes its own rates | **In** — the one org card |
+| **model-deprecation** | ≥1 agent | Agent loop; choice teach | **In** if agents are carried |
+| **runaway-agent-loop** | ≥1 agent | Agent $ governor | **In** |
 
-### 8.2 Org / calendar (the Company genre)
+### 8.2 Cut — second knobs and realism slaps
 
-| Working id | Gate | Effect sketch | Lean |
-| --- | --- | --- | --- |
-| **meeting-creep** | `minHumanDevs ≥ 2` (or ≥1 + manager) | All rates ×0.9 for a long window; cooldown | **In** |
-| **team-conflict** | `minHumanDevs ≥ 2` | Choice: pay to mediate vs long rate hit | **In** |
-| **burnout** | Headcount or a high-rate proxy | Choice: slow down vs later worse hit / debt | **In** — this is the standup/burnout deferral from Studio |
-| sickness / key-dev-poached | — | — | **Stay cut** unless we find a version that is a decision, not a slap |
+| id | Why it fails the filter |
+| --- | --- |
+| **api-price-hike** | Third agent slap; “vendors raise prices” |
+| **team-conflict** / **burnout** | Same Limits-to-Growth sentence as meeting-creep |
+| **ddos** + protection card | New incident fiction; prod-incident already hits live product |
+| **security-breach** | Second reputation nuke; make prod-incident fat enough |
+| **angry-users** / review bomb | Churn already on prod-incident (and paid-tier) |
+| **competitor launch** / **refund-wave** | Market realism |
+| sickness / key-dev-poached | Stay cut |
 
-### 8.3 Market / hardening
+Lucky +$ challenges stay scarce. A **term-sheet** with a quota is a
+new loop (and a new way to lie about the goal). **Out of v0.** Megacorp
+entry stays grind floors (`minBudget` / `minUsers`) until a
+breakthrough can be one event that writes those stocks, not a mini-game.
 
-| Working id | Gate | Effect sketch | Lean |
-| --- | --- | --- | --- |
-| **ddos** | users above a band; `lacksDecision: ddos-protection` | −$ | **In** as a pair with the card |
-| **security-breach** | `minTechDebt` high | Fat $ and rep hit; can re-lock contracts | **In** — reputation downward spiral finally has a Company-sized teeth |
-| **angry-users** / review bomb | users > 0 | Churn + light rep | **In** if Studio still hasn’t shipped it |
-| **competitor launch** | users > 0 | Churn spike and/or acquire pause | **Maybe** — only if marketing exists so the player has a lever |
-| **refund-wave** | one-time-product owned | −$ burst | **Maybe** |
-
-Lucky +$ challenges stay scarce. Company is long; a drip of windfalls
-teaches nothing. A single **term-sheet / got-funded** choice (large +$,
-maybe a quiet quota later) is the breakthrough toward Megacorp, not a
-weekly lottery.
-
-### 8.4 Quiet period
+### 8.3 Quiet period
 
 Company does not need Studio’s “let them finish beta” quiet. It *does*
 need spacing so the first week after the era swap is not a pile-on.
-`challengeSpacingDays` is global in `start.json` (35 today) — era-specific
-spacing is an engine fork, not a v0 requirement. Prefer per-challenge
-`minDay` relative to… we do not have `eraEnteredDay` yet. **Open:**
-either add that stamp when advancement lands, or keep global spacing
-and write Company probabilities as if the era is the whole remaining
-game.
+`challengeSpacingDays` is already global (35). **Lean:** keep that; do
+not add `eraEnteredDay` so we can author a second quiet. Write
+probabilities as if Company is the rest of the game.
 
 ---
 
@@ -450,20 +476,18 @@ them harder.
 
 | Need | Already exists? | Lean |
 | --- | --- | --- |
-| Marketing / retention knobs | `stockFlowMods` | **Use it** — first shipped consumers |
-| Onboarding delay | `rampRate` | **Use it** on senior (and maybe manager-era hires) |
+| Paid-tier churn | `stockFlowMods` | **Use it** on that one card — first shipped consumer |
+| Onboarding delay | `rampRate` | **Use it** on senior |
 | Hire-quality process | synergies | **Use it** on eng-manager → basic/senior gambles |
-| Support-drag relief | **No** `stockDragMods` | **Open.** At 100 users the shipped drag is already ~0.30. Company without a support lever makes growth strictly punitive. Options: (a) small generic `stockDragMods` (freeBand / dragPerPoint deltas), (b) retune `start.json` free band now that Company is real, (c) a crude `modifyRate` “support hire” we admit is a fake. Prefer (a) if we touch the engine at all; (b) is a lie if Studio still uses the same start blob |
+| Support-drag relief | **No** `stockDragMods` | **Out of v0.** Organic growth + existing drag is already the users governor. Do not add engine for a marketing buy we cut |
 | Era advancement | `entryAnyOf` authored, not evaluated | **Required to play Company** — generic predicate eval + one-way `eraId` + reload active bundle. No era-name branches in tick |
-| `eraEnteredDay` | No | Only if Company challenges need a post-entry quiet |
+| `eraEnteredDay` | No | **Out of v0** — global spacing is enough |
 | Morale / compute / valuation | No | **Not Company v0** |
 | Cross-era `requires` | No | **Not needed** if Company relists Studio ids |
 
 `start.json` is era-agnostic. Organic user flow and support drag
 **keep running** in Company — that is the carry. Do not special-case
-“Studio-only drag” in the tick. If Company needs a different free
-band, that is a content/engine hook (§13 fork 3), not an `if (eraId
-=== "studio")`.
+“Studio-only drag” in the tick.
 
 ---
 
@@ -472,11 +496,10 @@ band, that is a content/engine hook (§13 fork 3), not an `if (eraId
 | Reinforcing loop | Company governor |
 | --- | --- |
 | Ship → $ → more capacity | Payroll + base burn; insolvency still deletes `perDay` instances |
-| Users → $ → more build | Support drag (already on); churn from incidents / paid tier / angry-users |
-| Agents → finish → more agents | Debt, model-deprecation, api-price-hike, runaway loop |
-| Hires → rate → more hires | Meeting-creep, burnout, manager upkeep, onboarding delay |
-| Reputation → bigger contracts → more rep | Breach / incident rep hits re-lock tiers (already live) |
-| Marketing → users | Drag + churn; marketing without CS is a leaky bucket |
+| Users → $ → more build | Support drag (already on); paid-tier churn; prod-incident |
+| Agents → finish → more agents | Debt, model-deprecation, runaway loop |
+| Hires → rate → more hires | Meeting-creep; onboarding delay; manager upkeep |
+| Reputation → bigger contracts → more rep | Prod-incident rep hits re-lock tiers |
 
 If a new card strengthens a loop and we cannot name its governor, it
 does not ship.
@@ -488,15 +511,13 @@ does not ship.
 Authored today: `minBudget 250000` OR `minUsers 10000`.
 
 Company is the long era, so this gate should feel **earned**, not
-skippable the way Studio’s should. $250k is modest next to an older
-~$5M sketch; 10k users is a real product. **Lean:** keep an OR of
-serious grind and a serious breakthrough (term sheet / acquisition
-attention / true viral scale), and retune the floors in play — not in
-this brainstorm. Do not design Megacorp cards here.
+skippable the way Studio’s should. Retune the floors in play. Do not
+design Megacorp cards here, and do not invent a term-sheet mini-game
+so the door has flavor.
 
-False summit: self-learning agents + enterprise-replatform should feel
-like “we made it” and then reveal institutional problems. That feeling
-is Megacorp’s job. Company only has to make the door expensive.
+False summit: self-learning agents plus a hard contract should feel
+like “we made it.” Institutional weirdness is Megacorp’s job. Company
+only has to make the door expensive.
 
 ---
 
@@ -505,7 +526,8 @@ is Megacorp’s job. Company only has to make the door expensive.
 - Authoring the JSON or wiring `eraId` advancement (this doc only).
 - Filling Megacorp.
 - Restoring tracks, tags, or a “pick your identity” screen.
-- New stocks for flavor.
+- New stocks, `stockDragMods`, or `eraEnteredDay` for v0.
+- A realism catalog (contractor, DDoS, breach, marketing dept, burnout).
 - A player-facing tech tree / graph (the local `make graph` viewer is
   enough to author).
 - Reopening P0.1 cockpit work.
@@ -526,19 +548,19 @@ starting positions, not locks.
 2. **Studio → Company floors.** Exact `$` / rep / completions / users.
    Lean: ~$20–25k, rep ~5–8, completions 2 or cut, add users ~80–100,
    breakthroughs write those stocks.
-3. **Support-drag relief.** `stockDragMods` vs retune global free band
-   vs admit a fake rate card. This is the one engine addition that
-   might be *earned* for Company.
-4. **Standup / cadence card.** Ship only as a meeting-creep shield or
-   skip and let meeting-creep be the whole calendar lesson.
-5. **`eraEnteredDay` + post-entry quiet** vs global `challengeSpacingDays`
-   only.
-6. **enterprise-replatform** lives in late Company or waits for
-   Megacorp.
-7. **Term sheet** as Company→Megacorp breakthrough vs cash-only grind.
-8. **Studio leftovers** (viral, prod-incident, gigs/versions) — Company
-   can include the challenges either way; the *projects* should not
-   stay in Studio just because Company is empty.
+3. **Eng-manager stays** only if the hire-gamble synergy is watchable.
+   If it reads as flavor, cut it and keep senior + meeting-creep as
+   the people lesson.
+4. **Paid-tier launch project** vs paid-tier *decision* alone.
+5. **enterprise-replatform** waits for Megacorp (lean).
+6. **Studio leftovers** (viral, prod-incident, gigs/versions) — Company
+   ships prod-incident either way; the *projects* should not stay in
+   Studio just because Company is empty.
+
+Closed by the lesson-and-fun filter (not open): contractor, standup,
+marketing/CS/support-hire, DDoS pair, breach, api-price-hike,
+team-conflict, burnout, term-sheet quota, `stockDragMods`,
+`eraEnteredDay`.
 
 ---
 
@@ -550,17 +572,15 @@ When this brainstorm is settled enough:
    bundle.** Without this, Company JSON is a viewer-only museum.
 2. **Carry rule** (fork 1) so owned Studio cards keep paying and
    billing.
-3. **Move the contract ladder** out of `studio/projects.json` into
-   Company (and decide where enterprise sits).
-4. **Author the thin Company v0:** people (senior, contractor, manager),
-   refactor, marketing + CS + paid tier, ddos pair, self-learning,
-   org/hardening challenges. Probe in simulation the way Studio was
-   probed — solvency, at least one hire-heavy and one agent-heavy
-   meander, no “buy everything” win.
+3. **Move the contract ladder** out of `studio/projects.json`; keep
+   CRM + migration in Company, park enterprise.
+4. **Author the thin Company v0:** five new uniques (senior, manager,
+   refactor, paid-tier, self-learning) and five challenges
+   (scope-creep, prod-incident, meeting-creep, model-deprecation,
+   runaway-agent-loop). Probe solvency on a hire-heavy and an
+   agent-heavy meander; no “buy everything” win.
 5. **Retune entry floors** against a real Studio exit, not against the
    CRM ladder living in the wrong folder.
-6. Only then: support-drag hook (if fork 3 demands it), term sheet,
-   Megacorp sketch.
 
 ---
 

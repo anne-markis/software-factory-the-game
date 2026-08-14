@@ -58,7 +58,9 @@ teaches a distinct systems idea, and until fun no longer fights the model.
    Settled early ladder: **Studio → Company → Megacorp → …**. Studio is
    short/tutorial (~$10k start; hires *and* early agents belong here —
    do not gate “AI” as its own era). **Company** is where most playtime
-   lives. Eras advance by **scale of cost** (grind gates and/or
+   lives: the same delivery loop at a higher cost of play, not a more
+   realistic firm. Lesson and fun outrank org-chart completeness. Eras
+   advance by **scale of cost** (grind gates and/or
    breakthrough events), one-way. Megacorp and later intensify satire and
    world-eating stakes; loop honesty stays in stocks, flows, and delays.
 

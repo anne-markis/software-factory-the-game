@@ -804,12 +804,11 @@ those are **Company** (or later) shapes.
 
 Light sketch replaced by
 [`2026-08-14-company-era-brainstorm.md`](2026-08-14-company-era-brainstorm.md).
-Working picture: carry Studio defs so owned cards keep paying; move the
-CRM / mobile / migration ladder here; add org (senior, contractor,
-manager), refactor-as-delay, users-at-scale (`stockFlowMods`), ddos pair,
-self-learning (`rampRate`); org/hardening challenges. Studio→Company
-floors in `eras.json` are placeholders and likely too high on reputation
-/ completions. Tick still does not advance `eraId`.
+Working picture: same loop at a new cost of play (lesson and fun before
+realism). Carry Studio defs; five new uniques (senior, manager, refactor,
+paid-tier, self-learning); five challenges; CRM + migration only.
+Studio→Company floors in `eras.json` are placeholders. Tick still does
+not advance `eraId`.
 
 ### Megacorp (lighter sketch)
 
