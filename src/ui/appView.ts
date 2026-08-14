@@ -7,7 +7,7 @@
 // Issue #6: this used to be one `root.innerHTML = ...` per render, which the
 // 100ms driver could fire ~10x/second, destroying and recreating every button.
 // A mousedown/mouseup gesture straddling one of those rebuilds produces no
-// click at all, so Pause/Resume, speed, Buy, Start and choice options
+// click at all, so Pause/Start, speed, Buy, Start and choice options
 // intermittently ignored real clicks. Now the page structure is written once
 // and each region is patched only when its own html actually changes (see
 // domPatch.ts), so a region whose data has not moved keeps its nodes.
@@ -156,7 +156,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
   let gambleReveal: GambleReveal | null = null;
   let gambleRevealTimer: ReturnType<typeof setTimeout> | null = null;
   // Issue #40: track which pending challenges we have already soft-paused for
-  // so Resume is not immediately re-paused every frame while the choice waits.
+  // so Start is not immediately re-paused every frame while the choice waits.
   let softPausedChoiceIds = new Set<string>();
 
   function clearGambleRevealTimer(): void {
@@ -212,7 +212,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
   }
 
   function render(): void {
-    // Soft-pause before painting so time controls show Resume on the same frame.
+    // Soft-pause before painting so time controls show Start on the same frame.
     softPauseForNewChoices([...engine.getState().pendingChoices]);
     const state = engine.getState();
     // Issue #67: sync cockpit + delivery stats in place so .stat-flash can
