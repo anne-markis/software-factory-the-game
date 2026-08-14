@@ -59,7 +59,7 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
       case "scaleStock":
         // Immediate, like addToStock: no modifier is created, so a scaled
         // stock does not show up as a Friction/Cycle-speed/Leak-size
-        // contributor in the Progress loop panel -- only a paired
+        // contributor in the Progress system panel -- only a paired
         // modifyRate effect in the same purchase (the shape the retired
         // refactor/rebuild cards used) would surface there. factor 0 wipes the
         // stock entirely; factor > 1 (a future challenge doubling backlog,

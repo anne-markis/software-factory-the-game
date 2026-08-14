@@ -82,7 +82,7 @@ export interface AppView {
 // unlike before -- are not churned by the driver at all. Section containers
 // are empty until the first render patches them.
 //
-// Issue #67: Delivery loop diagram, delivery-stats, and Progress loop are
+  // Issue #67: Delivery system diagram, delivery-stats, and Progress system are
 // separate sections so material stock numbers can update in place (flash)
 // without rebuilding the SVG wrappers every time a digit moves. Gamble reveal
 // is its own ephemeral section between stats and the loops.
@@ -107,7 +107,7 @@ function pageScaffold(): string {
   // Issue #65: next-goal sits with the glanceable chrome (below stats, above
   // loops) so the endless-run lean stays visible without opening Projects.
   // Issue #40: choices interrupt sits with chrome (before loops) so pending
-  // decisions are not buried under Alter the loop / Events scroll.
+  // decisions are not buried under Alter the system / Events scroll.
   return `
     <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
     <button id="reset">Reset game</button>
@@ -117,7 +117,7 @@ function pageScaffold(): string {
     <div ${SECTION_ATTR}="${CHOICES}"></div>
     <div class="loops">
       <div class="delivery-column">
-        <div class="panel"><h3>Delivery loop</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
+        <div class="panel"><h3>Delivery system</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
         <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>
       </div>
       <div ${SECTION_ATTR}="${PROGRESS_LOOP}"></div>

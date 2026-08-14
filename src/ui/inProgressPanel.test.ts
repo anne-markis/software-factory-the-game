@@ -59,7 +59,8 @@ describe("inProgressPanelSvg", () => {
   it("renders the loop, exit flow, leak arc, and footer on a fresh engine", () => {
     const e = new Engine(content());
     const svg = inProgressPanelSvg(e.getState(), content());
-    expect(svg).toContain("Progress loop");
+    expect(svg).toContain("Progress system");
+    expect(svg).not.toContain("Progress loop");
     expect(svg).toContain("work cycling");
     expect(svg).toContain("Cycle speed");
     expect(svg).toContain("Base 1.0/day");
@@ -70,7 +71,7 @@ describe("inProgressPanelSvg", () => {
     // realized (zero) flow, not the stage's uncapped capacity.
     expect(exitBoxValue(svg)).toBe("0.0");
     expect(svg).toContain("x0.50"); // effectiveDebtMultiplier on the leak arc label
-    expect(svg).toContain("The inner loop's pace sets outer throughput; its leak feeds outer backlog.");
+    expect(svg).toContain("The inner system's pace sets outer throughput; its leak feeds outer backlog.");
     expect(svg).not.toContain("Context switch");
     // The old caption asserted the exit box's number equals outer-loop
     // throughput unconditionally; that's false whenever Done piles up

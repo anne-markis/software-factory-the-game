@@ -1,7 +1,7 @@
 # Software Factory
 
 A browser incremental game about systems thinking in software delivery.
-You run a delivery loop that burns down a backlog. Alter the loop with
+You run a delivery system that burns down a backlog. Alter the system with
 people, agents, and process; survive random challenges; scale points/day.
 
 ## Run

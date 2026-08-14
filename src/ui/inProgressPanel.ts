@@ -81,7 +81,7 @@ function buildRateGroupNodes(state: Readonly<GameState>, content: GameContent, g
 
   // Tech-debt drag (Release 15): once the debt stock climbs past its grace
   // band the multiplier drops below 1 and shows here as friction. It scales
-  // all rates (effectiveRate), so it feeds the outer Delivery loop implicitly
+  // all rates (effectiveRate), so it feeds the outer Delivery system implicitly
   // via the rates -- no separate node is needed there.
   if (group === "friction") {
     const drag = debtDragMultiplier(state);
@@ -259,7 +259,7 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
   const leak = `
       <path d="M ${leakStartX.toFixed(1)} ${leakStartY.toFixed(1)} C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${leakEndX.toFixed(1)} ${leakEndY.toFixed(1)}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#ipArrow)"/>
       <text x="${leakEndX}" y="${leakEndY + 18}" text-anchor="end" font-size="13" fill="currentColor">${esc(`rework leak x${debtLabel} per shipped point`)}</text>
-      <text x="${leakEndX}" y="${leakEndY + 34}" text-anchor="end" font-size="12" fill="currentColor">refills the outer loop's Backlog</text>`;
+      <text x="${leakEndX}" y="${leakEndY + 34}" text-anchor="end" font-size="12" fill="currentColor">refills the outer system's Backlog</text>`;
 
   const speedConnectorTarget = ellipsePoint(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, -120);
   const frictionConnectorTarget = ellipsePoint(LOOP_CX, loopCy, LOOP_RX, LOOP_RY, 120);
@@ -281,10 +281,10 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       ${leakTmp.svg}
       ${connector(RIGHT_CONNECTOR_X, leakTmp.midY, leakStartX, leakStartY, true)}`;
 
-  const footer = `<text x="${LEFT_X}" y="${totalHeight - 10}" font-size="12" fill="currentColor">The inner loop's pace sets outer throughput; its leak feeds outer backlog.</text>`;
+  const footer = `<text x="${LEFT_X}" y="${totalHeight - 10}" font-size="12" fill="currentColor">The inner system's pace sets outer throughput; its leak feeds outer backlog.</text>`;
 
   const svg = `
-    <svg viewBox="0 0 ${VIEW_W} ${totalHeight}" width="100%" role="img" aria-label="Progress loop">
+    <svg viewBox="0 0 ${VIEW_W} ${totalHeight}" width="100%" role="img" aria-label="Progress system">
       ${defs}
       ${loop}
       ${exit}
@@ -295,5 +295,5 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       ${footer}
     </svg>`;
 
-  return `<div class="panel"><h3>Progress loop</h3>${svg}</div>`;
+  return `<div class="panel"><h3>Progress system</h3>${svg}</div>`;
 }

@@ -95,7 +95,7 @@ function pauseButton(root: HTMLElement): HTMLElement {
 }
 
 describe("appView delivery-column stats layout (issue #8)", () => {
-  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
+  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery system", () => {
     const h = mount();
     const top = h.root.querySelector(".stats")!;
     expect(top).toBeTruthy();
@@ -104,22 +104,24 @@ describe("appView delivery-column stats layout (issue #8)", () => {
 
     const deliveryCol = h.root.querySelector(".delivery-column")!;
     expect(deliveryCol).toBeTruthy();
-    expect(deliveryCol.querySelector("h3")!.textContent).toBe("Delivery loop");
+    expect(deliveryCol.querySelector("h3")!.textContent).toBe("Delivery system");
     const under = deliveryCol.querySelector(".delivery-stats")!;
     expect(under).toBeTruthy();
-    // Stats sit after the Delivery loop panel inside the same column
+    // Stats sit after the Delivery system panel inside the same column
     // (issue #67: wrapped in a data-section host for in-place flash sync).
     const statsHost = deliveryCol.querySelector(".panel")!.nextElementSibling!;
     expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users"]);
 
-    // Progress loop remains a sibling of the delivery column, not a parent of those stats.
+    // Progress system remains a sibling of the delivery column, not a parent of those stats.
     const loops = h.root.querySelector(".loops")!;
     expect(loops.contains(deliveryCol)).toBe(true);
-    expect(loops.querySelector("h3")!.textContent).toBe("Delivery loop");
+    expect(loops.querySelector("h3")!.textContent).toBe("Delivery system");
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toContain("Progress loop");
+    expect(headings).toContain("Progress system");
+    expect(headings).not.toContain("Delivery loop");
+    expect(headings).not.toContain("Progress loop");
     expect(under.closest(".panel")).toBeNull();
   });
 

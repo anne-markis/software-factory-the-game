@@ -102,7 +102,7 @@ describe("renderStats", () => {
 });
 
 describe("renderDeliveryStats", () => {
-  // Issue #8: flow/quality stocks under the Delivery loop, same slot pattern.
+  // Issue #8: flow/quality stocks under the Delivery system, same slot pattern.
   it("renders In Progress, Done, Shipped, Tech Debt, and Reputation with fixed-width value slots", () => {
     const c = content();
     const e = new Engine(c);
@@ -137,7 +137,8 @@ describe("renderDecisions", () => {
   it("decisionsPanelScaffold exposes a section shell for every decision and Owned", () => {
     const c = content();
     const html = decisionsPanelScaffold(c);
-    expect(html).toContain(`<h3>Alter the loop</h3>`);
+    expect(html).toContain(`<h3>Alter the system</h3>`);
+    expect(html).not.toContain("Alter the loop");
     expect(html).toContain(`<h3>Owned</h3>`);
     expect(html).toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
     for (const def of c.decisions) {
@@ -174,7 +175,7 @@ describe("renderDecisions", () => {
   });
 
   // Issue #15: Owned entries surface cost + derived effects (same helpers as
-  // shop cards) so upkeep trim does not require scrolling Alter the loop.
+  // shop cards) so upkeep trim does not require scrolling Alter the system.
   it("shows cost and derived effects on each Owned entry", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
