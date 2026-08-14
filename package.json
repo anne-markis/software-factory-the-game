@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "graph": "vite --config tools/content-graph/vite.config.ts",
     "build": "tsc && vite build",
     "test": "vitest run",
     "test:watch": "vitest"

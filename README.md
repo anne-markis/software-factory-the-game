@@ -57,6 +57,14 @@ suite. See [`docs/CONTENT-AUTHORING.md`](docs/CONTENT-AUTHORING.md) for the
 full field-by-field guide, the effect vocabulary, and a worked example of
 adding a decision and a challenge.
 
+### Content graph viewer
+
+Run `make graph` to open the local authoring graph at
+`http://127.0.0.1:5174/`. It parses the shipped era bundles through the same
+engine loader and Zod schemas as the game, then shows decision requirements,
+count gates, synergies, costs, and era-entry paths. The viewer is local tooling
+only and is not included in the player build.
+
 ## Design notes
 
 - One tick = one second = one game day.
