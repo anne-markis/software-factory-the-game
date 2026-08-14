@@ -41,11 +41,14 @@
       button { font-family: inherit; margin: 2px; }
       /* Top stats bar (Day / Backlog / Budget / Points/Day): each stat is a
          fixed-width slot (label + tabular-nums value) so a value changing
-         width on tick never shifts anything below. Auto-filling grid wraps
-         predictably; row count only changes when a stat is added or removed.
-         Issue #8 moved flow/quality stocks under the Delivery system. */
-      .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.25rem 0.5rem; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
-      .stat { display: inline-block; }
+         width on tick never shifts anything below. auto-fit (not auto-fill)
+         collapses empty tracks so the four cockpit stats share the row —
+         auto-fill kept 170px columns on a wide page, and Budget + "(500 days)"
+         overflowed into Points/Day (issue #99 text blending). minmax covers
+         the label plus runway suffix. Issue #8 moved flow/quality stocks
+         under the Delivery system. */
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.5rem 1.5rem; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
+      .stat { display: inline-flex; align-items: baseline; gap: 0.5rem; }
       .stat-label { color: var(--fg-dim); }
       .stat-value { display: inline-block; font-variant-numeric: tabular-nums; text-align: right; }
       .stat-value.v-day { min-width: 5ch; } /* Day: up to ~5 digits */
@@ -54,7 +57,7 @@
       /* Budget may append "(N days)" runway; keep a wider slot so the
          suffix does not reflow neighboring stats when crossing comma or
          day-count boundaries. */
-      .stat-value.v-budget { min-width: 18ch; } /* Budget: e.g. "$12,345.6 (12 days)" */
+      .stat-value.v-budget { min-width: 22ch; } /* Budget: "$10,000 (500 days)" plus slack (issue #99) */
       /* Issue #37: low runway telegraph — reuse the existing danger red
          so payroll cliff reads before Events fill with removals. */
       .stat-value.budget-low { color: var(--accent-red); font-weight: bold; }
