@@ -24,6 +24,10 @@ P0.2 ships Studio filled and empty Company / Megacorp shells. The loader
 era only; tick stays graph-dumb and never hardcodes era names or advances
 eras this milestone.
 
+Run `make graph` from the repository root to open the local authoring viewer
+under `tools/content-graph/`. It shows the parsed era, decision, prerequisite,
+synergy, cost, and entry-path graph without adding anything to the player UI.
+
 Every file is parsed through a Zod schema in `src/engine/content.ts`
 (`parseStartConfig`, `parseErasConfig`, `parseDecisions`, `parseChallenges`,
 `parseProjects`).

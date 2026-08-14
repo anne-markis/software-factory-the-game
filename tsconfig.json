@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["src", "content"]
+  "include": ["src", "content", "tools/content-graph"]
 }
