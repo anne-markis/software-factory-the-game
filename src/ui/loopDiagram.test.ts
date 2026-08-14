@@ -69,10 +69,10 @@ describe("loopDiagramSvg", () => {
     expect(svg.match(/<line /g)).toHaveLength(2); // pull, finish only
   });
 
-  // Issue #19 / FR-2.1: Delivery loop needs terse teaching copy (steady vs
-  // growing) so players don't have to open the Progress panel for the lesson.
-  describe("issue #19: Delivery loop teaching caption", () => {
-    it("includes the steady-vs-growing caption on a fresh four-box Delivery loop", () => {
+  // Issue #19 / FR-2.1: Delivery system needs terse teaching copy (steady vs
+  // growing boxes). Voice-matched to the Progress panel footer.
+  describe("issue #19: Delivery system teaching caption", () => {
+    it("includes the steady-vs-growing caption on a fresh four-box Delivery system", () => {
       const content = emptyContent();
       const svg = loopDiagramSvg(initialState(content), content);
       expect(svg).toContain(DELIVERY_LOOP_CAPTION);
@@ -96,9 +96,9 @@ describe("loopDiagramSvg", () => {
       const content = emptyContent();
       const progress = inProgressPanelSvg(initialState(content), content);
       expect(progress).toContain(
-        "The inner loop's pace sets outer throughput; its leak feeds outer backlog.",
+        "The inner system's pace sets outer throughput; its leak feeds outer backlog.",
       );
-      expect(progress).toContain("refills the outer loop's Backlog");
+      expect(progress).toContain("refills the outer system's Backlog");
       expect(progress).toContain("rework leak");
       expect(progress).not.toContain(DELIVERY_LOOP_CAPTION);
     });
@@ -153,7 +153,7 @@ describe("loopDiagramSvg", () => {
       const svg = loopDiagramSvg(state, content);
       expect(svg).not.toContain("capacity-bound");
       expect(svg).not.toContain('data-binding="true"');
-      expect(svg).toContain('aria-label="Delivery loop"');
+      expect(svg).toContain('aria-label="Delivery system"');
     });
 
     it("cues Done as capacity-bound when finish outruns deploy and Done has piled up", () => {
@@ -169,11 +169,11 @@ describe("loopDiagramSvg", () => {
       expect(svg).toContain("capacity-bound");
       expect(svg).toContain('data-binding="true"');
       expect(svg).toContain('data-binding-outflow="true"');
-      expect(svg).toContain('aria-label="Delivery loop, Done capacity-bound"');
+      expect(svg).toContain('aria-label="Delivery system, Done capacity-bound"');
       // Machine-side only: no shop / unlock auto-navigation hooks.
       expect(svg).not.toContain("ci-cd");
       expect(svg).not.toContain("data-open-shop");
-      expect(svg).not.toContain("Alter the loop");
+      expect(svg).not.toContain("Alter the system");
     });
 
     it("stops cueing Done once continuous deploy removes the Done stage", () => {
@@ -200,7 +200,7 @@ describe("loopDiagramSvg", () => {
       expect(bindingBottleneckStage(state, content)).toBe("inProgress");
       const svg = loopDiagramSvg(state, content);
       expect(svg).toContain("capacity-bound");
-      expect(svg).toContain('aria-label="Delivery loop, In Progress capacity-bound"');
+      expect(svg).toContain('aria-label="Delivery system, In Progress capacity-bound"');
     });
 
     it("does not cue when rates are imbalanced but the pile is still a blip", () => {

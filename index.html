@@ -43,7 +43,7 @@
          fixed-width slot (label + tabular-nums value) so a value changing
          width on tick never shifts anything below. Auto-filling grid wraps
          predictably; row count only changes when a stat is added or removed.
-         Issue #8 moved flow/quality stocks under the Delivery loop. */
+         Issue #8 moved flow/quality stocks under the Delivery system. */
       .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.25rem 0.5rem; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
       .stat { display: inline-block; }
       .stat-label { color: var(--fg-dim); }
@@ -104,7 +104,7 @@
       }
       /* Issue #67: hire/gamble reveal (not log-only). Sticky on the section
          host (not the inner node) so a purchase made while scrolled into
-         Alter the loop still pins the outcome to the viewport. Amber
+         Alter the system still pins the outcome to the viewport. Amber
          outcome tone matches .tt-gamble; no card chrome. */
       [data-section="gamble-reveal"]:not(:empty) {
         position: sticky;
@@ -121,7 +121,7 @@
       }
       .gamble-reveal-outcome { color: var(--accent-amber); font-weight: bold; }
       /* Issue #40: Decision-needed interrupt. Sticky on the section host so
-         shopping / Alter the loop cannot bury the choice while the day clock
+         shopping / Alter the system cannot bury the choice while the day clock
          is paused. Danger border matches prior Choices panel cue. */
       [data-section="choices"]:not(:empty) {
         position: sticky;
@@ -137,7 +137,7 @@
         margin-bottom: 0;
       }
       .choice-interrupt-item { margin-top: 0.35rem; }
-      /* Issue #8: relocated stocks under the Delivery loop column. Flex
+      /* Issue #8: relocated stocks under the Delivery system column. Flex
          wrap (not the 900px loops stack) so they stay inside that column
          at any width without introducing a horizontal scrollbar. */
       .delivery-column { min-width: 0; }
@@ -147,7 +147,7 @@
       .panel h4:first-of-type { margin-top: 0.25rem; }
       .panel h4 small { font-weight: normal; color: var(--fg-dim); }
       .log { max-height: 160px; overflow-y: auto; font-size: 0.85rem; }
-      /* Tech tree (Alter the loop). Each chain is a left-to-right row of tier
+      /* Tech tree (Alter the system). Each chain is a left-to-right row of tier
          columns joined by an arrow glyph; nodes stack vertically within a
          column. Node card sizes are fixed by their own static content (cost,
          category, description are constant per node once rendered) so ticking
