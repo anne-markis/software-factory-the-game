@@ -77,3 +77,25 @@ only and is not included in the player build.
 - Starting concurrent projects applies a context-switch tax (0.85^(n-1)).
 - If the pipeline is empty and nothing is affordable, the factory stalls.
 - Balance constants were retuned in release 6; the simulation tests double as balance probes (greedy bot must complete a contract and stay solvent).
+
+## License
+
+Copyright Anne Graham. This project is licensed under the
+[PolyForm Noncommercial License 1.0.0](./LICENSE)
+(`PolyForm-Noncommercial-1.0.0`).
+
+**Allowed (noncommercial):** read, run, fork, modify, and republish, as long as
+you keep the license text and the `Required Notice` line that cites this
+GitHub repo as the original.
+
+**Not allowed without a separate deal:** any commercial use (making money from
+this software or distributing it for a commercial purpose).
+
+**Commercial licensing:** open a GitHub issue on this repo and tag it
+`licensing`.
+
+**Contributions:** by opening a pull request, you license your contribution to
+Anne Graham under the same PolyForm Noncommercial terms (inbound = outbound).
+
+See [ADR 0007](./docs/adr/0007-polyform-noncommercial.md) for why this license
+was chosen over MIT/Apache.
