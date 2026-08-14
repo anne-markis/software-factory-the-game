@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
+import { decisionsJson, startJson } from "./loadShippedContent";
 import { effectiveRate, effectiveDebtMultiplier } from "./modifiers";
 import type { GameContent } from "./types";
 

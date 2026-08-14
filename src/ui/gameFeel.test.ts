@@ -11,9 +11,7 @@ import {
 } from "./gameFeel";
 import { initialState } from "../engine/engine";
 import { parseStartConfig, parseDecisions, parseProjects } from "../engine/content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
-import projectsJson from "../../content/projects.json";
+import { decisionsJson, projectsJson, startJson } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 
 function makeContent(): GameContent {

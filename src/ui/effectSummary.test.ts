@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { parseDecisions } from "../engine/content";
-import decisionsJson from "../../content/decisions.json";
+import { decisionsJson } from "../engine/loadShippedContent";
 import type { DecisionDef } from "../engine/types";
 
 function base(overrides: Partial<DecisionDef>): DecisionDef {

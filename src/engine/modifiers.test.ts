@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { initialState } from "./engine";
 import { debtDragMultiplier, stockDragMultiplier, effectiveRate, contextSwitchTax } from "./modifiers";
 import { parseStartConfig } from "./content";
-import startJson from "../../content/start.json";
+import { startJson } from "./loadShippedContent";
 import type { GameContent, GameState, StockDrag } from "./types";
 
 // Build a state with clean drag constants (freeDebt 100, dragPerPoint 0.001,

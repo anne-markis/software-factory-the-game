@@ -22,10 +22,7 @@ import {
 } from "./render";
 import { SECTION_ATTR } from "./domPatch";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
-import challengesJson from "../../content/challenges.json";
-import projectsJson from "../../content/projects.json";
+import { challengesJson, decisionsJson, projectsJson, startJson } from "../engine/loadShippedContent";
 import { Engine, initialState } from "../engine/engine";
 import { projectAvailability } from "../engine/projects";
 import type { GameContent } from "../engine/types";

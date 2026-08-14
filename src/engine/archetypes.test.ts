@@ -4,8 +4,7 @@ import { initialState } from "./engine";
 import { applyDecision } from "./decisions";
 import { createRng } from "./rng";
 import { parseStartConfig, parseDecisions } from "./content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
+import { decisionsJson, startJson } from "./loadShippedContent";
 import type { DecisionDef, GameContent, GameState } from "./types";
 
 function content(): GameContent {

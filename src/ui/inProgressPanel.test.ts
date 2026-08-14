@@ -2,8 +2,7 @@ import { describe, it, expect } from "vitest";
 import { inProgressPanelSvg } from "./inProgressPanel";
 import { Engine } from "../engine/engine";
 import { parseStartConfig, parseDecisions } from "../engine/content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
+import { decisionsJson, startJson } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 
 function content(): GameContent {

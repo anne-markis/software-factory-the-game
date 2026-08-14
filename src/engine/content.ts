@@ -1,5 +1,13 @@
 import { z } from "zod";
-import type { StartConfig, DecisionDef, ChallengeDef, ProjectDef, GameContent } from "./types";
+import type {
+  StartConfig,
+  DecisionDef,
+  ChallengeDef,
+  ProjectDef,
+  GameContent,
+  ErasConfig,
+  EraDef,
+} from "./types";
 
 // Schemas are .strict(): content files are hand-edited, so unknown or
 // typo'd keys must fail loudly instead of being silently stripped.
@@ -222,15 +230,15 @@ const decisionSchema = z
   })
   .strict();
 
-export function parseDecisions(json: unknown): DecisionDef[] {
+export function parseDecisions(json: unknown, source = "content/decisions.json"): DecisionDef[] {
   const result = z.array(decisionSchema).safeParse(json);
-  if (!result.success) fail("content/decisions.json", result.error);
+  if (!result.success) fail(source, result.error);
   // plain annotation (no cast) so schema/type drift fails compilation here
   const defs: DecisionDef[] = result.data;
   const ids = new Set<string>();
   for (const def of defs) {
     if (ids.has(def.id)) {
-      throw new Error(`Invalid content in content/decisions.json: duplicate decision id "${def.id}"`);
+      throw new Error(`Invalid content in ${source}: duplicate decision id "${def.id}"`);
     }
     ids.add(def.id);
   }
@@ -238,26 +246,26 @@ export function parseDecisions(json: unknown): DecisionDef[] {
     if (def.gamble) {
       const total = def.gamble.reduce((sum, o) => sum + o.probability, 0);
       if (Math.abs(total - 1) > 1e-9) {
-        throw new Error(`Invalid content in content/decisions.json: gamble for "${def.id}" sums to ${total}, expected 1`);
+        throw new Error(`Invalid content in ${source}: gamble for "${def.id}" sums to ${total}, expected 1`);
       }
     }
     for (const req of def.requires ?? []) {
-      if (!ids.has(req)) throw new Error(`Invalid content in content/decisions.json: "${def.id}" requires unknown id "${req}"`);
+      if (!ids.has(req)) throw new Error(`Invalid content in ${source}: "${def.id}" requires unknown id "${req}"`);
     }
     for (const req of def.requiresCounts ?? []) {
       if (!ids.has(req.id)) {
-        throw new Error(`Invalid content in content/decisions.json: "${def.id}" requiresCounts references unknown id "${req.id}"`);
+        throw new Error(`Invalid content in ${source}: "${def.id}" requiresCounts references unknown id "${req.id}"`);
       }
       // A count gate above 1 on a unique decision can never be satisfied.
       const target = defs.find((d) => d.id === req.id)!;
       if (target.unique && req.count > 1) {
         throw new Error(
-          `Invalid content in content/decisions.json: "${def.id}" requiresCounts ${req.count}x "${req.id}", which is unique (at most 1 can be owned)`,
+          `Invalid content in ${source}: "${def.id}" requiresCounts ${req.count}x "${req.id}", which is unique (at most 1 can be owned)`,
         );
       }
     }
     for (const syn of def.synergies ?? []) {
-      if (!ids.has(syn.ifOwned)) throw new Error(`Invalid content in content/decisions.json: "${def.id}" synergy references unknown id "${syn.ifOwned}"`);
+      if (!ids.has(syn.ifOwned)) throw new Error(`Invalid content in ${source}: "${def.id}" synergy references unknown id "${syn.ifOwned}"`);
     }
   }
   return defs;
@@ -294,26 +302,26 @@ const challengeSchema = z
   })
   .strict();
 
-export function parseChallenges(json: unknown): ChallengeDef[] {
+export function parseChallenges(json: unknown, source = "content/challenges.json"): ChallengeDef[] {
   const result = z.array(challengeSchema).safeParse(json);
-  if (!result.success) fail("content/challenges.json", result.error);
+  if (!result.success) fail(source, result.error);
   const defs: ChallengeDef[] = result.data;
   const ids = new Set<string>();
   for (const def of defs) {
     if (ids.has(def.id)) {
-      throw new Error(`Invalid content in content/challenges.json: duplicate challenge id "${def.id}"`);
+      throw new Error(`Invalid content in ${source}: duplicate challenge id "${def.id}"`);
     }
     ids.add(def.id);
     if (def.choice && !def.choice.options.some((o) => o.id === def.choice!.defaultOptionId)) {
-      throw new Error(`Invalid content in content/challenges.json: "${def.id}" default option "${def.choice.defaultOptionId}" not found`);
+      throw new Error(`Invalid content in ${source}: "${def.id}" default option "${def.choice.defaultOptionId}" not found`);
     }
     // the engine queues the choice and never applies top-level effects, so both set = silent content loss
     if (def.choice && def.effects.length > 0) {
-      throw new Error(`Invalid content in content/challenges.json: "${def.id}" has both a choice and top-level effects; effects would be silently ignored`);
+      throw new Error(`Invalid content in ${source}: "${def.id}" has both a choice and top-level effects; effects would be silently ignored`);
     }
     // a sickness effect needs a per-human-dev roll to target an instance; without it the effect no-ops
     if (def.effects.some((e) => e.type === "sickness") && !def.perHumanDev) {
-      throw new Error(`Invalid content in content/challenges.json: "${def.id}" has a sickness effect but perHumanDev is not true`);
+      throw new Error(`Invalid content in ${source}: "${def.id}" has a sickness effect but perHumanDev is not true`);
     }
     // removeHuman on a choice option needs at least one human on staff when the
     // choice can fire; otherwise the effect silently no-ops and "lose them"
@@ -322,7 +330,7 @@ export function parseChallenges(json: unknown): ChallengeDef[] {
     const choiceHasRemoveHuman = def.choice?.options.some((o) => o.effects.some((e) => e.type === "removeHuman")) ?? false;
     if (choiceHasRemoveHuman && (def.condition?.minHumanDevs ?? 0) < 1) {
       throw new Error(
-        `Invalid content in content/challenges.json: "${def.id}" has a removeHuman choice effect but condition.minHumanDevs is missing or < 1`,
+        `Invalid content in ${source}: "${def.id}" has a removeHuman choice effect but condition.minHumanDevs is missing or < 1`,
       );
     }
   }
@@ -344,40 +352,139 @@ const projectSchema = z
   })
   .strict();
 
-export function parseProjects(json: unknown): ProjectDef[] {
+export function parseProjects(json: unknown, source = "content/projects.json"): ProjectDef[] {
   const result = z.array(projectSchema).safeParse(json);
-  if (!result.success) fail("content/projects.json", result.error);
+  if (!result.success) fail(source, result.error);
   // plain annotation (no cast) so schema/type drift fails compilation here
   const defs: ProjectDef[] = result.data;
   const ids = new Set<string>();
   for (const def of defs) {
     if (ids.has(def.id)) {
-      throw new Error(`Invalid content in content/projects.json: duplicate project id "${def.id}"`);
+      throw new Error(`Invalid content in ${source}: duplicate project id "${def.id}"`);
     }
     ids.add(def.id);
   }
   return defs;
 }
 
+const eraEntryPredicateSchema = z
+  .object({
+    minBudget: z.number().min(0).optional(),
+    minReputation: z.number().min(0).optional(),
+    minCompletedProjects: z.number().int().min(0).optional(),
+    minUsers: z.number().min(0).optional(),
+  })
+  .strict()
+  .refine(
+    (p) =>
+      p.minBudget !== undefined ||
+      p.minReputation !== undefined ||
+      p.minCompletedProjects !== undefined ||
+      p.minUsers !== undefined,
+    { message: "entry predicate must set at least one threshold" },
+  );
+
+const eraDefSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    entryAnyOf: z.array(eraEntryPredicateSchema).min(1).optional(),
+  })
+  .strict();
+
+const erasConfigSchema = z
+  .object({
+    startingEraId: z.string().min(1),
+    eras: z.array(eraDefSchema).min(1),
+  })
+  .strict();
+
+export function parseErasConfig(json: unknown, source = "content/eras.json"): ErasConfig {
+  const result = erasConfigSchema.safeParse(json);
+  if (!result.success) fail(source, result.error);
+  const cfg: ErasConfig = result.data;
+  const ids = new Set<string>();
+  for (const era of cfg.eras) {
+    if (ids.has(era.id)) {
+      throw new Error(`Invalid content in ${source}: duplicate era id "${era.id}"`);
+    }
+    ids.add(era.id);
+  }
+  if (!ids.has(cfg.startingEraId)) {
+    throw new Error(
+      `Invalid content in ${source}: startingEraId "${cfg.startingEraId}" is not listed in eras`,
+    );
+  }
+  // Starting era must not require entry criteria — the player begins there.
+  const starting = cfg.eras.find((e) => e.id === cfg.startingEraId)!;
+  if (starting.entryAnyOf !== undefined) {
+    throw new Error(
+      `Invalid content in ${source}: starting era "${starting.id}" must not declare entryAnyOf`,
+    );
+  }
+  return cfg;
+}
+
+export type EraBundleJson = {
+  decisions: unknown;
+  challenges: unknown;
+  projects: unknown;
+};
+
+// Merge start + one era's decision/challenge/project JSON into GameContent.
+// Tick stays graph-dumb: callers pick eraId; this function never advances eras
+// or hardcodes era names beyond looking up the requested id in eras.json.
+export function loadActiveContent(
+  startJson: unknown,
+  erasJson: unknown,
+  bundlesByEraId: Record<string, EraBundleJson>,
+  eraId?: string,
+): GameContent {
+  const eras = parseErasConfig(erasJson);
+  const activeId = eraId ?? eras.startingEraId;
+  const era: EraDef | undefined = eras.eras.find((e) => e.id === activeId);
+  if (!era) {
+    throw new Error(`Unknown era id "${activeId}" (not listed in content/eras.json)`);
+  }
+  const bundle = bundlesByEraId[activeId];
+  if (!bundle) {
+    throw new Error(`No content bundle registered for era "${activeId}"`);
+  }
+  const base = `content/eras/${activeId}`;
+  const content: GameContent = {
+    start: parseStartConfig(startJson),
+    decisions: parseDecisions(bundle.decisions, `${base}/decisions.json`),
+    challenges: parseChallenges(bundle.challenges, `${base}/challenges.json`),
+    projects: parseProjects(bundle.projects, `${base}/projects.json`),
+    eraId: activeId,
+    eras,
+  };
+  validateContentGraph(content);
+  return content;
+}
+
 // Cross-file integrity check that parseChallenges cannot perform on its own
 // (it has no access to content.decisions): every decision id referenced by a
 // challenge condition must exist. Called once at content load time by the UI
-// (src/ui/main.ts) after all four parse* calls have assembled a GameContent,
-// and directly by tests against both the shipped content and fixtures.
+// (src/ui/main.ts) after loadActiveContent / parse* assembly, and directly by
+// tests against both the shipped content and fixtures.
 export function validateContentGraph(content: GameContent): void {
+  const challengesSource = content.eraId
+    ? `content/eras/${content.eraId}/challenges.json`
+    : "content/challenges.json";
   const decisionIds = new Set(content.decisions.map((d) => d.id));
   for (const def of content.challenges) {
     for (const requiredDecision of def.condition?.requiresAnyDecision ?? []) {
       if (!decisionIds.has(requiredDecision)) {
         throw new Error(
-          `Invalid content in content/challenges.json: "${def.id}" condition.requiresAnyDecision references unknown decision id "${requiredDecision}"`,
+          `Invalid content in ${challengesSource}: "${def.id}" condition.requiresAnyDecision references unknown decision id "${requiredDecision}"`,
         );
       }
     }
     const lacksDecision = def.condition?.lacksDecision;
     if (lacksDecision !== undefined && !decisionIds.has(lacksDecision)) {
       throw new Error(
-        `Invalid content in content/challenges.json: "${def.id}" condition.lacksDecision references unknown decision id "${lacksDecision}"`,
+        `Invalid content in ${challengesSource}: "${def.id}" condition.lacksDecision references unknown decision id "${lacksDecision}"`,
       );
     }
   }

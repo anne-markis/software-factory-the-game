@@ -2,8 +2,7 @@ import { describe, it, expect } from "vitest";
 import { serialize, deserialize, SAVE_VERSION } from "./save";
 import { Engine, initialState } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
-import startJson from "../../content/start.json";
-import decisionsJson from "../../content/decisions.json";
+import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
 import type { GameContent } from "./types";
 
 function content(): GameContent {
@@ -116,6 +115,21 @@ describe("save/load", () => {
     expect(restored.gameSeed).toBeUndefined(); // deserialize cannot know the seed
     const b = new Engine(c, restored);
     expect(b.getState().gameSeed).toBe(c.start.seed);
+  });
+
+  // eraId (issue #90) is copied into state at init; deserialize has no content
+  // access, so the Engine constructor backfills from content.eraId /
+  // eras.startingEraId. Legacy saves predate the field.
+  it("Engine backfills a missing eraId from content (legacy save shape)", () => {
+    const c = loadShippedContent();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.eraId;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.eraId).toBeUndefined();
+    const b = new Engine(c, restored);
+    expect(b.getState().eraId).toBe(c.eraId);
+    expect(b.getState().eraId).toBe("studio");
   });
 
   // debtDrag config (Release 15) is copied into state at init like the
