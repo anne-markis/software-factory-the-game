@@ -188,13 +188,13 @@
       .tt-node.tt-owned { opacity: 0.6; }
       .tt-node.tt-owned .tt-tag-state { font-weight: bold; }
       .tt-node.tt-cannot-afford .tt-reason { color: var(--accent-red); }
-      /* Time-control group (Release 19): Pause/Resume + one button per
-         speed. Fixed-width buttons so the group's footprint never changes
-         as the active marker moves or the Pause/Resume label flips --
-         same no-reflow guarantee as .stat-value (see render.ts). The
-         active control (current speed while running, Resume while paused)
-         uses the same dimming/weight vocabulary as .tt-owned rather than
-         a new color. */
+      /* Time-control group (Release 19 / issue #98): Start/Pause + one
+         button per speed. Fixed-width buttons so the group's footprint
+         never changes as the active marker moves or the Start/Pause label
+         flips -- same no-reflow guarantee as .stat-value (see render.ts).
+         The active control (current speed while running, Start while
+         paused) uses the same dimming/weight vocabulary as .tt-owned
+         rather than a new color. */
       .time-controls { margin-bottom: 0.5rem; }
       .tc-btn { display: inline-block; min-width: 4.5rem; text-align: center; opacity: 0.6; }
       .tc-btn.tc-active { opacity: 1; font-weight: bold; }

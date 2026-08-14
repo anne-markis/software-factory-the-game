@@ -3,7 +3,7 @@
 // The page used to be rendered with a single `app.innerHTML = ...` per tick,
 // which destroyed and recreated every button up to ten times a second. A real
 // mousedown/mouseup gesture that straddles one of those rebuilds never
-// produces a click event at all, so Pause/Resume, speed, Buy, Start and the
+// produces a click event at all, so Pause/Start, speed, Buy, Start and the
 // choice options intermittently did nothing.
 //
 // The fix is not a diffing library: it is a stable scaffold plus a string

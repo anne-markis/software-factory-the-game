@@ -62,9 +62,9 @@ describe("createRegion patch", () => {
     const region = createRegion(host);
     region.patch("a", `<button id="pause">Pause</button>`);
     const button = host.querySelector("#pause")!;
-    region.patch("a", `<button id="pause">Resume</button>`);
+    region.patch("a", `<button id="pause">Start</button>`);
     expect(host.querySelector("#pause")).not.toBe(button);
-    expect(host.querySelector("#pause")!.textContent).toBe("Resume");
+    expect(host.querySelector("#pause")!.textContent).toBe("Start");
   });
 
   it("compares against what it last wrote, not the browser's normalized innerHTML", () => {

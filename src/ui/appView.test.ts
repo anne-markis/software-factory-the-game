@@ -344,7 +344,7 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const h = mount();
     expect(pauseButton(h.root).textContent).toBe("Pause");
     h.view.togglePause();
-    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).textContent).toBe("Start");
     h.view.togglePause();
     expect(pauseButton(h.root).textContent).toBe("Pause");
   });
@@ -405,7 +405,7 @@ describe("appView click delegation on the stable root", () => {
     const h = mount();
     h.engine.pause();
     h.view.render();
-    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).textContent).toBe("Start");
     expect(pauseButton(h.root).className).toContain("tc-active");
     h.root.querySelector<HTMLElement>('[data-speed="2"]')!.click();
     expect(h.engine.getState().paused).toBe(false);
@@ -535,7 +535,7 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     h.state.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: h.state.day + 3 }];
     h.view.render();
     expect(h.engine.getState().paused).toBe(true);
-    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).textContent).toBe("Start");
     expect(h.actions).toBe(actionsBefore + 1);
   });
 
@@ -545,7 +545,7 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     restored.day = 5;
     restored.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: 8 }];
     const h = mount({ content, restored });
-    // Mount soft-paused once; Resume and re-render must stay running.
+    // Mount soft-paused once; Start and re-render must stay running.
     expect(h.engine.getState().paused).toBe(true);
     h.engine.resume();
     h.view.render();
@@ -568,7 +568,7 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
 
   // Issue #89: the soft pause is a courtesy, not a mode. Answering the
   // interrupt hands time back on the same click, so the day counter does not
-  // sit frozen behind a Resume the player has no reason to look for.
+  // sit frozen behind a Start the player has no reason to look for.
   it("resumes the day clock when a choice option is picked", () => {
     const content = makeContent(parseChallenges(challengesJson));
     const restored = initialState(content);
@@ -611,7 +611,7 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     h.root.querySelector<HTMLElement>('[data-choice="model-deprecation"][data-option="pay-migration"]')!.click();
     expect(h.engine.getState().pendingChoices).toHaveLength(1);
     expect(h.engine.getState().paused).toBe(true);
-    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).textContent).toBe("Start");
 
     h.root.querySelector<HTMLElement>('[data-choice="vendor-audit"][data-option="cooperate"]')!.click();
     expect(h.engine.getState().pendingChoices).toHaveLength(0);

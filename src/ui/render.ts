@@ -231,18 +231,19 @@ export function renderProjectOffers(offers: ProjectAvailability[], state: Readon
     .join("");
 }
 
-// The time-control group (design doc section 8): Pause/Resume plus one
+// The time-control group (design doc section 8): Start/Pause plus one
 // button per available speed, replacing the old bare Pause button. Routed
 // through the existing #app click delegation via data-speed, matching
 // data-buy/data-project. All buttons are fixed-width (see .tc-btn in
 // index.html) so the group's size never changes -- preserves the R14
-// no-reflow guarantee even as the active marker or the Pause/Resume label
+// no-reflow guarantee even as the active marker or the Start/Pause label
 // changes width.
 export function renderTimeControls(paused: boolean, speed: number, options: readonly number[]): string {
-  const pauseLabel = paused ? "Resume" : "Pause";
-  // When paused, Resume is the active control (issue #38 start-paused): speeds
-  // stay dimmed so the bright button is the one that starts the day clock,
-  // not the already-selected 1x that looks like a play toggle.
+  const pauseLabel = paused ? "Start" : "Pause";
+  // When paused, Start is the active control (issue #38 start-paused, issue
+  // #98 Start not Resume): speeds stay dimmed so the bright button is the
+  // one that starts the day clock, not the already-selected 1x that looks
+  // like a play toggle.
   const pauseActive = paused ? " tc-active" : "";
   const speedButtons = options
     .map((opt) => {
