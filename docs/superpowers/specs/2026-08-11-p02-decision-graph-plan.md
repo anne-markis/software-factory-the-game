@@ -804,9 +804,10 @@ those are **Company** (or later) shapes.
 
 Light sketch replaced by
 [`2026-08-14-company-era-brainstorm.md`](2026-08-14-company-era-brainstorm.md).
-Working picture: same loop at a new cost of play (lesson and fun before
-realism). Carry Studio defs; five new uniques (senior, manager, refactor,
-paid-tier, self-learning); five challenges; CRM + migration only.
+Working picture: same loop at a new cost of play; the designed attractor
+is the dark factory (deeper agentic investment), not a people-org.
+Carry Studio defs; four new uniques (autonomous-pull, self-learning,
+refactor, paid-tier); five challenges; CRM + migration only.
 Studio→Company floors in `eras.json` are placeholders. Tick still does
 not advance `eraId`.
 

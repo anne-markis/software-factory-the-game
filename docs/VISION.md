@@ -59,8 +59,11 @@ teaches a distinct systems idea, and until fun no longer fights the model.
    short/tutorial (~$10k start; hires *and* early agents belong here —
    do not gate “AI” as its own era). **Company** is where most playtime
    lives: the same delivery loop at a higher cost of play, not a more
-   realistic firm. Lesson and fun outrank org-chart completeness. Eras
-   advance by **scale of cost** (grind gates and/or
+   realistic firm. Lesson and fun outrank org-chart completeness. The
+   factory this game enables — the one the long session should home in
+   on — is the **dark factory**: deeper agentic investment, a loop that
+   runs with fewer humans. Hire-heavy play stays legal; it is not the
+   designed attractor. Eras advance by **scale of cost** (grind gates and/or
    breakthrough events), one-way. Megacorp and later intensify satire and
    world-eating stakes; loop honesty stays in stocks, flows, and delays.
 
@@ -206,9 +209,10 @@ first; without it, nobody stays long enough to learn.
   reproducible runs and content-driven balance probes is part of the
   product's integrity.
 - **No first-class parallel tracks or modes.** Scale **eras** are one-way
-  progression levels (content JSON); capability mix meanders inside an
-  era. The dark-factory / world-eating far future is late *scale*, not a
-  peer campaign you pick on day one.
+  progression levels (content JSON); capability mix may meander inside an
+  era. The designed attractor is the **dark factory** (deeper agentic
+  investment). The world-eating far future is late *scale*, not a peer
+  campaign you pick on day one.
 - **The decision graph is the curriculum map — and it lives in JSON.**
   Prefer per-era content bundles and content-defined, one-way era entry
   over story-aware engine code. Grow depth and consequence before
