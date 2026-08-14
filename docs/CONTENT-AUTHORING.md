@@ -54,6 +54,10 @@ The loader (`loadShippedContent` / `loadActiveContent`) merges `start` +
 the **active** era only; tick stays graph-dumb and never hardcodes era
 names or advances eras this milestone. Put a Company card in
 `content/eras/company/`, not in Studio with a comment that it “belongs later.”
+Company direction (carry catalog, org/users loops, entry floors) is in
+[`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md)
+— do not treat the empty shell as a license to restore the pre-Studio
+catalog wholesale.
 
 `eras.json` entry predicates are an **OR of paths**. Each path is an AND of
 optional floors (`minBudget`, `minReputation`, `minCompletedProjects`,

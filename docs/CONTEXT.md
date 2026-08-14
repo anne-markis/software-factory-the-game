@@ -14,7 +14,9 @@ scale invites), not which capability fantasy the player picked.
 
 - **Studio** — short tutorial-scale opening (~$10k start). Hires *and* early
   agents belong here; do not gate “AI” as its own era.
-- **Company** — where most playtime will live. Empty shell in P0.2.
+- **Company** — where most playtime will live. Empty `[]` shell in P0.2;
+  direction in
+  [`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md).
 - **Megacorp** — institutional scale. Empty shell in P0.2.
 
 Capability mix (hire-heavy, agent-heavy, process-heavy) **meanders inside**
@@ -92,8 +94,9 @@ content/
     projects.json
 ```
 
-Active content = `start` + **one** era bundle. Company and Megacorp ship as
-empty `[]` shells in P0.2.
+Active content = `start` + **one** era bundle. Company and Megacorp still
+ship as empty `[]` shells; Company direction lives in the 2026-08-14
+brainstorm spec, not in playable cards yet.
 
 ## Authoring tools
 

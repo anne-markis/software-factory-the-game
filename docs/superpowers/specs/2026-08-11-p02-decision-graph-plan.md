@@ -800,12 +800,16 @@ those are **Company** (or later) shapes.
   Final buy timing/requirements deferred until a mockup is playable.
 - Do not require enterprise-shaped contracts to exit Studio.
 
-### Company (light sketch — fill later)
+### Company (filled 2026-08-14)
 
-- Mid client work (CRM-shaped, mobile-shaped).
-- Product: growth features, paid tier launch, marketplace listing scale-up.
-- Reputation gates matter; users already exist from Studio carry (if we
-  carry them).
+Light sketch replaced by
+[`2026-08-14-company-era-brainstorm.md`](2026-08-14-company-era-brainstorm.md).
+Working picture: carry Studio defs so owned cards keep paying; move the
+CRM / mobile / migration ladder here; add org (senior, contractor,
+manager), refactor-as-delay, users-at-scale (`stockFlowMods`), ddos pair,
+self-learning (`rampRate`); org/hardening challenges. Studio→Company
+floors in `eras.json` are placeholders and likely too high on reputation
+/ completions. Tick still does not advance `eraId`.
 
 ### Megacorp (lighter sketch)
 

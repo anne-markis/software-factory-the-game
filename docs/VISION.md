@@ -222,6 +222,7 @@ first; without it, nobody stays long enough to learn.
 | `docs/CONTEXT.md` | Authoring glossary (eras, stocks, stock-linked fields) |
 | `docs/adr/` | ADRs 0001–0006 (layout, tags, viewer, saves, schema) |
 | `docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md` | P0.2: retire tags/tracks, honesty tickets, era sketch |
+| `docs/superpowers/specs/2026-08-14-company-era-brainstorm.md` | Company era direction (Studio→Company) |
 | `docs/superpowers/specs/*` | Concrete design for a near change |
 | `docs/superpowers/plans/*` | Implementation sequencing |
 | `docs/OPEN-DECISIONS.md` | Deferred tactical choices |
