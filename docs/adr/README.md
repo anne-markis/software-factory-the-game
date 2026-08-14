@@ -13,6 +13,7 @@ with this set.
 | [0004](0004-silent-save-break.md) | Silent save break on schema bump |
 | [0005](0005-generic-stock-linked-fields.md) | Generic stock-linked fields (approach) |
 | [0006](0006-stock-linked-content-schema.md) | Stock-linked content JSON schema |
+| [0007](0007-polyform-noncommercial.md) | PolyForm Noncommercial license |
 
 When an ADR and `src/engine/` disagree, the code wins; update the ADR
 deliberately rather than letting docs drift.
