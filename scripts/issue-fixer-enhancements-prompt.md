@@ -16,7 +16,9 @@ Architecture (enforce this):
 Before touching code, read when relevant:
 
 - `docs/OPEN-DECISIONS.md` — skip work deferred or unresolved there
-- `docs/CONTENT-AUTHORING.md` — for content/ JSON changes
+- `docs/CONTENT-AUTHORING.md` — for content/ JSON changes (eras +
+  stock-linked fields; `docs/CONTEXT.md` and `docs/adr/` if the locked
+  model is in doubt)
 - `docs/superpowers/specs/` — if a spec exists for this area, follow it
 
 ---

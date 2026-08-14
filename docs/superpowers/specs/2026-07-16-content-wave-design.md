@@ -1,8 +1,12 @@
 # Software Factory: Content Wave Design (Release 8)
 
 Date: 2026-07-16
-Status: Draft for review
+Status: Historical (Release 8 snapshot — not an authoring guide)
 Extends: 2026-07-14-software-factory-design.md
+
+> **Historical.** Track identities (`solo` / `human` / `darkfactory` tags
+> and `hasTag` gates) are retired (ADR 0002). Author new cards from
+> `docs/CONTENT-AUTHORING.md` using eras and stock-linked predicates.
 
 ## 1. Goals
 

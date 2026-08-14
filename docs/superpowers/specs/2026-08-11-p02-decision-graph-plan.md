@@ -185,7 +185,7 @@ for eras (docs/content shape only — not full sci-fi content).
 | ID | Candidate issue | Why |
 | --- | --- | --- |
 | **S-1** | Remove decision `tags` and challenge `hasTag` as first-class curriculum/track API | Settled: no tags/tracks. Today only `darkfactory` / `human` gates use `hasTag`; replace those gates with content predicates that do not invent a track layer (e.g. `requiresAnyDecision`, `minOwnedMatching`, or explicit decision-id / category gates — pick the smallest generic JSON shape). |
-| **S-2** | Retire track vocabulary from docs and authoring guide | VISION updated; still need `CONTENT-AUTHORING.md`, design doc § tracks, triage prompt P1.1 mapping, and any “solo/startup/megacorp” authoring language aligned or marked historical. |
+| **S-2** | Retire track vocabulary from docs and authoring guide | Landed in issue #92: `CONTENT-AUTHORING.md` + `CONTEXT.md` + ADRs 0001–0006; historical banners on v1/track design docs; triage P0.2 / P1.1 mapping uses eras not peer tracks. |
 | **S-3** | Audit engine/UI for track/tag leakage and delete dead path | Orphan tag readers, UI “You are a solo dev” if it implies a track, tests that pin `hasTag: "darkfactory"` as a track concept, unused `process`/`solo` tag data once S-1 lands. Goal: smaller surface, journey edges only in content. |
 | **S-4** | Replace darkfactory/human challenge gates with JSON-owned predicates | Companion to S-1: ship equivalent (or intentionally simpler) challenge eligibility without tags so automation-heavy and hire-heavy pools still differ because of **owned decisions / headcount / stocks**, not track labels. |
 
@@ -985,9 +985,11 @@ blockers for closing P0.2.
 | --- | --- |
 | `docs/VISION.md` | Living direction; medium-term attractor language updated to match this plan |
 | `docs/superpowers/specs/2026-08-07-p01-cockpit-watchability-plan.md` | P0.1; Done cue without CI/CD name — #39 is the P0.2 handoff |
-| `docs/CONTENT-AUTHORING.md` | Must be updated when S-1/S-2 land |
+| `docs/CONTENT-AUTHORING.md` | Authoring guide aligned with eras + stock-linked fields (S-2 / issue #92) |
+| `docs/CONTEXT.md` | Glossary matching ADRs 0001–0006 |
+| `docs/adr/` | Locked P0.2 decisions (layout, tags, viewer, saves, stock-linked schema) |
 | `docs/OPEN-DECISIONS.md` | Unrelated open tactics; do not stuff journey eras here |
-| `scripts/issue-triage-prompt.md` | Update P0.2 / P1.1 mapping when track vocabulary is retired |
+| `scripts/issue-triage-prompt.md` | P0.2 / P1.1 mapping: eras not track taxonomies |
 
 When implementation specs conflict with this plan, update one deliberately
 before coding.

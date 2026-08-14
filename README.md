@@ -40,10 +40,13 @@ setup notes (SSH key, server details, SSL).
   the exact RNG sequence.
 - `src/ui/` - thin plain-DOM rendering and input layer, plus localStorage
   persistence (autosave every 10 game days, reset button).
-- `content/` - human-editable JSON: `start.json` (constants), `decisions.json`
-  (loop alterations), `challenges.json` (random events), `projects.json`
-  (contracts). Validated with strict schemas at load; edits need no code
-  changes and typos fail loudly with file and entry names.
+- `content/` - human-editable JSON: `start.json` (era-agnostic constants),
+  `eras.json` (scale-era index), and per-era bundles under
+  `content/eras/<eraId>/` (decisions, challenges, projects). Validated with
+  strict schemas at load; edits need no code changes and typos fail loudly
+  with file and entry names. Eras are a one-way scale ladder, not parallel
+  tracks; see [`docs/CONTENT-AUTHORING.md`](docs/CONTENT-AUTHORING.md) and
+  [`docs/CONTEXT.md`](docs/CONTEXT.md).
 - `docs/superpowers/specs/` - design document, including alternatives
   considered (web worker engine, thin client + server) as future refactors.
 - `docs/superpowers/plans/` - the implementation plan this v1 was built from.
@@ -54,8 +57,9 @@ Decisions, challenges, and projects are all hand-editable JSON, validated by
 strict schemas at load (typos and unknown keys fail loudly, naming the file
 and entry), and checked by simulation-based balance probes in the test
 suite. See [`docs/CONTENT-AUTHORING.md`](docs/CONTENT-AUTHORING.md) for the
-full field-by-field guide, the effect vocabulary, and a worked example of
-adding a decision and a challenge.
+full field-by-field guide (eras, stock-linked fields, effect vocabulary)
+and [`docs/CONTEXT.md`](docs/CONTEXT.md) for the glossary. Worked examples
+of adding a decision and a challenge live in the authoring guide.
 
 ### Content graph viewer
 
