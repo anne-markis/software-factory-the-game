@@ -1,5 +1,10 @@
 # Software Factory v1 Implementation Plan
 
+> **Historical.** v1 schemas in this plan include `tags` and `hasTag`. Those
+> fields are retired (ADR 0002). Content now lives in per-era bundles
+> (ADR 0001). Author from `docs/CONTENT-AUTHORING.md`, not the JSON shapes
+> below.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the v1 browser incremental game described in `docs/superpowers/specs/2026-07-14-software-factory-design.md`, delivered as five incremental releases, each one fully playable.

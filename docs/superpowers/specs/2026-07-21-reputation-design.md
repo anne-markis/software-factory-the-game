@@ -1,7 +1,7 @@
 # Software Factory: Reputation and Milestones Design (Release 17)
 
 Date: 2026-07-21
-Status: Draft for review
+Status: Historical snapshot (Release 17). `hasTag` gates mentioned below are retired (ADR 0002).
 Extends: 2026-07-14-software-factory-design.md, 2026-07-16-content-wave-design.md
 
 ## 1. Goal

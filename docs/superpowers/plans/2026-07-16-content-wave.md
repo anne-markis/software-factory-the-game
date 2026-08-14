@@ -1,5 +1,9 @@
 # Content Wave (Release 8) Implementation Plan
 
+> **Historical.** This plan shipped Release 8, including decision `tags` and
+> `hasTag` gates. Those are retired (ADR 0002). Do not copy tag fields into
+> new content; see `docs/CONTENT-AUTHORING.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax. Spec: docs/superpowers/specs/2026-07-16-content-wave-design.md. The codebase conventions are established; where this plan says "follow the X pattern", read that code first and match it exactly.
 
 **Goal:** Ten new decisions, seven new challenges, one new project, and two content-configurable engine capabilities (rampRate effects, challenge cooldowns), with strategy probes proving human-heavy and automation-heavy builds are both viable.

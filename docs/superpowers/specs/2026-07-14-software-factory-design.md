@@ -1,7 +1,14 @@
 # Software Factory: Design Document
 
 Date: 2026-07-14
-Status: Draft for review
+Status: Historical v1 snapshot (not an authoring guide)
+
+> **Historical (pre-P0.2).** Parallel “tracks” and decision `tags` /
+> challenge `hasTag` are retired. Scale **eras** (Studio → Company →
+> Megacorp) and stock / ownership predicates replaced that curriculum.
+> Author new content from `docs/CONTENT-AUTHORING.md`, `docs/CONTEXT.md`,
+> and ADRs 0001–0006. Leave this spec as the v1 design snapshot; do not
+> teach authors the track sections below.
 
 ## 1. Overview
 
@@ -137,6 +144,10 @@ Unlocked by darkfactory tags:
 
 ## 7. Tracks and progression
 
+> **Historical.** Tracks are not modes and are not how content is authored
+> now. See ADR 0002. The four “attractors” below were a v1 sketch; P0.2
+> uses one-way scale eras instead.
+
 Tracks are not modes the player selects. They emerge from decision tags: the challenges offered, projects offered, and later decisions unlocked all key off what the player has bought. Four intended attractors:
 
 - Solo craftsman: no hires, upgrades to the one dev (tooling, learning, copilot). Low burn, immune to team challenges, throughput hard-capped, brutal bus-factor risk. End state: a lean lifestyle factory.
@@ -154,6 +165,9 @@ The engine does not need to know which track (or which loop archetype: balancing
 - Add agent: 10 dollars one-time, 30 dollars/day upkeep. In Progress rate plus 20%, debt accumulation plus 20%.
 
 ## 8. Content file format
+
+> **Historical paths.** Live layout is per-era (`content/eras/<eraId>/`,
+> ADR 0001). `tags` on decisions are retired (ADR 0002).
 
 All game content lives in human-readable JSON files in a `content/` directory, editable without a coding assistant:
 

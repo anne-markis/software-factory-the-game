@@ -6,42 +6,93 @@ checked against the loader (`src/engine/content.ts`), the effect engine
 (`src/engine/effects.ts`), and the challenge roller (`src/engine/challenges.ts`),
 so if something here ever disagrees with those files, the code wins.
 
+The locked model this guide must match: **eras not tracks**, no
+tags/`hasTag` curriculum, **stock-linked** fields and predicates. Glossary:
+[`docs/CONTEXT.md`](CONTEXT.md). Decisions: [ADRs 0001–0006](adr/README.md).
+Direction: [`docs/VISION.md`](VISION.md).
+
 ## 1. Where content lives, and how it is checked
 
-Human-editable content follows the per-era layout (ADR §2.1 / issue #90):
+### Locked model (eras, not tracks)
 
-- `content/start.json` — era-agnostic starting stocks, base rates, seed, first project.
-- `content/eras.json` — ordered era ids, starting era, and one-way entry criteria
-  (entry predicates are authored for later milestones / the content-graph viewer;
-  P0.2 does not advance the player out of Studio).
+Progression is a one-way **scale ladder** of eras — Studio → Company →
+Megacorp — not parallel capability “tracks” (solo / startup / megacorp /
+darkfactory as peer endgames). Eras mark how big the factory is. Hire-heavy
+vs agent-heavy mix meanders *inside* an era (ADR 0001, ADR 0002).
+
+Do **not** author track-affinity labels. Decision `tags` and challenge
+`hasTag` have been removed from the schema; the strict loader rejects those
+legacy keys. Use `category` for shop layout, `requires` / `requiresCounts`
+for decision gates, and challenge predicates (`requiresAnyDecision`,
+`minHumanDevs`, `minTechDebt`, `minCompletedProjects`, …) for eligibility.
+Income, drag, and growth that *read a stock* use the generic fields in
+section 2 and section 5 (ADR 0005 / 0006) — never a tick special-case named
+after “subscription” or “support.”
+
+Historical design docs that still talk about tracks
+(`docs/superpowers/specs/2026-07-14-software-factory-design.md` §7,
+`docs/superpowers/specs/2026-07-16-content-wave-design.md`) are snapshots,
+not instructions for new cards.
+
+### File layout (ADR 0001)
+
+Human-editable content follows the per-era layout:
+
+- `content/start.json` — era-agnostic starting stocks, base rates, seed,
+  first project, always-on `stockDrags` / `stockFlows`.
+- `content/eras.json` — ordered era ids, `startingEraId`, and one-way
+  `entryAnyOf` criteria (authored for later milestones and the
+  content-graph viewer; P0.2 does not advance the player out of Studio).
 - `content/eras/<eraId>/decisions.json` — shop cards for that era.
 - `content/eras/<eraId>/challenges.json` — random events for that era.
 - `content/eras/<eraId>/projects.json` — contracts for that era.
-- `content/eras/<eraId>/meta.json` — optional id/name/blurb for authoring tools.
+- `content/eras/<eraId>/meta.json` — optional id/name/blurb for humans;
+  the game loader does not parse it.
 
-P0.2 ships Studio filled and empty Company / Megacorp shells. The loader
-(`loadShippedContent` / `loadActiveContent`) merges `start` + the **active**
-era only; tick stays graph-dumb and never hardcodes era names or advances
-eras this milestone.
+P0.2 ships Studio filled and empty Company / Megacorp shells (`[]` arrays).
+The loader (`loadShippedContent` / `loadActiveContent`) merges `start` +
+the **active** era only; tick stays graph-dumb and never hardcodes era
+names or advances eras this milestone. Put a Company card in
+`content/eras/company/`, not in Studio with a comment that it “belongs later.”
+
+`eras.json` entry predicates are an **OR of paths**. Each path is an AND of
+optional floors (`minBudget`, `minReputation`, `minCompletedProjects`,
+`minUsers`); at least one floor per path is required. The starting era must
+not declare `entryAnyOf`. Example (Company, authored but not evaluated in
+tick yet):
+
+```json
+{
+  "id": "company",
+  "name": "Company",
+  "entryAnyOf": [
+    { "minBudget": 25000 },
+    { "minReputation": 40 },
+    { "minCompletedProjects": 4 }
+  ]
+}
+```
 
 Run `make graph` from the repository root to open the local authoring viewer
-under `tools/content-graph/`. It shows the parsed era, decision, prerequisite,
-synergy, cost, and entry-path graph without adding anything to the player UI.
+under `tools/content-graph/` (ADR 0003). It shows the parsed era, decision,
+prerequisite, synergy, cost, and entry-path graph without adding anything
+to the player UI.
 
 Every file is parsed through a Zod schema in `src/engine/content.ts`
 (`parseStartConfig`, `parseErasConfig`, `parseDecisions`, `parseChallenges`,
 `parseProjects`).
 The schemas are declared `.strict()`, which means an unknown or misspelled
 key is a hard error, not a silently-ignored typo. When something is wrong,
-the loader throws with the file name and the offending entry's id, for
+the loader throws with the **era path** and the offending entry's id, for
 example:
 
 ```
-Invalid content in content/decisions.json: gamble for "basic-dev" sums to 0.95, expected 1
+Invalid content in content/eras/studio/decisions.json: gamble for "basic-dev" sums to 0.95, expected 1
 ```
 
 You do not need to launch the game to check your edits. The test suite
-loads all four content files as part of the simulation tests, so running
+loads `start.json`, `eras.json`, and every era bundle as part of the
+simulation tests, so running
 
 ```
 npm run test
@@ -49,10 +100,13 @@ npm run test
 
 parses everything and fails loudly on any schema violation, duplicate id,
 or broken cross-reference, in a few seconds, without opening a browser.
+Incompatible content/schema bumps wipe old localStorage saves silently
+(ADR 0004, `SAVE_VERSION` in `src/engine/save.ts`) — bump the version when
+you retire ids a previous save might still own.
 
 ## 2. Anatomy of a decision
 
-A decision (`content/decisions.json`) is an object with these fields:
+A decision (`content/eras/<eraId>/decisions.json`) is an object with these fields:
 
 - `id` (string, required) - unique key. Duplicate ids across the file are
   rejected at load.
@@ -76,8 +130,9 @@ A decision (`content/decisions.json`) is an object with these fields:
     `modifyDebtMultiplier` or otherwise manages tech-debt growth
     (`test-suite`, `agent-harness`, `agent-orchestration`).
   - `"prevent-trouble"` ("Prevent trouble (events and gambles)") - improves
-    gamble odds or closes off a challenge's `condition` (`eng-manager`,
-    `ddos-protection`).
+    gamble odds or closes off a challenge's `condition`. No Studio card
+    uses this today (`eng-manager` / `ddos-protection` left the era);
+    the category still exists so a buy-out or odds card has a shop home.
   - `"change-structure"` ("Change the loop (structure)") - alters the
     pipeline's stage structure itself, not just a rate (`ci-cd`'s
     `continuousDeploy` marker effect).
@@ -87,13 +142,16 @@ A decision (`content/decisions.json`) is an object with these fields:
   produces no header. Pick the category by what the decision *does*, not
   by which build it seems to belong to; challenge eligibility is authored
   separately through live ownership conditions.
-- Free-form decision `tags` have been removed from the schema. The strict
-  loader rejects that legacy field; use `category` for shop layout and
-  challenge `requiresAnyDecision` for ownership-based eligibility.
+- Free-form decision `tags` have been removed from the schema (ADR 0002).
+  The strict loader rejects that legacy field. Do not reintroduce
+  track-affinity labels (`solo`, `darkfactory`, …). Use `category` for
+  shop layout and challenge `requiresAnyDecision` / headcount / stock
+  predicates for eligibility.
 - `human` (boolean, optional) - marks the decision as a human developer.
   This is what challenges' `minHumanDevs`/`maxHumanDevs`/`perHumanDev`
   count against (see `humanDevInstances` in `src/engine/challenges.ts`).
-  Only `basic-dev` sets this today.
+  It is a **headcount flag**, not a track. Only `basic-dev` sets this in
+  Studio.
 - `cost` (object, required, may be `{}`) - `oneTime` (number >= 0,
   optional) charged once at purchase, and/or `perDay` (number >= 0,
   optional) charged every tick while owned. A decision with neither is
@@ -101,10 +159,29 @@ A decision (`content/decisions.json`) is an object with these fields:
 - `incomePerDay` (number >= 0, optional) - credited every tick while
   owned. All income across all owned decisions is credited before any
   payroll is charged that same tick, so a decision's own income can save
-  it (or another decision) from payroll failure that tick.
+  it (or another decision) from payroll failure that tick. No Studio card
+  uses the flat form today (`support-retainer` left Studio); monetization
+  uses the stock-linked fields below.
+- `incomeFromStock` (optional) - `{ stock, perUnit }` (ADR 0006). Each
+  tick, `stocks[stock] * perUnit` is added to that day's income, stacked
+  on top of any `incomePerDay`. `stock` is any name in the stocks enum
+  (section 3). Studio `subscription` reads `users` at `0.75` — exactly 0
+  while users are 0, so the card can sit in the shop from day one with no
+  extra `requires` gate.
+- `burstFromStock` (optional) - `{ stock, probabilityPerDay, perUnit }`.
+  Each day rolls `probabilityPerDay` (0–1) from the shared RNG; on a hit,
+  `stocks[stock] * perUnit` is credited into the **same** income step as
+  flat income (consumed by burn/payroll that tick, not a separate
+  windfall after insolvency). Studio `one-time-product` reads `users` at
+  `probabilityPerDay: 0.08`, `perUnit: 1.2`.
+- `stockFlowMods` (optional array) - additive nudges to a matching
+  `start.stockFlows` entry for the same `stock`: `{ stock,
+  acquirePerDayDelta?, churnRateDelta? }`. Studio ships none; omit the
+  field until a card should change organic acquisition or churn.
 - `effects` (array, required, may be `[]`) - the baseline effects applied
   once, immediately, at purchase. See section 3 for the effect
-  vocabulary.
+  vocabulary. Monetization cards that only read a stock still need
+  `"effects": []`.
 - `gamble` (array, optional) - a probability table rolled **once, at the
   moment of purchase**, not repeatedly. Each entry is
   `{ probability, label, effects }`. The probabilities across the table
@@ -114,7 +191,8 @@ A decision (`content/decisions.json`) is an object with these fields:
 - `requires` (string array, optional) - decision ids that must already be
   owned before this one is purchasable. All listed ids must be owned (not
   just one). Every id must exist elsewhere in `decisions.json`, or the
-  loader rejects the file.
+  loader rejects the file. Cross-references are **within the active era's
+  `decisions.json`**, not across eras.
 - `requiresCounts` (array, optional) - the same kind of gate as `requires`,
   but counting instances instead of just presence: each entry is
   `{ id, count }` (count an int >= 1) and demands at least `count` owned
@@ -159,13 +237,14 @@ its `effects` field (if present) entirely replaces the base `effects` for
 this purchase, and its `gamble` field (if present) entirely replaces the
 base `gamble` table for this purchase - they do not merge with, or add
 to, the base tables. If the matching synergy entry omits `effects` (or
-`gamble`), that field falls back to the base decision's value. Concretely,
-for `basic-dev` with `eng-manager` owned, the synergy supplies a full
-four-outcome gamble table with better odds (0.55/0.30/0.13/0.02 vs. the
-base 0.5/0.25/0.2/0.05) - **write out the whole table**, not just the
-outcomes that changed. If you own more than one potential synergy
-provider, only the first one listed in the `synergies` array is used; the
-rest are ignored for that purchase.
+`gamble`), that field falls back to the base decision's value. **Write
+out the whole table**, not just the outcomes that changed. If you own
+more than one potential synergy provider, only the first one listed in
+the `synergies` array is used; the rest are ignored for that purchase.
+
+Studio currently ships **no** synergies (`eng-manager` left the era, so
+`basic-dev` has no `ifOwned` table). The shape remains valid for Company
+or a later Studio card.
 
 Synergy ownership is checked once, at purchase. Removing the synergy
 provider later does not revert instances already purchased under it, and
@@ -191,14 +270,14 @@ be owned now (see `src/engine/archetypes.ts`).
   itself is clamped at 0 rather than going negative.
 - A repeatable, `unique: false` (or `unique` omitted) "action" purchase -
   one whose effects are a temporary slowdown plus an immediate stock
-  change, like `refactoring-sprint` and `redesign-rebuild` (Release 16) -
-  keeps every instance in the "Owned" list forever, even after its
-  temporary `modifyRate` effect expires and it has nothing left to show in
-  the Progress loop panel. There is no mechanism today for an instance to
-  remove itself once its temporary effect lapses; a finished instance just
-  reads as history ("you did this, twice") rather than being pruned. This
-  is accepted behavior, not a bug to work around when authoring similar
-  content.
+  change, like the retired-from-Studio `refactoring-sprint` /
+  `redesign-rebuild` shape - keeps every instance in the "Owned" list
+  forever, even after its temporary `modifyRate` effect expires and it
+  has nothing left to show in the Progress loop panel. There is no
+  mechanism today for an instance to remove itself once its temporary
+  effect lapses; a finished instance just reads as history ("you did
+  this, twice") rather than being pruned. This is accepted behavior, not
+  a bug to work around when authoring similar content.
 
 ## 3. The effect vocabulary
 
@@ -231,8 +310,10 @@ including the one it fires on. `test-suite`'s effect is
 description says "Slows all work 50% for 5 days" - the shipped content
 already accounts for the off-by-one, so **a purchase-time slowdown you
 want felt for N days should be written with `durationDays: N + 1`**.
-Challenge effects do not need the `+ 1`; `prod-incident`'s
+Challenge effects do not need the `+ 1`; a mid-tick challenge
 `durationDays: 3` really is felt for 3 days because it applies mid-tick.
+(Retired `prod-incident` used that pattern; Studio's current pool has no
+timed rate hit, but the timing rule is unchanged.)
 
 Per rate, all `add`-op modifiers are summed first, then all `mul`-op
 modifiers are applied on top of that sum (`src/engine/modifiers.ts`,
@@ -257,15 +338,15 @@ temporary `modifyRate` slowdown in the same `effects` array.
 ```
 
 `stock` is one of `backlog`, `inProgress`, `done`, `shipped`, `budget`,
-`techDebt`, `reputation`. `value` can be negative (a cost, like `ddos`'s
-`-100` budget hit, or a reputation hit like `prod-incident`'s `-2` or
-`security-breach`'s `-5`) or positive (a windfall, like `scope-creep`'s
-`+75` backlog or `cloud-credits`'s `+250` budget). The result is clamped
-at a minimum of 0 (`Math.max(0, ...)`), so you cannot drive a stock
-negative - reputation floors at 0 exactly like every other stock, it does
-not go negative under a bad enough run of incidents. See section 7 for
-reputation specifically: how it's earned, spent, and used to gate
-content.
+`techDebt`, `reputation`, `users`. `value` can be negative (a cost, like
+`runaway-agent-loop`'s `-60` budget hit) or positive (a windfall, like
+`scope-creep`'s `+75` backlog). The result is clamped at a minimum of 0
+(`Math.max(0, ...)`), so you cannot drive a stock negative - reputation
+and users floor at 0 exactly like every other stock. See section 7 for
+reputation specifically. `users` is the product-growth stock (section 5):
+it stays 0 until Launch beta's `completionStockGrants` fire; do not
+`addToStock` users from a random challenge unless you mean to skip that
+gate.
 
 ### `scaleStock`
 
@@ -285,7 +366,8 @@ would surface there. `factor` must be `>= 0` (`.min(0)` in the schema):
 future content that *grows* a stock proportionally (a challenge doubling
 backlog, say), not just content that shrinks one.
 
-The shipped example is `refactoring-sprint`:
+The shipped example is the retired-from-Studio `refactoring-sprint`
+shape:
 
 ```json
 { "type": "scaleStock", "stock": "techDebt", "factor": 0.7 }
@@ -332,8 +414,9 @@ order. Ignores `removable` (same as payroll failure). Requires
 `EffectContext.content`; without content or without any human left,
 the effect silently no-ops.
 
-Used by challenge choice options (shipped: `key-dev-poached`'s
-`let-them-go`). When a choice option carries `removeHuman`, the
+Used by challenge choice options (retired-from-Studio shape:
+`key-dev-poached`'s `let-them-go`). When a choice option carries
+`removeHuman`, the
 challenge roller pins `PendingChoice.targetInstanceId` at queue time
 (per-human roll target if `perHumanDev`, else the first human on
 staff), and `resolveChoice` / expiry-default pass that id through.
@@ -401,7 +484,7 @@ the Done stage structure on removal.
 
 ## 4. Anatomy of a challenge
 
-A challenge (`content/challenges.json`) is an object with:
+A challenge (`content/eras/<eraId>/challenges.json`) is an object with:
 
 - `id`, `name`, `description` - same role as on decisions.
 - `probabilityPerDay` (0 to 1, required) - the base chance this challenge
@@ -424,8 +507,11 @@ A challenge (`content/challenges.json`) is an object with:
     condition is true while at least one currently-owned instance has any
     listed id. Ownership is evaluated live, so a later ladder card can keep
     the condition true after an earlier prerequisite is removed. Every id
-    must exist in `decisions.json`, or `validateContentGraph` rejects the
-    content.
+    must exist in the **active era's** `decisions.json`, or
+    `validateContentGraph` rejects the content. There is no `hasTag`
+    (ADR 0002): gate on owned ids, headcount, or stocks, not track labels.
+    Studio `model-deprecation` and `runaway-agent-loop` both use
+    `"requiresAnyDecision": ["agent", "agent-harness", "agent-orchestration"]`.
   - `lacksDecision` (string) - a decision def id: the challenge only fires
     while no currently-owned instance has this def id (evaluated live).
     This is the counterpart to `requiresAnyDecision`/`minHumanDevs`, which
@@ -438,10 +524,12 @@ A challenge (`content/challenges.json`) is an object with:
     effects, whose only job is to make this condition false once owned,
     permanently removing `ddos` from the challenge pool for the rest of
     that game. The referenced id must name
-    a real decision in `content/decisions.json`; this is checked by
+    a real decision in the active era's `decisions.json`; this is checked by
     `validateContentGraph` (see section 5) rather than by `parseChallenges`
     itself, since challenge parsing alone has no access to the decisions
-    file to cross-reference against.
+    file to cross-reference against. Generic `minStock` / `maxStock` floors
+    are **not** in the shipped schema (ADR 0006); keep using `minTechDebt`
+    for debt gates.
 - `probScaling` (optional) - `{ stat: "techDebt", per, add }` (only
   `"techDebt"` is supported today). Adds
   `floor(techDebt / per) * add` to `probabilityPerDay`, capped at 1
@@ -503,8 +591,9 @@ The clock is `state.lastChallengeDay`, updated on every fire; the gap check
 runs once per tick, before the roll loop, so a tick either rolls nothing
 (gap active) or rolls challenges in array order until the first one fires
 and then stops (`rollChallenges` in `src/engine/challenges.ts`) - at most
-one event per day either way, and the shipped value of `50` spaces
-distinct events out by roughly 50 days on average, not per day. An
+one event per day either way, and the shipped value of `35` spaces
+distinct events out on a short Studio era (down from 50 when the pool
+was larger), not per day. An
 expiry-default (a pending choice that times out unresolved) still applies
 during the gap - it is not itself a new roll, so it does not extend or
 reset the gap - and a fresh game's first ever fire is never blocked, since
@@ -519,7 +608,7 @@ individual challenge's `probabilityPerDay`.
 
 ## 5. Integrity rules the loader enforces
 
-From `parseDecisions` (`content/decisions.json`):
+From `parseDecisions` (`content/eras/<eraId>/decisions.json`):
 
 - Schema is strict: unknown/misspelled keys fail the whole file.
 - `category` is required and must be one of the five `DecisionCategory`
@@ -534,7 +623,7 @@ From `parseDecisions` (`content/decisions.json`):
 - Every `synergies[].ifOwned` id must name another decision id present in
   the file.
 
-From `parseChallenges` (`content/challenges.json`):
+From `parseChallenges` (`content/eras/<eraId>/challenges.json`):
 
 - Schema is strict.
 - Duplicate `id` across entries is rejected.
@@ -548,12 +637,13 @@ From `parseChallenges` (`content/challenges.json`):
   accepted by the schema.
 - Every id in `condition.requiresAnyDecision`, and the id in
   `condition.lacksDecision`, is checked against the decisions file by
-  `validateContentGraph`, a separate pass that runs after all four files
-  are parsed (not inside `parseChallenges` itself, since challenge parsing
-  alone has no access to `content/decisions.json`). An unknown id throws,
-  naming both the offending challenge and `content/challenges.json`.
+  `validateContentGraph`, a separate pass that runs after start + the
+  active era are parsed (not inside `parseChallenges` itself, since
+  challenge parsing alone has no access to that era's `decisions.json`).
+  An unknown id throws, naming both the offending challenge and
+  `content/eras/<eraId>/challenges.json`.
 
-From `parseProjects` (`content/projects.json`):
+From `parseProjects` (`content/eras/<eraId>/projects.json`):
 
 - Schema is strict.
 - Duplicate `id` across entries is rejected.
@@ -563,6 +653,8 @@ From `parseProjects` (`content/projects.json`):
 `start.json` is a single strict object (`parseStartConfig`); there's no
 duplicate-id or cross-reference concern there, just the field types and
 minimums (e.g. `contextSwitchFactor` must be `> 0` and `<= 1`).
+`parseErasConfig` additionally rejects a missing `startingEraId`,
+duplicate era ids, and a starting era that declares `entryAnyOf`.
 
 ### The `debtDrag` config (tech-debt drag)
 
@@ -610,9 +702,68 @@ pushback as it engages.
 Tuning: raising `freeDebt` widens the no-drag window; lowering
 `dragPerPoint` flattens the slope; lowering `maxDrag` caps the worst
 case. The shipped values keep both viability-bar strategy probes
-(human-heavy, automation-heavy) completing multiple projects and solvent
-across 2000 days while making the debt-blind greedy build visibly
-degrade -- see the probes in `src/engine/simulation.test.ts`.
+(human-heavy, automation-heavy) finishing Launch beta and staying
+solvent across 2000 days while making the debt-blind greedy build
+visibly degrade -- see the probes in `src/engine/simulation.test.ts`.
+
+Do not migrate `debtDrag` into `stockDrags` (ADR 0005): tech-debt drag
+stays this dedicated block.
+
+### Always-on `stockDrags` and `stockFlows` (ADR 0006)
+
+`start.json` also carries generic stock-linked always-on rules. The
+engine does not special-case `users` in the tick; content points these
+fields at a stock name.
+
+**Stock drag** — same idea as `debtDrag`, keyed on an arbitrary stock and
+aimed at a rate (or `"all"`):
+
+```json
+"stockDrags": [
+  { "stock": "users", "freeBand": 25, "dragPerPoint": 0.004, "maxDrag": 0.35, "target": "all" }
+]
+```
+
+- `freeBand` (>= 0) - grace band. At or below, this drag contributes `1`.
+- `dragPerPoint` (> 0) / `maxDrag` (in `(0, 1)`) - same bounds as debt drag.
+- `target` - `"pull"`, `"finish"`, `"deploy"`, or `"all"`.
+
+`stockDragMultiplier` (`src/engine/modifiers.ts`) multiplies every matching
+drag: `1 - min(maxDrag, excess * dragPerPoint)`. Studio uses this as
+support load: users above 25 slow delivery. `effectiveRate` applies it
+after debt drag.
+
+**Stock flow** — per-tick acquire / churn on a stock, after shipping:
+
+```json
+"stockFlows": [
+  {
+    "stock": "users",
+    "condition": { "minCompletedProjects": 1 },
+    "acquirePerDay": 1.5,
+    "acquirePerStock": { "stock": "reputation", "perUnit": 0.1 },
+    "churnRatePerDay": 0.01
+  }
+]
+```
+
+When `condition.minCompletedProjects` holds (omit `condition` for
+always-on), the stock gains `acquirePerDay` plus
+`stocks[acquirePerStock.stock] * perUnit`, then loses
+`stocks[stock] * churnRatePerDay`. Net clamped at 0. Base churn only —
+no debt/incident churn DSL. Owned `stockFlowMods` add to
+`acquirePerDay` / `churnRatePerDay` of the matching flow (Studio ships
+none).
+
+**Users stay 0 until Launch beta completes.** The grant is
+`initialProject.completionStockGrants` (`users` +30), not the flow. The
+flow's `minCompletedProjects: 1` turns organic acquisition on the same
+tick the beta finishes. Tech debt still *accrues* before that, but it
+does **not** refill `backlog` until `completedProjects >= 1`, so the
+300-point beta gets a clean burndown.
+
+Optional: omit `stockDrags` / `stockFlows` entirely; the loader treats
+missing as `[]`.
 
 ### Archetype narration is engine-side, not content
 
@@ -656,7 +807,7 @@ log entry. Each entry is:
   `trusted` at 5, `established` at 15, `leader` at 35, `titan` at 70 -
   already are, and line up with the `requiresReputation` tiers on
   `big-migration`/`mobile-app` (5) and `enterprise-replatform` (15) in
-  `content/projects.json`.
+  `content/eras/studio/projects.json`.
 - `name` (string, required) - a short label for the milestone.
 - `message` (string, required) - the full line written to the event log
   the first tick reputation reaches `reputation`.
@@ -664,7 +815,7 @@ log entry. Each entry is:
 Milestones are sticky, one-time banners: once reached, `detectMilestones`
 (`src/engine/milestones.ts`) records the id in `state.milestonesSeen` and
 never logs it again, even if reputation later drops back below the
-threshold (from a `prod-incident` or `security-breach` hit, say) and
+threshold (from a challenge `addToStock` hit on reputation, say) and
 re-crosses it a second time going up. They mark "ever reached," not
 "currently above" - unlike `ProjectDef.requiresReputation` (section 7),
 which is a live, re-checked gate that re-locks on a downward recross,
@@ -686,7 +837,7 @@ new milestone is exactly one array entry in `start.json` - `id`,
 
 ## 6. Adding a project
 
-A project (`content/projects.json`) is:
+A project (`content/eras/<eraId>/projects.json`) is:
 
 ```json
 {
@@ -700,12 +851,18 @@ A project (`content/projects.json`) is:
 }
 ```
 
+The **starting** project is not in that file: it lives on
+`start.json`'s `initialProject` (Studio: Launch beta, 300 points, $0
+upfront, `payoutPerPoint: 0`, `$800` completion bonus, `+1` reputation,
+and `completionStockGrants: [{ "stock": "users", "amount": 30 }]`).
+
 - `sizePoints` (> 0) - added to `backlog` when the project starts.
 - `upfrontCost` (>= 0) - charged from budget when the project starts.
 - `payoutPerPoint` (>= 0) - revenue per shipped point while this project
   is the oldest one in flight (projects are paid FIFO: shipped points are
   attributed to the longest-running project first, and its completion
-  bonus and removal happen the instant its `remaining` hits ~0).
+  bonus and removal happen the instant its `remaining` hits ~0). Launch
+  beta uses `0` — cash comes from the completion bonus, not per-point pay.
 - `completionBonus` (>= 0) - paid once, in addition to per-point payout,
   when the project's `remaining` reaches (approximately) zero.
 - `requiresCompleted` (optional int >= 0) - the number of *total*
@@ -714,7 +871,7 @@ A project (`content/projects.json`) is:
   reference to a specific project's id - two projects can both set
   `requiresCompleted: 1` and both become available as soon as any one
   project finishes (`big-migration` and `mobile-app` both do this
-  today).
+  today). Completing Launch beta counts as 1.
 - `reputationReward` (required, >= 0) - reputation credited once, in
   addition to the completion bonus, when the project's `remaining` reaches
   (approximately) zero (`attributeShipped` in `src/engine/tick.ts`). Every
@@ -726,16 +883,20 @@ A project (`content/projects.json`) is:
   (`src/engine/projects.ts`) right after the `requiresCompleted` check and
   before the affordability check. See section 7 for why this is
   live-recomputed on every call rather than a one-time unlock.
+- `completionStockGrants` (optional array) - `{ stock, amount }` grants
+  paid on completion alongside bonus and reputation (ADR 0006). Copied
+  onto the in-flight project at start, so a later content edit does not
+  change an already-running grant. Studio Launch beta grants `users +30`,
+  which is what starts the users economy. Amount may be negative (clamped
+  so the stock never goes below 0).
 
-The shipped ladder increases `upfrontCost`, `payoutPerPoint`,
-`completionBonus`, and `reputationReward` together as `requiresCompleted`
-rises (`small-crm` at tier 0 with no reputation requirement;
-`big-migration`/`mobile-app` at tier 1, both `requiresReputation: 5`;
-`enterprise-replatform` at tier 2, `requiresReputation: 15`), so later
-contracts pay noticeably better per point - and reward more reputation -
-once the player has proven they can finish one and hasn't burned their
-standing back down. Multiple projects can be in flight at once; starting
-an additional one applies the context-switch tax
+The shipped Studio offer list still includes the older client ladder
+(`small-crm` at tier 0; `big-migration`/`mobile-app` at tier 1, both
+`requiresReputation: 5`; `enterprise-replatform` at tier 2,
+`requiresReputation: 15`) in `content/eras/studio/projects.json`. Those
+are optional after beta; the tutorial solvency rule is finish Launch beta
+on starting resources without them. Multiple projects can be in flight at
+once; starting an additional one applies the context-switch tax
 (`contextSwitchFactor ^ (n - 1)`) to all rates, so stacking projects
 trades raw throughput for parallel income streams.
 
@@ -751,42 +912,39 @@ content-authored pieces make up its loop:
   every project), paid once when a project completes, alongside the
   completion bonus: `state.stocks.reputation += p.reputationReward` in
   `attributeShipped` (`src/engine/tick.ts`). `start.json`'s
-  `initialProject` (`first-contract`) also carries a `reputationReward`
-  (`1` shipped) for the same reason - it is a project like any other for
-  payout purposes.
+  `initialProject` (`launch-beta`) also carries a `reputationReward`
+  (`1`) for the same reason - it is a project like any other for
+  payout purposes. Organic user acquisition also *reads* reputation
+  (`stockFlows.acquirePerStock`).
 - Spent the same way any stock is damaged: an `addToStock` effect with
-  a negative `value` on the `reputation` stock. Two shipped challenges do
-  this today - `prod-incident` (`-2`, alongside a budget hit and a 3-day
-  rate slowdown) and `security-breach` (`-5`, alongside a `-300` budget
-  hit, gated on `condition.minTechDebt: 800`). Like every stock, it's
-  clamped at a minimum of 0, so a bad enough run of incidents flattens it
-  rather than driving it negative.
+  a negative `value` on the `reputation` stock. No Studio challenge hits
+  reputation today (retired `prod-incident` / `security-breach` were the
+  shape: `-2` / `-5` with a budget hit, the latter gated on
+  `minTechDebt`). Like every stock, it's clamped at a minimum of 0, so a
+  bad enough run of incidents flattens it rather than driving it
+  negative.
 - Gates contracts via `ProjectDef.requiresReputation` (section 6,
   optional): `projectAvailability` (`src/engine/projects.ts`) checks it
   alongside `requiresCompleted` - both conditions must hold when both are
   set - after the completed-projects check and before the affordability
   check. This check is live-recomputed on every call, not cached at the
   moment a tier first unlocks: if reputation later drops back below a
-  project's `requiresReputation` threshold (from a `prod-incident` or
-  `security-breach` hit), that project disappears from the startable list
+  project's `requiresReputation` threshold (from an `addToStock`
+  reputation hit), that project disappears from the startable list
   again immediately, with no extra mechanism required to re-lock it.
 
 Put together, this is a reinforcing loop with a downward spiral built in:
 completing projects raises reputation, which unlocks higher-paying,
 higher-`reputationReward` contracts (section 6's ladder), whose
-completion raises reputation further. But the same tech debt that
-`debtDrag` (section 5) already uses to slow throughput also feeds this
-loop's dark side: `prod-incident`'s `probScaling` makes it fire more often
-as debt climbs, and `security-breach` doesn't even enter the challenge
-pool until `techDebt` passes 800 (`condition.minTechDebt: 800`), scaling
-up from there via its own `probScaling`. `security-breach` is the sharper
-worked example of the spiral: a debt-heavy build is simultaneously the
-one climbing fastest toward the reputation tiers that unlock the biggest
-contracts, and the one most exposed to a hit that can knock it back below
-`requiresReputation` and re-lock the very contract it was relying on -
-the reputation loop mirrors the tech-debt "limits to growth"/"shifting
-the burden" dynamic (section 5) one level up, on the contracts layer
-instead of the raw-throughput layer.
+completion raises reputation further. Studio currently has no reputation
+hit in the challenge pool — the spiral is ready for a later-era
+`addToStock` / `minTechDebt` event (retired `prod-incident` /
+`security-breach` were that shape). The `simulation.test.ts` "downward
+spiral" probe still pins the *re-lock* mechanic: a reputation drop below
+`requiresReputation` hides the contract again immediately. The reputation
+loop is meant to mirror the tech-debt "limits to growth"/"shifting the
+burden" dynamic (section 5) one level up, on the contracts layer instead
+of the raw-throughput layer, once a hit exists in content.
 
 ## 8. Worked example
 
@@ -798,12 +956,12 @@ the actual `content/` files.** They are not part of the shipped game.
 Say you want a one-time-cost decision that temporarily slows all work
 while paying down structure, then permanently reduces tech-debt growth -
 the same shape as the shipped `test-suite`, at a smaller scale. (This is
-distinct from the shipped `refactoring-sprint`/`redesign-rebuild`
-decisions, section 3's `scaleStock` example - those pay down the
-techDebt *stock* directly instead of touching the accumulation *rate*.
-Either shape is legitimate; pick `modifyDebtMultiplier` for a permanent
-change to how fast debt regrows, `scaleStock` for a one-shot paydown of
-debt already on the books.)
+distinct from the retired-from-Studio `refactoring-sprint` /
+`redesign-rebuild` shape (section 3's `scaleStock` example) - those pay
+down the techDebt *stock* directly instead of touching the accumulation
+*rate*. Either shape is legitimate; pick `modifyDebtMultiplier` for a
+permanent change to how fast debt regrows, `scaleStock` for a one-shot
+paydown of debt already on the books.)
 
 Write the description in terms of the *felt* duration (4 days), then
 remember the purchase-time-timing note from section 3: a felt duration of
@@ -837,15 +995,15 @@ Walking through it:
 - No `requires`, so it's available to every build from day one; no
   `gamble` or `synergies`, since it's a flat, deterministic purchase.
 - `category: "tame-debt"` puts it in the "Tame tech debt" shop section
-  alongside `test-suite`, `agent-harness`, `swarm-orchestrator`,
-  `refactoring-sprint`, and `redesign-rebuild` - matching what it does
+  alongside `test-suite` and `agent-harness` - matching what it does
   (cuts debt accumulation).
 
 To add it for real, you'd append this object to the array in
-`content/decisions.json` (mind the comma with the preceding entry), then
-run `npm run test`. `content.test.ts` and `simulation.test.ts` both load
-the file through `parseDecisions`, so a typo'd field name or an id
-collision fails immediately with the file and entry name. Because it has
+`content/eras/studio/decisions.json` (or the era that should own it;
+mind the comma with the preceding entry), then run `npm run test`.
+`content.test.ts` and `simulation.test.ts` both load the active era
+through `parseDecisions`, so a typo'd field name or an id collision
+fails immediately with the file and entry name. Because it has
 no `gamble` and no `synergies`, there's no probability sum or
 cross-reference to get wrong. In the running game, it would show up
 immediately in the "Alter the loop" shop panel (`renderDecisions` in
@@ -877,30 +1035,34 @@ spam.
 Walking through it:
 
 - Base chance is 1%/day, gated to day 15 onward (`condition.minDay: 15`)
-  so it doesn't hit a brand-new game, matching the pattern of most
-  shipped budget-hit challenges.
+  so it doesn't hit a brand-new game. Studio's lean pool prefers
+  `minCompletedProjects` / `requiresAnyDecision` over calendar quiet;
+  `minDay` is still legal.
 - `probScaling` adds another 1% for every 400 tech debt carried
   (`floor(techDebt / 400) * 0.01`), so a debt-heavy build sees this more
-  often - the same shape as `prod-incident`, at different constants.
+  often - the same shape as retired `prod-incident`, at different
+  constants. No Studio challenge scales today.
 - No `choice` block, so `effects` is allowed to be non-empty; it's a
-  flat, unavoidable `-180` budget hit, same shape as `ddos` and
-  `api-price-hike`.
+  flat, unavoidable `-180` budget hit, same shape as Studio's
+  `runaway-agent-loop`.
 - `cooldownDays: 45` starts counting from the moment it fires (this is a
   plain, non-choice challenge, so the clock starts at fire, not at some
   later resolution step).
 
-To add it for real, you'd append it to `content/challenges.json` and run
-`npm run test`; the loader checks the schema, the duplicate-id rule, and
-(since there's no `choice` and no `sickness` effect here) neither of the
-choice/sickness cross-checks apply. In the running game, it fires
-silently into the event log (`renderLog`) with its name and description,
-the same way `ddos` does today - there's no UI action needed for a
-non-choice challenge, it just happens.
+To add it for real, you'd append it to `content/eras/studio/challenges.json`
+(or the era that should own it) and run `npm run test`; the loader checks
+the schema, the duplicate-id rule, and (since there's no `choice` and no
+`sickness` effect here) neither of the choice/sickness cross-checks apply.
+In the running game, it fires silently into the event log (`renderLog`)
+with its name and description, the same way `runaway-agent-loop` does
+today - there's no UI action needed for a non-choice challenge, it just
+happens.
 
 ## 9. Balance guardrails
 
 `npm run test` includes simulation probes in `src/engine/simulation.test.ts`
-that play the full, real content files (`content/*.json`, not fixtures)
+that play the full, real content files (`content/start.json`,
+`content/eras.json`, and `content/eras/<era>/`, not fixtures)
 through the actual engine for up to 2000 simulated days under a few fixed
 strategies, and assert on the outcome. These exist specifically to catch
 content changes that break the game's viability floors, not just its
@@ -909,27 +1071,27 @@ still make the game unwinnable, and these tests are what catches that.
 
 They currently check:
 
-- **Idle-drain mechanism** (`idle mechanism: -$5/day glide...`) - pins
+- **Idle-drain mechanism** (`idle mechanism: $0/pt Launch beta...`) - pins
   the exact budget trajectory of a player who does nothing, with
   challenges stripped out, using hand-computed arithmetic. This one is
-  sensitive to `start.json` constants and the first project's payout.
+  sensitive to `start.json` constants and Launch beta's `$800` completion
+  bonus (no per-point payout).
 - **Idle with full content** (`idle with full content...`) - same idle
-  player, challenges left in, with looser bounds (budget below a
-  threshold at day 300, still positive at day 600, near-zero by day
-  2000). Adding a new challenge that's very likely and very punishing
+  player, challenges left in. Without monetization the users grant never
+  pays off; the probe asserts the factory drains within the horizon.
+  Adding a new challenge that's very likely and very punishing
   for a player with zero decisions owned could break this.
-- **Smart strategy (mid-tier observation)** - a modest test-suite +
-  ci-cd + two-hires build. This one is documented as allowed to go
-  broke under full challenge load by design; it only asserts that the
-  first contract still gets completed.
+- **Smart strategy (mid-tier observation)** - completes the beta, then
+  runs dry without monetization. It only asserts that Launch beta still
+  gets completed.
 - **Human-heavy and automation-heavy strategy probes** - these two *are*
-  the viability bar: each must complete at least 2 projects and never
-  hit the zero-budget clamp over 2000 days. If you add or rebalance a
-  decision or challenge that these shopping lists would buy or be
-  exposed to (check the `shoppingList` arrays and ownership conditions in
-  `simulation.test.ts` against your new content's ids), rerun
-  the tests and watch for `everBroke` flipping to `true` or
-  `completedProjects` dropping below 2.
+  the viability bar: each must finish Launch beta and stay solvent via
+  monetization (never hit the zero-budget clamp) over 2000 days. If you
+  add or rebalance a decision or challenge that these shopping lists
+  would buy or be exposed to (check the `shoppingList` arrays and
+  ownership conditions in `simulation.test.ts` against your new
+  content's ids), rerun the tests and watch for `everBroke` flipping to
+  `true` or `completedProjects` dropping below 1.
 - **Greedy strategy** - buys everything affordable every day; only
   checks engine invariants (no negative or non-finite stocks), not
   solvency - it's explicitly documented as not meant to be viable.
@@ -971,3 +1133,13 @@ If a probe fails after a content edit:
    themselves, and keep the in-file comments in sync with whatever
    numbers you end up pinning - the next person editing content depends
    on those comments as much as you just did.
+
+## 10. Related docs
+
+| Doc | Role |
+| --- | --- |
+| [`docs/CONTEXT.md`](CONTEXT.md) | Glossary: eras, stocks, stock drag/flow, predicates |
+| [`docs/adr/`](adr/README.md) | ADRs 0001–0006 (layout, tags, viewer, saves, stock-linked schema) |
+| [`docs/VISION.md`](VISION.md) | Medium/long-term direction (eras, no parallel tracks) |
+| [`docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md`](superpowers/specs/2026-08-11-p02-decision-graph-plan.md) | P0.2 plan; S-2 is this guide |
+| Historical design snapshots | `2026-07-14-software-factory-design.md` §7 tracks; `2026-07-16-content-wave-design.md` — do not author from these |

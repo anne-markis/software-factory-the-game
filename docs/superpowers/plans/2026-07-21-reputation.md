@@ -1,6 +1,8 @@
 # Reputation and Milestones (Release 17) Implementation Plan
 
 > Spec: docs/superpowers/specs/2026-07-21-reputation-design.md. TDD throughout; engine stays DOM-free (purity test); strict schemas; values in content; plain annotations; player-facing names. Branch: release/17-reputation. Baseline: 174 tests.
+>
+> Challenge `hasTag` mentioned below is retired (ADR 0002); gate on stocks / ownership instead (`docs/CONTENT-AUTHORING.md`).
 
 ## Task 1: reputation stock, earning, gating, milestones (engine)
 
