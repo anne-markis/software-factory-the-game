@@ -1,1 +1,231 @@
-[]
+[
+  {
+    "id": "test-suite",
+    "name": "Add test suite",
+    "description": "Halves tech debt permanently and unlocks CI/CD. Work slows 50% for about a week while you write them.",
+    "category": "tame-debt",
+    "cost": {
+      "oneTime": 500
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "mul",
+        "value": 0.5,
+        "durationDays": 6
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 0.5
+      }
+    ],
+    "removable": false,
+    "unique": true
+  },
+  {
+    "id": "ci-cd",
+    "name": "CI/CD pipeline",
+    "description": "Finished work ships continuously, removing the Done queue entirely. Costs a day of setup.",
+    "category": "change-structure",
+    "cost": {
+      "oneTime": 750
+    },
+    "requires": [
+      "test-suite"
+    ],
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "mul",
+        "value": 0.5,
+        "durationDays": 2
+      },
+      {
+        "type": "continuousDeploy"
+      }
+    ],
+    "removable": false,
+    "unique": true
+  },
+  {
+    "id": "basic-dev",
+    "name": "Hire basic developer",
+    "description": "Adds a developer, hopefully a strong one. It's a gamble, and they're gone for good if payroll fails.",
+    "category": "ship-faster",
+    "human": true,
+    "cost": {
+      "perDay": 7
+    },
+    "effects": [],
+    "gamble": [
+      {
+        "probability": 0.5,
+        "label": "Strong hire",
+        "effects": [
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": 1.0 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 }
+        ]
+      },
+      {
+        "probability": 0.25,
+        "label": "Decent hire",
+        "effects": [
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": 0.5 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": 0.5 }
+        ]
+      },
+      {
+        "probability": 0.2,
+        "label": "Net-negative hire",
+        "effects": [
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": -0.5 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": -0.5 }
+        ]
+      },
+      {
+        "probability": 0.05,
+        "label": "Disaster hire",
+        "effects": [
+          { "type": "modifyRate", "target": "pull", "op": "add", "value": -1.0 },
+          { "type": "modifyRate", "target": "finish", "op": "add", "value": -1.0 }
+        ]
+      }
+    ],
+    "removable": true
+  },
+  {
+    "id": "agent",
+    "name": "Add coding agent",
+    "description": "Each agent finishes another 0.2 points of work a day and adds a little more tech debt. Buy as many as you can feed.",
+    "category": "ship-faster",
+    "cost": {
+      "oneTime": 10,
+      "perDay": 4
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "finish",
+        "op": "add",
+        "value": 0.2
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "add",
+        "value": 0.1
+      }
+    ],
+    "removable": true
+  },
+  {
+    "id": "agent-harness",
+    "name": "Agent harness",
+    "description": "Tests and guardrails around every agent you run: finishing work 25% faster and tech debt grows 30% slower. Ongoing cost to keep it running.",
+    "category": "tame-debt",
+    "cost": {
+      "oneTime": 250,
+      "perDay": 5
+    },
+    "requires": [
+      "agent"
+    ],
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "finish",
+        "op": "mul",
+        "value": 1.25
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 0.7
+      }
+    ],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "agent-orchestration",
+    "name": "Agent orchestration",
+    "description": "A planner splits work across your agents and reviews what comes back: finishing work 45% faster and tech debt grows 45% slower. Needs at least two agents to coordinate.",
+    "category": "ship-faster",
+    "cost": {
+      "oneTime": 400,
+      "perDay": 12
+    },
+    "requiresCounts": [
+      { "id": "agent", "count": 2 }
+    ],
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "finish",
+        "op": "mul",
+        "value": 1.45
+      },
+      {
+        "type": "modifyDebtMultiplier",
+        "op": "mul",
+        "value": 0.55
+      }
+    ],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "better-tooling",
+    "name": "Better tooling",
+    "description": "Sharper editors and faster builds speed up every rate a little, for good.",
+    "category": "ship-faster",
+    "cost": {
+      "oneTime": 150
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "add",
+        "value": 0.1
+      }
+    ],
+    "removable": false,
+    "unique": true
+  },
+  {
+    "id": "subscription",
+    "name": "Subscription plan",
+    "description": "Charge your users a recurring fee. Earns $0.75 per user per day, so it scales with your user base and does nothing while you have no users.",
+    "category": "earn-income",
+    "cost": {
+      "oneTime": 500
+    },
+    "incomeFromStock": {
+      "stock": "users",
+      "perUnit": 0.75
+    },
+    "effects": [],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "one-time-product",
+    "name": "One-time product",
+    "description": "Sell a paid add-on. Occasional sales bursts scale with your user base; lumpier than a subscription and worth nothing at zero users.",
+    "category": "earn-income",
+    "cost": {
+      "oneTime": 400
+    },
+    "burstFromStock": {
+      "stock": "users",
+      "probabilityPerDay": 0.08,
+      "perUnit": 1.2
+    },
+    "effects": [],
+    "removable": true,
+    "unique": true
+  }
+]

@@ -10,8 +10,7 @@
       "name": "Company",
       "entryAnyOf": [
         { "minBudget": 25000 },
-        { "minReputation": 40 },
-        { "minCompletedProjects": 4 }
+        { "minUsers": 80 }
       ]
     },
     {
