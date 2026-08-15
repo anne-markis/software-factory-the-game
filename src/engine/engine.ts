@@ -140,9 +140,10 @@ export class Engine {
   }
 
   /**
-   * One-way ladder step. Requires a loader so owned defs stay resolvable
-   * after the shop swaps. Fixtures that omit loadEra stay on their bundle
-   * even if entry floors are met (unit tests that assemble partial graphs).
+   * One-way ladder step, after the day's income and burn. Requires a loader
+   * so owned defs stay resolvable after the shop swaps. Fixtures that omit
+   * loadEra stay on their bundle even if entry floors are met (unit tests
+   * that assemble partial graphs).
    */
   private maybeAdvanceEra(): void {
     const eras = this.content.eras;

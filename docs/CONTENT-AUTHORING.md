@@ -61,8 +61,9 @@ lesson-and-fun filter, thin v0) is in
 
 `eras.json` entry predicates are an **OR of paths**. Each path is an AND of
 optional floors (`minBudget`, `minReputation`, `minCompletedProjects`,
-`minUsers`); at least one floor per path is required. The starting era must
-not declare `entryAnyOf`. Locked floors:
+`minUsers`); at least one floor per path is required. Floors are checked
+at **end of day** (after income and burn). The starting era must not
+declare `entryAnyOf`. Locked floors:
 
 ```json
 {

@@ -147,7 +147,7 @@ describe("appView era entry and users loop", () => {
   it("shows Studio, then Company after the budget floor fires", () => {
     const content = loadShippedContent();
     const restored = initialState(content);
-    restored.stocks.budget = 25000;
+    restored.stocks.budget = 25020;
     const h = mount({ content, restored, loadEra: loadShippedContent, richBudget: false });
     expect(h.root.querySelector(".v-era")!.textContent).toBe("Studio");
     expect(h.root.querySelector('[data-next-era="company"]')!.textContent).toContain("$25,000 budget or 80 users");

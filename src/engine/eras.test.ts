@@ -71,7 +71,9 @@ describe("Engine era advancement", () => {
 
   it("advances one rung and reloads the bundle when a loader is provided", () => {
     const e = new Engine(loadShippedContent(), undefined, loadShippedContent);
-    (e.getState() as GameState).stocks.budget = 25000;
+    // Floors are checked after the day's burn (base $20), so the treasury
+    // must still clear $25k at end of day — not only at the start of tick.
+    (e.getState() as GameState).stocks.budget = 25020;
     e.tick();
     expect(e.getState().eraId).toBe("company");
     expect(e.getContent().eraId).toBe("company");
@@ -79,9 +81,17 @@ describe("Engine era advancement", () => {
     expect(e.getState().log.some((l) => l.message.includes("Entered Company"))).toBe(true);
   });
 
+  it("does not enter when burn drops the treasury through the floor", () => {
+    const e = new Engine(loadShippedContent(), undefined, loadShippedContent);
+    (e.getState() as GameState).stocks.budget = 25000;
+    e.tick();
+    expect(e.getState().eraId).toBe("studio");
+    expect(e.getState().stocks.budget).toBeLessThan(25000);
+  });
+
   it("does not jump Studio → Megacorp in one tick", () => {
     const e = new Engine(loadShippedContent(), undefined, loadShippedContent);
-    (e.getState() as GameState).stocks.budget = 250000;
+    (e.getState() as GameState).stocks.budget = 250040;
     e.tick();
     expect(e.getState().eraId).toBe("company");
     e.tick();
