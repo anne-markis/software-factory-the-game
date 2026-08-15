@@ -41,29 +41,28 @@ Human-editable content follows the per-era layout:
 - `content/start.json` — era-agnostic starting stocks, base rates, seed,
   first project, always-on `stockDrags` / `stockFlows`.
 - `content/eras.json` — ordered era ids, `startingEraId`, and one-way
-  `entryAnyOf` criteria (authored for later milestones and the
-  content-graph viewer; P0.2 does not advance the player out of Studio).
+  `entryAnyOf` criteria. The tick evaluates the **next** era only (one
+  rung; no skip). Advancement is irreversible.
 - `content/eras/<eraId>/decisions.json` — shop cards for that era.
 - `content/eras/<eraId>/challenges.json` — random events for that era.
 - `content/eras/<eraId>/projects.json` — contracts for that era.
 - `content/eras/<eraId>/meta.json` — optional id/name/blurb for humans;
   the game loader does not parse it.
 
-P0.2 ships Studio filled and empty Company / Megacorp shells (`[]` arrays).
 The loader (`loadShippedContent` / `loadActiveContent`) merges `start` +
 the **active** era only; tick stays graph-dumb and never hardcodes era
-names or advances eras this milestone. Put a Company card in
+names. Company and Megacorp currently **relist every Studio id** so owned
+instances keep paying after the shop swaps. Put a new Company card in
 `content/eras/company/`, not in Studio with a comment that it “belongs later.”
-Company direction (dark-factory attractor, lesson-and-fun filter, thin v0) is in
-[`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md)
-— do not treat the empty shell as a license to restore the pre-Studio
-catalog wholesale.
+Do not drop a Studio id from a later catalog until you are sure no save
+can still own that instance. Company direction (dark-factory attractor,
+lesson-and-fun filter, thin v0) is in
+[`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md).
 
 `eras.json` entry predicates are an **OR of paths**. Each path is an AND of
 optional floors (`minBudget`, `minReputation`, `minCompletedProjects`,
 `minUsers`); at least one floor per path is required. The starting era must
-not declare `entryAnyOf`. Example (Company, authored but not evaluated in
-tick yet):
+not declare `entryAnyOf`. Locked floors:
 
 ```json
 {
@@ -71,8 +70,7 @@ tick yet):
   "name": "Company",
   "entryAnyOf": [
     { "minBudget": 25000 },
-    { "minReputation": 40 },
-    { "minCompletedProjects": 4 }
+    { "minUsers": 80 }
   ]
 }
 ```

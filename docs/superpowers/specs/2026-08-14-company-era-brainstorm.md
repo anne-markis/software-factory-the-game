@@ -5,10 +5,11 @@ Status: Brainstorm (not a ticket cut, not an implementation spec)
 Extends: `docs/VISION.md`, `docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md` §5
 Stance: Fill the P0.2 plan’s “Company — light sketch, fill later” hole now that Studio is a playable spine
 
-This document holds direction for the **Studio → Company** step. It does
-not author cards, retune balance, or wire era advancement. Implementation
-specs and content waves come after the forks in §13 are settled enough to
-cut tickets.
+This document holds direction for the **Studio → Company** step. Entry
+and exit floors are live (tick evaluates the next rung). It does not
+author Company-only cards or retune Studio balance. Remaining
+implementation specs and content waves come after the forks in §13 are
+settled enough to cut tickets.
 
 **North star (non-negotiable, same as `docs/VISION.md`):** optimize fun
 while teaching systems thinking, using the SDLC as the playground. The
@@ -79,8 +80,9 @@ fast a player can trip Company entry (see §5).
   / `agent` / `ci-cd`, those owned Studio cards **stop billing and stop
   paying** while their already-applied modifiers linger. That is a silent
   exploit, not a flavor beat.
-- **Tick does not evaluate `entryAnyOf`.** Crossing into Company is a
-  later milestone (engine + UI), not a JSON-only change.
+- **Tick evaluates the next era’s `entryAnyOf` (one rung; no skip).**
+  Studio → Company at $25k **or** 80 users; Company → Megacorp at $250k
+  **or** 10,000 users. Floors live in `content/eras.json`.
 - **Available and unused in Studio:** `stockFlowMods`, `rampRate`,
   synergies, `incomePerDay`, `sickness`, `removeHuman`, the
   `prevent-trouble` shop section.
@@ -275,27 +277,20 @@ reason to author three calendar events.
 
 ## 5. Crossing Studio → Company
 
-### 5.1 Entry paths (numbers are working guesses)
+### 5.1 Entry paths (locked; tick evaluates them)
 
-Authored today in `content/eras.json` (viewer-only):
+Live in `content/eras.json`. Changing them is a content edit plus this
+section.
 
-```text
-minBudget 25000  OR  minReputation 40  OR  minCompletedProjects 4
-```
+| Gate | Predicate (OR) | Why these floors |
+| --- | --- | --- |
+| Studio → Company | `{ minBudget: 25000 }` **or** `{ minUsers: 80 }` | Budget is the “you can run a company” read. Users is the product-loop read — reachable after Launch without waiting on a dead `minCompletedProjects` (Studio only ships beta). Either is enough; neither is required. |
+| Company → Megacorp | `{ minBudget: 250000 }` **or** `{ minUsers: 10000 }` | Same two stocks, one order of magnitude up. Users 10k is the “this is a real product” read; budget $250k is the “this is a real treasury” read. |
 
-Those numbers fight the “Studio is a short tutorial” rule.
-
-| Path | Today | Lean | Why |
-| --- | --- | --- | --- |
-| **Grind cash** | $25k | **Keep ~$20–25k** | From $10k + sub on a small user base this is a short stay, not a second game |
-| **Reputation** | 40 | **Drop to ~5–8** | 40 is past “Industry leader” (35). Trusted vendor (5) is the first time bigger work is even *about* you |
-| **Completions** | 4 | **Drop to 2, or cut** | 4 only makes sense if Studio keeps the old CRM ladder. If Studio is beta + optional gigs, 4 is a long tutorial |
-| **Users** | *(none)* | **Add ~80–100** | Lets a shipped *went-viral* (or organic growth) trip the gate without inventing a “viral era” flag |
-| **Breakthrough events** | *(none)* | **Events grant stocks that trip the floors** | “Got funded” is +$ that hits `minBudget`. Do not add `hasSeenChallenge` to the engine for v0 |
-
-Schema stays an OR of AND-floors (`minBudget` / `minReputation` /
-`minCompletedProjects` / `minUsers`). Breakthroughs are content that
-write those stocks, not new predicate types.
+Dropped placeholders: `minReputation: 40` and `minCompletedProjects: 4`
+(dead if Studio only has beta). Schema stays an OR of AND-floors
+(`minBudget` / `minReputation` / `minCompletedProjects` / `minUsers`).
+Breakthroughs are content that write those stocks, not new predicate types.
 
 **Studio must remain exitable without CI/CD, without a hire, and
 without finishing enterprise-shaped work.** Company re-teaches whatever
@@ -585,7 +580,7 @@ them harder.
 | Self-staffing | **No** `autoApply` yet | **Earned engine hook.** Tick purchases `agent` via the same availability/cost path as a click. Generic, not agent-named |
 | Hire-quality synergies | synergies | **Unused in v0** — manager is out |
 | Support-drag relief | **No** `stockDragMods` | **Out of v0.** Organic growth + existing drag is already the users governor. Do not add engine for a marketing buy we cut |
-| Era advancement | `entryAnyOf` authored, not evaluated | **Required to play Company** — generic predicate eval + one-way `eraId` + reload active bundle. No era-name branches in tick |
+| Era advancement | Evaluated each tick (next rung only) | Generic predicate eval + one-way `eraId` + reload active bundle. No era-name branches in tick |
 | `eraEnteredDay` | No | **Out of v0** — global spacing is enough |
 | Morale / compute / valuation | No | **Not Company v0** |
 | Cross-era `requires` | No | **Not needed** if Company relists Studio ids |
@@ -686,21 +681,21 @@ self-staffing in Megacorp with “you are gone.”
 When this brainstorm is settled enough:
 
 1. **Engine: evaluate `entryAnyOf`, one-way `eraId`, reload the active
-   bundle.** Without this, Company JSON is a viewer-only museum.
-2. **Carry rule** (fork 1) so owned Studio cards keep paying and
-   billing.
-3. **Move the contract ladder** out of `studio/projects.json`; keep
+   bundle.** Landed — tick advances one rung; Company/Megacorp carry
+   Studio ids so owned instances keep paying.
+2. **Engine: generic auto-apply** so a unique can purchase `agent` on
+   a schedule through the same cost/availability path as a click.
+   This is the Paperclips beat; do not special-case the word agent.
+3. **Carry rule** (fork 1) so owned Studio cards keep paying and
+   billing. Landed as Company/Megacorp relisting every Studio id.
+4. **Move the contract ladder** out of `studio/projects.json`; keep
    CRM + migration in Company, park enterprise.
-4. **Author the thin Company v0:** five new uniques (autonomous-pull,
+5. **Author the thin Company v0:** five new uniques (autonomous-pull,
    self-learning, self-staffing, refactor, paid-tier) and five
-   challenges (scope-creep, prod-incident, model-deprecation,
-   runaway-agent-loop, meeting-creep as hire contrast). Self-staffing
-   needs the generic auto-apply hook first. Probe an agent-heavy
-   dark-factory run as the primary solvency path — including a stretch
-   where the fleet hires and the player only watches. A hire-heavy
-   side path must remain solvent, not equally deep. No “buy everything”
-   win.
-5. **Retune entry floors** against a real Studio exit, not against the
+   challenges. Probe an agent-heavy run that includes a stretch where
+   the fleet hires and the player only watches. A hire-heavy side path
+   must remain solvent, not equally deep. No “buy everything” win.
+6. **Retune entry floors** against a real Studio exit, not against the
    CRM ladder living in the wrong folder.
 
 ---
@@ -713,5 +708,5 @@ When this brainstorm is settled enough:
 | `docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md` | Studio zoom; this doc fills §5.3’s Company hole |
 | `docs/CONTEXT.md` | Glossary; Company is no longer “empty shell, ignore” |
 | `docs/CONTENT-AUTHORING.md` | How to write the cards once forks settle |
-| `docs/adr/0001` | Per-era layout; advancement still future |
+| `docs/adr/0001` | Per-era layout; tick evaluates the next rung |
 | `docs/OPEN-DECISIONS.md` | Unrelated tactics — do not stuff era design there |

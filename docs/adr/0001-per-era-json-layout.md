@@ -27,9 +27,10 @@ content/
 ```
 
 **Load merge rule:** active content = `start` + the **current** era’s
-decisions / challenges / projects. The engine may hold `state.eraId` read
-from content. P0.2 does **not** evaluate `entryAnyOf` in tick and does not
-advance the player out of Studio.
+decisions / challenges / projects. The engine holds `state.eraId` from
+content. After each tick it evaluates the **next** era’s `entryAnyOf`
+(one rung; no skip) and reloads that bundle via a loader. Tick does not
+hardcode era names. Fixtures that omit a loader stay on their bundle.
 
 **Entry criteria** are an OR of paths (`entryAnyOf`). Each path is an AND
 of optional floors: `minBudget`, `minReputation`, `minCompletedProjects`,
@@ -46,6 +47,8 @@ Studio when costs fit that scale.
 
 ## Consequences
 
-Studio ships filled; Company and Megacorp ship as empty `[]` shells in
-P0.2. Authors add later-era cards under that era’s folder, not by tagging
-Studio cards. The graph viewer (ADR 0003) reads the same bundles.
+Studio ships filled. Company and Megacorp currently relist Studio ids so
+owned instances keep paying after the swap; new later-era cards go under
+that era’s folder, not by tagging Studio cards. Locked floors: Company at
+$25k **or** 80 users; Megacorp at $250k **or** 10,000 users. The graph
+viewer (ADR 0003) reads the same bundles.

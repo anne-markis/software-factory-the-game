@@ -16,15 +16,17 @@ scale invites), not which capability fantasy the player picked.
   agents belong here; do not gate “AI” as its own era.
 - **Company** — where most playtime will live: same loop, higher cost of
   play, homing in on the dark factory (deeper agentic investment,
-  Paperclips autonomy: the fleet staffs itself). Empty
-  `[]` shell in P0.2; direction in
+  Paperclips autonomy: the fleet staffs itself). Enter at $25k budget
+  **or** 80 users. Catalog currently carries Studio ids; new Company
+  cards land later. Direction in
   [`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md).
-- **Megacorp** — institutional scale. Empty shell in P0.2.
+- **Megacorp** — institutional scale. Enter at $250k budget **or**
+  10,000 users. Carry catalog until Megacorp content lands.
 
 Capability mix (hire-heavy, agent-heavy, process-heavy) **meanders inside**
-an era. Crossing an era is irreversible once entry criteria fire. P0.2
-authors entry predicates in `content/eras.json` for the graph viewer and
-later milestones; the tick does not advance `eraId` yet (ADR 0001).
+an era. Crossing an era is irreversible once entry criteria fire. The tick
+evaluates the next era’s `entryAnyOf` (OR of AND-floors) and reloads
+that era’s bundle; it does not hardcode era names (ADR 0001).
 
 ## Retired: tracks, tags, `hasTag`
 
@@ -77,8 +79,8 @@ Progression edges live in content, not in TypeScript that knows story beats:
 - Challenges: `minHumanDevs` / `maxHumanDevs`, `minTechDebt`, `minDay`,
   `minCompletedProjects`, `requiresAnyDecision`, `lacksDecision`.
 - Projects: `requiresCompleted`, `requiresReputation`.
-- Era entry (authored, not yet evaluated in tick): `entryAnyOf` OR of
-  `{ minBudget, minReputation, minCompletedProjects, minUsers }` paths.
+- Era entry (evaluated each tick for the **next** rung only): `entryAnyOf`
+  OR of `{ minBudget, minReputation, minCompletedProjects, minUsers }` paths.
 
 `human: true` on a decision is headcount for challenge predicates, not a
 track label.
@@ -96,9 +98,10 @@ content/
     projects.json
 ```
 
-Active content = `start` + **one** era bundle. Company and Megacorp still
-ship as empty `[]` shells; Company direction lives in the 2026-08-14
-brainstorm spec, not in playable cards yet.
+Active content = `start` + **one** era bundle. Company and Megacorp
+relist the Studio catalog as carry so owned cards keep paying after
+the shop swaps. New Company cards are still directed by the 2026-08-14
+brainstorm spec.
 
 ## Authoring tools
 
