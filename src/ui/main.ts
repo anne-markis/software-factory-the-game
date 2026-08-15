@@ -5,14 +5,11 @@ import { createPlayerEngine } from "./playerEngine";
 import { saveGame, loadGame, clearSave, saveSpeed, loadSpeed } from "./storage";
 import { advance, type Speed } from "./tickDriver";
 
-// Per-era loader (issue #90): start.json + active Studio era. Tick never
-// advances eras in P0.2, so the player stays in Studio for this milestone.
-const content: GameContent = loadShippedContent();
-
-// Fresh load and Reset (clearSave → reload with no save) start paused so the
-// player can read the factory without burning days (issue #38). Mid-game
-// restores keep the serialized pause flag.
-const engine = createPlayerEngine(content, loadGame());
+// Per-era loader: start.json + the save's era (or Studio). Tick advances
+// one-way when entryAnyOf fires; the loader keeps owned defs resolvable.
+const saved = loadGame();
+const content: GameContent = loadShippedContent(saved?.eraId);
+const engine = createPlayerEngine(content, saved, loadShippedContent);
 const app = document.getElementById("app")!;
 
 // Speed is a UI preference, not game state (design doc section 3/6): it

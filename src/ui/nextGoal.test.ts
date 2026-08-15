@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseStartConfig, parseDecisions, parseProjects } from "../engine/content";
-import { decisionsJson, projectsJson, startJson } from "../engine/loadShippedContent";
+import { decisionsJson, loadShippedContent, projectsJson, startJson } from "../engine/loadShippedContent";
 import { Engine } from "../engine/engine";
 import type { GameContent, GameState } from "../engine/types";
 import {
@@ -124,6 +124,14 @@ describe("selectNextGoal / renderNextGoal", () => {
     expect(html).toContain("0/5 reputation");
     expect(html).toContain('data-next-contract="big-migration"');
     expect(html).toContain("Legacy platform migration");
+  });
+
+  it("surfaces the next era entry floors when the catalog is present", () => {
+    const shipped = loadShippedContent();
+    const e = new Engine(shipped);
+    const html = renderNextGoal(e.getState(), shipped);
+    expect(html).toContain('data-next-era="company"');
+    expect(html).toContain("$25,000 budget or 80 users");
   });
 
   it("shows the top-out state when milestones and contract gates are cleared", () => {

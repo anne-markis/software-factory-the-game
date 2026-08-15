@@ -76,6 +76,12 @@ describe("gameFeel stat flash (issue #67)", () => {
     expect(root.querySelector(".v-flow")!.classList.contains("stat-flash")).toBe(true);
   });
 
+  it("includes Era as the first cockpit stat", () => {
+    const content = makeContent();
+    const views = cockpitStatViews(initialState(content), content);
+    expect(views[0]).toMatchObject({ label: "Era", widthClass: "v-era", material: true });
+  });
+
   it("includes a Users delivery stat after Reputation (Studio spine, issue #88)", () => {
     const content = makeContent();
     const state = initialState(content);

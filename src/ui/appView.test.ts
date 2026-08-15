@@ -14,11 +14,12 @@
 // change. If identity holds, there is no teardown for a gesture to straddle.
 import { describe, it, expect, vi } from "vitest";
 import { mountAppView, type AppView } from "./appView";
-import { Engine, initialState } from "../engine/engine";
+import { Engine, initialState, type LoadEraContent } from "../engine/engine";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
-import { startJson, decisionsJson, challengesJson, projectsJson } from "../engine/loadShippedContent";
+import { startJson, decisionsJson, challengesJson, projectsJson, loadShippedContent } from "../engine/loadShippedContent";
 import type { GameContent, GameState } from "../engine/types";
 import type { Speed } from "./tickDriver";
+import { USERS_LOOP_CAPTION } from "./usersLoop";
 
 // challenges default to [] so ticking is free of random challenge rolls: the
 // only thing moving across ticks is the deterministic stock/flow simulation.
@@ -43,7 +44,7 @@ interface Harness {
   errors: string[];
 }
 
-function mount(opts: { content?: GameContent; restored?: GameState; richBudget?: boolean } = {}): Harness {
+function mount(opts: { content?: GameContent; restored?: GameState; richBudget?: boolean; loadEra?: LoadEraContent } = {}): Harness {
   const content = opts.content ?? makeContent();
   document.body.innerHTML = `<div id="app"></div>`;
   const root = document.getElementById("app")!;
@@ -52,7 +53,7 @@ function mount(opts: { content?: GameContent; restored?: GameState; richBudget?:
   // tech-tree / project-offer markup) fixed across ticks, so a node identity
   // assertion is testing the render mechanism rather than racing the economy.
   if (opts.richBudget !== false) restored.stocks.budget = 1_000_000_000;
-  const engine = new Engine(content, restored);
+  const engine = new Engine(content, restored, opts.loadEra);
 
   let speed: Speed = 1;
   const h: Harness = {
@@ -95,32 +96,32 @@ function pauseButton(root: HTMLElement): HTMLElement {
 }
 
 describe("appView delivery-column stats layout (issue #8)", () => {
-  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
+  it("keeps Era/Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
     const h = mount();
     const top = h.root.querySelector(".stats")!;
     expect(top).toBeTruthy();
     const topLabels = Array.from(top.querySelectorAll(".stat-label")).map((el) => el.textContent);
-    expect(topLabels).toEqual(["Day", "Backlog", "Budget", "Points/Day"]);
+    expect(topLabels).toEqual(["Era", "Day", "Backlog", "Budget", "Points/Day"]);
 
     const deliveryCol = h.root.querySelector(".delivery-column")!;
     expect(deliveryCol).toBeTruthy();
-    expect(deliveryCol.querySelector("h3")!.textContent).toBe("Delivery loop");
+    const colHeadings = Array.from(deliveryCol.querySelectorAll("h3")).map((el) => el.textContent);
+    expect(colHeadings).toEqual(["Delivery loop", "Users loop"]);
     const under = deliveryCol.querySelector(".delivery-stats")!;
     expect(under).toBeTruthy();
-    // Stats sit after the Delivery loop panel inside the same column
-    // (issue #67: wrapped in a data-section host for in-place flash sync).
-    const statsHost = deliveryCol.querySelector(".panel")!.nextElementSibling!;
-    expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users"]);
 
     // Progress loop remains a sibling of the delivery column, not a parent of those stats.
     const loops = h.root.querySelector(".loops")!;
     expect(loops.contains(deliveryCol)).toBe(true);
-    expect(loops.querySelector("h3")!.textContent).toBe("Delivery loop");
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toContain("Progress loop");
+    expect(headings).toEqual(["Delivery loop", "Users loop", "Progress loop"]);
     expect(under.closest(".panel")).toBeNull();
+
+    const usersLoop = deliveryCol.querySelector('[aria-label="Users loop"]');
+    expect(usersLoop).not.toBeNull();
+    expect(deliveryCol.textContent).toContain(USERS_LOOP_CAPTION);
   });
 
   it("keeps delivery-stats nodes stable across ticks that only change values", () => {
@@ -138,7 +139,23 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     expect(after.querySelector(".v-count")).toBe(beforeInProgress);
     expect(after.querySelector(".stat-label")!.textContent).toBe("In Progress");
     expect(h.root.querySelector(".delivery-column .delivery-stats")).toBe(after);
-    expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
+    expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Era");
+  });
+});
+
+describe("appView era entry and users loop", () => {
+  it("shows Studio, then Company after the budget floor fires", () => {
+    const content = loadShippedContent();
+    const restored = initialState(content);
+    restored.stocks.budget = 25000;
+    const h = mount({ content, restored, loadEra: loadShippedContent, richBudget: false });
+    expect(h.root.querySelector(".v-era")!.textContent).toBe("Studio");
+    expect(h.root.querySelector('[data-next-era="company"]')!.textContent).toContain("$25,000 budget or 80 users");
+    h.engine.tick();
+    h.view.render();
+    expect(h.root.querySelector(".v-era")!.textContent).toBe("Company");
+    expect(h.root.textContent).toContain("Entered Company");
+    expect(h.root.querySelector('[data-next-era="megacorp"]')).not.toBeNull();
   });
 });
 

@@ -4,6 +4,7 @@
 // string-memo patch path (which rebuilds markup whenever a number moves).
 
 import type { GameContent, GameState } from "../engine/types";
+import { eraDisplayName } from "../engine/eras";
 import { budgetRunwayDays, RUNWAY_WARN_DAYS } from "./runway";
 
 // Local copies — avoid a render.ts ↔ gameFeel.ts import cycle (render
@@ -46,6 +47,7 @@ export function cockpitStatViews(state: Readonly<GameState>, content: GameConten
   const budgetValue =
     runway === null ? `$${fmt(state.stocks.budget)}` : `$${fmt(state.stocks.budget)} (${dayLabel})`;
   return [
+    { label: "Era", value: eraDisplayName(content.eras, state.eraId), widthClass: "v-era", material: true },
     { label: "Day", value: String(state.day), widthClass: "v-day", material: false },
     { label: "Backlog", value: fmt(state.stocks.backlog), widthClass: "v-flow", material: true },
     {
