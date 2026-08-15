@@ -63,7 +63,11 @@ teaches a distinct systems idea, and until fun no longer fights the model.
    factory this game enables — the one the long session should home in
    on — is the **dark factory**: deeper agentic investment, a loop that
    runs with fewer humans. Hire-heavy play stays legal; it is not the
-   designed attractor. Eras advance by **scale of cost** (grind gates and/or
+   designed attractor. **Paperclips cadence** here means growing
+   *autonomy and speed* (you buy agents → the fleet feeds the loop →
+   the fleet staffs itself) as well as scale gates — not only bigger
+   dollar thresholds. The player becoming optional is late scale.
+   Eras advance by **scale of cost** (grind gates and/or
    breakthrough events), one-way. Megacorp and later intensify satire and
    world-eating stakes; loop honesty stays in stocks, flows, and delays.
 

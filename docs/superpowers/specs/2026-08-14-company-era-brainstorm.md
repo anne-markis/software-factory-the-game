@@ -1,6 +1,6 @@
 # Company era — brainstorm
 
-Date: 2026-08-14 (revised same day: lesson-and-fun filter; dark-factory attractor)
+Date: 2026-08-14 (revised: lesson-and-fun; dark-factory attractor; Paperclips autonomy)
 Status: Brainstorm (not a ticket cut, not an implementation spec)
 Extends: `docs/VISION.md`, `docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md` §5
 Stance: Fill the P0.2 plan’s “Company — light sketch, fill later” hole now that Studio is a playable spine
@@ -22,6 +22,13 @@ attractor the long session should home in on — not a `darkfactory` track
 you pick, and not a peer of “hire company” / “process company.” Hire
 stays legal so choosing agents is a choice. We do not spend Company’s
 catalog building a symmetric people-org.
+
+**Paperclips cadence** is growing autonomy and speed on that loop: first
+you staff the factory, then it runs without other humans, then it
+*staffs itself*, then (much later) it does not need you. “Agents that
+hire themselves” is the middle thrill — AutoClippers buying AutoClippers
+— not the heat-death ending. Do not park it in Megacorp with
+“factory without you.” Those are different rungs.
 
 ---
 
@@ -119,6 +126,7 @@ still buy (carry `basic-dev`), not the spine.
 The player should be able to say, in their own words:
 
 - “The loop kept moving after I stopped hiring.”
+- “I stopped buying agents and they kept showing up.”
 - “I bought another agent instead of paying the debt, and the incidents got worse.”
 - “The agents got faster every day until the bill caught up.”
 - “The refactor hurt for two weeks and then the incidents stopped.”
@@ -154,6 +162,70 @@ Complexity is a privilege the loop and the player must be ready for.
 Company is long so the *same* loops can deepen — not so we can finally
 fit the industry.
 
+### 3.2 Paperclips cadence: autonomy and speed
+
+Universal Paperclips is fun because *you leave the loop*. First you
+click. Then you buy AutoClippers. Then clips buy Clippers. Speed
+follows count. The ending (you are gone; the universe is paperclips)
+is a punchline, not the session.
+
+Software Factory already has the first beats. It does not have the
+middle one. Today every new agent is a player click. Self-learning
+makes each agent faster; it does not make the factory *staff* itself.
+Autonomous pull makes work move without a hire; you still buy the
+fleet. Parking “agents hire themselves” with “factory without you”
+in Megacorp collapses two rungs and delays the Paperclips feeling
+until after the long session.
+
+| Rung | Who acts | What you watch | Where |
+| --- | --- | --- | --- |
+| You buy agents | Player click | Finish ticks up; debt ticks up | **Studio** |
+| Fleet finishes / coordinates | Player still staffs | Multipliers on the same loop | Studio harness / orch |
+| Fleet pulls its own work | Player still staffs | In Progress fills without a human | **Company** — autonomous-pull |
+| Each agent gets faster | Player still staffs | `rampRate` on finish | **Company** — self-learning |
+| **Fleet buys agents** | Tick calls `applyDecision("agent")` | Owned list grows; burn and debt follow | **Late Company** — self-staffing |
+| Factory does not need you | Projects / choices run without a click | You are optional | **Megacorp+** |
+
+**Speed** is factory speed (rates, count, compounding), not UI turbo.
+Speed controls already exist so a long era is playable. Do not add a
+second clock.
+
+**Self-staffing** passes the §3.1 filter:
+
+1. **Loop:** agent count, finish, budget, debt, payroll — all already
+   on the cockpit. A log line when the fleet hires is enough.
+2. **Distinct:** not “faster agents” (self-learning) and not “you
+   clicked Buy again.” Who spends the money changed.
+3. **Fun:** watching the machine take the wheel, then watching it
+   overspend. Removable unique so the last human lever is *stop
+   hiring*. Insolvency already fires `perDay` instances — the loop
+   can eat itself.
+
+**Governors (required, or the loop lies):** each spawned agent pays
+the real `agent` one-time and per-day and takes the real debt. No
+free copies. Affordability gate: skip a hire day if budget cannot
+cover the one-time (do not go negative; do not delete the unique).
+Existing agent challenges scale with ownership. Player can remove
+the unique. A cap can wait; payroll and debt should be the cap if
+they are legible.
+
+**Engine (earned, unlike `stockDragMods`):** nothing in the tick can
+`applyDecision` today. Need a generic content hook — working name
+`autoApply` / `spawnDecision` — “while this unique is owned, try to
+purchase `defId` on a schedule or roll, using the same availability
+and cost rules as a click.” Not an agent special case. Megacorp can
+point the same hook at something stranger.
+
+v0 shape (sketch, not schema): fixed interval or `probabilityPerDay`,
+`requireAffordable: true`, spawn only `agent`. Do not accelerate the
+hire rate with agent count in v0 (that is the runaway-speed beat;
+Megacorp can turn it on). Do not auto-buy uniques or humans.
+
+**Not this card:** agents that spawn agents as a new def with its own
+stats (a second seat type). The fleet hires *the same* `agent` you
+already understand. And not “the shop buys whatever is cheapest”
+(a bot). One def, one loop.
+
 ```mermaid
 flowchart LR
   subgraph ST["Studio — short"]
@@ -186,8 +258,9 @@ patterns the current grammar can honestly show.
 
 | Pattern | How Company shows it (one lever) | Avoid |
 | --- | --- | --- |
-| **Dark factory (attractor)** | Fleet pulls its own work; compounding `rampRate`; zero extra humans still ships | A `darkfactory` tag, a second AI seat type, compute stock |
-| **Limits to Growth** | Agent upkeep + debt tax the finish you just bought | Meeting-creep as the *main* Company genre |
+| **Dark factory (attractor)** | Fleet pulls, compounds, then **staffs itself** | A `darkfactory` tag; collapsing self-staffing into “you are gone” |
+| **Paperclips autonomy** | Tick buys `agent` while a unique is owned | A shop-playing bot; a second AI seat type |
+| **Limits to Growth** | Spawned agents add the real burn and debt | Meeting-creep as the *main* Company genre |
 | **Delay** | Self-learning ramps; refactor slows before it helps | Instant “win the era” agent blob (old swarm-as-catalog) |
 | **Shifting the Burden** | Another agent vs a refactor — the home trade | A track label that says which is “correct” |
 | **Success to the Successful** | Reputation gates contracts that feed the fleet; a fat incident can re-lock them | A second “breach” fiction of the same hit |
@@ -297,20 +370,21 @@ Not: *what does a real company buy in year one?*
 Pass the §3.1 filter. The table’s “why” column is the systems reason;
 realism is not a reason.
 
-**Agents — the Company spine (two new rungs, two lessons)**
+**Agents — the Company spine (three rungs: feed, speed, staff)**
 
 Studio agents add **finish** (and debt). Orchestration multiplies that.
 The cockpit already tells the truth: a hire-less fleet can starve
-**pull**. Company is where we let the factory go dark on purpose, and
-where compounding shows up late.
+**pull**. Company is where we let the factory go dark on purpose, get
+faster, and then **hire without a click**. See §3.2.
 
 | Play | Distinct lesson | Systems hook | Lean |
 | --- | --- | --- | --- |
-| Autonomous pull / agent intake | The fleet feeds the loop; In Progress fills without a hire | `modifyRate` pull (scale with owning agents, or a flat pull once orch is owned) | **In** — the watchable “factory without other humans” |
-| Self-learning agents | Compounding delay; false summit | `rampRate` on finish; requires orchestration | **In** |
-| Old agent-swarm unique | “Buy a blob of agents” | Big finish mul | **Out** — stacking `agent` ×N *is* the blob |
+| Autonomous pull / agent intake | The fleet feeds the loop; In Progress fills without a hire | `modifyRate` pull (flat once orch is owned) | **In** |
+| Self-learning agents | Compounding *speed*; false summit | `rampRate` on finish; requires orchestration | **In** |
+| **Self-staffing** | The fleet buys `agent`; you watch | Generic `autoApply` / `spawnDecision` (new, earned) | **In — late Company.** Requires orch (and probably pull). Removable. |
+| Old agent-swarm unique | “Buy a blob of agents” | Big finish mul | **Out** — stacking *and* self-staffing *are* the blob |
 | GPU / compute stock | New meter | — | **Out** |
-| Agents that spawn agents | Structure rewrite; factory without *you* | — | **Megacorp+** — VISION endgame, not Company v0 |
+| Factory without you | Projects / choices without a click | Player-optional structure | **Megacorp+** — not the same card |
 
 **The alternative on the same loop — one recovery button**
 
@@ -361,9 +435,12 @@ flowchart TB
 
   subgraph dark["Dark factory — Company spine"]
     pull[autonomous-pull · fleet feeds the loop]
-    sla[self-learning-agents · rampRate]
+    sla[self-learning-agents · speed]
+    staff[self-staffing · fleet buys agent]
     orch --> pull
     orch --> sla
+    pull --> staff
+    sla --> staff
   end
 
   subgraph other["Same loop — feed and recover"]
@@ -375,13 +452,15 @@ flowchart TB
   hire -.->|legal side path| loop[delivery loop]
   pull --> loop
   sla --> loop
+  staff --> loop
   refactor --> loop
 ```
 
-**Target width:** carry (hidden once owned) + **four new uniques**
-(autonomous-pull, self-learning, refactor, paid-tier). If a fifth card
-cannot name a *new* dark-factory loop sentence, it does not get in.
-Do not restore the Release 8 swarm catalog.
+**Target width:** carry (hidden once owned) + **five new uniques**
+(autonomous-pull, self-learning, self-staffing, refactor, paid-tier).
+Self-staffing is the fifth because it has its own sentence (“I stopped
+buying agents and they kept showing up”). Do not restore the Release 8
+swarm catalog.
 
 ### 6.3 Explicitly not Company-default
 
@@ -390,7 +469,8 @@ Do not restore the Release 8 swarm catalog.
   second knobs.
 - Morale / compute / valuation as stocks.
 - Hire-drama as a challenge genre (poach / flu).
-- Agents-spawn-agents / factory-without-you — Megacorp and later.
+- Factory-without-you (auto-projects, auto-choices) — Megacorp and later.
+  Self-staffing is *not* that card.
 - A second AI seat type that is mechanically “agent but cheaper.”
 - A `darkfactory` tag or a “pick your factory” screen. Gravity lives
   in which cards are deep, not in a label.
@@ -501,7 +581,8 @@ them harder.
 | --- | --- | --- |
 | Paid-tier churn | `stockFlowMods` | **Use it** on that one card — first shipped consumer |
 | Compounding agents | `rampRate` | **Use it** on self-learning, not on a senior hire |
-| Autonomous pull | `modifyRate` pull | Unique flat pull (lean). Per-agent pull is fork 3 |
+| Autonomous pull | `modifyRate` pull | Unique flat pull (lean). Per-agent pull is a later fork |
+| Self-staffing | **No** `autoApply` yet | **Earned engine hook.** Tick purchases `agent` via the same availability/cost path as a click. Generic, not agent-named |
 | Hire-quality synergies | synergies | **Unused in v0** — manager is out |
 | Support-drag relief | **No** `stockDragMods` | **Out of v0.** Organic growth + existing drag is already the users governor. Do not add engine for a marketing buy we cut |
 | Era advancement | `entryAnyOf` authored, not evaluated | **Required to play Company** — generic predicate eval + one-way `eraId` + reload active bundle. No era-name branches in tick |
@@ -521,7 +602,8 @@ them harder.
 | --- | --- |
 | Ship → $ → more capacity | Payroll + base burn; insolvency still deletes `perDay` instances |
 | Users → $ → more build | Support drag (already on); paid-tier churn; prod-incident |
-| Agents → finish → more agents | Debt, model-deprecation, runaway loop; pull starvation until autonomous-pull |
+| Agents → finish → more agents | Debt, model-deprecation, runaway; pull starvation until autonomous-pull |
+| Fleet → money → fleet (self-staffing) | Real agent cost; skip if unaffordable; removable unique; insolvency fires agents |
 | Hires → rate → more hires | Meeting-creep (side path); payroll |
 | Reputation → bigger contracts → more rep | Prod-incident rep hits re-lock tiers |
 
@@ -539,10 +621,11 @@ skippable the way Studio’s should. Retune the floors in play. Do not
 design Megacorp cards here, and do not invent a term-sheet mini-game
 so the door has flavor.
 
-False summit: a self-feeding, self-learning fleet plus a hard contract
-should feel like “we made it” — the factory is going dark. Agents that
-hire themselves, and institutional weirdness, are Megacorp’s job.
-Company only has to make the door expensive.
+False summit: a self-feeding, self-learning, **self-staffing** fleet
+plus a hard contract should feel like “we made it” — the factory is
+going dark and speeding up. The player becoming optional, and
+institutional weirdness, are Megacorp’s job. Company only has to make
+the door expensive.
 
 ---
 
@@ -555,6 +638,7 @@ Company only has to make the door expensive.
 - A realism catalog (contractor, DDoS, breach, marketing dept, burnout).
 - A people-org Company (senior, manager) or a restored swarm catalog.
 - Reintroducing a `darkfactory` track or tag.
+- Treating self-staffing as “factory without you.”
 - A player-facing tech tree / graph (the local `make graph` viewer is
   enough to author).
 - Reopening P0.1 cockpit work.
@@ -578,9 +662,13 @@ starting positions, not locks.
 3. **Autonomous-pull shape.** Unique flat pull once orchestration is
    owned (content-only, lean) vs pull that scales with agent count
    (may need engine). Do not invent a stock to express this.
-4. **Paid-tier launch project** vs paid-tier *decision* alone.
-5. **enterprise-replatform** waits for Megacorp (lean).
-6. **Studio leftovers** (viral, prod-incident, gigs/versions) — Company
+4. **Self-staffing schedule.** Fixed interval vs `probabilityPerDay`.
+   Lean: skip when unaffordable; do not accelerate hire rate with
+   count in v0. Schema name (`autoApply` vs `spawnDecision`) at
+   implementation.
+5. **Paid-tier launch project** vs paid-tier *decision* alone.
+6. **enterprise-replatform** waits for Megacorp (lean).
+7. **Studio leftovers** (viral, prod-incident, gigs/versions) — Company
    ships prod-incident either way; the *projects* should not stay in
    Studio just because Company is empty.
 
@@ -588,7 +676,8 @@ Closed by the lesson-and-fun filter **and** the dark-factory attractor
 (not open): senior, manager, contractor, standup, marketing/CS/
 support-hire, DDoS pair, breach, api-price-hike, team-conflict,
 burnout, term-sheet quota, `stockDragMods`, `eraEnteredDay`, restoring
-agent-swarm as a blob, compute stock, `darkfactory` tags.
+agent-swarm as a blob, compute stock, `darkfactory` tags, parking
+self-staffing in Megacorp with “you are gone.”
 
 ---
 
@@ -602,12 +691,15 @@ When this brainstorm is settled enough:
    billing.
 3. **Move the contract ladder** out of `studio/projects.json`; keep
    CRM + migration in Company, park enterprise.
-4. **Author the thin Company v0:** four new uniques (autonomous-pull,
-   self-learning, refactor, paid-tier) and five challenges
-   (scope-creep, prod-incident, model-deprecation, runaway-agent-loop,
-   meeting-creep as hire contrast). Probe an agent-heavy dark-factory
-   run as the primary solvency path; a hire-heavy side path must
-   remain solvent, not equally deep. No “buy everything” win.
+4. **Author the thin Company v0:** five new uniques (autonomous-pull,
+   self-learning, self-staffing, refactor, paid-tier) and five
+   challenges (scope-creep, prod-incident, model-deprecation,
+   runaway-agent-loop, meeting-creep as hire contrast). Self-staffing
+   needs the generic auto-apply hook first. Probe an agent-heavy
+   dark-factory run as the primary solvency path — including a stretch
+   where the fleet hires and the player only watches. A hire-heavy
+   side path must remain solvent, not equally deep. No “buy everything”
+   win.
 5. **Retune entry floors** against a real Studio exit, not against the
    CRM ladder living in the wrong folder.
 
