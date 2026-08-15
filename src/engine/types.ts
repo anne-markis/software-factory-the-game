@@ -300,9 +300,9 @@ export interface StartConfig {
   milestones: { id: string; reputation: number; name: string; message: string }[];
 }
 
-// One scale era in content/eras.json (ADR §2.1 / issue #90). Entry predicates
-// are authored for the content-graph viewer and future advancement; P0.2 does
-// not evaluate them in tick.
+// One scale era in content/eras.json (ADR 0001). Entry predicates are an OR
+// of AND-floors. Engine.tick evaluates the next era only (one-way ladder)
+// and never hardcodes era names.
 export interface EraEntryPredicate {
   minBudget?: number;
   minReputation?: number;
@@ -337,8 +337,8 @@ export interface GameState {
   day: number;
   paused: boolean;
   // Active content era id (issue #90). Copied from GameContent.eraId at init.
-  // P0.2 never advances it. Legacy saves predate the field; Engine backfills
-  // from content.eraId.
+  // Advances one-way when the next era's entryAnyOf fires (see eras.ts).
+  // Legacy saves predate the field; Engine backfills from content.eraId.
   eraId: string;
   stocks: Stocks;
   baseRates: Record<RateId, number>;
@@ -376,6 +376,14 @@ export interface GameState {
   // actually moved instead.
   pullFlow: number;
   finishFlow: number;
+  // Realized users-loop flows this tick (mirrors pullFlow for the product
+  // economy). userAcquireFlow is gross organic gain; userChurnFlow is the
+  // amount leaving; userIncomeFlow is budget credited from decisions that
+  // read the users stock (incomeFromStock + burstFromStock). 0 when the
+  // users flow is gated off (pre-launch) or no monetization fired.
+  userAcquireFlow: number;
+  userChurnFlow: number;
+  userIncomeFlow: number;
   nextInstanceId: number;
   nextModifierId: number;
   rngState: number;

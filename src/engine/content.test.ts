@@ -761,8 +761,8 @@ describe("per-era content layout (issue #90)", () => {
     expect(eras.startingEraId).toBe("studio");
     expect(eras.eras.map((e) => e.id)).toEqual(["studio", "company", "megacorp"]);
     expect(eras.eras[0].entryAnyOf).toBeUndefined();
-    expect(eras.eras[1].entryAnyOf!.length).toBeGreaterThan(0);
-    expect(eras.eras[2].entryAnyOf!.length).toBeGreaterThan(0);
+    expect(eras.eras[1].entryAnyOf).toEqual([{ minBudget: 25000 }, { minUsers: 80 }]);
+    expect(eras.eras[2].entryAnyOf).toEqual([{ minBudget: 250000 }, { minUsers: 10000 }]);
   });
 
   it("rejects a starting era that declares entry criteria", () => {
@@ -774,7 +774,7 @@ describe("per-era content layout (issue #90)", () => {
     ).toThrow(/starting era/);
   });
 
-  it("loadShippedContent serves Studio cards and empty Company/Megacorp shells", () => {
+  it("loadShippedContent serves Studio cards and Company/Megacorp carry catalogs", () => {
     const studio = loadShippedContent();
     expect(studio.eraId).toBe("studio");
     expect(studio.decisions.length).toBeGreaterThan(0);
@@ -783,13 +783,12 @@ describe("per-era content layout (issue #90)", () => {
 
     const company = loadShippedContent("company");
     expect(company.eraId).toBe("company");
-    expect(company.decisions).toEqual([]);
-    expect(company.challenges).toEqual([]);
-    expect(company.projects).toEqual([]);
+    expect(company.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
+    expect(company.challenges.map((d) => d.id)).toEqual(studio.challenges.map((d) => d.id));
 
     const megacorp = loadShippedContent("megacorp");
     expect(megacorp.eraId).toBe("megacorp");
-    expect(megacorp.decisions).toEqual([]);
+    expect(megacorp.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
   });
 
   it("loadActiveContent refuses unknown era ids without hardcoding names in tick", () => {
@@ -809,8 +808,8 @@ describe("per-era content layout (issue #90)", () => {
     ).toThrow(/No content bundle registered/);
   });
 
-  it("keeps the player in Studio across ticks (P0.2 does not advance eras)", () => {
-    const e = new Engine(loadShippedContent());
+  it("stays in Studio across early ticks when entry floors are not met", () => {
+    const e = new Engine(loadShippedContent(), undefined, loadShippedContent);
     expect(e.getState().eraId).toBe("studio");
     for (let i = 0; i < 50; i++) e.tick();
     expect(e.getState().eraId).toBe("studio");

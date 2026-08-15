@@ -1,20 +1,21 @@
 import type { GameContent, GameState } from "./types";
 import { createRng, type Rng } from "./rng";
-import { tick, type ChallengePhase } from "./tick";
+import { tick, type ChallengePhase, log } from "./tick";
 import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
 import { rollChallenges, resolveChoice } from "./challenges";
 import { startProject, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
+import { evaluateNextEraEntry, formatEraEntryPredicate } from "./eras";
+
+export type LoadEraContent = (eraId: string) => GameContent;
 
 export function initialState(content: GameContent): GameState {
   const s = content.start;
   return {
     day: 0,
     paused: false,
-    // Per-era content (issue #90): hold the active era id from content. Tick
-    // does not advance eras in P0.2 — Studio is sticky until a later milestone
-    // wires entry evaluation. Hand-built fixtures may omit era metadata; fall
-    // back to eras.startingEraId, then to the shipped starting id from the
-    // eras catalog when present on content.
+    // Per-era content (issue #90): hold the active era id from content.
+    // Hand-built fixtures may omit era metadata; fall back to
+    // eras.startingEraId, then to a fixture id.
     eraId: content.eraId ?? content.eras?.startingEraId ?? "_fixture",
     stocks: { ...s.stocks },
     baseRates: { ...s.baseRates },
@@ -53,6 +54,9 @@ export function initialState(content: GameContent): GameState {
     pointsPerDay: 0,
     pullFlow: 0,
     finishFlow: 0,
+    userAcquireFlow: 0,
+    userChurnFlow: 0,
+    userIncomeFlow: 0,
     nextInstanceId: 1,
     nextModifierId: 1,
     rngState: 0,
@@ -66,7 +70,11 @@ export class Engine {
   protected rng: Rng;
   protected challengePhase: ChallengePhase = rollChallenges;
 
-  constructor(protected content: GameContent, restored?: GameState) {
+  constructor(
+    protected content: GameContent,
+    restored?: GameState,
+    private readonly loadEra?: LoadEraContent,
+  ) {
     if (restored) {
       this.state = restored;
       // Legacy saves predate gameSeed; challenge rolls hash on it, so backfill
@@ -122,8 +130,31 @@ export class Engine {
     return this.state;
   }
 
+  getContent(): GameContent {
+    return this.content;
+  }
+
   tick(): void {
     tick(this.state, this.rng, this.content, this.challengePhase);
+    this.maybeAdvanceEra();
+  }
+
+  /**
+   * One-way ladder step. Requires a loader so owned defs stay resolvable
+   * after the shop swaps. Fixtures that omit loadEra stay on their bundle
+   * even if entry floors are met (unit tests that assemble partial graphs).
+   */
+  private maybeAdvanceEra(): void {
+    const eras = this.content.eras;
+    if (!eras || !this.loadEra) return;
+    const hit = evaluateNextEraEntry(this.state, eras);
+    if (!hit) return;
+    this.content = this.loadEra(hit.era.id);
+    this.state.eraId = hit.era.id;
+    log(
+      this.state,
+      `Entered ${hit.era.name} (${formatEraEntryPredicate(hit.path)}).`,
+    );
   }
 
   pause(): void {

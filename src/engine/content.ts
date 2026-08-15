@@ -432,8 +432,8 @@ export type EraBundleJson = {
 };
 
 // Merge start + one era's decision/challenge/project JSON into GameContent.
-// Tick stays graph-dumb: callers pick eraId; this function never advances eras
-// or hardcodes era names beyond looking up the requested id in eras.json.
+// This function never advances eras. Engine.tick evaluates entryAnyOf and
+// reloads via a loader; it does not hardcode era names.
 export function loadActiveContent(
   startJson: unknown,
   erasJson: unknown,

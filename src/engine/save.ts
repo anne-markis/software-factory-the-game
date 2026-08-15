@@ -76,6 +76,15 @@ export function deserialize(json: string): GameState {
   if (state.pointsPerDay === undefined) {
     state.pointsPerDay = 0;
   }
+  if (state.userAcquireFlow === undefined) {
+    state.userAcquireFlow = 0;
+  }
+  if (state.userChurnFlow === undefined) {
+    state.userChurnFlow = 0;
+  }
+  if (state.userIncomeFlow === undefined) {
+    state.userIncomeFlow = 0;
+  }
   // Defensive default for the users stock (issue #88). The SAVE_VERSION bumps
   // mean genuine pre-#88 saves are rejected before reaching here, so this only
   // guards hand-built or in-flight current-version states missing the field: 0
