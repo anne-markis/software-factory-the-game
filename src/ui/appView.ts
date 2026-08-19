@@ -33,6 +33,7 @@ import {
   renderBuildStamp,
 } from "./render";
 import { getBuildInfo } from "./buildInfo";
+import { eraDisplayName } from "../engine/eras";
 import { loopDiagramSvg } from "./loopDiagram";
 import { usersLoopSvg } from "./usersLoop";
 import { inProgressPanelSvg } from "./inProgressPanel";
@@ -90,6 +91,7 @@ export interface AppView {
 // Issue #40: Choices live in glanceable chrome (not the scrollable side rail)
 // so a Decision-needed interrupt stays reachable while shopping at speed.
 const STATS = "stats";
+const ERA = "era";
 const NEXT_GOAL = "next-goal";
 const DELIVERY_LOOP = "delivery-loop";
 const DELIVERY_STATS = "delivery-stats";
@@ -111,6 +113,7 @@ function pageScaffold(): string {
   // Issue #40: choices interrupt sits with chrome (before loops) so pending
   // decisions are not buried under Alter the loop / Events scroll.
   return `
+    <h1 class="game-title">Software Factory <span class="era-kicker" ${SECTION_ATTR}="${ERA}"></span></h1>
     <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
     <button id="reset">Reset game</button>
     <div ${SECTION_ATTR}="${STATS}"></div>
@@ -221,6 +224,10 @@ export function mountAppView(deps: AppViewDeps): AppView {
     softPauseForNewChoices([...engine.getState().pendingChoices]);
     content = engine.getContent();
     const state = engine.getState();
+    const eraName = eraDisplayName(content.eras, state.eraId);
+    page.patch(ERA, eraName);
+    const tabTitle = `${eraName} — Software Factory`;
+    if (document.title !== tabTitle) document.title = tabTitle;
     if (state.eraId !== lastEraId) {
       lastEraId = state.eraId;
       decisions.setScaffold(decisionsPanelScaffold(content));

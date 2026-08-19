@@ -126,12 +126,18 @@ describe("selectNextGoal / renderNextGoal", () => {
     expect(html).toContain("Legacy platform migration");
   });
 
-  it("surfaces the next era entry floors when the catalog is present", () => {
+  it("omits silent Company floors from next-goal and shows Megacorp once in Company", () => {
     const shipped = loadShippedContent();
     const e = new Engine(shipped);
     const html = renderNextGoal(e.getState(), shipped);
-    expect(html).toContain('data-next-era="company"');
-    expect(html).toContain("$25,000 budget or 80 users");
+    expect(html).not.toContain('data-next-era="company"');
+    expect(html).not.toContain("$5,000,000");
+
+    const company = loadShippedContent("company");
+    const inCompany = new Engine(company);
+    const companyHtml = renderNextGoal(inCompany.getState(), company);
+    expect(companyHtml).toContain('data-next-era="megacorp"');
+    expect(companyHtml).toContain("$50,000,000 budget or 10,000 users");
   });
 
   it("shows the top-out state when milestones and contract gates are cleared", () => {

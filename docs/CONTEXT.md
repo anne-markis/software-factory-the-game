@@ -16,11 +16,12 @@ scale invites), not which capability fantasy the player picked.
   agents belong here; do not gate “AI” as its own era.
 - **Company** — where most playtime will live: same loop, higher cost of
   play, homing in on the dark factory (deeper agentic investment,
-  Paperclips autonomy: the fleet staffs itself). Enter at $25k budget
-  **or** 80 users. Catalog currently carries Studio ids; new Company
-  cards land later. Direction in
+  Paperclips autonomy: the fleet staffs itself). Silent entry at
+  $5,000,000 budget (heading changes; no Events line, not a next-goal).
+  Catalog currently carries Studio ids; new Company cards land later.
+  Direction in
   [`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md).
-- **Megacorp** — institutional scale. Enter at $250k budget **or**
+- **Megacorp** — institutional scale. Enter at $50,000,000 budget **or**
   10,000 users. Carry catalog until Megacorp content lands.
 
 Capability mix (hire-heavy, agent-heavy, process-heavy) **meanders inside**

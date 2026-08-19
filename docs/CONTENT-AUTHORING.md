@@ -63,15 +63,17 @@ lesson-and-fun filter, thin v0) is in
 optional floors (`minBudget`, `minReputation`, `minCompletedProjects`,
 `minUsers`); at least one floor per path is required. Floors are checked
 at **end of day** (after income and burn). The starting era must not
-declare `entryAnyOf`. Locked floors:
+declare `entryAnyOf`. `silentEntry: true` means the heading changes when
+the floor is met, but tick writes no Events line and next-goal does not
+list that rung as a grind. Locked floors:
 
 ```json
 {
   "id": "company",
   "name": "Company",
+  "silentEntry": true,
   "entryAnyOf": [
-    { "minBudget": 25000 },
-    { "minUsers": 80 }
+    { "minBudget": 5000000 }
   ]
 }
 ```

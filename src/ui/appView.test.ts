@@ -96,12 +96,12 @@ function pauseButton(root: HTMLElement): HTMLElement {
 }
 
 describe("appView delivery-column stats layout (issue #8)", () => {
-  it("keeps Era/Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
+  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
     const h = mount();
     const top = h.root.querySelector(".stats")!;
     expect(top).toBeTruthy();
     const topLabels = Array.from(top.querySelectorAll(".stat-label")).map((el) => el.textContent);
-    expect(topLabels).toEqual(["Era", "Day", "Backlog", "Budget", "Points/Day"]);
+    expect(topLabels).toEqual(["Day", "Backlog", "Budget", "Points/Day"]);
 
     const deliveryCol = h.root.querySelector(".delivery-column")!;
     expect(deliveryCol).toBeTruthy();
@@ -139,22 +139,24 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     expect(after.querySelector(".v-count")).toBe(beforeInProgress);
     expect(after.querySelector(".stat-label")!.textContent).toBe("In Progress");
     expect(h.root.querySelector(".delivery-column .delivery-stats")).toBe(after);
-    expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Era");
+    expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
   });
 });
 
-describe("appView era entry and users loop", () => {
-  it("shows Studio, then Company after the budget floor fires", () => {
+describe("appView era identity and silent Company entry", () => {
+  it("shows Studio on the title, then Company with no Events line after the budget floor fires", () => {
     const content = loadShippedContent();
     const restored = initialState(content);
-    restored.stocks.budget = 25020;
+    restored.stocks.budget = 5_000_020;
     const h = mount({ content, restored, loadEra: loadShippedContent, richBudget: false });
-    expect(h.root.querySelector(".v-era")!.textContent).toBe("Studio");
-    expect(h.root.querySelector('[data-next-era="company"]')!.textContent).toContain("$25,000 budget or 80 users");
+    expect(h.root.querySelector(".era-kicker")!.textContent).toBe("Studio");
+    expect(document.title).toBe("Studio — Software Factory");
+    expect(h.root.querySelector('[data-next-era="company"]')).toBeNull();
     h.engine.tick();
     h.view.render();
-    expect(h.root.querySelector(".v-era")!.textContent).toBe("Company");
-    expect(h.root.textContent).toContain("Entered Company");
+    expect(h.root.querySelector(".era-kicker")!.textContent).toBe("Company");
+    expect(document.title).toBe("Company — Software Factory");
+    expect(h.root.textContent).not.toContain("Entered Company");
     expect(h.root.querySelector('[data-next-era="megacorp"]')).not.toBeNull();
   });
 });
@@ -334,8 +336,9 @@ describe("appView page layout (issue #7)", () => {
       };
     };
     const before = order();
-    expect(before.time).toBe(0);
-    expect(before.reset).toBe(1);
+    expect(h.root.querySelector("h1.game-title")).toBe(h.root.children[0]);
+    expect(before.time).toBe(1);
+    expect(before.reset).toBe(2);
     expect(before.stats).toBeGreaterThan(before.reset);
     expect(before.loops).toBeGreaterThan(before.stats);
     // Scaffold is static: order holds across ticks.

@@ -81,8 +81,8 @@ fast a player can trip Company entry (see §5).
   paying** while their already-applied modifiers linger. That is a silent
   exploit, not a flavor beat.
 - **Tick evaluates the next era’s `entryAnyOf` (one rung; no skip).**
-  Studio → Company at $25k **or** 80 users; Company → Megacorp at $250k
-  **or** 10,000 users. Floors live in `content/eras.json`.
+  Studio → Company at $5,000,000 budget (silent: heading only);
+  Company → Megacorp at $50,000,000 **or** 10,000 users. Floors live in `content/eras.json`.
 - **Available and unused in Studio:** `stockFlowMods`, `rampRate`,
   synergies, `incomePerDay`, `sickness`, `removeHuman`, the
   `prevent-trouble` shop section.
@@ -284,8 +284,8 @@ section.
 
 | Gate | Predicate (OR) | Why these floors |
 | --- | --- | --- |
-| Studio → Company | `{ minBudget: 25000 }` **or** `{ minUsers: 80 }` | Budget is the “you can run a company” read. Users is the product-loop read — reachable after Launch without waiting on a dead `minCompletedProjects` (Studio only ships beta). Either is enough; neither is required. |
-| Company → Megacorp | `{ minBudget: 250000 }` **or** `{ minUsers: 10000 }` | Same two stocks, one order of magnitude up. Users 10k is the “this is a real product” read; budget $250k is the “this is a real treasury” read. |
+| Studio → Company | `{ minBudget: 5000000 }` (`silentEntry`) | Natural treasury progression out of Studio. Not a next-goal grind and not an Events beat — the title kicker just reads Company. Dropped `minUsers: 80` because it fired long before $5M. |
+| Company → Megacorp | `{ minBudget: 50000000 }` **or** `{ minUsers: 10000 }` | Budget stays an order of magnitude above Company so the $5M gate cannot skip into Megacorp. Users 10k remains the product-scale alternate. |
 
 Dropped placeholders: `minReputation: 40` and `minCompletedProjects: 4`
 (dead if Studio only has beta). Schema stays an OR of AND-floors
@@ -609,7 +609,7 @@ does not ship.
 
 ## 11. Leaving Company (toward Megacorp)
 
-Authored today: `minBudget 250000` OR `minUsers 10000`.
+Authored today: `minBudget 50000000` OR `minUsers 10000`.
 
 Company is the long era, so this gate should feel **earned**, not
 skippable the way Studio’s should. Retune the floors in play. Do not

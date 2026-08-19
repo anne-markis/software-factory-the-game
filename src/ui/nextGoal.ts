@@ -53,6 +53,9 @@ export function nextEraGoal(
   if (!content.eras) return null;
   const next = nextEraDef(content.eras, state.eraId);
   if (!next?.entryAnyOf?.length) return null;
+  // Silent rungs (Studio → Company) are not a grind target — the heading
+  // just changes when the floor is met.
+  if (next.silentEntry) return null;
   return {
     kind: "era",
     id: next.id,
