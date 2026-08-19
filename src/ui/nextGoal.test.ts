@@ -132,13 +132,13 @@ describe("selectNextGoal / renderNextGoal", () => {
     const html = renderNextGoal(e.getState(), shipped);
     expect(html).not.toContain('data-next-era="company"');
     expect(html).not.toContain("$1,000,000");
-    expect(html).not.toContain("$5,000,000");
+    expect(html).not.toContain("$100,000,000");
 
     const company = loadShippedContent("company");
     const inCompany = new Engine(company);
     const companyHtml = renderNextGoal(inCompany.getState(), company);
     expect(companyHtml).toContain('data-next-era="megacorp"');
-    expect(companyHtml).toContain("$5,000,000 budget");
+    expect(companyHtml).toContain("$100,000,000 budget");
     expect(companyHtml).not.toContain("users");
   });
 

@@ -10,7 +10,7 @@ import {
 import type { GameState } from "./types";
 
 const COMPANY_BUDGET = 1_000_000;
-const MEGACORP_BUDGET = 5_000_000;
+const MEGACORP_BUDGET = 100_000_000;
 /** Floors are checked after the day's $20 base burn. */
 const COMPANY_CLEAR = COMPANY_BUDGET + 20;
 const MEGACORP_CLEAR = MEGACORP_BUDGET + 40;

@@ -17,7 +17,7 @@
       "id": "megacorp",
       "name": "Megacorp",
       "entryAnyOf": [
-        { "minBudget": 5000000 }
+        { "minBudget": 100000000 }
       ]
     }
   ]

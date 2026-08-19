@@ -82,7 +82,7 @@ fast a player can trip Company entry (see §5).
   exploit, not a flavor beat.
 - **Tick evaluates the next era’s `entryAnyOf` (one rung; no skip).**
   Studio → Company at $1,000,000 budget (silent: heading only);
-  Company → Megacorp at $5,000,000 budget. Floors live in `content/eras.json`.
+  Company → Megacorp at $100,000,000 budget. Floors live in `content/eras.json`.
 - **Available and unused in Studio:** `stockFlowMods`, `rampRate`,
   synergies, `incomePerDay`, `sickness`, `removeHuman`, the
   `prevent-trouble` shop section.
@@ -285,7 +285,7 @@ section.
 | Gate | Predicate (OR) | Why these floors |
 | --- | --- | --- |
 | Studio → Company | `{ minBudget: 1000000 }` (`silentEntry`) | Treasury takeoff out of Studio. Not a next-goal grind and not an Events beat — the title kicker just reads Company. Dropped `minUsers: 80` because it fired long before $1M. |
-| Company → Megacorp | `{ minBudget: 5000000 }` | Next treasury order. Era gates are budget-only; users stay a product-loop stock, not an era key. |
+| Company → Megacorp | `{ minBudget: 100000000 }` | Long-horizon treasury. Unreachable on today’s ~$120–130/day plateau by design — exponential Company play has to earn this door. |
 
 Today’s Studio catalog still plateaus (~$120–130/day net once users
 stabilize). These floors assume a later **accelerator** wave so the
@@ -615,7 +615,9 @@ does not ship.
 
 ## 11. Leaving Company (toward Megacorp)
 
-Authored today: `minBudget 5000000`. Era gates are budget-only.
+Authored today: `minBudget 100000000`. Era gates are budget-only. This
+floor is meant to feel far until compounding users / agents / income
+exist; do not lower it to match the current linear sit.
 
 Company is the long era, so this gate should feel **earned**, not
 skippable the way Studio’s should. Retune the floors in play. Do not
@@ -699,14 +701,13 @@ When this brainstorm is settled enough:
 5. **Author the thin Company v0 — exponential accelerators:** five new
    uniques (autonomous-pull, self-learning, self-staffing, refactor,
    paid-tier) and five challenges. The lesson is takeoff: users,
-   agents, and income compound so $1M / $5M are crossed on a curve,
-   not a linear sit. Probe an agent-heavy run that includes a stretch
-   where the fleet hires and the player only watches. A hire-heavy
-   side path must remain solvent, not equally deep. No “buy everything”
-   win.
-6. **Do not raise the $1M / $5M floors** to hide a missing reinforcing
-   loop. If the climb feels slow, author the accelerator, not a bigger
-   grind.
+   agents, and income compound so $1M is a quiet heading change and
+   $100M is a long, earned Megacorp door. Probe an agent-heavy run
+   that includes a stretch where the fleet hires and the player only
+   watches. A hire-heavy side path must remain solvent, not equally
+   deep. No “buy everything” win.
+6. **Do not lower the $100M Megacorp floor** to match today’s linear
+   sit. If the climb feels impossible, author the accelerator.
 
 ---
 

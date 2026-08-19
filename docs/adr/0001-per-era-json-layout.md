@@ -50,5 +50,6 @@ Studio when costs fit that scale.
 Studio ships filled. Company and Megacorp currently relist Studio ids so
 owned instances keep paying after the swap; new later-era cards go under
 that era’s folder, not by tagging Studio cards. Locked floors: Company at
-$1,000,000 budget (`silentEntry`); Megacorp at $5,000,000 budget.
-The graph viewer (ADR 0003) reads the same bundles.
+$1,000,000 budget (`silentEntry`); Megacorp at $100,000,000 budget
+(intentionally a long sit until exponential Company play). The graph
+viewer (ADR 0003) reads the same bundles.
