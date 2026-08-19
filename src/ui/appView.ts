@@ -7,7 +7,7 @@
 // Issue #6: this used to be one `root.innerHTML = ...` per render, which the
 // 100ms driver could fire ~10x/second, destroying and recreating every button.
 // A mousedown/mouseup gesture straddling one of those rebuilds produces no
-// click at all, so Pause/Resume, speed, Buy, Start and choice options
+// click at all, so Pause/Start, speed, Buy, Start and choice options
 // intermittently ignored real clicks. Now the page structure is written once
 // and each region is patched only when its own html actually changes (see
 // domPatch.ts), so a region whose data has not moved keeps its nodes.
@@ -84,7 +84,7 @@ export interface AppView {
 // unlike before -- are not churned by the driver at all. Section containers
 // are empty until the first render patches them.
 //
-// Issue #67: Delivery loop diagram, delivery-stats, and Progress loop are
+  // Issue #67: Delivery system diagram, delivery-stats, and Progress system are
 // separate sections so material stock numbers can update in place (flash)
 // without rebuilding the SVG wrappers every time a digit moves. Gamble reveal
 // is its own ephemeral section between stats and the loops.
@@ -111,7 +111,7 @@ function pageScaffold(): string {
   // Issue #65: next-goal sits with the glanceable chrome (below stats, above
   // loops) so the endless-run lean stays visible without opening Projects.
   // Issue #40: choices interrupt sits with chrome (before loops) so pending
-  // decisions are not buried under Alter the loop / Events scroll.
+  // decisions are not buried under Alter the system / Events scroll.
   return `
     <h1 class="game-title">Software Factory <span class="era-kicker" ${SECTION_ATTR}="${ERA}"></span></h1>
     <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
@@ -122,8 +122,8 @@ function pageScaffold(): string {
     <div ${SECTION_ATTR}="${CHOICES}"></div>
     <div class="loops">
       <div class="delivery-column">
-        <div class="panel"><h3>Delivery loop</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
-        <div class="panel"><h3>Users loop</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
+        <div class="panel"><h3>Delivery system</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
+        <div class="panel"><h3>Users system</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
         <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>
       </div>
       <div ${SECTION_ATTR}="${PROGRESS_LOOP}"></div>
@@ -164,7 +164,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
   let gambleReveal: GambleReveal | null = null;
   let gambleRevealTimer: ReturnType<typeof setTimeout> | null = null;
   // Issue #40: track which pending challenges we have already soft-paused for
-  // so Resume is not immediately re-paused every frame while the choice waits.
+  // so Start is not immediately re-paused every frame while the choice waits.
   let softPausedChoiceIds = new Set<string>();
 
   function clearGambleRevealTimer(): void {
@@ -220,7 +220,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
   }
 
   function render(): void {
-    // Soft-pause before painting so time controls show Resume on the same frame.
+    // Soft-pause before painting so time controls show Start on the same frame.
     softPauseForNewChoices([...engine.getState().pendingChoices]);
     content = engine.getContent();
     const state = engine.getState();

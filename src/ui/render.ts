@@ -18,7 +18,7 @@ export function fmt(n: number): string {
 }
 
 // Top bar keeps the cockpit glanceables: clock, work waiting, money, and
-// throughput. Flow-stage and quality stocks live under the Delivery loop
+// throughput. Flow-stage and quality stocks live under the Delivery system
 // (see renderDeliveryStats) so they sit next to the diagram they describe.
 // Markup is shared with gameFeel.syncStatRow (issue #67 in-place flash).
 export function renderStats(state: Readonly<GameState>, content: GameContent): string {
@@ -26,7 +26,7 @@ export function renderStats(state: Readonly<GameState>, content: GameContent): s
 }
 
 // Issue #8: In Progress / Done / Shipped / Tech Debt / Reputation sit under
-// the Delivery loop panel. Same fixed-width value slots as the top bar so
+// the Delivery system panel. Same fixed-width value slots as the top bar so
 // ticking numbers never jitter this row either.
 export function renderDeliveryStats(state: Readonly<GameState>): string {
   return statsRowHtml(deliveryStatViews(state), "delivery-stats");
@@ -145,13 +145,13 @@ export function decisionsPanelScaffold(content: GameContent): string {
     (def) => `<div ${SECTION_ATTR}="${decisionNodeSection(def.id)}"></div>`,
   );
   return `
-    <div class="panel"><h3>Alter the loop</h3>${shop}</div>
+    <div class="panel"><h3>Alter the system</h3>${shop}</div>
     <div class="panel"><h3>Owned</h3><div ${SECTION_ATTR}="${OWNED_LIST_SECTION}"></div></div>`;
 }
 
 // Issue #15: Owned entries carry the same cost line and derived-effects
 // summary as shop cards so a player trimming upkeep does not have to
-// scroll back through Alter the loop matching names card by card.
+// scroll back through Alter the system matching names card by card.
 export function renderOwnedList(ownedInstances: DecisionInstance[], content: GameContent): string {
   const ownedList = ownedInstances
     .map((inst) => {
@@ -178,7 +178,7 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
     renderDecisionNode(availById.get(def.id)!, ownedCounts.get(def.id) ?? 0),
   );
   return `
-    <div class="panel"><h3>Alter the loop</h3>${shop}</div>
+    <div class="panel"><h3>Alter the system</h3>${shop}</div>
     <div class="panel"><h3>Owned</h3>${renderOwnedList(ownedInstances, content)}</div>`;
 }
 
@@ -231,18 +231,19 @@ export function renderProjectOffers(offers: ProjectAvailability[], state: Readon
     .join("");
 }
 
-// The time-control group (design doc section 8): Pause/Resume plus one
+// The time-control group (design doc section 8): Start/Pause plus one
 // button per available speed, replacing the old bare Pause button. Routed
 // through the existing #app click delegation via data-speed, matching
 // data-buy/data-project. All buttons are fixed-width (see .tc-btn in
 // index.html) so the group's size never changes -- preserves the R14
-// no-reflow guarantee even as the active marker or the Pause/Resume label
+// no-reflow guarantee even as the active marker or the Start/Pause label
 // changes width.
 export function renderTimeControls(paused: boolean, speed: number, options: readonly number[]): string {
-  const pauseLabel = paused ? "Resume" : "Pause";
-  // When paused, Resume is the active control (issue #38 start-paused): speeds
-  // stay dimmed so the bright button is the one that starts the day clock,
-  // not the already-selected 1x that looks like a play toggle.
+  const pauseLabel = paused ? "Start" : "Pause";
+  // When paused, Start is the active control (issue #38 start-paused, issue
+  // #98 Start not Resume): speeds stay dimmed so the bright button is the
+  // one that starts the day clock, not the already-selected 1x that looks
+  // like a play toggle.
   const pauseActive = paused ? " tc-active" : "";
   const speedButtons = options
     .map((opt) => {

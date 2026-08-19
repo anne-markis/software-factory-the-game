@@ -96,7 +96,7 @@ function pauseButton(root: HTMLElement): HTMLElement {
 }
 
 describe("appView delivery-column stats layout (issue #8)", () => {
-  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
+  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery system", () => {
     const h = mount();
     const top = h.root.querySelector(".stats")!;
     expect(top).toBeTruthy();
@@ -106,20 +106,29 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     const deliveryCol = h.root.querySelector(".delivery-column")!;
     expect(deliveryCol).toBeTruthy();
     const colHeadings = Array.from(deliveryCol.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(colHeadings).toEqual(["Delivery loop", "Users loop"]);
+    expect(colHeadings).toEqual(["Delivery system", "Users system"]);
     const under = deliveryCol.querySelector(".delivery-stats")!;
     expect(under).toBeTruthy();
+    // Stats sit after the Delivery + Users system panels inside the same column
+    // (issue #67: wrapped in a data-section host for in-place flash sync).
+    const panels = deliveryCol.querySelectorAll(":scope > .panel");
+    expect(panels).toHaveLength(2);
+    const statsHost = panels[1]!.nextElementSibling!;
+    expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users"]);
 
-    // Progress loop remains a sibling of the delivery column, not a parent of those stats.
+    // Progress system remains a sibling of the delivery column, not a parent of those stats.
     const loops = h.root.querySelector(".loops")!;
     expect(loops.contains(deliveryCol)).toBe(true);
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toEqual(["Delivery loop", "Users loop", "Progress loop"]);
+    expect(headings).toEqual(["Delivery system", "Users system", "Progress system"]);
+    expect(headings).not.toContain("Delivery loop");
+    expect(headings).not.toContain("Progress loop");
+    expect(headings).not.toContain("Users loop");
     expect(under.closest(".panel")).toBeNull();
 
-    const usersLoop = deliveryCol.querySelector('[aria-label="Users loop"]');
+    const usersLoop = deliveryCol.querySelector('[aria-label="Users system"]');
     expect(usersLoop).not.toBeNull();
     expect(deliveryCol.textContent).toContain(USERS_LOOP_CAPTION);
   });
@@ -364,7 +373,7 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const h = mount();
     expect(pauseButton(h.root).textContent).toBe("Pause");
     h.view.togglePause();
-    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).textContent).toBe("Start");
     h.view.togglePause();
     expect(pauseButton(h.root).textContent).toBe("Pause");
   });
@@ -425,7 +434,7 @@ describe("appView click delegation on the stable root", () => {
     const h = mount();
     h.engine.pause();
     h.view.render();
-    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).textContent).toBe("Start");
     expect(pauseButton(h.root).className).toContain("tc-active");
     h.root.querySelector<HTMLElement>('[data-speed="2"]')!.click();
     expect(h.engine.getState().paused).toBe(false);
@@ -555,7 +564,7 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     h.state.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: h.state.day + 3 }];
     h.view.render();
     expect(h.engine.getState().paused).toBe(true);
-    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).textContent).toBe("Start");
     expect(h.actions).toBe(actionsBefore + 1);
   });
 
@@ -565,7 +574,7 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     restored.day = 5;
     restored.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: 8 }];
     const h = mount({ content, restored });
-    // Mount soft-paused once; Resume and re-render must stay running.
+    // Mount soft-paused once; Start and re-render must stay running.
     expect(h.engine.getState().paused).toBe(true);
     h.engine.resume();
     h.view.render();
@@ -588,7 +597,7 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
 
   // Issue #89: the soft pause is a courtesy, not a mode. Answering the
   // interrupt hands time back on the same click, so the day counter does not
-  // sit frozen behind a Resume the player has no reason to look for.
+  // sit frozen behind a Start the player has no reason to look for.
   it("resumes the day clock when a choice option is picked", () => {
     const content = makeContent(parseChallenges(challengesJson));
     const restored = initialState(content);
@@ -631,7 +640,7 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     h.root.querySelector<HTMLElement>('[data-choice="model-deprecation"][data-option="pay-migration"]')!.click();
     expect(h.engine.getState().pendingChoices).toHaveLength(1);
     expect(h.engine.getState().paused).toBe(true);
-    expect(pauseButton(h.root).textContent).toBe("Resume");
+    expect(pauseButton(h.root).textContent).toBe("Start");
 
     h.root.querySelector<HTMLElement>('[data-choice="vendor-audit"][data-option="cooperate"]')!.click();
     expect(h.engine.getState().pendingChoices).toHaveLength(0);

@@ -25,7 +25,7 @@ export const STAT_FLASH_MS = 480;
 export const STAT_FLASH_COOLDOWN_MS = 600;
 /**
  * Auto-dismiss for the gamble reveal. Long enough to notice while scrolled
- * into Alter the loop; sticky CSS keeps it in view (issue #67 UX).
+ * into Alter the system; sticky CSS keeps it in view (issue #67 UX).
  */
 export const GAMBLE_REVEAL_MS = 5000;
 

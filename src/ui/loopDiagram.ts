@@ -47,7 +47,7 @@ const VIEW_W = 860;
 const VIEW_H = 188;
 
 // Issue #19 / FR-2.1: terse Delivery-loop teaching caption, voice-matched to
-// the Progress panel footer ("The inner loop's pace sets outer throughput…").
+// the Progress panel footer ("The inner system's pace sets outer throughput…").
 // Binding-stage visual cue (FR-2.2 / #64) is separate; this copy always shows.
 export const DELIVERY_LOOP_CAPTION =
   "A steady box means balanced flow; a growing box marks the bottleneck.";
@@ -156,9 +156,9 @@ function debtRegenLoop(startX: number, endX: number, debt: string): string {
 const DEFS = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`;
 
 function ariaLabel(binding: BindingStage | null): string {
-  if (binding === "done") return "Delivery loop, Done capacity-bound";
-  if (binding === "inProgress") return "Delivery loop, In Progress capacity-bound";
-  return "Delivery loop";
+  if (binding === "done") return "Delivery system, Done capacity-bound";
+  if (binding === "inProgress") return "Delivery system, In Progress capacity-bound";
+  return "Delivery system";
 }
 
 function teachingCaption(): string {

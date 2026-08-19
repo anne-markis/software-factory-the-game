@@ -20,7 +20,7 @@ describe("usersLoopSvg", () => {
     expect(svg).toContain("acquire");
     expect(svg).toContain("churn");
     expect(svg).toContain(USERS_LOOP_CAPTION);
-    expect(svg).toContain('aria-label="Users loop"');
+    expect(svg).toContain('aria-label="Users system"');
   });
 
   it("shows acquire, churn, and subscription income after launch", () => {

@@ -122,7 +122,7 @@ A decision (`content/eras/<eraId>/decisions.json`) is an object with these field
 - `category` (string, required) - one of five fixed values (`DecisionCategory`
   in `src/engine/types.ts`). This is a closed enum, not free-form, and the
   loader rejects an unknown value or a missing field outright. It controls
-  which section of the "Alter the loop" shop
+  which section of the "Alter the system" shop
   (`renderDecisions` in `src/ui/render.ts`) the decision renders under, so
   players can find levers for the stock they care about instead of reading
   every entry in one flat list. The five values, in shop display order,
@@ -278,7 +278,7 @@ be owned now (see `src/engine/archetypes.ts`).
   change, like the retired-from-Studio `refactoring-sprint` /
   `redesign-rebuild` shape - keeps every instance in the "Owned" list
   forever, even after its temporary `modifyRate` effect expires and it
-  has nothing left to show in the Progress loop panel. There is no
+  has nothing left to show in the Progress system panel. There is no
   mechanism today for an instance to remove itself once its temporary
   effect lapses; a finished instance just reads as history ("you did
   this, twice") rather than being pruned. This is accepted behavior, not
@@ -364,7 +364,7 @@ multiplier, not a delta: the stock becomes `stock * factor`, clamped at a
 minimum of 0 (same `Math.max(0, ...)` as `addToStock`). It applies
 **immediately, at purchase**, exactly like `addToStock` - there is no
 `durationDays`, and it creates no `Modifier`, so it never shows up as a
-Friction/Cycle-speed/Leak-size contributor in the Progress loop panel; only
+Friction/Cycle-speed/Leak-size contributor in the Progress system panel; only
 a paired `modifyRate` or `modifyDebtMultiplier` effect in the same purchase
 would surface there. `factor` must be `>= 0` (`.min(0)` in the schema):
 `0` wipes the stock entirely; values above `1` are schema-legal too, for
@@ -688,7 +688,7 @@ pure function) is:
 
 `effectiveRate` applies it to all three rates, multiplying alongside the
 context-switch tax, so it is felt on `pull`, `finish`, and `deploy`
-simultaneously (and therefore in the outer Delivery loop via those
+simultaneously (and therefore in the outer Delivery system via those
 rates). The felt curve with the shipped values: no drag until debt
 passes 400; then a gentle linear slide -- at ~2000 debt the multiplier
 is ~0.76 (24% of capacity cancelled); the slowdown never exceeds 40%
@@ -699,7 +699,7 @@ not the stock), the drag is a slow, one-way tightening that a
 high-volume build eventually feels no matter what; debt mitigation buys
 time and a gentler slope, not immunity.
 
-The Progress loop panel (`src/ui/inProgressPanel.ts`) surfaces the drag
+The Progress system panel (`src/ui/inProgressPanel.ts`) surfaces the drag
 as a Friction node (`Tech debt drag x0.76`) once the multiplier drops
 below 1, next to the context-switch tax, so the player can see the
 pushback as it engages.
@@ -1011,7 +1011,7 @@ through `parseDecisions`, so a typo'd field name or an id collision
 fails immediately with the file and entry name. Because it has
 no `gamble` and no `synergies`, there's no probability sum or
 cross-reference to get wrong. In the running game, it would show up
-immediately in the "Alter the loop" shop panel (`renderDecisions` in
+immediately in the "Alter the system" shop panel (`renderDecisions` in
 `src/ui/render.ts`) with its cost and description under a Buy button, and
 after purchase move to the "Owned" panel without a Remove button (since
 `removable: false`).

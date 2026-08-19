@@ -68,7 +68,7 @@ export function usersLoopSvg(state: Readonly<GameState>, _content: GameContent):
     : "";
 
   return `
-    <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" width="100%" role="img" aria-label="Users loop">
+    <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" width="100%" role="img" aria-label="Users system">
       ${DEFS}
       ${box(xRep, "Reputation", fmt(state.stocks.reputation))}
       ${arrow(xRep + BOX_W, xUsers, acquire)}

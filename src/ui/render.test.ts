@@ -102,7 +102,7 @@ describe("renderStats", () => {
 });
 
 describe("renderDeliveryStats", () => {
-  // Issue #8: flow/quality stocks under the Delivery loop, same slot pattern.
+  // Issue #8: flow/quality stocks under the Delivery system, same slot pattern.
   it("renders In Progress, Done, Shipped, Tech Debt, and Reputation with fixed-width value slots", () => {
     const c = content();
     const e = new Engine(c);
@@ -137,7 +137,8 @@ describe("renderDecisions", () => {
   it("decisionsPanelScaffold exposes a section shell for every decision and Owned", () => {
     const c = content();
     const html = decisionsPanelScaffold(c);
-    expect(html).toContain(`<h3>Alter the loop</h3>`);
+    expect(html).toContain(`<h3>Alter the system</h3>`);
+    expect(html).not.toContain("Alter the loop");
     expect(html).toContain(`<h3>Owned</h3>`);
     expect(html).toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
     for (const def of c.decisions) {
@@ -174,7 +175,7 @@ describe("renderDecisions", () => {
   });
 
   // Issue #15: Owned entries surface cost + derived effects (same helpers as
-  // shop cards) so upkeep trim does not require scrolling Alter the loop.
+  // shop cards) so upkeep trim does not require scrolling Alter the system.
   it("shows cost and derived effects on each Owned entry", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
@@ -429,13 +430,14 @@ describe("renderTimeControls", () => {
     expect(html).toContain('class="tc-btn tc-active" data-speed="5"');
   });
 
-  it("flips the pause button's label to Resume when paused", () => {
+  it("flips the pause button's label to Start when paused (issue #98)", () => {
     const html = renderTimeControls(true, 1, [1, 2, 5]);
-    expect(html).toContain(">Resume<");
+    expect(html).toContain(">Start<");
     expect(html).not.toContain(">Pause<");
+    expect(html).not.toContain("Resume");
   });
 
-  it("marks Resume as the active control while paused so the day-clock start is obvious", () => {
+  it("marks Start as the active control while paused so the day-clock start is obvious", () => {
     const html = renderTimeControls(true, 1, [1, 2, 5]);
     expect(html).toContain('class="tc-btn tc-active" id="pause"');
     // Speeds stay dimmed while paused; the selected 1x must not look like Play.
