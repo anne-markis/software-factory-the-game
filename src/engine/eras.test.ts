@@ -83,7 +83,7 @@ describe("Engine era advancement", () => {
     e.tick();
     expect(e.getState().eraId).toBe("company");
     expect(e.getContent().eraId).toBe("company");
-    expect(e.getContent().decisions.length).toBeGreaterThan(0);
+    expect(e.getContent().challenges.some((ch) => ch.id === "prod-incident")).toBe(true);
     expect(e.getState().log.some((l) => /entered company/i.test(l.message))).toBe(false);
   });
 

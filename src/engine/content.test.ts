@@ -513,6 +513,29 @@ describe("parseChallenges", () => {
     expect(defs.every((c) => c.cooldownDays !== undefined)).toBe(true);
   });
 
+  it("ships Production incident only as a Company delta, inherited into Megacorp", () => {
+    const studio = loadShippedContent("studio");
+    const company = loadShippedContent("company");
+    const megacorp = loadShippedContent("megacorp");
+    expect(studio.challenges.some((c) => c.id === "prod-incident")).toBe(false);
+    const incident = company.challenges.find((c) => c.id === "prod-incident");
+    expect(incident).toMatchObject({
+      name: "Production incident",
+      probabilityPerDay: 0.01,
+      cooldownDays: 60,
+      condition: { minCompletedProjects: 1 },
+      probScaling: { stat: "techDebt", per: 500, add: 0.01 },
+    });
+    expect(incident!.effects).toEqual([
+      { type: "addToStock", stock: "budget", value: -8000 },
+      { type: "addToStock", stock: "reputation", value: -2 },
+      { type: "addToStock", stock: "users", value: -15 },
+      { type: "modifyRate", target: "all", op: "mul", value: 0.8, durationDays: 3 },
+    ]);
+    expect(company.challenges.filter((c) => c.id === "prod-incident")).toHaveLength(1);
+    expect(megacorp.challenges.find((c) => c.id === "prod-incident")).toEqual(incident);
+  });
+
   it("pins the playtest-locked lean challenge rates (issue #86 knobs)", () => {
     const defs = parseChallenges(challengesJson);
 
@@ -821,12 +844,16 @@ describe("per-era content layout (issue #90)", () => {
     const company = loadShippedContent("company");
     expect(company.eraId).toBe("company");
     expect(company.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
-    expect(company.challenges.map((d) => d.id)).toEqual(studio.challenges.map((d) => d.id));
+    expect(company.challenges.map((d) => d.id)).toEqual([
+      ...studio.challenges.map((d) => d.id),
+      "prod-incident",
+    ]);
     expect(company.projects.map((d) => d.id)).toEqual(studio.projects.map((d) => d.id));
 
     const megacorp = loadShippedContent("megacorp");
     expect(megacorp.eraId).toBe("megacorp");
     expect(megacorp.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
+    expect(megacorp.challenges.map((d) => d.id)).toEqual(company.challenges.map((d) => d.id));
   });
 
   it("loadActiveContent merges prior-era catalogs so later folders stay deltas", () => {

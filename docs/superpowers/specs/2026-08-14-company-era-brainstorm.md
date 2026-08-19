@@ -545,7 +545,7 @@ incident. Gates use stocks, headcount, and live ownership — not a
 | Working id | Gate | Loop it hits | Lean |
 | --- | --- | --- | --- |
 | **scope-creep** | Any in-flight project | Backlog / WIP | **In — all eras** (bigger +N is enough scale) |
-| **prod-incident** | `users > 0`; debt scales | Live product the fleet is shipping into: $, **rep**, users | **In** — debt teeth; Studio-settled and still unshipped |
+| **prod-incident** | `minCompletedProjects: 1` (live product; users exist after beta); debt scales | Live product the fleet is shipping into: $, **rep**, users | **In — Company delta** |
 | **model-deprecation** | ≥1 agent | Agent loop; choice teach | **In** |
 | **runaway-agent-loop** | ≥1 agent | Agent $ governor | **In** |
 | **meeting-creep** | `minHumanDevs ≥ 2` | Hire side-path taxes itself | **In** as contrast, not as the Company genre |
@@ -675,8 +675,9 @@ starting positions, not locks.
    implementation.
 5. **Paid-tier launch project** vs paid-tier *decision* alone.
 6. **enterprise-replatform** waits for Megacorp (lean).
-7. **Studio leftovers** (viral, prod-incident, gigs/versions) — Company
-   ships prod-incident either way; the *projects* should not stay in
+7. **Studio leftovers** (viral, gigs/versions) — Company ships
+   prod-incident (live, `content/eras/company/challenges.json`); the
+   *projects* should not stay in
    Studio just because Company is empty.
 
 Closed by the lesson-and-fun filter **and** the dark-factory attractor

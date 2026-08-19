@@ -3,7 +3,7 @@ import { rollChallenges, resolveChoice } from "./challenges";
 import { initialState } from "./engine";
 import { applyDecision, removeDecision } from "./decisions";
 import { parseStartConfig, parseChallenges, parseDecisions } from "./content";
-import { challengesJson, decisionsJson, startJson } from "./loadShippedContent";
+import { challengesJson, decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
 import { createRng, hashRoll, type Rng } from "./rng";
 import type { GameContent } from "./types";
 
@@ -73,6 +73,76 @@ describe("rollChallenges", () => {
     expect(hashRoll(SEED, 149, "runaway-agent-loop")).toBeLessThan(0.008);
     rollChallenges(s, noRng, c);
     expect(s.stocks.budget).toBe(10000);
+  });
+
+  it("does not put Production incident in the Studio pool", () => {
+    const c = content();
+    expect(c.challenges.some((ch) => ch.id === "prod-incident")).toBe(false);
+    const s = initialState(c);
+    s.completedProjects = 1;
+    s.day = 26;
+    expect(hashRoll(SEED, 26, "prod-incident")).toBeLessThan(0.01);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.budget).toBe(10000);
+    expect(s.log.some((l) => l.message.includes("Production incident"))).toBe(false);
+  });
+
+  it("fires Production incident from the Company catalog on a pinned day", () => {
+    // Day 26: scope-creep's roll is 0.7731 (miss), agent challenges are gated
+    // out with no agent owned, prod-incident's roll is 0.0010 < 0.01.
+    const c = loadShippedContent("company");
+    const s = initialState(c);
+    s.completedProjects = 1;
+    s.stocks.budget = 1_000_000;
+    s.stocks.reputation = 5;
+    s.stocks.users = 40;
+    s.day = 26;
+    expect(hashRoll(SEED, 26, "scope-creep")).toBeGreaterThanOrEqual(0.01);
+    expect(hashRoll(SEED, 26, "prod-incident")).toBeLessThan(0.01);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.budget).toBe(992_000);
+    expect(s.stocks.reputation).toBe(3);
+    expect(s.stocks.users).toBe(25);
+    expect(s.modifiers.some((m) => m.target === "allRates" && m.value === 0.8)).toBe(true);
+    expect(s.log.some((l) => l.message.includes("Production incident"))).toBe(true);
+  });
+
+  it("holds Production incident until a project has shipped, even in Company", () => {
+    const c = loadShippedContent("company");
+    const s = initialState(c);
+    s.stocks.budget = 1_000_000;
+    s.day = 26;
+    expect(hashRoll(SEED, 26, "prod-incident")).toBeLessThan(0.01);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.budget).toBe(1_000_000);
+    expect(s.lastChallengeDay).toBeUndefined();
+  });
+
+  it("lets Company tech debt lift Production incident over a near-miss roll", () => {
+    // Day 22: prod-incident rolls 0.0126, so base 1% misses and 2% (500 debt)
+    // hits. scope-creep rolls 0.1896 and does not steal the slot.
+    const c = loadShippedContent("company");
+    const miss = initialState(c);
+    miss.completedProjects = 1;
+    miss.stocks.budget = 1_000_000;
+    miss.stocks.techDebt = 0;
+    miss.day = 22;
+    expect(hashRoll(SEED, 22, "scope-creep")).toBeGreaterThanOrEqual(0.01);
+    expect(hashRoll(SEED, 22, "prod-incident")).toBeGreaterThanOrEqual(0.01);
+    expect(hashRoll(SEED, 22, "prod-incident")).toBeLessThan(0.02);
+    rollChallenges(miss, noRng, c);
+    expect(miss.stocks.budget).toBe(1_000_000);
+
+    const hit = initialState(c);
+    hit.completedProjects = 1;
+    hit.stocks.budget = 1_000_000;
+    hit.stocks.reputation = 5;
+    hit.stocks.users = 40;
+    hit.stocks.techDebt = 500;
+    hit.day = 22;
+    rollChallenges(hit, noRng, c);
+    expect(hit.stocks.budget).toBe(992_000);
+    expect(hit.log.some((l) => l.message.includes("Production incident"))).toBe(true);
   });
 
   it("scales probability with tech debt: a probScaling challenge fires only once debt lifts its probability", () => {

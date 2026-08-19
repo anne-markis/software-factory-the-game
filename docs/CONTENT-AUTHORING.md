@@ -320,8 +320,7 @@ already accounts for the off-by-one, so **a purchase-time slowdown you
 want felt for N days should be written with `durationDays: N + 1`**.
 Challenge effects do not need the `+ 1`; a mid-tick challenge
 `durationDays: 3` really is felt for 3 days because it applies mid-tick.
-(Retired `prod-incident` used that pattern; Studio's current pool has no
-timed rate hit, but the timing rule is unchanged.)
+Company `prod-incident` uses `durationDays: 3` that way.
 
 Per rate, all `add`-op modifiers are summed first, then all `mul`-op
 modifiers are applied on top of that sum (`src/engine/modifiers.ts`,
@@ -541,9 +540,9 @@ A challenge (`content/eras/<eraId>/challenges.json`) is an object with:
 - `probScaling` (optional) - `{ stat: "techDebt", per, add }` (only
   `"techDebt"` is supported today). Adds
   `floor(techDebt / per) * add` to `probabilityPerDay`, capped at 1
-  overall. No shipped challenge scales today; the retired `prod-incident`
-  used `{ "per": 500, "add": 0.01 }`, i.e. every 500 tech debt added
-  another 1% to its daily chance.
+  overall. Company `prod-incident` uses `{ "per": 500, "add": 0.01 }`
+  (every 500 tech debt adds another 1% to its daily chance). Studio's
+  three-event pool does not scale.
 - `effects` (array, required) - applied when the challenge fires, unless
   it has a `choice` block (see below), in which case `effects` **must**
   be `[]` - the loader rejects a challenge that defines both, since the
