@@ -87,8 +87,9 @@ fast a player can trip Company entry (see §5).
   synergies, `incomePerDay`, `sickness`, `removeHuman`, the
   `prevent-trouble` shop section.
 - **Not available:** morale / compute / valuation stocks; a way for a
-  decision to raise the users support-drag free band; cross-era
-  `requires`; a “carry this def after the shop swaps” flag.
+  decision to raise the users support-drag free band; a “hide this
+  inherited def from the later shop” flag. Later-era `requires` of an
+  inherited id works (resolved catalog).
 
 ### Already-settled product direction (do not re-litigate)
 
@@ -304,33 +305,37 @@ they skipped (see §6.1).
 
 ### 5.2 The orphan-def problem (must solve before any Company shop)
 
-When `eraId` flips, `content.decisions` becomes the Company file only.
-Every tick path that needs a def **skips** unknown ids (`if (!def)
-continue` in `chargeUpkeep` / stock flows). Owned Studio agents would
-keep their finish modifiers and **stop paying $4/day**. Owned
+When `eraId` flips, `content.decisions` is the **resolved** catalog
+(prior rungs + this era’s delta; ADR 0008). Every tick path that needs
+a def **skips** unknown ids (`if (!def) continue` in `chargeUpkeep` /
+stock flows). If Company were *only* its own file, owned Studio agents
+would keep their finish modifiers and **stop paying $4/day**. Owned
 subscription would **stop paying `$/user`**. `ci-cd` would stop
 qualifying as `continuousDeploy` because activation reads the live def.
 
 P0.2’s “defs need not stay in the shop; instances remain” assumed
-defs were still resolvable. They are not.
-
-**Lean (content-first, no new engine flag):** Company `decisions.json`
-**re-lists every Studio id** at the same id (so owned instances keep
-working). Unique owned cards hide from the shop as they do today.
+defs were still resolvable. Inherit makes that true without copying
+JSON. Company `decisions.json` lists **Company-native cards only**.
+Empty is valid. Unique owned cards hide from the shop as they do today.
 Stackables (`agent`, `basic-dev`) stay buyable — the fleet can still
 grow, and hire remains a legal side path.
 Players who rushed out of Studio still see test-suite / ci-cd /
-monetization and can learn them at Company scale.
+monetization (inherited into the shop) and can learn them at Company
+scale.
 
-Rejected for v0:
+Rejected:
 
+- Copy-pasting Studio JSON into Company (does not scale).
 - Snapshotting defs onto instances (save-shape change, larger than the
   era).
-- A `carry: true` field (extra schema for the same catalog).
+- A `carry: true` field (extra schema for the same ladder merge).
 - Relisting at *new* prices under the same id (owned instances would
   silently change upkeep).
 - Dropping Studio ids and hoping modifiers are enough (the exploit
-  above).
+  above). Omission now means inherit, not retire.
+
+If the Company shop feels too wide, that is a **visibility** problem
+(owned uniques already vanish), not a reason to orphan defs.
 
 If the Company shop feels too wide, that is a **visibility** problem
 (owned uniques already vanish), not a reason to orphan defs.
@@ -589,7 +594,7 @@ them harder.
 | Era advancement | Evaluated each tick (next rung only) | Generic predicate eval + one-way `eraId` + reload active bundle. No era-name branches in tick |
 | `eraEnteredDay` | No | **Out of v0** — global spacing is enough |
 | Morale / compute / valuation | No | **Not Company v0** |
-| Cross-era `requires` | No | **Not needed** if Company relists Studio ids |
+| Cross-era `requires` | Resolved catalog | A Company card may `requires` an inherited Studio id |
 
 `start.json` is era-agnostic. Organic user flow and support drag
 **keep running** in Company — that is the carry. Do not special-case
@@ -655,10 +660,9 @@ the door expensive.
 Settle these before cutting implementation tickets. Leans above are
 starting positions, not locks.
 
-1. **Carry catalog vs engine merge.** Relist Studio ids in Company
-   (lean) vs load `start` + current era + defs for any owned unknown id
-   (smaller shop file, extra loader rule). Relist is dumber and
-   matches ADR 0001’s “put the card in the era folder.”
+1. **Carry catalog vs engine merge.** **Settled: engine merge (ADR 0008).**
+   Later folders are deltas; the loader inherits prior rungs. Relisting
+   Studio JSON was the v0 stand-in and is rejected.
 2. **Studio → Company floors.** Exact `$` / rep / completions / users.
    Lean: ~$20–25k, rep ~5–8, completions 2 or cut, add users ~80–100,
    breakthroughs write those stocks.
@@ -689,13 +693,14 @@ self-staffing in Megacorp with “you are gone.”
 When this brainstorm is settled enough:
 
 1. **Engine: evaluate `entryAnyOf`, one-way `eraId`, reload the active
-   bundle.** Landed — tick advances one rung; Company/Megacorp carry
-   Studio ids so owned instances keep paying.
+   bundle.** Landed — tick advances one rung; later eras inherit Studio
+   catalogs so owned instances keep paying.
 2. **Engine: generic auto-apply** so a unique can purchase `agent` on
    a schedule through the same cost/availability path as a click.
    This is the Paperclips beat; do not special-case the word agent.
 3. **Carry rule** (fork 1) so owned Studio cards keep paying and
-   billing. Landed as Company/Megacorp relisting every Studio id.
+   billing. Landed as catalog inheritance (ADR 0008): Company/Megacorp
+   folders are empty deltas until Company-only cards land.
 4. **Move the contract ladder** out of `studio/projects.json`; keep
    CRM + migration in Company, park enterprise.
 5. **Author the thin Company v0 — exponential accelerators:** five new

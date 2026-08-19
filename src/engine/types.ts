@@ -329,9 +329,10 @@ export interface GameContent {
   decisions: DecisionDef[];
   challenges: ChallengeDef[];
   projects: ProjectDef[];
-  // Active era id + catalog from content/eras.json (issue #90). Always set by
-  // loadShippedContent / loadActiveContent. Optional on hand-built test
-  // fixtures so unit tests can keep assembling partial graphs.
+  // Active era id + catalog from content/eras.json (issue #90). Resolved
+  // decisions/challenges/projects include every prior rung (ADR 0008).
+  // Always set by loadShippedContent / loadActiveContent. Optional on
+  // hand-built test fixtures so unit tests can keep assembling partial graphs.
   eraId?: string;
   eras?: ErasConfig;
 }

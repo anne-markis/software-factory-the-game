@@ -383,6 +383,42 @@ describe("parseDecisions", () => {
     ).toThrow(/ghost/);
   });
 
+  it("allows a later-era card to require an inherited id", () => {
+    const prior = parseDecisions([
+      { id: "test-suite", name: "Tests", description: "x", category: "tame-debt", cost: {}, effects: [], removable: true },
+    ]);
+    const defs = parseDecisions(
+      [
+        {
+          id: "ci-cd",
+          name: "CI",
+          description: "x",
+          category: "change-structure",
+          cost: {},
+          effects: [],
+          removable: true,
+          requires: ["test-suite"],
+        },
+      ],
+      "content/eras/company/decisions.json",
+      prior,
+    );
+    expect(defs.map((d) => d.id)).toEqual(["ci-cd"]);
+  });
+
+  it("rejects copying an inherited decision id into a later era file", () => {
+    const prior = parseDecisions([
+      { id: "agent", name: "Agent", description: "x", category: "ship-faster", cost: {}, effects: [], removable: true },
+    ]);
+    expect(() =>
+      parseDecisions(
+        [{ id: "agent", name: "Agent", description: "x", category: "ship-faster", cost: {}, effects: [], removable: true }],
+        "content/eras/company/decisions.json",
+        prior,
+      ),
+    ).toThrow(/inherited/);
+  });
+
   it("rejects duplicate decision ids", () => {
     expect(() =>
       parseDecisions([
@@ -775,7 +811,7 @@ describe("per-era content layout (issue #90)", () => {
     ).toThrow(/starting era/);
   });
 
-  it("loadShippedContent serves Studio cards and Company/Megacorp carry catalogs", () => {
+  it("loadShippedContent inherits Studio catalogs into Company and Megacorp deltas", () => {
     const studio = loadShippedContent();
     expect(studio.eraId).toBe("studio");
     expect(studio.decisions.length).toBeGreaterThan(0);
@@ -786,10 +822,43 @@ describe("per-era content layout (issue #90)", () => {
     expect(company.eraId).toBe("company");
     expect(company.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
     expect(company.challenges.map((d) => d.id)).toEqual(studio.challenges.map((d) => d.id));
+    expect(company.projects.map((d) => d.id)).toEqual(studio.projects.map((d) => d.id));
 
     const megacorp = loadShippedContent("megacorp");
     expect(megacorp.eraId).toBe("megacorp");
     expect(megacorp.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
+  });
+
+  it("loadActiveContent merges prior-era catalogs so later folders stay deltas", () => {
+    const card = (id: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      name: id,
+      description: id,
+      category: "ship-faster",
+      cost: {},
+      effects: [],
+      removable: true,
+      ...extra,
+    });
+    const eras = {
+      startingEraId: "studio",
+      eras: [
+        { id: "studio", name: "Studio" },
+        { id: "company", name: "Company", entryAnyOf: [{ minBudget: 1 }] },
+      ],
+    };
+    const bundles = {
+      studio: { decisions: [card("agent")], challenges: [], projects: [] },
+      company: {
+        decisions: [card("autonomous-pull", { requires: ["agent"] })],
+        challenges: [],
+        projects: [],
+      },
+    };
+    const company = loadActiveContent(startJson, eras, bundles, "company");
+    expect(company.decisions.map((d) => d.id)).toEqual(["agent", "autonomous-pull"]);
+    const studio = loadActiveContent(startJson, eras, bundles, "studio");
+    expect(studio.decisions.map((d) => d.id)).toEqual(["agent"]);
   });
 
   it("loadActiveContent refuses unknown era ids without hardcoding names in tick", () => {

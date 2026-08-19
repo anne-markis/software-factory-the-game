@@ -1,10 +1,10 @@
 # Software Factory — authoring context
 
 Living glossary for content authors and maintainers. Product direction lives
-in `docs/VISION.md`; field-by-field JSON rules live in
-`docs/CONTENT-AUTHORING.md`. Locked architecture decisions are ADRs 0001–0006
-under `docs/adr/`. If this glossary and the loader disagree, the code in
-`src/engine/` wins.
+in `docs/VISION.md`; how the layers fit lives in `docs/ARCHITECTURE.md`;
+field-by-field JSON rules live in `docs/CONTENT-AUTHORING.md`. Locked
+architecture decisions are ADRs 0001–0008 under `docs/adr/`. If this glossary
+and the loader disagree, the code in `src/engine/` wins.
 
 ## Scale eras (not tracks)
 
@@ -18,7 +18,7 @@ scale invites), not which capability fantasy the player picked.
   play, homing in on the dark factory (deeper agentic investment,
   Paperclips autonomy: the fleet staffs itself). Silent entry at
   $1,000,000 budget (heading changes; no Events line, not a next-goal).
-  Catalog currently carries Studio ids. Exponential accelerators (viral
+  Catalog inherits Studio ids (ADR 0008). Exponential accelerators (viral
   acquire, compounding agents, paid-tier flow mods) are the next content
   wave so these gates play as takeoff, not a linear sit. Direction in
   [`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md).
@@ -100,9 +100,10 @@ content/
     projects.json
 ```
 
-Active content = `start` + **one** era bundle. Company and Megacorp
-relist the Studio catalog as carry so owned cards keep paying after
-the shop swaps. New Company cards are still directed by the 2026-08-14
+Active content = `start` + the **resolved** catalog for the current era
+(prior rungs inherited, this folder is the delta — ADR 0008). Put new
+Company cards in `content/eras/company/`. Do not copy Studio files into
+later eras. New Company cards are still directed by the 2026-08-14
 brainstorm spec.
 
 ## Authoring tools

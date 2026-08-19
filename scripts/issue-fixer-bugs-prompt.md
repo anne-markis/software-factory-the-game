@@ -12,6 +12,8 @@ Architecture (enforce this):
 - `src/ui/` — DOM rendering and input only
 - `content/` — JSON data validated at load
 - Do not move business logic into UI or DOM access into engine
+- Do not copy era catalogs; later `content/eras/<id>/` folders are deltas
+  (ADR 0008). Read `docs/ARCHITECTURE.md`.
 
 ---
 

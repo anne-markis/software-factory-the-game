@@ -37,15 +37,17 @@ setup notes (SSH key, server details, SSL).
 
 - `src/engine/` - all game rules. Framework-free TypeScript, no DOM access
   (enforced by `purity.test.ts`). Deterministic via seeded RNG; saves resume
-  the exact RNG sequence.
+  the exact RNG sequence. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - `src/ui/` - thin plain-DOM rendering and input layer, plus localStorage
-  persistence (autosave every 10 game days, reset button).
+  persistence (autosave every 10 game days, reset button). No game rules.
 - `content/` - human-editable JSON: `start.json` (era-agnostic constants),
-  `eras.json` (scale-era index), and per-era bundles under
-  `content/eras/<eraId>/` (decisions, challenges, projects). Validated with
+  `eras.json` (scale-era index), and per-era **deltas** under
+  `content/eras/<eraId>/` (decisions, challenges, projects). The loader
+  inherits prior rungs so later folders do not copy Studio. Validated with
   strict schemas at load; edits need no code changes and typos fail loudly
   with file and entry names. Eras are a one-way scale ladder, not parallel
-  tracks; see [`docs/CONTENT-AUTHORING.md`](docs/CONTENT-AUTHORING.md) and
+  tracks; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
+  [`docs/CONTENT-AUTHORING.md`](docs/CONTENT-AUTHORING.md) and
   [`docs/CONTEXT.md`](docs/CONTEXT.md).
 - `docs/superpowers/specs/` - design document, including alternatives
   considered (web worker engine, thin client + server) as future refactors.
@@ -65,7 +67,8 @@ of adding a decision and a challenge live in the authoring guide.
 
 Run `make graph` to open the local authoring graph at
 `http://127.0.0.1:5174/`. It parses the shipped era bundles through the same
-engine loader and Zod schemas as the game, then shows decision requirements,
+engine loader and Zod schemas as the game, then shows **native** decisions
+per era (inherited cards stay in the earlier column), plus requirements,
 count gates, synergies, costs, and era-entry paths. The viewer is local tooling
 only and is not included in the player build.
 

@@ -6,7 +6,6 @@ import type {
   ProjectDef,
   GameContent,
   ErasConfig,
-  EraDef,
 } from "./types";
 
 // Schemas are .strict(): content files are hand-edited, so unknown or
@@ -230,18 +229,38 @@ const decisionSchema = z
   })
   .strict();
 
-export function parseDecisions(json: unknown, source = "content/decisions.json"): DecisionDef[] {
+function inheritedIds<T extends { id: string }>(inherited: readonly T[]): Set<string> {
+  return new Set(inherited.map((item) => item.id));
+}
+
+function rejectRedeclaredId(source: string, kind: string, id: string, inherited: ReadonlySet<string>): void {
+  if (inherited.has(id)) {
+    throw new Error(
+      `Invalid content in ${source}: "${id}" redeclares a ${kind} inherited from a prior era. Later era folders are deltas; omit the copy`,
+    );
+  }
+}
+
+export function parseDecisions(
+  json: unknown,
+  source = "content/decisions.json",
+  inherited: readonly DecisionDef[] = [],
+): DecisionDef[] {
   const result = z.array(decisionSchema).safeParse(json);
   if (!result.success) fail(source, result.error);
   // plain annotation (no cast) so schema/type drift fails compilation here
   const defs: DecisionDef[] = result.data;
+  const priorIds = inheritedIds(inherited);
   const ids = new Set<string>();
   for (const def of defs) {
     if (ids.has(def.id)) {
       throw new Error(`Invalid content in ${source}: duplicate decision id "${def.id}"`);
     }
+    rejectRedeclaredId(source, "decision", def.id, priorIds);
     ids.add(def.id);
   }
+  const resolved = [...inherited, ...defs];
+  const resolvedIds = new Set(resolved.map((d) => d.id));
   for (const def of defs) {
     if (def.gamble) {
       const total = def.gamble.reduce((sum, o) => sum + o.probability, 0);
@@ -250,14 +269,14 @@ export function parseDecisions(json: unknown, source = "content/decisions.json")
       }
     }
     for (const req of def.requires ?? []) {
-      if (!ids.has(req)) throw new Error(`Invalid content in ${source}: "${def.id}" requires unknown id "${req}"`);
+      if (!resolvedIds.has(req)) throw new Error(`Invalid content in ${source}: "${def.id}" requires unknown id "${req}"`);
     }
     for (const req of def.requiresCounts ?? []) {
-      if (!ids.has(req.id)) {
+      if (!resolvedIds.has(req.id)) {
         throw new Error(`Invalid content in ${source}: "${def.id}" requiresCounts references unknown id "${req.id}"`);
       }
       // A count gate above 1 on a unique decision can never be satisfied.
-      const target = defs.find((d) => d.id === req.id)!;
+      const target = resolved.find((d) => d.id === req.id)!;
       if (target.unique && req.count > 1) {
         throw new Error(
           `Invalid content in ${source}: "${def.id}" requiresCounts ${req.count}x "${req.id}", which is unique (at most 1 can be owned)`,
@@ -265,7 +284,7 @@ export function parseDecisions(json: unknown, source = "content/decisions.json")
       }
     }
     for (const syn of def.synergies ?? []) {
-      if (!ids.has(syn.ifOwned)) throw new Error(`Invalid content in ${source}: "${def.id}" synergy references unknown id "${syn.ifOwned}"`);
+      if (!resolvedIds.has(syn.ifOwned)) throw new Error(`Invalid content in ${source}: "${def.id}" synergy references unknown id "${syn.ifOwned}"`);
     }
   }
   return defs;
@@ -302,15 +321,21 @@ const challengeSchema = z
   })
   .strict();
 
-export function parseChallenges(json: unknown, source = "content/challenges.json"): ChallengeDef[] {
+export function parseChallenges(
+  json: unknown,
+  source = "content/challenges.json",
+  inherited: readonly ChallengeDef[] = [],
+): ChallengeDef[] {
   const result = z.array(challengeSchema).safeParse(json);
   if (!result.success) fail(source, result.error);
   const defs: ChallengeDef[] = result.data;
+  const priorIds = inheritedIds(inherited);
   const ids = new Set<string>();
   for (const def of defs) {
     if (ids.has(def.id)) {
       throw new Error(`Invalid content in ${source}: duplicate challenge id "${def.id}"`);
     }
+    rejectRedeclaredId(source, "challenge", def.id, priorIds);
     ids.add(def.id);
     if (def.choice && !def.choice.options.some((o) => o.id === def.choice!.defaultOptionId)) {
       throw new Error(`Invalid content in ${source}: "${def.id}" default option "${def.choice.defaultOptionId}" not found`);
@@ -352,16 +377,22 @@ const projectSchema = z
   })
   .strict();
 
-export function parseProjects(json: unknown, source = "content/projects.json"): ProjectDef[] {
+export function parseProjects(
+  json: unknown,
+  source = "content/projects.json",
+  inherited: readonly ProjectDef[] = [],
+): ProjectDef[] {
   const result = z.array(projectSchema).safeParse(json);
   if (!result.success) fail(source, result.error);
   // plain annotation (no cast) so schema/type drift fails compilation here
   const defs: ProjectDef[] = result.data;
+  const priorIds = inheritedIds(inherited);
   const ids = new Set<string>();
   for (const def of defs) {
     if (ids.has(def.id)) {
       throw new Error(`Invalid content in ${source}: duplicate project id "${def.id}"`);
     }
+    rejectRedeclaredId(source, "project", def.id, priorIds);
     ids.add(def.id);
   }
   return defs;
@@ -432,9 +463,20 @@ export type EraBundleJson = {
   projects: unknown;
 };
 
-// Merge start + one era's decision/challenge/project JSON into GameContent.
-// This function never advances eras. Engine.tick evaluates entryAnyOf and
-// reloads via a loader; it does not hardcode era names.
+function bundleForEra(
+  bundlesByEraId: Record<string, EraBundleJson>,
+  eraId: string,
+): EraBundleJson {
+  const bundle = bundlesByEraId[eraId];
+  if (!bundle) {
+    throw new Error(`No content bundle registered for era "${eraId}"`);
+  }
+  return bundle;
+}
+
+// Merge start + the resolved catalog for one era: every prior rung on the
+// ladder, then this era's files as a delta (ADR 0008). Tick evaluates
+// entryAnyOf and reloads via a loader; it does not hardcode era names.
 export function loadActiveContent(
   startJson: unknown,
   erasJson: unknown,
@@ -443,20 +485,26 @@ export function loadActiveContent(
 ): GameContent {
   const eras = parseErasConfig(erasJson);
   const activeId = eraId ?? eras.startingEraId;
-  const era: EraDef | undefined = eras.eras.find((e) => e.id === activeId);
-  if (!era) {
+  const eraIndex = eras.eras.findIndex((e) => e.id === activeId);
+  if (eraIndex < 0) {
     throw new Error(`Unknown era id "${activeId}" (not listed in content/eras.json)`);
   }
-  const bundle = bundlesByEraId[activeId];
-  if (!bundle) {
-    throw new Error(`No content bundle registered for era "${activeId}"`);
+  let decisions: DecisionDef[] = [];
+  let challenges: ChallengeDef[] = [];
+  let projects: ProjectDef[] = [];
+  for (let i = 0; i <= eraIndex; i++) {
+    const id = eras.eras[i].id;
+    const bundle = bundleForEra(bundlesByEraId, id);
+    const base = `content/eras/${id}`;
+    decisions = [...decisions, ...parseDecisions(bundle.decisions, `${base}/decisions.json`, decisions)];
+    challenges = [...challenges, ...parseChallenges(bundle.challenges, `${base}/challenges.json`, challenges)];
+    projects = [...projects, ...parseProjects(bundle.projects, `${base}/projects.json`, projects)];
   }
-  const base = `content/eras/${activeId}`;
   const content: GameContent = {
     start: parseStartConfig(startJson),
-    decisions: parseDecisions(bundle.decisions, `${base}/decisions.json`),
-    challenges: parseChallenges(bundle.challenges, `${base}/challenges.json`),
-    projects: parseProjects(bundle.projects, `${base}/projects.json`),
+    decisions,
+    challenges,
+    projects,
     eraId: activeId,
     eras,
   };
@@ -471,7 +519,7 @@ export function loadActiveContent(
 // tests against both the shipped content and fixtures.
 export function validateContentGraph(content: GameContent): void {
   const challengesSource = content.eraId
-    ? `content/eras/${content.eraId}/challenges.json`
+    ? `resolved catalog for era "${content.eraId}"`
     : "content/challenges.json";
   const decisionIds = new Set(content.decisions.map((d) => d.id));
   for (const def of content.challenges) {

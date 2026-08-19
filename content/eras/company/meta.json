@@ -1,5 +1,5 @@
 {
   "id": "company",
   "name": "Company",
-  "blurb": "Long-session era. Silent entry at $1,000,000 budget. Carry catalog until exponential accelerators land."
+  "blurb": "Long-session era. Silent entry at $1,000,000 budget. Inherits the Studio catalog (ADR 0008) until Company-only cards land."
 }
