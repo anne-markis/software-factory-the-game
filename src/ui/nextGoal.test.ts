@@ -131,13 +131,14 @@ describe("selectNextGoal / renderNextGoal", () => {
     const e = new Engine(shipped);
     const html = renderNextGoal(e.getState(), shipped);
     expect(html).not.toContain('data-next-era="company"');
+    expect(html).not.toContain("$1,000,000");
     expect(html).not.toContain("$5,000,000");
 
     const company = loadShippedContent("company");
     const inCompany = new Engine(company);
     const companyHtml = renderNextGoal(inCompany.getState(), company);
     expect(companyHtml).toContain('data-next-era="megacorp"');
-    expect(companyHtml).toContain("$50,000,000 budget or 10,000 users");
+    expect(companyHtml).toContain("$5,000,000 budget or 10,000 users");
   });
 
   it("shows the top-out state when milestones and contract gates are cleared", () => {

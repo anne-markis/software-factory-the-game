@@ -147,7 +147,7 @@ describe("appView era identity and silent Company entry", () => {
   it("shows Studio on the title, then Company with no Events line after the budget floor fires", () => {
     const content = loadShippedContent();
     const restored = initialState(content);
-    restored.stocks.budget = 5_000_020;
+    restored.stocks.budget = 1_000_020;
     const h = mount({ content, restored, loadEra: loadShippedContent, richBudget: false });
     expect(h.root.querySelector(".era-kicker")!.textContent).toBe("Studio");
     expect(document.title).toBe("Studio — Software Factory");

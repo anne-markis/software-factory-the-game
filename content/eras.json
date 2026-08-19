@@ -10,14 +10,14 @@
       "name": "Company",
       "silentEntry": true,
       "entryAnyOf": [
-        { "minBudget": 5000000 }
+        { "minBudget": 1000000 }
       ]
     },
     {
       "id": "megacorp",
       "name": "Megacorp",
       "entryAnyOf": [
-        { "minBudget": 50000000 },
+        { "minBudget": 5000000 },
         { "minUsers": 10000 }
       ]
     }

@@ -9,8 +9,8 @@ import {
 } from "./eras";
 import type { GameState } from "./types";
 
-const COMPANY_BUDGET = 5_000_000;
-const MEGACORP_BUDGET = 50_000_000;
+const COMPANY_BUDGET = 1_000_000;
+const MEGACORP_BUDGET = 5_000_000;
 /** Floors are checked after the day's $20 base burn. */
 const COMPANY_CLEAR = COMPANY_BUDGET + 20;
 const MEGACORP_CLEAR = MEGACORP_BUDGET + 40;
@@ -31,7 +31,7 @@ describe("era entry predicates", () => {
   });
 
   it("formats a path for the event log and next-goal copy", () => {
-    expect(formatEraEntryPredicate({ minBudget: COMPANY_BUDGET })).toBe("$5,000,000 budget");
+    expect(formatEraEntryPredicate({ minBudget: COMPANY_BUDGET })).toBe("$1,000,000 budget");
     expect(formatEraEntryPredicate({ minUsers: 10000 })).toBe("10,000 users");
   });
 });
@@ -39,7 +39,7 @@ describe("era entry predicates", () => {
 describe("evaluateNextEraEntry", () => {
   const eras = shippedEras();
 
-  it("returns Company when the $5M budget floor is met", () => {
+  it("returns Company when the $1M budget floor is met", () => {
     const hit = evaluateNextEraEntry(stateAt("studio", { budget: COMPANY_BUDGET }), eras);
     expect(hit?.era.id).toBe("company");
     expect(hit?.path).toEqual({ minBudget: COMPANY_BUDGET });
