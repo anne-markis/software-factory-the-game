@@ -58,7 +58,7 @@
       /* Budget may append "(N days)" runway; keep a wider slot so the
          suffix does not reflow neighboring stats when crossing comma or
          day-count boundaries. */
-      .stat-value.v-budget { min-width: 18ch; } /* Budget: e.g. "$12,345.6 (12 days)" */
+      .stat-value.v-budget { min-width: 32ch; } /* Budget: e.g. "$5,000,020 (250,001 days)" */
       /* Issue #37: low runway telegraph — reuse the existing danger red
          so payroll cliff reads before Events fill with removals. */
       .stat-value.budget-low { color: var(--accent-red); font-weight: bold; }
