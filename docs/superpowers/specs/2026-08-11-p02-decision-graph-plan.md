@@ -810,7 +810,7 @@ is the dark factory. Paperclips cadence = growing autonomy and speed
 Studio defs; five new uniques (autonomous-pull, self-learning,
 self-staffing, refactor, paid-tier). Factory-without-you waits for
 Megacorp. Tick evaluates the next era’s `entryAnyOf` (Company at $1M
-budget, silent; Megacorp at $5M **or** 10,000 users). Company /
+budget, silent; Megacorp at $5M). Company /
 Megacorp catalogs currently relist Studio ids.
 
 ### Megacorp (lighter sketch)

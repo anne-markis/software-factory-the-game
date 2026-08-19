@@ -82,7 +82,7 @@ fast a player can trip Company entry (see §5).
   exploit, not a flavor beat.
 - **Tick evaluates the next era’s `entryAnyOf` (one rung; no skip).**
   Studio → Company at $1,000,000 budget (silent: heading only);
-  Company → Megacorp at $5,000,000 **or** 10,000 users. Floors live in `content/eras.json`.
+  Company → Megacorp at $5,000,000 budget. Floors live in `content/eras.json`.
 - **Available and unused in Studio:** `stockFlowMods`, `rampRate`,
   synergies, `incomePerDay`, `sickness`, `removeHuman`, the
   `prevent-trouble` shop section.
@@ -285,7 +285,7 @@ section.
 | Gate | Predicate (OR) | Why these floors |
 | --- | --- | --- |
 | Studio → Company | `{ minBudget: 1000000 }` (`silentEntry`) | Treasury takeoff out of Studio. Not a next-goal grind and not an Events beat — the title kicker just reads Company. Dropped `minUsers: 80` because it fired long before $1M. |
-| Company → Megacorp | `{ minBudget: 5000000 }` **or** `{ minUsers: 10000 }` | Same two stocks, one more order of treasury. Users 10k stays the product-scale alternate and needs later exponential acquire (current organic flow plateaus ~160 users). |
+| Company → Megacorp | `{ minBudget: 5000000 }` | Next treasury order. Era gates are budget-only; users stay a product-loop stock, not an era key. |
 
 Today’s Studio catalog still plateaus (~$120–130/day net once users
 stabilize). These floors assume a later **accelerator** wave so the
@@ -559,7 +559,7 @@ incident. Gates use stocks, headcount, and live ownership — not a
 
 Lucky +$ challenges stay scarce. A **term-sheet** with a quota is a
 new loop (and a new way to lie about the goal). **Out of v0.** Megacorp
-entry stays grind floors (`minBudget` / `minUsers`) until a
+entry stays a budget grind (`minBudget`) until a
 breakthrough can be one event that writes those stocks, not a mini-game.
 
 ### 8.3 Quiet period
@@ -615,7 +615,7 @@ does not ship.
 
 ## 11. Leaving Company (toward Megacorp)
 
-Authored today: `minBudget 5000000` OR `minUsers 10000`.
+Authored today: `minBudget 5000000`. Era gates are budget-only.
 
 Company is the long era, so this gate should feel **earned**, not
 skippable the way Studio’s should. Retune the floors in play. Do not

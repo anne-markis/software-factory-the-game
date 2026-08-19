@@ -763,7 +763,7 @@ describe("per-era content layout (issue #90)", () => {
     expect(eras.eras[0].entryAnyOf).toBeUndefined();
     expect(eras.eras[1].entryAnyOf).toEqual([{ minBudget: 1000000 }]);
     expect(eras.eras[1].silentEntry).toBe(true);
-    expect(eras.eras[2].entryAnyOf).toEqual([{ minBudget: 5000000 }, { minUsers: 10000 }]);
+    expect(eras.eras[2].entryAnyOf).toEqual([{ minBudget: 5000000 }]);
   });
 
   it("rejects a starting era that declares entry criteria", () => {

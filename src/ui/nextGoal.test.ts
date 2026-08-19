@@ -138,7 +138,8 @@ describe("selectNextGoal / renderNextGoal", () => {
     const inCompany = new Engine(company);
     const companyHtml = renderNextGoal(inCompany.getState(), company);
     expect(companyHtml).toContain('data-next-era="megacorp"');
-    expect(companyHtml).toContain("$5,000,000 budget or 10,000 users");
+    expect(companyHtml).toContain("$5,000,000 budget");
+    expect(companyHtml).not.toContain("users");
   });
 
   it("shows the top-out state when milestones and contract gates are cleared", () => {

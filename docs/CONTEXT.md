@@ -22,8 +22,8 @@ scale invites), not which capability fantasy the player picked.
   acquire, compounding agents, paid-tier flow mods) are the next content
   wave so these gates play as takeoff, not a linear sit. Direction in
   [`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md).
-- **Megacorp** — institutional scale. Enter at $5,000,000 budget **or**
-  10,000 users. Carry catalog until Megacorp content lands.
+- **Megacorp** — institutional scale. Enter at $5,000,000 budget.
+  Carry catalog until Megacorp content lands.
 
 Capability mix (hire-heavy, agent-heavy, process-heavy) **meanders inside**
 an era. Crossing an era is irreversible once entry criteria fire. The tick

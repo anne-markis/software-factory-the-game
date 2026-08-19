@@ -51,7 +51,7 @@ describe("evaluateNextEraEntry", () => {
   });
 
   it("does not skip a rung even if a later era's floors are also met", () => {
-    const s = stateAt("studio", { budget: MEGACORP_BUDGET, users: 10000 });
+    const s = stateAt("studio", { budget: MEGACORP_BUDGET });
     expect(evaluateNextEraEntry(s, eras)?.era.id).toBe("company");
   });
 
@@ -59,11 +59,11 @@ describe("evaluateNextEraEntry", () => {
     expect(evaluateNextEraEntry(stateAt("studio", { budget: 10_000, users: 30 }), eras)).toBeNull();
   });
 
-  it("walks Company → Megacorp on budget or users", () => {
-    const byBudget = evaluateNextEraEntry(stateAt("company", { budget: MEGACORP_BUDGET }), eras);
-    expect(byBudget?.era.id).toBe("megacorp");
-    const byUsers = evaluateNextEraEntry(stateAt("company", { users: 10000 }), eras);
-    expect(byUsers?.era.id).toBe("megacorp");
+  it("walks Company → Megacorp on budget only", () => {
+    const hit = evaluateNextEraEntry(stateAt("company", { budget: MEGACORP_BUDGET }), eras);
+    expect(hit?.era.id).toBe("megacorp");
+    expect(hit?.path).toEqual({ minBudget: MEGACORP_BUDGET });
+    expect(evaluateNextEraEntry(stateAt("company", { users: 10000 }), eras)).toBeNull();
     expect(nextEraDef(eras, "megacorp")).toBeUndefined();
   });
 });
