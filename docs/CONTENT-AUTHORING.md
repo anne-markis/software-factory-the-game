@@ -73,7 +73,7 @@ list that rung as a grind. Locked floors:
   "name": "Company",
   "silentEntry": true,
   "entryAnyOf": [
-    { "minBudget": 5000000 }
+    { "minBudget": 1000000 }
   ]
 }
 ```
