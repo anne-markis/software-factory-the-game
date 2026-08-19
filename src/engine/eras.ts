@@ -35,7 +35,7 @@ export function formatEraEntryPredicate(predicate: EraEntryPredicate): string {
     parts.push(`${predicate.minCompletedProjects} completed projects`);
   }
   if (predicate.minUsers !== undefined) {
-    parts.push(`${predicate.minUsers} users`);
+    parts.push(`${predicate.minUsers.toLocaleString("en-US")} users`);
   }
   return parts.join(" and ");
 }

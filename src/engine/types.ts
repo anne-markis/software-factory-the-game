@@ -314,6 +314,9 @@ export interface EraDef {
   id: string;
   name: string;
   entryAnyOf?: EraEntryPredicate[];
+  // When true, crossing into this era does not write an Events log line and
+  // does not appear as a next-goal grind. The heading still shows the name.
+  silentEntry?: boolean;
 }
 
 export interface ErasConfig {

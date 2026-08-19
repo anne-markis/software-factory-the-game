@@ -152,10 +152,12 @@ export class Engine {
     if (!hit) return;
     this.content = this.loadEra(hit.era.id);
     this.state.eraId = hit.era.id;
-    log(
-      this.state,
-      `Entered ${hit.era.name} (${formatEraEntryPredicate(hit.path)}).`,
-    );
+    if (!hit.era.silentEntry) {
+      log(
+        this.state,
+        `Entered ${hit.era.name} (${formatEraEntryPredicate(hit.path)}).`,
+      );
+    }
   }
 
   pause(): void {

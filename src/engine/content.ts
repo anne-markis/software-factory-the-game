@@ -389,6 +389,7 @@ const eraDefSchema = z
     id: z.string().min(1),
     name: z.string().min(1),
     entryAnyOf: z.array(eraEntryPredicateSchema).min(1).optional(),
+    silentEntry: z.boolean().optional(),
   })
   .strict();
 

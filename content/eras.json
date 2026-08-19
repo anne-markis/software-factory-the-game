@@ -8,16 +8,16 @@
     {
       "id": "company",
       "name": "Company",
+      "silentEntry": true,
       "entryAnyOf": [
-        { "minBudget": 25000 },
-        { "minUsers": 80 }
+        { "minBudget": 5000000 }
       ]
     },
     {
       "id": "megacorp",
       "name": "Megacorp",
       "entryAnyOf": [
-        { "minBudget": 250000 },
+        { "minBudget": 50000000 },
         { "minUsers": 10000 }
       ]
     }
