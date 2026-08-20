@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Engine } from "./engine";
 import { loadShippedContent, shippedEras } from "./loadShippedContent";
 import {
+  eraCrossingIsSilent,
   eraEntryPredicateMet,
   evaluateNextEraEntry,
   formatEraEntryPredicate,
@@ -9,8 +10,9 @@ import {
 } from "./eras";
 import type { GameState } from "./types";
 
-const COMPANY_BUDGET = 1_000_000;
-const MEGACORP_BUDGET = 100_000_000;
+const shipped = shippedEras();
+const COMPANY_BUDGET = shipped.eras.find((era) => era.id === "company")!.entryAnyOf![0].minBudget!;
+const MEGACORP_BUDGET = shipped.eras.find((era) => era.id === "megacorp")!.entryAnyOf![0].minBudget!;
 /** Floors are checked after the day's $20 base burn. */
 const COMPANY_CLEAR = COMPANY_BUDGET + 20;
 const MEGACORP_CLEAR = MEGACORP_BUDGET + 40;
@@ -22,6 +24,14 @@ function stateAt(eraId: string, stocks: Partial<GameState["stocks"]> = {}): Game
   return s;
 }
 
+describe("eraCrossingIsSilent", () => {
+  it("treats omit and true as silent, and false as an announced crossing", () => {
+    expect(eraCrossingIsSilent({})).toBe(true);
+    expect(eraCrossingIsSilent({ silentEntry: true })).toBe(true);
+    expect(eraCrossingIsSilent({ silentEntry: false })).toBe(false);
+  });
+});
+
 describe("era entry predicates", () => {
   it("requires every listed floor on a path (AND)", () => {
     const s = stateAt("studio", { budget: COMPANY_BUDGET, users: 10 });
@@ -31,7 +41,9 @@ describe("era entry predicates", () => {
   });
 
   it("formats a path for the event log and next-goal copy", () => {
-    expect(formatEraEntryPredicate({ minBudget: COMPANY_BUDGET })).toBe("$1,000,000 budget");
+    expect(formatEraEntryPredicate({ minBudget: COMPANY_BUDGET })).toBe(
+      `$${COMPANY_BUDGET.toLocaleString("en-US")} budget`,
+    );
     expect(formatEraEntryPredicate({ minUsers: 10000 })).toBe("10,000 users");
   });
 });
@@ -39,11 +51,11 @@ describe("era entry predicates", () => {
 describe("evaluateNextEraEntry", () => {
   const eras = shippedEras();
 
-  it("returns Company when the $1M budget floor is met", () => {
+  it("returns Company when its budget floor is met", () => {
     const hit = evaluateNextEraEntry(stateAt("studio", { budget: COMPANY_BUDGET }), eras);
     expect(hit?.era.id).toBe("company");
     expect(hit?.path).toEqual({ minBudget: COMPANY_BUDGET });
-    expect(hit?.era.silentEntry).toBe(true);
+    expect(eraCrossingIsSilent(hit!.era)).toBe(true);
   });
 
   it("does not treat the old 80-user path as Company entry", () => {
@@ -102,7 +114,7 @@ describe("Engine era advancement", () => {
     expect(e.getState().eraId).toBe("company");
     e.tick();
     expect(e.getState().eraId).toBe("megacorp");
-    expect(e.getState().log.some((l) => l.message.includes("Entered Megacorp"))).toBe(true);
+    expect(e.getState().log.some((l) => l.message.includes("Entered Megacorp"))).toBe(false);
   });
 
   it("keeps owned Studio monetization paying after Company entry", () => {

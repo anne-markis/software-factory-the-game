@@ -16,13 +16,14 @@ scale invites), not which capability fantasy the player picked.
   agents belong here; do not gate “AI” as its own era.
 - **Company** — where most playtime will live: same loop, higher cost of
   play, homing in on the dark factory (deeper agentic investment,
-  Paperclips autonomy: the fleet staffs itself). Silent entry at
-  $1,000,000 budget (heading changes; no Events line, not a next-goal).
-  Catalog inherits Studio ids (ADR 0008). Exponential accelerators (viral
-  acquire, compounding agents, paid-tier flow mods) are the next content
-  wave so these gates play as takeoff, not a linear sit. Direction in
+  Paperclips autonomy: the fleet staffs itself). Crossing is silent by
+  default (heading changes; no Events line; not a next-goal). Floors live
+  in `content/eras.json`. Catalog inherits Studio ids (ADR 0008).
+  Exponential accelerators (viral acquire, compounding agents, paid-tier
+  flow mods) are the next content wave so these gates play as takeoff, not
+  a linear sit. Direction in
   [`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md).
-- **Megacorp** — institutional scale. Enter at $100,000,000 budget.
+- **Megacorp** — institutional scale. Floors live in `content/eras.json`.
   Intentionally a long-horizon gate until Company accelerators land.
 
 Capability mix (hire-heavy, agent-heavy, process-heavy) **meanders inside**

@@ -8,7 +8,6 @@
     {
       "id": "company",
       "name": "Company",
-      "silentEntry": true,
       "entryAnyOf": [
         { "minBudget": 1000000 }
       ]

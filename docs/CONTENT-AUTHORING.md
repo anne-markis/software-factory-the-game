@@ -65,20 +65,11 @@ direction (dark-factory attractor, lesson-and-fun filter, thin v0) is in
 optional floors (`minBudget`, `minReputation`, `minCompletedProjects`,
 `minUsers`); at least one floor per path is required. Floors are checked
 at **end of day** (after income and burn). The starting era must not
-declare `entryAnyOf`. `silentEntry: true` means the heading changes when
-the floor is met, but tick writes no Events line and next-goal does not
-list that rung as a grind. Locked floors:
-
-```json
-{
-  "id": "company",
-  "name": "Company",
-  "silentEntry": true,
-  "entryAnyOf": [
-    { "minBudget": 1000000 }
-  ]
-}
-```
+declare `entryAnyOf`. **Do not copy floor numbers into docs** — they live
+in `content/eras.json`. Crossings are silent by default: omit
+`silentEntry` (or set it true). The heading changes; tick writes no Events
+line and next-goal does not list that rung as a grind. Set
+`"silentEntry": false` only when a crossing should announce.
 
 Run `make graph` from the repository root to open the local authoring viewer
 under `tools/content-graph/` (ADR 0003). It shows the parsed era, decision,

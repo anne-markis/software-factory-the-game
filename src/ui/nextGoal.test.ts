@@ -126,20 +126,33 @@ describe("selectNextGoal / renderNextGoal", () => {
     expect(html).toContain("Legacy platform migration");
   });
 
-  it("omits silent Company floors from next-goal and shows Megacorp once in Company", () => {
+  it("omits era floors from next-goal by default in Studio and Company", () => {
     const shipped = loadShippedContent();
     const e = new Engine(shipped);
     const html = renderNextGoal(e.getState(), shipped);
     expect(html).not.toContain('data-next-era="company"');
-    expect(html).not.toContain("$1,000,000");
-    expect(html).not.toContain("$100,000,000");
+    expect(html).not.toContain('data-next-era="megacorp"');
 
     const company = loadShippedContent("company");
     const inCompany = new Engine(company);
     const companyHtml = renderNextGoal(inCompany.getState(), company);
-    expect(companyHtml).toContain('data-next-era="megacorp"');
-    expect(companyHtml).toContain("$100,000,000 budget");
-    expect(companyHtml).not.toContain("users");
+    expect(companyHtml).not.toContain('data-next-era="megacorp"');
+  });
+
+  it("shows an era next-goal only when that rung sets silentEntry false", () => {
+    const shipped = loadShippedContent("company");
+    const announced = {
+      ...shipped,
+      eras: {
+        ...shipped.eras!,
+        eras: shipped.eras!.eras.map((era) =>
+          era.id === "megacorp" ? { ...era, silentEntry: false as const } : era,
+        ),
+      },
+    };
+    const html = renderNextGoal(new Engine(announced).getState(), announced);
+    expect(html).toContain('data-next-era="megacorp"');
+    expect(html).toContain("Megacorp");
   });
 
   it("shows the top-out state when milestones and contract gates are cleared", () => {

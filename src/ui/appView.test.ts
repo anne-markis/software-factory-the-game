@@ -156,7 +156,7 @@ describe("appView era identity and silent Company entry", () => {
   it("shows Studio on the title, then Company with no Events line after the budget floor fires", () => {
     const content = loadShippedContent();
     const restored = initialState(content);
-    restored.stocks.budget = 1_000_020;
+    restored.stocks.budget = content.eras!.eras.find((era) => era.id === "company")!.entryAnyOf![0].minBudget! + 20;
     const h = mount({ content, restored, loadEra: loadShippedContent, richBudget: false });
     expect(h.root.querySelector(".era-kicker")!.textContent).toBe("Studio");
     expect(document.title).toBe("Studio — Software Factory");
@@ -166,7 +166,7 @@ describe("appView era identity and silent Company entry", () => {
     expect(h.root.querySelector(".era-kicker")!.textContent).toBe("Company");
     expect(document.title).toBe("Company — Software Factory");
     expect(h.root.textContent).not.toContain("Entered Company");
-    expect(h.root.querySelector('[data-next-era="megacorp"]')).not.toBeNull();
+    expect(h.root.querySelector('[data-next-era="megacorp"]')).toBeNull();
   });
 });
 

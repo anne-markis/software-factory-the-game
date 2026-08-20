@@ -51,8 +51,8 @@ Studio when costs fit that scale.
 Studio ships filled. Later era folders are **deltas**: the loader inherits
 every prior rung so owned instances keep paying after the shop swaps
 (ADR 0008). Do not copy Studio JSON into Company or Megacorp. New later-era
-cards go under that era’s folder, not by tagging Studio cards. Locked floors:
-Company at $1,000,000 budget (`silentEntry`); Megacorp at $100,000,000 budget
-(intentionally a long sit until exponential Company play). The graph
-viewer (ADR 0003) reads the same resolved bundles and plots native cards
-per era.
+cards go under that era’s folder, not by tagging Studio cards. Entry floors
+live in `content/eras.json` only. Crossing an era is silent by default
+(heading changes; no Events line; not a next-goal); set `"silentEntry": false`
+to announce. The graph viewer (ADR 0003) reads the same resolved bundles and
+plots native cards per era.

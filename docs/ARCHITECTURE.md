@@ -87,6 +87,9 @@ resolved(megacorp) = resolved(company) + megacorp files
 `start.json` is era-agnostic (seed stocks, always-on flows and drags).
 Those keep running when the era heading changes.
 
+Entry floors live only in `content/eras.json`. Do not copy them into ADRs
+or glossaries. Crossings are silent by default.
+
 ## Content owns the numbers
 
 Tunable values belong in JSON, validated by strict Zod schemas. Typos

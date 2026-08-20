@@ -44,6 +44,11 @@ export function eraDisplayName(eras: ErasConfig | undefined, eraId: string): str
   return eras?.eras.find((era) => era.id === eraId)?.name ?? eraId;
 }
 
+/** Crossings are silent unless content sets silentEntry: false. */
+export function eraCrossingIsSilent(era: Pick<EraDef, "silentEntry">): boolean {
+  return era.silentEntry !== false;
+}
+
 /** Next era on the one-way ladder, or undefined when this is the last rung. */
 export function nextEraDef(eras: ErasConfig, eraId: string): EraDef | undefined {
   const index = eras.eras.findIndex((era) => era.id === eraId);

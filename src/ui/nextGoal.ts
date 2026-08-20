@@ -2,7 +2,7 @@
 // Pure UI derivation from reputation milestones + contract progression gates
 // — no engine/save changes, no win screen.
 import { projectAvailability, type ProjectAvailability } from "../engine/projects";
-import { formatEraEntryPredicate, nextEraDef } from "../engine/eras";
+import { eraCrossingIsSilent, formatEraEntryPredicate, nextEraDef } from "../engine/eras";
 import type { GameContent, GameState } from "../engine/types";
 
 function esc(s: string): string {
@@ -53,9 +53,9 @@ export function nextEraGoal(
   if (!content.eras) return null;
   const next = nextEraDef(content.eras, state.eraId);
   if (!next?.entryAnyOf?.length) return null;
-  // Silent rungs (Studio → Company) are not a grind target — the heading
-  // just changes when the floor is met.
-  if (next.silentEntry) return null;
+  // Silent is the default. A rung is only a grind target when content
+  // sets silentEntry: false.
+  if (eraCrossingIsSilent(next)) return null;
   return {
     kind: "era",
     id: next.id,

@@ -821,8 +821,20 @@ describe("per-era content layout (issue #90)", () => {
     expect(eras.eras.map((e) => e.id)).toEqual(["studio", "company", "megacorp"]);
     expect(eras.eras[0].entryAnyOf).toBeUndefined();
     expect(eras.eras[1].entryAnyOf).toEqual([{ minBudget: 1000000 }]);
-    expect(eras.eras[1].silentEntry).toBe(true);
+    expect(eras.eras[1].silentEntry).toBeUndefined();
     expect(eras.eras[2].entryAnyOf).toEqual([{ minBudget: 100000000 }]);
+    expect(eras.eras[2].silentEntry).toBeUndefined();
+  });
+
+  it("keeps silentEntry false when a later era opts into an announced crossing", () => {
+    const cfg = parseErasConfig({
+      startingEraId: "studio",
+      eras: [
+        { id: "studio", name: "Studio" },
+        { id: "loud", name: "Loud", silentEntry: false, entryAnyOf: [{ minBudget: 1 }] },
+      ],
+    });
+    expect(cfg.eras[1].silentEntry).toBe(false);
   });
 
   it("rejects a starting era that declares entry criteria", () => {
