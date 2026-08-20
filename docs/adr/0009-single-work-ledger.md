@@ -38,3 +38,4 @@ Users still unlock when the Launch beta’s remaining hits ~0 (work has shipped,
 - Cockpit Backlog burns down when points **ship**, not when they are pulled into In Progress.
 - Project ETA (`remaining ÷ points/day`) includes attached extra work.
 - No save bump: remaining and stocks already existed; attribution and display change. In-flight saves that already diverged will play under the new rules from the next tick.
+- Tests that would have caught this: `workLedgerIssues` / `surplusGrewWhileInFlight` on every simulation tick; UI `workSurfaces.test.ts` parsing cockpit Backlog, Delivery stage boxes, delivery stats, and Projects remaining and requiring they agree — especially at Ready-empty with WIP still in later stages.

@@ -121,7 +121,7 @@ export function bindingBottleneckStage(
 // renders at half page width (side by side with the progress loop), so the
 // same viewBox now scales down further -- the larger source sizes keep the
 // scaled-down text legible.
-function box(x: number, label: string, value: number, binding: boolean): string {
+function box(x: number, label: string, value: number, binding: boolean, stageKey: string): string {
   const text = value.toLocaleString("en-US", { maximumFractionDigits: 1 });
   // Binding cue: thicker stroke + data attribute for tests / assistive tech.
   // Caption lives under the stage box (same italic voice as continuous deploy).
@@ -132,9 +132,11 @@ function box(x: number, label: string, value: number, binding: boolean): string 
       <text x="${x + BOX_W / 2}" y="${Y + BOX_H + 14}" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">capacity-bound</text>`
     : "";
   return `
+      <g data-stage="${stageKey}">
       <rect x="${x}" y="${Y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"${strokeWidth}${dataAttr}/>
       <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="16" fill="currentColor">${label}</text>
-      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">${text}</text>${cue}`;
+      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor" data-stage-value="true">${text}</text>${cue}
+      </g>`;
 }
 
 function arrow(x1: number, x2: number, label: string, bindingOutflow = false): string {
@@ -169,7 +171,7 @@ function teachingCaption(): string {
 
 function fourBoxLoop(state: Readonly<GameState>, binding: BindingStage | null): string {
   const boxes = FULL_STAGES.map((stage, i) =>
-    box(10 + i * (BOX_W + GAP), stage.label, state.stocks[stage.key], binding === stage.key),
+    box(10 + i * (BOX_W + GAP), stage.label, state.stocks[stage.key], binding === stage.key, stage.key),
   ).join("");
 
   // RATE_IDS order is pull → finish → deploy; outflow of inProgress is finish
@@ -202,7 +204,7 @@ function continuousDeployLoop(state: Readonly<GameState>, binding: BindingStage 
   const x0 = (VIEW_W - contentWidth) / 2;
 
   const boxes = CD_STAGES.map((stage, i) =>
-    box(x0 + i * (BOX_W + GAP), stage.label, state.stocks[stage.key], binding === stage.key),
+    box(x0 + i * (BOX_W + GAP), stage.label, state.stocks[stage.key], binding === stage.key, stage.key),
   ).join("");
 
   const pullX1 = x0 + BOX_W;

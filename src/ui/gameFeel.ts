@@ -38,6 +38,8 @@ export interface StatView {
   valueClass?: string;
   /** When false, value changes never flash (Day clock). */
   material: boolean;
+  /** Stable selector for cross-surface counting tests (`[data-stat=...]`). */
+  stat: string;
 }
 
 export function cockpitStatViews(state: Readonly<GameState>, content: GameContent): StatView[] {
@@ -47,36 +49,37 @@ export function cockpitStatViews(state: Readonly<GameState>, content: GameConten
   const budgetValue =
     runway === null ? `$${fmt(state.stocks.budget)}` : `$${fmt(state.stocks.budget)} (${dayLabel})`;
   return [
-    { label: "Day", value: String(state.day), widthClass: "v-day", material: false },
+    { stat: "day", label: "Day", value: String(state.day), widthClass: "v-day", material: false },
     // ADR 0009: cockpit Backlog is unshipped work, not the Ready-stage stock.
-    { label: "Backlog", value: fmt(unshippedWork(state)), widthClass: "v-flow", material: true },
+    { stat: "backlog", label: "Backlog", value: fmt(unshippedWork(state)), widthClass: "v-flow", material: true },
     {
+      stat: "budget",
       label: "Budget",
       value: budgetValue,
       widthClass: "v-budget",
       valueClass: low ? "budget-low" : undefined,
       material: true,
     },
-    { label: "Points/Day", value: fmt(state.pointsPerDay), widthClass: "v-rate", material: true },
+    { stat: "pointsPerDay", label: "Points/Day", value: fmt(state.pointsPerDay), widthClass: "v-rate", material: true },
   ];
 }
 
 export function deliveryStatViews(state: Readonly<GameState>): StatView[] {
   return [
-    { label: "In Progress", value: fmt(state.stocks.inProgress), widthClass: "v-count", material: true },
-    { label: "Done", value: fmt(state.stocks.done), widthClass: "v-count", material: true },
-    { label: "Shipped", value: fmt(state.stocks.shipped), widthClass: "v-flow", material: true },
-    { label: "Tech Debt", value: fmt(state.stocks.techDebt), widthClass: "v-debt", material: true },
-    { label: "Reputation", value: fmt(state.stocks.reputation), widthClass: "v-rep", material: true },
+    { stat: "inProgress", label: "In Progress", value: fmt(state.stocks.inProgress), widthClass: "v-count", material: true },
+    { stat: "done", label: "Done", value: fmt(state.stocks.done), widthClass: "v-count", material: true },
+    { stat: "shipped", label: "Shipped", value: fmt(state.stocks.shipped), widthClass: "v-flow", material: true },
+    { stat: "techDebt", label: "Tech Debt", value: fmt(state.stocks.techDebt), widthClass: "v-debt", material: true },
+    { stat: "reputation", label: "Reputation", value: fmt(state.stocks.reputation), widthClass: "v-rep", material: true },
     // Studio spine (issue #88): the users stock sits after Reputation. Stays
     // 0 until the Launch beta completes, then drives monetization.
-    { label: "Users", value: fmt(state.stocks.users), widthClass: "v-users", material: true },
+    { stat: "users", label: "Users", value: fmt(state.stocks.users), widthClass: "v-users", material: true },
   ];
 }
 
 function statMarkup(s: StatView): string {
   const extra = s.valueClass ? ` ${s.valueClass}` : "";
-  return `<span class="stat"><span class="stat-label">${esc(s.label)}</span> <span class="stat-value ${s.widthClass}${extra}">${esc(s.value)}</span></span>`;
+  return `<span class="stat" data-stat="${esc(s.stat)}"><span class="stat-label">${esc(s.label)}</span> <span class="stat-value ${s.widthClass}${extra}">${esc(s.value)}</span></span>`;
 }
 
 /** Full-row HTML for first paint / structure mismatch (same shape as renderStats). */

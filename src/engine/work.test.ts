@@ -3,7 +3,7 @@ import { Engine } from "./engine";
 import { applyEffects } from "./effects";
 import { parseStartConfig, parseChallenges, parseProjects } from "./content";
 import { challengesJson, projectsJson, startJson } from "./loadShippedContent";
-import { attachInjectedWork, committedWork, isPipelineStock, unshippedWork } from "./work";
+import { attachInjectedWork, committedWork, isPipelineStock, surplusGrewWhileInFlight, surplusWork, unshippedWork, workLedgerIssues } from "./work";
 import type { GameContent, GameState } from "./types";
 
 function testContent(): GameContent {
@@ -150,5 +150,93 @@ describe("work ledger vs shipped challenges", () => {
     applyEffects(e.getState() as GameState, [{ type: "addToStock", stock: "backlog", value: 75 }], "scope-creep");
     expect(e.getState().stocks.backlog).toBe(375);
     expect(e.getState().projects[0]!.remaining).toBe(before + 75);
+  });
+});
+
+describe("work ledger conservation across every mutation path", () => {
+  it("flags leftover bag growth while in flight (scope/debt without attach) and stranded remaining", () => {
+    const e = new Engine(testContent());
+    const s = e.getState() as GameState;
+    const before = { stocks: { ...s.stocks }, projects: [{ ...s.projects[0]! }], completedProjects: s.completedProjects };
+    s.stocks.backlog += 75; // bag only, no attachInjectedWork
+    expect(workLedgerIssues(s)).toEqual([]); // leftover is legal between contracts; not while in flight
+    expect(surplusWork(s)).toBe(75);
+    expect(surplusGrewWhileInFlight(before, s)).toBe(true);
+
+    s.stocks.backlog = 0;
+    s.stocks.inProgress = 0;
+    s.stocks.done = 0;
+    expect(workLedgerIssues(s).some((m) => m.includes("exceeds unshipped"))).toBe(true);
+  });
+
+  it("addToStock/scaleStock on each pipeline stage keep remaining in lockstep; shipped does not", () => {
+    for (const stock of ["backlog", "inProgress", "done"] as const) {
+      const e = new Engine(testContent());
+      const before = e.getState().projects[0]!.remaining;
+      applyEffects(e.getState() as GameState, [{ type: "addToStock", stock, value: 10 }], "inj");
+      expect(workLedgerIssues(e.getState())).toEqual([]);
+      expect(e.getState().projects[0]!.remaining).toBe(before + 10);
+      expect(surplusWork(e.getState())).toBe(0);
+    }
+    const shipped = new Engine(testContent());
+    const rem = shipped.getState().projects[0]!.remaining;
+    applyEffects(shipped.getState() as GameState, [{ type: "addToStock", stock: "shipped", value: 10 }], "inj");
+    expect(shipped.getState().projects[0]!.remaining).toBe(rem);
+    expect(unshippedWork(shipped.getState())).toBe(300);
+
+    const scaled = new Engine(testContent());
+    applyEffects(scaled.getState() as GameState, [{ type: "scaleStock", stock: "backlog", factor: 2 }], "inj");
+    expect(scaled.getState().projects[0]!.remaining).toBe(600);
+    expect(unshippedWork(scaled.getState())).toBe(600);
+    expect(workLedgerIssues(scaled.getState())).toEqual([]);
+  });
+
+  it("pull/finish move work between stages without changing unshipped or remaining", () => {
+    const e = new Engine(testContent());
+    e.tick(); // pull 2, no ship yet
+    const s = e.getState();
+    expect(s.stocks.backlog).toBe(298);
+    expect(s.stocks.inProgress).toBe(2);
+    expect(unshippedWork(s)).toBe(300);
+    expect(s.projects[0]!.remaining).toBe(300);
+    expect(workLedgerIssues(s)).toEqual([]);
+  });
+
+  it("each idle tick until beta completion keeps surplus at 0 and ledger clean", () => {
+    const e = new Engine(testContent());
+    let prev = e.getState();
+    for (let i = 0; i < 400 && e.getState().completedProjects === 0; i++) {
+      const before = {
+        stocks: { ...prev.stocks },
+        projects: prev.projects.map((p) => ({ ...p })),
+        completedProjects: prev.completedProjects,
+      };
+      e.tick();
+      const s = e.getState();
+      expect(workLedgerIssues(s), `day ${s.day}`).toEqual([]);
+      expect(surplusGrewWhileInFlight(before, s), `day ${s.day}`).toBe(false);
+      if (s.completedProjects === 0) {
+        expect(surplusWork(s)).toBeCloseTo(0, 8);
+        expect(unshippedWork(s)).toBeCloseTo(s.projects[0]!.remaining, 8);
+      }
+      prev = s;
+    }
+    expect(e.getState().completedProjects).toBe(1);
+  });
+
+  it("startProject does not change surplus (new remaining matches new Ready points)", () => {
+    const c = testContent();
+    c.start.initialProject.sizePoints = 2;
+    c.start.stocks.backlog = 2;
+    const e = new Engine(c);
+    for (let i = 0; i < 8; i++) e.tick();
+    const s = e.getState() as GameState;
+    s.stocks.backlog = 0;
+    s.stocks.inProgress = 0;
+    s.stocks.done = 0;
+    const surplusBefore = surplusWork(s);
+    e.startProject("small-crm");
+    expect(surplusWork(e.getState())).toBeCloseTo(surplusBefore, 8);
+    expect(workLedgerIssues(e.getState())).toEqual([]);
   });
 });

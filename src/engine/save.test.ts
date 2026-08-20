@@ -3,6 +3,7 @@ import { serialize, deserialize, SAVE_VERSION } from "./save";
 import { Engine, initialState } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
+import { unshippedWork, workLedgerIssues } from "./work";
 import type { GameContent } from "./types";
 
 function content(): GameContent {
@@ -26,6 +27,17 @@ describe("save/load", () => {
     a.tick();
     b.tick();
     expect(b.getState()).toEqual(a.getState());
+  });
+
+  it("round-trips the work ledger (unshipped vs remaining stay consistent)", () => {
+    const c = content();
+    const a = new Engine(c);
+    for (let i = 0; i < 20; i++) a.tick();
+    const restored = deserialize(serialize(a.getState()));
+    expect(workLedgerIssues(a.getState())).toEqual([]);
+    expect(workLedgerIssues(restored)).toEqual([]);
+    expect(unshippedWork(restored)).toBe(unshippedWork(a.getState()));
+    expect(restored.projects[0]!.remaining).toBe(a.getState().projects[0]!.remaining);
   });
 
   it("rejects an unknown save version", () => {
