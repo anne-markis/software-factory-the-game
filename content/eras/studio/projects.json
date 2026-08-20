@@ -1,44 +1,89 @@
 [
   {
-    "id": "small-crm",
-    "name": "Small CRM build",
-    "sizePoints": 5000,
-    "upfrontCost": 2000,
-    "payoutPerPoint": 21,
-    "completionBonus": 1500,
-    "reputationReward": 5
+    "id": "gig-bugfix",
+    "name": "Weekend bugfix",
+    "sizePoints": 100,
+    "upfrontCost": 0,
+    "payoutPerPoint": 18,
+    "completionBonus": 200,
+    "reputationReward": 1
   },
   {
-    "id": "big-migration",
-    "name": "Legacy platform migration",
-    "sizePoints": 20000,
-    "upfrontCost": 5000,
-    "payoutPerPoint": 23,
-    "completionBonus": 8000,
-    "requiresCompleted": 1,
-    "requiresReputation": 5,
-    "reputationReward": 12
+    "id": "gig-landing-page",
+    "name": "Landing page",
+    "sizePoints": 150,
+    "upfrontCost": 0,
+    "payoutPerPoint": 16,
+    "completionBonus": 300,
+    "reputationReward": 1
   },
   {
-    "id": "enterprise-replatform",
-    "name": "Enterprise replatform",
-    "sizePoints": 50000,
-    "upfrontCost": 12000,
-    "payoutPerPoint": 24,
-    "completionBonus": 25000,
-    "requiresCompleted": 2,
-    "requiresReputation": 15,
-    "reputationReward": 20
+    "id": "gig-plugin",
+    "name": "Client plugin",
+    "sizePoints": 450,
+    "upfrontCost": 0,
+    "payoutPerPoint": 17,
+    "completionBonus": 700,
+    "reputationReward": 2
   },
   {
-    "id": "mobile-app",
-    "name": "Mobile app build",
-    "sizePoints": 9000,
-    "upfrontCost": 3000,
-    "payoutPerPoint": 22,
+    "id": "ship-v1",
+    "name": "Ship v1",
+    "sizePoints": 400,
+    "upfrontCost": 0,
+    "payoutPerPoint": 0,
+    "completionBonus": 1000,
+    "reputationReward": 2,
+    "unique": true,
+    "requiresCompletedId": "launch-beta",
+    "completionStockGrants": [{ "stock": "users", "amount": 20 }]
+  },
+  {
+    "id": "ship-v2",
+    "name": "Ship v2",
+    "sizePoints": 550,
+    "upfrontCost": 0,
+    "payoutPerPoint": 0,
+    "completionBonus": 1400,
+    "reputationReward": 2,
+    "unique": true,
+    "requiresCompletedId": "ship-v1",
+    "completionStockGrants": [{ "stock": "users", "amount": 25 }]
+  },
+  {
+    "id": "ship-v3",
+    "name": "Ship v3",
+    "sizePoints": 750,
+    "upfrontCost": 0,
+    "payoutPerPoint": 0,
+    "completionBonus": 2000,
+    "reputationReward": 3,
+    "unique": true,
+    "requiresCompletedId": "ship-v2",
+    "completionStockGrants": [{ "stock": "users", "amount": 35 }]
+  },
+  {
+    "id": "ship-v4",
+    "name": "Ship v4",
+    "sizePoints": 1000,
+    "upfrontCost": 0,
+    "payoutPerPoint": 0,
+    "completionBonus": 2800,
+    "reputationReward": 3,
+    "unique": true,
+    "requiresCompletedId": "ship-v3",
+    "completionStockGrants": [{ "stock": "users", "amount": 45 }]
+  },
+  {
+    "id": "ship-v5",
+    "name": "Ship v5",
+    "sizePoints": 1400,
+    "upfrontCost": 0,
+    "payoutPerPoint": 0,
     "completionBonus": 4000,
-    "requiresCompleted": 1,
-    "requiresReputation": 5,
-    "reputationReward": 6
+    "reputationReward": 4,
+    "unique": true,
+    "requiresCompletedId": "ship-v4",
+    "completionStockGrants": [{ "stock": "users", "amount": 60 }]
   }
 ]

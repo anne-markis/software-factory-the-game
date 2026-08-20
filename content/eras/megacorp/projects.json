@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "enterprise-replatform",
+    "name": "Enterprise replatform",
+    "sizePoints": 50000,
+    "upfrontCost": 12000,
+    "payoutPerPoint": 24,
+    "completionBonus": 25000,
+    "requiresCompleted": 2,
+    "requiresReputation": 15,
+    "reputationReward": 20
+  }
+]

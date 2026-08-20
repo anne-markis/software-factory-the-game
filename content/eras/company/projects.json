@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "id": "small-crm",
+    "name": "Small CRM build",
+    "sizePoints": 5000,
+    "upfrontCost": 2000,
+    "payoutPerPoint": 21,
+    "completionBonus": 1500,
+    "reputationReward": 5
+  },
+  {
+    "id": "big-migration",
+    "name": "Legacy platform migration",
+    "sizePoints": 20000,
+    "upfrontCost": 5000,
+    "payoutPerPoint": 23,
+    "completionBonus": 8000,
+    "requiresCompleted": 1,
+    "requiresReputation": 5,
+    "reputationReward": 12
+  }
+]

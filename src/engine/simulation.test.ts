@@ -10,6 +10,29 @@ function fullContent(): GameContent {
   return loadShippedContent();
 }
 
+const STUDIO_FOLLOW_ON = [
+  "ship-v1",
+  "ship-v2",
+  "ship-v3",
+  "ship-v4",
+  "ship-v5",
+  "gig-bugfix",
+  "gig-landing-page",
+  "gig-plugin",
+];
+
+function startNextStudioWork(e: Engine, reserve = 0): void {
+  const s = e.getState();
+  if (s.projects.length > 0) return;
+  for (const id of STUDIO_FOLLOW_ON) {
+    const w = e.availableProjects().find((p) => p.def.id === id);
+    if (w?.startable && s.stocks.budget >= w.def.upfrontCost + reserve) {
+      e.startProject(id);
+      return;
+    }
+  }
+}
+
 type WorkSnap = Pick<GameState, "stocks" | "projects" | "completedProjects">;
 
 function snapshotWork(s: Readonly<GameState>): WorkSnap {
@@ -284,11 +307,8 @@ describe("simulation", () => {
         e.applyDecision("basic-dev");
         hires += 1;
       }
-      // Continuation: keep income flowing once the current contract is done.
-      if (s.projects.length === 0) {
-        const crm = e.availableProjects().find((p) => p.def.id === "small-crm");
-        if (crm?.startable) e.startProject("small-crm");
-      }
+      // Continuation: version ladder first, then a tiny gig as cash relief.
+      startNextStudioWork(e);
       for (const pc of [...s.pendingChoices]) {
         const def = content.challenges.find((c) => c.id === pc.challengeId)!;
         e.resolveChoice(pc.challengeId, def.choice!.options[0].id);
@@ -341,7 +361,6 @@ describe("simulation", () => {
     const content = fullContent();
     const e = new Engine(content);
     const check = ledgerWatcher();
-    let startedSmallCrm = false;
     let lastCompleted = 0;
     let everBroke = false;
     let peakUsers = 0;
@@ -366,14 +385,7 @@ describe("simulation", () => {
         if (a.purchasable && s.stocks.budget >= oneTime + BUY_BUFFER) e.applyDecision(id);
         break; // strict priority: never skip ahead in the list
       }
-      if (s.projects.length === 0) {
-        const wantId = !startedSmallCrm ? "small-crm" : "mobile-app";
-        const w = e.availableProjects().find((x) => x.def.id === wantId);
-        if (w?.startable && s.stocks.budget >= w.def.upfrontCost + PROJECT_RESERVE) {
-          e.startProject(wantId);
-          if (wantId === "small-crm") startedSmallCrm = true;
-        }
-      }
+      startNextStudioWork(e, PROJECT_RESERVE);
       for (const pc of [...s.pendingChoices]) {
         const def = content.challenges.find((c) => c.id === pc.challengeId)!;
         e.resolveChoice(pc.challengeId, def.choice!.options[0].id);
@@ -819,45 +831,36 @@ describe("simulation", () => {
   // projectAvailability's live reputation gate, not any one challenge, and the
   // -5/-300 shape is the one a later era's breach card is expected to carry.
   it("downward spiral: a reputation hit re-locks a tier the build had unlocked", () => {
-    const content = fullContent();
+    const content = loadShippedContent("company");
     const e = new Engine(content);
-    // Cast past the Readonly view to stage a build sitting exactly on the top
-    // tier's gate: 2 completed projects, reputation 15 (enterprise's floor),
-    // and plenty of budget so affordability is never the binding reason.
+    // Stage a Company build sitting on the first reputation-gated client
+    // (big-migration: 1 completion AND 5 reputation). Plenty of budget so
+    // affordability is never the binding reason.
     const s = e.getState() as GameState;
-    s.completedProjects = 2;
-    s.stocks.reputation = 15;
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.reputation = 5;
     s.stocks.budget = 100000;
 
-    const enterpriseAt = () => e.availableProjects().find((p) => p.def.id === "enterprise-replatform")!;
-    // Both floors satisfied AND affordable -> startable, no reason.
-    expect(enterpriseAt().startable).toBe(true);
-    expect(enterpriseAt().reason).toBeUndefined();
+    const migrationAt = () => e.availableProjects().find((p) => p.def.id === "big-migration")!;
+    expect(migrationAt().startable).toBe(true);
+    expect(migrationAt().reason).toBeUndefined();
 
-    // Apply a breach-shaped hit (budget -300, reputation -5). The -5 drops
-    // reputation from 15 to 10, below enterprise's 15 gate.
     const breachEffects: Effect[] = [
       { type: "addToStock", stock: "budget", value: -300 },
       { type: "addToStock", stock: "reputation", value: -5 },
     ];
     applyEffects(s, breachEffects, "spiral-test");
-    expect(s.stocks.reputation).toBe(10);
+    expect(s.stocks.reputation).toBe(0);
 
-    // The tier re-locks live, and the reason names the reputation shortfall
-    // (not affordability -- budget is still ample). This is the spiral: the
-    // breach cost the access, not just the cash.
-    const relocked = enterpriseAt();
+    const relocked = migrationAt();
     expect(relocked.startable).toBe(false);
-    expect(relocked.reason).toBe("requires 15 reputation");
+    expect(relocked.reason).toBe("requires 5 reputation");
 
-    // A second breach digs deeper (10 -> 5) and it stays locked -- recovery
-    // requires re-earning reputation through completions, which the breach loop
-    // also threatens. The trap is real (by design); the balance sweep keeps it
-    // survivable for a mitigated build (see the automation-heavy probe).
     applyEffects(s, breachEffects, "spiral-test-2");
-    expect(s.stocks.reputation).toBe(5);
-    expect(enterpriseAt().startable).toBe(false);
-    expect(enterpriseAt().reason).toBe("requires 15 reputation");
+    expect(s.stocks.reputation).toBe(0);
+    expect(migrationAt().startable).toBe(false);
+    expect(migrationAt().reason).toBe("requires 5 reputation");
   });
 
   it("upgrades matter: test suite reduces tech debt vs idle over 400 days", () => {
@@ -896,12 +899,12 @@ describe("simulation", () => {
     // isStalled() is actually meant to capture.
     c.challenges = [];
     c.decisions = [];
+    c.projects = []; // $0 tiny gigs would otherwise keep a relief valve open
     c.start.debtMultiplier = 0;
     c.start.stocks.backlog = 3;
     c.start.stocks.budget = 10;
     c.start.initialProject.sizePoints = 3;
-    // Zero the payout so completing the initial project does not inject
-    // cash that would make a project (cheapest upfrontCost $2000) affordable.
+    // Zero the payout so completing the initial project does not inject cash.
     c.start.initialProject.completionBonus = 0;
     c.start.initialProject.payoutPerPoint = 0;
 

@@ -202,6 +202,15 @@ export interface ProjectDef {
   // Live-recomputed each call, so a reputation drop re-locks a tier with no
   // extra mechanism needed.
   requiresReputation?: number;
+  // Must have completed this specific project id (the start project's id, or
+  // another catalog id). Studio versions use this so gigs cannot skip the
+  // ladder: v1 requires launch-beta, v2 requires ship-v1, and so on. Checked
+  // against state.completedProjectIds after the completed-count floor.
+  requiresCompletedId?: string;
+  // When true, the project cannot be started again after it has completed
+  // (or while it is already in flight). Studio's v1–v5 ladder is unique;
+  // tiny client gigs omit this and stay repeatable. Default false.
+  unique?: boolean;
   // Stocks granted on completion (Studio spine, issue #88). Applied in
   // attributeShipped's completion branch alongside the budget/reputation
   // rewards. The Launch beta grants +30 users this way, which is what starts
@@ -375,6 +384,11 @@ export interface GameState {
   decisions: DecisionInstance[];
   projects: ActiveProject[];
   completedProjects: number;
+  // Ids of projects that have ever completed this game (the start project
+  // plus catalog defs). Used by requiresCompletedId and unique. Counted
+  // once per id even if a repeatable gig finishes twice. initialState seeds
+  // []; deserialize backfills [] on current-version hand-built states.
+  completedProjectIds: string[];
   pendingChoices: PendingChoice[];
   log: LogEntry[];
   pointsPerDay: number;

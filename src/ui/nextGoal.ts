@@ -69,7 +69,7 @@ function isProgressionLock(entry: ProjectAvailability): boolean {
   // Cash and in-flight are not "next tier" leans — those are operational.
   return (
     entry.reason.startsWith("requires ") &&
-    (entry.reason.includes("reputation") || entry.reason.includes("completed project"))
+    (entry.reason.includes("reputation") || entry.reason.includes("completed"))
   );
 }
 

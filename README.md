@@ -63,10 +63,10 @@ setup notes (SSH key, server details, SSL).
 Decisions, challenges, and projects are all hand-editable JSON, validated by
 strict schemas at load (typos and unknown keys fail loudly, naming the file
 and entry), and checked by simulation-based balance probes in the test
-suite. See [`docs/CONTENT-AUTHORING.md`](docs/CONTENT-AUTHORING.md) for the
-full field-by-field guide (eras, stock-linked fields, effect vocabulary)
-and [`docs/CONTEXT.md`](docs/CONTEXT.md) for the glossary. Worked examples
-of adding a decision and a challenge live in the authoring guide.
+suite. See [`docs/CONTENT-AUTHORING.md`](docs/CONTENT-AUTHORING.md) for
+schema gotchas (effect timing, synergies, predicates) and
+[`docs/CONTEXT.md`](docs/CONTEXT.md) for the glossary. Field types live in
+`src/engine/content.ts`; shipped cards live in `content/`.
 
 ### Content graph viewer
 

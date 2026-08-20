@@ -49,6 +49,7 @@ export function initialState(content: GameContent): GameState {
       },
     ],
     completedProjects: 0,
+    completedProjectIds: [],
     pendingChoices: [],
     log: [],
     pointsPerDay: 0,
@@ -112,6 +113,9 @@ export class Engine {
       // the active content bundle (Studio in P0.2).
       if (restored.eraId === undefined) {
         restored.eraId = content.eraId ?? content.eras?.startingEraId ?? "_fixture";
+      }
+      if (restored.completedProjectIds === undefined) {
+        restored.completedProjectIds = [];
       }
       this.rng = createRng(restored.rngState, true);
     } else {

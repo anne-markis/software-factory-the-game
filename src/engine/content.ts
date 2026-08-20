@@ -381,6 +381,8 @@ const projectSchema = z
     requiresCompleted: z.number().int().min(0).optional(),
     reputationReward: z.number().min(0),
     requiresReputation: z.number().min(0).optional(),
+    requiresCompletedId: z.string().min(1).optional(),
+    unique: z.boolean().optional(),
     completionStockGrants: completionStockGrantsSchema,
   })
   .strict();
@@ -530,6 +532,24 @@ export function validateContentGraph(content: GameContent): void {
     ? `resolved catalog for era "${content.eraId}"`
     : "content/challenges.json";
   const decisionIds = new Set(content.decisions.map((d) => d.id));
+  const projectIds = new Set<string>([content.start.initialProject.id, ...content.projects.map((p) => p.id)]);
+  const projectsSource = content.eraId
+    ? `resolved catalog for era "${content.eraId}"`
+    : "content/projects.json";
+  for (const def of content.projects) {
+    const requiredId = def.requiresCompletedId;
+    if (requiredId === undefined) continue;
+    if (requiredId === def.id) {
+      throw new Error(
+        `Invalid content in ${projectsSource}: "${def.id}" requiresCompletedId cannot reference itself`,
+      );
+    }
+    if (!projectIds.has(requiredId)) {
+      throw new Error(
+        `Invalid content in ${projectsSource}: "${def.id}" requiresCompletedId references unknown project id "${requiredId}"`,
+      );
+    }
+  }
   for (const def of content.challenges) {
     for (const requiredDecision of def.condition?.requiresAnyDecision ?? []) {
       if (!decisionIds.has(requiredDecision)) {

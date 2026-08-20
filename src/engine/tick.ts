@@ -49,6 +49,8 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
         }
       }
       state.completedProjects += 1;
+      if (!state.completedProjectIds) state.completedProjectIds = [];
+      if (!state.completedProjectIds.includes(p.defId)) state.completedProjectIds.push(p.defId);
       log(state, `Project complete: ${p.name} (+$${p.completionBonus} bonus, +${p.reputationReward} reputation)`);
       state.projects.shift();
     }

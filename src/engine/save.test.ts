@@ -50,12 +50,14 @@ describe("save/load", () => {
   // no longer defines, and was balanced around the old base pull rate -- is
   // rejected rather than resumed into an inconsistent state. Same reasoning as
   // the #88 bump to 2 (no users stock, 1500 backlog, First Contract economy).
-  // The UI's loadGame swallows this error and starts fresh, so old saves of
-  // either vintage are wiped silently.
-  it("is version 3 and rejects legacy v1/v2 saves so old saves start fresh", () => {
-    expect(SAVE_VERSION).toBe(3);
+  // Bumped to 4 for the Studio project redo (tiny gigs + unique v1–v5; the old
+  // contract ladder left Studio). The UI's loadGame swallows this error and
+  // starts fresh, so old saves of either vintage are wiped silently.
+  it("is version 4 and rejects legacy v1/v2/v3 saves so old saves start fresh", () => {
+    expect(SAVE_VERSION).toBe(4);
     expect(() => deserialize(JSON.stringify({ version: 1, state: {} }))).toThrow(/version 1/);
     expect(() => deserialize(JSON.stringify({ version: 2, state: {} }))).toThrow(/version 2/);
+    expect(() => deserialize(JSON.stringify({ version: 3, state: {} }))).toThrow(/version 3/);
   });
 
   // A fresh Studio save round-trips its users stock and always-on stockDrags.
@@ -246,6 +248,15 @@ describe("save/load", () => {
     expect(restored.pointsPerDay).toBe(0);
     const b = new Engine(c, restored);
     expect(() => b.tick()).not.toThrow();
+  });
+
+  it("defaults a missing completedProjectIds to [] (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.completedProjectIds;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.completedProjectIds).toEqual([]);
   });
 
   it("loads a legacy save without lastChallengeDay fine (stays undefined, no default needed)", () => {

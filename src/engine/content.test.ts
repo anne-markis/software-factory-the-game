@@ -111,8 +111,8 @@ describe("parseStartConfig", () => {
     expect(cfg.stocks.reputation).toBe(0);
     expect(cfg.initialProject.reputationReward).toBe(1);
     // Four ascending milestones, tuned in the balance sweep. trusted (5) and
-    // established (15) key exactly to the mid- and top-tier reputation gates
-    // (mobile-app/big-migration require 5, enterprise-replatform requires 15),
+    // established (15) key exactly to the Company/Megacorp reputation gates
+    // (big-migration requires 5, enterprise-replatform requires 15),
     // so a milestone banner and the tier it opens fire together.
     expect(cfg.milestones.map((m) => m.id)).toEqual(["trusted", "established", "leader", "titan"]);
     expect(cfg.milestones.map((m) => m.reputation)).toEqual([5, 15, 35, 70]);
@@ -597,17 +597,29 @@ describe("parseChallenges", () => {
     ).toThrow(/content\/challenges\.json/);
   });
 
-  it("pins the mobile-app project gate", () => {
+  it("pins the Studio tiny gigs and unique version ladder", () => {
     const defs = parseProjects(projectsJson);
-    const mobileApp = defs.find((p) => p.id === "mobile-app")!;
-    expect(mobileApp).toMatchObject({
-      name: "Mobile app build",
-      sizePoints: 9000,
-      upfrontCost: 3000,
-      payoutPerPoint: 22,
-      completionBonus: 4000,
-      requiresCompleted: 1,
+    const bugfix = defs.find((p) => p.id === "gig-bugfix")!;
+    expect(bugfix).toMatchObject({
+      name: "Weekend bugfix",
+      sizePoints: 100,
+      upfrontCost: 0,
+      payoutPerPoint: 18,
+      completionBonus: 200,
+      reputationReward: 1,
     });
+    expect(bugfix.unique).toBeUndefined();
+    const v1 = defs.find((p) => p.id === "ship-v1")!;
+    expect(v1).toMatchObject({
+      name: "Ship v1",
+      sizePoints: 400,
+      payoutPerPoint: 0,
+      unique: true,
+      requiresCompletedId: "launch-beta",
+    });
+    expect(v1.completionStockGrants).toEqual([{ stock: "users", amount: 20 }]);
+    expect(defs.find((p) => p.id === "ship-v5")!.requiresCompletedId).toBe("ship-v4");
+    expect(defs.some((p) => p.id === "small-crm")).toBe(false);
   });
 
   it("rejects a choice challenge with top-level effects", () => {
@@ -724,35 +736,39 @@ describe("parseChallenges", () => {
 });
 
 describe("parseProjects", () => {
-  it("parses the Release 17 reputationReward on every shipped project", () => {
+  it("parses reputationReward on every shipped Studio project", () => {
     const defs = parseProjects(projectsJson);
     expect(defs.every((p) => typeof p.reputationReward === "number")).toBe(true);
-    // Rewards scale with contract size (1500/5000/9000/20000/50000 pts):
-    // first-contract 1, small-crm 5, mobile-app 6, big-migration 12,
-    // enterprise 20. first (start.json) + small-crm = 6, clearing the
-    // mid-tier gate of 5 the moment the entry contract completes.
-    expect(defs.find((p) => p.id === "small-crm")!.reputationReward).toBe(5);
-    expect(defs.find((p) => p.id === "mobile-app")!.reputationReward).toBe(6);
-    expect(defs.find((p) => p.id === "big-migration")!.reputationReward).toBe(12);
-    expect(defs.find((p) => p.id === "enterprise-replatform")!.reputationReward).toBe(20);
+    expect(defs.find((p) => p.id === "gig-bugfix")!.reputationReward).toBe(1);
+    expect(defs.find((p) => p.id === "gig-plugin")!.reputationReward).toBe(2);
+    expect(defs.find((p) => p.id === "ship-v1")!.reputationReward).toBe(2);
+    expect(defs.find((p) => p.id === "ship-v5")!.reputationReward).toBe(4);
   });
 
-  it("gates the top three tiers on reputation ALONGSIDE their completed-count floor (Release 17)", () => {
-    const defs = parseProjects(projectsJson);
-    // small-crm is the entry contract: no reputation gate, no completion floor.
-    const crm = defs.find((p) => p.id === "small-crm")!;
+  it("keeps the old contract ladder as Company/Megacorp deltas, not Studio offers", () => {
+    const studio = loadShippedContent();
+    expect(studio.projects.map((p) => p.id)).toEqual([
+      "gig-bugfix",
+      "gig-landing-page",
+      "gig-plugin",
+      "ship-v1",
+      "ship-v2",
+      "ship-v3",
+      "ship-v4",
+      "ship-v5",
+    ]);
+    const company = loadShippedContent("company");
+    const crm = company.projects.find((p) => p.id === "small-crm")!;
     expect(crm.requiresReputation).toBeUndefined();
-    // big-migration & mobile-app: 1 completion AND 5 reputation. enterprise:
-    // 2 completions AND 15 reputation (the binding top-tier gate).
-    const big = defs.find((p) => p.id === "big-migration")!;
+    const big = company.projects.find((p) => p.id === "big-migration")!;
     expect(big.requiresCompleted).toBe(1);
     expect(big.requiresReputation).toBe(5);
-    const mobile = defs.find((p) => p.id === "mobile-app")!;
-    expect(mobile.requiresCompleted).toBe(1);
-    expect(mobile.requiresReputation).toBe(5);
-    const ent = defs.find((p) => p.id === "enterprise-replatform")!;
+    expect(company.projects.some((p) => p.id === "mobile-app")).toBe(false);
+    const mega = loadShippedContent("megacorp");
+    const ent = mega.projects.find((p) => p.id === "enterprise-replatform")!;
     expect(ent.requiresCompleted).toBe(2);
     expect(ent.requiresReputation).toBe(15);
+    expect(ent.reputationReward).toBe(20);
   });
 
   it("rejects a negative reputationReward", () => {
@@ -821,6 +837,67 @@ describe("validateContentGraph", () => {
     expect(() => validateContentGraph(content)).toThrow(/content\/challenges\.json/);
     expect(() => validateContentGraph(content)).toThrow(/no-such-decision/);
   });
+
+  it("accepts requiresCompletedId pointing at the start project or another catalog id", () => {
+    const content: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: [],
+      challenges: [],
+      projects: parseProjects([
+        {
+          id: "v1",
+          name: "v1",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 0,
+          unique: true,
+          requiresCompletedId: "launch-beta",
+        },
+      ]),
+    };
+    expect(() => validateContentGraph(content)).not.toThrow();
+  });
+
+  it("rejects requiresCompletedId that is unknown or self-referential", () => {
+    const unknown: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: [],
+      challenges: [],
+      projects: parseProjects([
+        {
+          id: "v1",
+          name: "v1",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 0,
+          requiresCompletedId: "no-such-project",
+        },
+      ]),
+    };
+    expect(() => validateContentGraph(unknown)).toThrow(/no-such-project/);
+    const loop: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: [],
+      challenges: [],
+      projects: parseProjects([
+        {
+          id: "v1",
+          name: "v1",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 0,
+          requiresCompletedId: "v1",
+        },
+      ]),
+    };
+    expect(() => validateContentGraph(loop)).toThrow(/cannot reference itself/);
+  });
 });
 
 describe("per-era content layout (issue #90)", () => {
@@ -869,12 +946,20 @@ describe("per-era content layout (issue #90)", () => {
       ...studio.challenges.map((d) => d.id),
       "prod-incident",
     ]);
-    expect(company.projects.map((d) => d.id)).toEqual(studio.projects.map((d) => d.id));
+    expect(company.projects.map((d) => d.id)).toEqual([
+      ...studio.projects.map((d) => d.id),
+      "small-crm",
+      "big-migration",
+    ]);
 
     const megacorp = loadShippedContent("megacorp");
     expect(megacorp.eraId).toBe("megacorp");
     expect(megacorp.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
     expect(megacorp.challenges.map((d) => d.id)).toEqual(company.challenges.map((d) => d.id));
+    expect(megacorp.projects.map((d) => d.id)).toEqual([
+      ...company.projects.map((d) => d.id),
+      "enterprise-replatform",
+    ]);
   });
 
   it("loadActiveContent merges prior-era catalogs so later folders stay deltas", () => {
