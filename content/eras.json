@@ -9,17 +9,14 @@
       "id": "company",
       "name": "Company",
       "entryAnyOf": [
-        { "minBudget": 25000 },
-        { "minReputation": 40 },
-        { "minCompletedProjects": 4 }
+        { "minBudget": 1000000 }
       ]
     },
     {
       "id": "megacorp",
       "name": "Megacorp",
       "entryAnyOf": [
-        { "minBudget": 250000 },
-        { "minUsers": 10000 }
+        { "minBudget": 100000000 }
       ]
     }
   ]

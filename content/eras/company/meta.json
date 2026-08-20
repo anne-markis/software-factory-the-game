@@ -1,5 +1,5 @@
 {
   "id": "company",
   "name": "Company",
-  "blurb": "Empty shell for P0.2 — content arrives in a later milestone."
+  "blurb": "Long-session era. Silent crossing by default. Inherits the Studio catalog (ADR 0008). Ships Production incident."
 }

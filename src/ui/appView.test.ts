@@ -14,11 +14,12 @@
 // change. If identity holds, there is no teardown for a gesture to straddle.
 import { describe, it, expect, vi } from "vitest";
 import { mountAppView, type AppView } from "./appView";
-import { Engine, initialState } from "../engine/engine";
+import { Engine, initialState, type LoadEraContent } from "../engine/engine";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
-import { startJson, decisionsJson, challengesJson, projectsJson } from "../engine/loadShippedContent";
+import { startJson, decisionsJson, challengesJson, projectsJson, loadShippedContent } from "../engine/loadShippedContent";
 import type { GameContent, GameState } from "../engine/types";
 import type { Speed } from "./tickDriver";
+import { USERS_LOOP_CAPTION } from "./usersLoop";
 
 // challenges default to [] so ticking is free of random challenge rolls: the
 // only thing moving across ticks is the deterministic stock/flow simulation.
@@ -43,7 +44,7 @@ interface Harness {
   errors: string[];
 }
 
-function mount(opts: { content?: GameContent; restored?: GameState; richBudget?: boolean } = {}): Harness {
+function mount(opts: { content?: GameContent; restored?: GameState; richBudget?: boolean; loadEra?: LoadEraContent } = {}): Harness {
   const content = opts.content ?? makeContent();
   document.body.innerHTML = `<div id="app"></div>`;
   const root = document.getElementById("app")!;
@@ -52,7 +53,7 @@ function mount(opts: { content?: GameContent; restored?: GameState; richBudget?:
   // tech-tree / project-offer markup) fixed across ticks, so a node identity
   // assertion is testing the render mechanism rather than racing the economy.
   if (opts.richBudget !== false) restored.stocks.budget = 1_000_000_000;
-  const engine = new Engine(content, restored);
+  const engine = new Engine(content, restored, opts.loadEra);
 
   let speed: Speed = 1;
   const h: Harness = {
@@ -104,12 +105,15 @@ describe("appView delivery-column stats layout (issue #8)", () => {
 
     const deliveryCol = h.root.querySelector(".delivery-column")!;
     expect(deliveryCol).toBeTruthy();
-    expect(deliveryCol.querySelector("h3")!.textContent).toBe("Delivery system");
+    const colHeadings = Array.from(deliveryCol.querySelectorAll("h3")).map((el) => el.textContent);
+    expect(colHeadings).toEqual(["Delivery system", "Users system"]);
     const under = deliveryCol.querySelector(".delivery-stats")!;
     expect(under).toBeTruthy();
-    // Stats sit after the Delivery system panel inside the same column
+    // Stats sit after the Delivery + Users system panels inside the same column
     // (issue #67: wrapped in a data-section host for in-place flash sync).
-    const statsHost = deliveryCol.querySelector(".panel")!.nextElementSibling!;
+    const panels = deliveryCol.querySelectorAll(":scope > .panel");
+    expect(panels).toHaveLength(2);
+    const statsHost = panels[1]!.nextElementSibling!;
     expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users"]);
@@ -117,12 +121,16 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     // Progress system remains a sibling of the delivery column, not a parent of those stats.
     const loops = h.root.querySelector(".loops")!;
     expect(loops.contains(deliveryCol)).toBe(true);
-    expect(loops.querySelector("h3")!.textContent).toBe("Delivery system");
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toContain("Progress system");
+    expect(headings).toEqual(["Delivery system", "Users system", "Progress system"]);
     expect(headings).not.toContain("Delivery loop");
     expect(headings).not.toContain("Progress loop");
+    expect(headings).not.toContain("Users loop");
     expect(under.closest(".panel")).toBeNull();
+
+    const usersLoop = deliveryCol.querySelector('[aria-label="Users system"]');
+    expect(usersLoop).not.toBeNull();
+    expect(deliveryCol.textContent).toContain(USERS_LOOP_CAPTION);
   });
 
   it("keeps delivery-stats nodes stable across ticks that only change values", () => {
@@ -141,6 +149,24 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     expect(after.querySelector(".stat-label")!.textContent).toBe("In Progress");
     expect(h.root.querySelector(".delivery-column .delivery-stats")).toBe(after);
     expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
+  });
+});
+
+describe("appView era identity and silent Company entry", () => {
+  it("shows Studio on the title, then Company with no Events line after the budget floor fires", () => {
+    const content = loadShippedContent();
+    const restored = initialState(content);
+    restored.stocks.budget = content.eras!.eras.find((era) => era.id === "company")!.entryAnyOf![0].minBudget! + 20;
+    const h = mount({ content, restored, loadEra: loadShippedContent, richBudget: false });
+    expect(h.root.querySelector(".era-kicker")!.textContent).toBe("Studio");
+    expect(document.title).toBe("Studio — Software Factory");
+    expect(h.root.querySelector('[data-next-era="company"]')).toBeNull();
+    h.engine.tick();
+    h.view.render();
+    expect(h.root.querySelector(".era-kicker")!.textContent).toBe("Company");
+    expect(document.title).toBe("Company — Software Factory");
+    expect(h.root.textContent).not.toContain("Entered Company");
+    expect(h.root.querySelector('[data-next-era="megacorp"]')).toBeNull();
   });
 });
 
@@ -319,8 +345,9 @@ describe("appView page layout (issue #7)", () => {
       };
     };
     const before = order();
-    expect(before.time).toBe(0);
-    expect(before.reset).toBe(1);
+    expect(h.root.querySelector("h1.game-title")).toBe(h.root.children[0]);
+    expect(before.time).toBe(1);
+    expect(before.reset).toBe(2);
     expect(before.stats).toBeGreaterThan(before.reset);
     expect(before.loops).toBeGreaterThan(before.stats);
     // Scaffold is static: order holds across ticks.

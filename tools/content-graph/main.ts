@@ -16,9 +16,8 @@ function element<K extends keyof HTMLElementTagNameMap>(
 }
 
 function shippedGraphModel(): ContentGraph {
-  // The first load parses eras.json; each subsequent load parses that era's
-  // bundle through loadActiveContent and the same strict Zod schemas as the
-  // player shell.
+  // The first load parses eras.json; each subsequent load resolves that era
+  // (inherited prior rungs + this folder's delta) through loadActiveContent.
   const active = loadShippedContent();
   if (!active.eras) throw new Error("Shipped content did not include an eras catalog");
   return buildGraphModel(active.eras.eras.map((era) => loadShippedContent(era.id)));

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseStartConfig, parseDecisions, parseProjects } from "../engine/content";
-import { decisionsJson, projectsJson, startJson } from "../engine/loadShippedContent";
+import { decisionsJson, loadShippedContent, projectsJson, startJson } from "../engine/loadShippedContent";
 import { Engine } from "../engine/engine";
 import type { GameContent, GameState } from "../engine/types";
 import {
@@ -124,6 +124,35 @@ describe("selectNextGoal / renderNextGoal", () => {
     expect(html).toContain("0/5 reputation");
     expect(html).toContain('data-next-contract="big-migration"');
     expect(html).toContain("Legacy platform migration");
+  });
+
+  it("omits era floors from next-goal by default in Studio and Company", () => {
+    const shipped = loadShippedContent();
+    const e = new Engine(shipped);
+    const html = renderNextGoal(e.getState(), shipped);
+    expect(html).not.toContain('data-next-era="company"');
+    expect(html).not.toContain('data-next-era="megacorp"');
+
+    const company = loadShippedContent("company");
+    const inCompany = new Engine(company);
+    const companyHtml = renderNextGoal(inCompany.getState(), company);
+    expect(companyHtml).not.toContain('data-next-era="megacorp"');
+  });
+
+  it("shows an era next-goal only when that rung sets silentEntry false", () => {
+    const shipped = loadShippedContent("company");
+    const announced = {
+      ...shipped,
+      eras: {
+        ...shipped.eras!,
+        eras: shipped.eras!.eras.map((era) =>
+          era.id === "megacorp" ? { ...era, silentEntry: false as const } : era,
+        ),
+      },
+    };
+    const html = renderNextGoal(new Engine(announced).getState(), announced);
+    expect(html).toContain('data-next-era="megacorp"');
+    expect(html).toContain("Megacorp");
   });
 
   it("shows the top-out state when milestones and contract gates are cleared", () => {

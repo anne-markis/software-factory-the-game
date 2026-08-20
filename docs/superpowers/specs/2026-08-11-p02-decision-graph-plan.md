@@ -132,11 +132,12 @@ Company is where most playtime lives, so its exit should feel earned.
 
 Crossing any listed path sets `eraId` forward only.
 
-**Load merge rule (engine):** active content = `start` + **current era’s**
-decisions/challenges/projects (plus any explicitly marked “carry”
-globals if we need them). Prior-era decision *definitions* need not stay
-in the shop; owned instances already on the save remain until removed by
-normal rules unless content says otherwise.
+**Load merge rule (engine):** active content = `start` + the **resolved**
+catalog for the current era (every prior rung, then this folder as a
+delta — ADR 0008). Prior-era decision *definitions* stay resolvable so
+owned instances keep paying; they do not need to be pasted into the
+later file. Shop hide/retire of an inherited card is a future flag, not
+omission.
 
 **Rejected for now:** single monolithic `decisions.json` with an `era`
 field on every card (harder to visualize/author per act); TypeScript
@@ -800,12 +801,18 @@ those are **Company** (or later) shapes.
   Final buy timing/requirements deferred until a mockup is playable.
 - Do not require enterprise-shaped contracts to exit Studio.
 
-### Company (light sketch — fill later)
+### Company (filled 2026-08-14)
 
-- Mid client work (CRM-shaped, mobile-shaped).
-- Product: growth features, paid tier launch, marketplace listing scale-up.
-- Reputation gates matter; users already exist from Studio carry (if we
-  carry them).
+Light sketch replaced by
+[`2026-08-14-company-era-brainstorm.md`](2026-08-14-company-era-brainstorm.md).
+Working picture: same loop at a new cost of play; the designed attractor
+is the dark factory. Paperclips cadence = growing autonomy and speed
+(you buy agents → fleet feeds the loop → fleet staffs itself). Carry
+Studio defs; five new uniques (autonomous-pull, self-learning,
+self-staffing, refactor, paid-tier). Factory-without-you waits for
+Megacorp. Tick evaluates the next era’s `entryAnyOf` (Company at $1M
+budget, silent; Megacorp at $100M). Company /
+Megacorp catalogs currently inherit Studio ids (ADR 0008).
 
 ### Megacorp (lighter sketch)
 

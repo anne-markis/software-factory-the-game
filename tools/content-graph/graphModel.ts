@@ -128,18 +128,32 @@ function decisionCriteria(
   return criteria;
 }
 
+function decisionOrigins(contentsByEra: ReadonlyMap<string, GameContent>, eraOrder: readonly { id: string }[]): Map<string, string> {
+  const origin = new Map<string, string>();
+  for (const era of eraOrder) {
+    const content = contentsByEra.get(era.id);
+    if (!content) continue;
+    for (const decision of content.decisions) {
+      if (!origin.has(decision.id)) origin.set(decision.id, era.id);
+    }
+  }
+  return origin;
+}
+
 function addDecisionGraph(
   content: GameContent,
   nodes: GraphNode[],
   edges: GraphEdge[],
+  originById: ReadonlyMap<string, string>,
 ): void {
   const eraId = content.eraId;
   if (!eraId) throw new Error("Content graph requires every GameContent bundle to have an eraId");
 
   const decisionsById = new Map(content.decisions.map((decision) => [decision.id, decision]));
   const tierMemo = new Map<string, number>();
+  const native = content.decisions.filter((decision) => originById.get(decision.id) === eraId);
 
-  for (const decision of content.decisions) {
+  for (const decision of native) {
     nodes.push({
       id: decisionNodeId(eraId, decision.id),
       sourceId: decision.id,
@@ -153,10 +167,11 @@ function addDecisionGraph(
 
     for (const [index, requiredId] of (decision.requires ?? []).entries()) {
       const requiredName = decisionsById.get(requiredId)?.name ?? requiredId;
+      const fromEra = originById.get(requiredId) ?? eraId;
       edges.push({
         id: `requires:${eraId}:${requiredId}:${decision.id}:${index}`,
         kind: "requires",
-        from: decisionNodeId(eraId, requiredId),
+        from: decisionNodeId(fromEra, requiredId),
         to: decisionNodeId(eraId, decision.id),
         label: `Requires ${requiredName}`,
         eraId,
@@ -165,10 +180,11 @@ function addDecisionGraph(
 
     for (const [index, requirement] of (decision.requiresCounts ?? []).entries()) {
       const requiredName = decisionsById.get(requirement.id)?.name ?? requirement.id;
+      const fromEra = originById.get(requirement.id) ?? eraId;
       edges.push({
         id: `requires-count:${eraId}:${requirement.id}:${decision.id}:${index}`,
         kind: "requires-count",
-        from: decisionNodeId(eraId, requirement.id),
+        from: decisionNodeId(fromEra, requirement.id),
         to: decisionNodeId(eraId, decision.id),
         label: `Requires ${requirement.count}× ${requiredName}`,
         eraId,
@@ -177,10 +193,11 @@ function addDecisionGraph(
 
     for (const [index, synergy] of (decision.synergies ?? []).entries()) {
       const providerName = decisionsById.get(synergy.ifOwned)?.name ?? synergy.ifOwned;
+      const fromEra = originById.get(synergy.ifOwned) ?? eraId;
       edges.push({
         id: `synergy:${eraId}:${synergy.ifOwned}:${decision.id}:${index}`,
         kind: "synergy",
-        from: decisionNodeId(eraId, synergy.ifOwned),
+        from: decisionNodeId(fromEra, synergy.ifOwned),
         to: decisionNodeId(eraId, decision.id),
         label: `Synergy if ${providerName} owned`,
         eraId,
@@ -202,6 +219,7 @@ export function buildGraphModel(contents: readonly GameContent[]): ContentGraph 
       return [content.eraId, content] as const;
     }),
   );
+  const originById = decisionOrigins(contentsByEra, eras.eras);
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
 
@@ -224,7 +242,7 @@ export function buildGraphModel(contents: readonly GameContent[]): ContentGraph 
 
     const content = contentsByEra.get(era.id);
     if (!content) throw new Error(`Content graph is missing the parsed "${era.id}" era bundle`);
-    addDecisionGraph(content, nodes, edges);
+    addDecisionGraph(content, nodes, edges, originById);
 
     if (eraIndex === 0) continue;
     // eras.json is an ordered, one-way progression ladder. Each era's entry

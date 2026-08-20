@@ -7,9 +7,10 @@ checked against the loader (`src/engine/content.ts`), the effect engine
 so if something here ever disagrees with those files, the code wins.
 
 The locked model this guide must match: **eras not tracks**, no
-tags/`hasTag` curriculum, **stock-linked** fields and predicates. Glossary:
-[`docs/CONTEXT.md`](CONTEXT.md). Decisions: [ADRs 0001–0006](adr/README.md).
-Direction: [`docs/VISION.md`](VISION.md).
+tags/`hasTag` curriculum, **stock-linked** fields and predicates, **later
+era folders are deltas**. Glossary: [`docs/CONTEXT.md`](CONTEXT.md).
+Architecture: [`docs/ARCHITECTURE.md`](ARCHITECTURE.md). Decisions:
+[ADRs 0001–0008](adr/README.md). Direction: [`docs/VISION.md`](VISION.md).
 
 ## 1. Where content lives, and how it is checked
 
@@ -41,37 +42,34 @@ Human-editable content follows the per-era layout:
 - `content/start.json` — era-agnostic starting stocks, base rates, seed,
   first project, always-on `stockDrags` / `stockFlows`.
 - `content/eras.json` — ordered era ids, `startingEraId`, and one-way
-  `entryAnyOf` criteria (authored for later milestones and the
-  content-graph viewer; P0.2 does not advance the player out of Studio).
+  `entryAnyOf` criteria. The tick evaluates the **next** era only (one
+  rung; no skip). Advancement is irreversible.
 - `content/eras/<eraId>/decisions.json` — shop cards for that era.
 - `content/eras/<eraId>/challenges.json` — random events for that era.
 - `content/eras/<eraId>/projects.json` — contracts for that era.
 - `content/eras/<eraId>/meta.json` — optional id/name/blurb for humans;
   the game loader does not parse it.
 
-P0.2 ships Studio filled and empty Company / Megacorp shells (`[]` arrays).
 The loader (`loadShippedContent` / `loadActiveContent`) merges `start` +
-the **active** era only; tick stays graph-dumb and never hardcodes era
-names or advances eras this milestone. Put a Company card in
-`content/eras/company/`, not in Studio with a comment that it “belongs later.”
+the **resolved** catalog for the active era: every prior rung, then this
+folder as a delta (ADR 0008). Tick stays graph-dumb and never hardcodes
+era names. Put a new Company card in `content/eras/company/`, not in Studio
+with a comment that it “belongs later.” Do **not** copy Studio JSON into
+Company or Megacorp — redeclaring an inherited id fails at load. Empty
+later files are valid; inherit is how owned instances keep paying after
+the shop swaps. A later-era card may `requires` an inherited id. Company
+direction (dark-factory attractor, lesson-and-fun filter, thin v0) is in
+[`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md).
 
 `eras.json` entry predicates are an **OR of paths**. Each path is an AND of
 optional floors (`minBudget`, `minReputation`, `minCompletedProjects`,
-`minUsers`); at least one floor per path is required. The starting era must
-not declare `entryAnyOf`. Example (Company, authored but not evaluated in
-tick yet):
-
-```json
-{
-  "id": "company",
-  "name": "Company",
-  "entryAnyOf": [
-    { "minBudget": 25000 },
-    { "minReputation": 40 },
-    { "minCompletedProjects": 4 }
-  ]
-}
-```
+`minUsers`); at least one floor per path is required. Floors are checked
+at **end of day** (after income and burn). The starting era must not
+declare `entryAnyOf`. **Do not copy floor numbers into docs** — they live
+in `content/eras.json`. Crossings are silent by default: omit
+`silentEntry` (or set it true). The heading changes; tick writes no Events
+line and next-goal does not list that rung as a grind. Set
+`"silentEntry": false` only when a crossing should announce.
 
 Run `make graph` from the repository root to open the local authoring viewer
 under `tools/content-graph/` (ADR 0003). It shows the parsed era, decision,
@@ -108,8 +106,9 @@ you retire ids a previous save might still own.
 
 A decision (`content/eras/<eraId>/decisions.json`) is an object with these fields:
 
-- `id` (string, required) - unique key. Duplicate ids across the file are
-  rejected at load.
+- `id` (string, required) - unique key across the **resolved** catalog
+  (this file plus every inherited prior era). Duplicate ids in the file,
+  or an id already inherited, are rejected at load.
 - `name` (string, required) - shown as the button label and in the "Owned"
   list.
 - `description` (string, required) - shown under the buy button and echoed
@@ -190,9 +189,8 @@ A decision (`content/eras/<eraId>/decisions.json`) is an object with these field
   apply in addition to whichever gamble outcome is drawn.
 - `requires` (string array, optional) - decision ids that must already be
   owned before this one is purchasable. All listed ids must be owned (not
-  just one). Every id must exist elsewhere in `decisions.json`, or the
-  loader rejects the file. Cross-references are **within the active era's
-  `decisions.json`**, not across eras.
+  just one). Every id must exist in the **resolved** catalog (this file
+  plus inherited prior eras), or the loader rejects the file.
 - `requiresCounts` (array, optional) - the same kind of gate as `requires`,
   but counting instances instead of just presence: each entry is
   `{ id, count }` (count an int >= 1) and demands at least `count` owned
@@ -201,7 +199,8 @@ A decision (`content/eras/<eraId>/decisions.json`) is an object with these field
   since "requires Add coding agent" would read as already satisfied to a
   player who owns one. Only useful against a stackable (non-`unique`) def:
   a count above 1 on a `unique` id can never be satisfied, so the loader
-  rejects it, as it does an id that names no decision in the file.
+  rejects it, as it does an id that names no decision in the resolved
+  catalog.
   `agent-orchestration` uses it today (`{ "id": "agent", "count": 2 }`) -
   a planner needs at least two agents to have anything to coordinate.
 - `removable` (boolean, required) - whether the player can manually remove
@@ -312,8 +311,7 @@ already accounts for the off-by-one, so **a purchase-time slowdown you
 want felt for N days should be written with `durationDays: N + 1`**.
 Challenge effects do not need the `+ 1`; a mid-tick challenge
 `durationDays: 3` really is felt for 3 days because it applies mid-tick.
-(Retired `prod-incident` used that pattern; Studio's current pool has no
-timed rate hit, but the timing rule is unchanged.)
+Company `prod-incident` uses `durationDays: 3` that way.
 
 Per rate, all `add`-op modifiers are summed first, then all `mul`-op
 modifiers are applied on top of that sum (`src/engine/modifiers.ts`,
@@ -533,9 +531,9 @@ A challenge (`content/eras/<eraId>/challenges.json`) is an object with:
 - `probScaling` (optional) - `{ stat: "techDebt", per, add }` (only
   `"techDebt"` is supported today). Adds
   `floor(techDebt / per) * add` to `probabilityPerDay`, capped at 1
-  overall. No shipped challenge scales today; the retired `prod-incident`
-  used `{ "per": 500, "add": 0.01 }`, i.e. every 500 tech debt added
-  another 1% to its daily chance.
+  overall. Company `prod-incident` uses `{ "per": 500, "add": 0.01 }`
+  (every 500 tech debt adds another 1% to its daily chance). Studio's
+  three-event pool does not scale.
 - `effects` (array, required) - applied when the challenge fires, unless
   it has a `choice` block (see below), in which case `effects` **must**
   be `[]` - the loader rejects a challenge that defines both, since the
@@ -1138,8 +1136,9 @@ If a probe fails after a content edit:
 
 | Doc | Role |
 | --- | --- |
+| [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) | Layers, purity, no catalog copies |
 | [`docs/CONTEXT.md`](CONTEXT.md) | Glossary: eras, stocks, stock drag/flow, predicates |
-| [`docs/adr/`](adr/README.md) | ADRs 0001–0006 (layout, tags, viewer, saves, stock-linked schema) |
+| [`docs/adr/`](adr/README.md) | ADRs 0001–0008 (layout, inherit, tags, viewer, saves, stock-linked schema) |
 | [`docs/VISION.md`](VISION.md) | Medium/long-term direction (eras, no parallel tracks) |
 | [`docs/superpowers/specs/2026-08-11-p02-decision-graph-plan.md`](superpowers/specs/2026-08-11-p02-decision-graph-plan.md) | P0.2 plan; S-2 is this guide |
 | Historical design snapshots | `2026-07-14-software-factory-design.md` §7 tracks; `2026-07-16-content-wave-design.md` — do not author from these |

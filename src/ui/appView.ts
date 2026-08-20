@@ -33,7 +33,9 @@ import {
   renderBuildStamp,
 } from "./render";
 import { getBuildInfo } from "./buildInfo";
+import { eraDisplayName } from "../engine/eras";
 import { loopDiagramSvg } from "./loopDiagram";
+import { usersLoopSvg } from "./usersLoop";
 import { inProgressPanelSvg } from "./inProgressPanel";
 import { createRegion, SECTION_ATTR } from "./domPatch";
 import { SPEED_OPTIONS, type Speed } from "./tickDriver";
@@ -89,9 +91,11 @@ export interface AppView {
 // Issue #40: Choices live in glanceable chrome (not the scrollable side rail)
 // so a Decision-needed interrupt stays reachable while shopping at speed.
 const STATS = "stats";
+const ERA = "era";
 const NEXT_GOAL = "next-goal";
 const DELIVERY_LOOP = "delivery-loop";
 const DELIVERY_STATS = "delivery-stats";
+const USERS_LOOP = "users-loop";
 const PROGRESS_LOOP = "progress-loop";
 const GAMBLE_REVEAL = "gamble-reveal";
 const STALL = "stall";
@@ -109,6 +113,7 @@ function pageScaffold(): string {
   // Issue #40: choices interrupt sits with chrome (before loops) so pending
   // decisions are not buried under Alter the system / Events scroll.
   return `
+    <h1 class="game-title">Software Factory <span class="era-kicker" ${SECTION_ATTR}="${ERA}"></span></h1>
     <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
     <button id="reset">Reset game</button>
     <div ${SECTION_ATTR}="${STATS}"></div>
@@ -118,6 +123,7 @@ function pageScaffold(): string {
     <div class="loops">
       <div class="delivery-column">
         <div class="panel"><h3>Delivery system</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
+        <div class="panel"><h3>Users system</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
         <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>
       </div>
       <div ${SECTION_ATTR}="${PROGRESS_LOOP}"></div>
@@ -137,7 +143,9 @@ function pageScaffold(): string {
 }
 
 export function mountAppView(deps: AppViewDeps): AppView {
-  const { root, engine, content } = deps;
+  const { root, engine } = deps;
+  let content = engine.getContent();
+  let lastEraId = engine.getState().eraId;
 
   const page = createRegion(root);
   page.setScaffold(pageScaffold());
@@ -214,13 +222,23 @@ export function mountAppView(deps: AppViewDeps): AppView {
   function render(): void {
     // Soft-pause before painting so time controls show Start on the same frame.
     softPauseForNewChoices([...engine.getState().pendingChoices]);
+    content = engine.getContent();
     const state = engine.getState();
+    const eraName = eraDisplayName(content.eras, state.eraId);
+    page.patch(ERA, eraName);
+    const tabTitle = `${eraName} — Software Factory`;
+    if (document.title !== tabTitle) document.title = tabTitle;
+    if (state.eraId !== lastEraId) {
+      lastEraId = state.eraId;
+      decisions.setScaffold(decisionsPanelScaffold(content));
+    }
     // Issue #67: sync cockpit + delivery stats in place so .stat-flash can
     // finish without the string-memo path tearing the nodes down each tick.
     syncStatRow(page.section(STATS)!, "stats", cockpitStatViews(state, content), flash);
     syncStatRow(page.section(DELIVERY_STATS)!, "delivery-stats", deliveryStatViews(state), flash);
     page.patch(NEXT_GOAL, renderNextGoal(state, content));
     page.patch(DELIVERY_LOOP, loopDiagramSvg(state, content));
+    page.patch(USERS_LOOP, usersLoopSvg(state, content));
     page.patch(PROGRESS_LOOP, inProgressPanelSvg(state, content));
     page.patch(GAMBLE_REVEAL, renderGambleReveal(gambleReveal));
     page.patch(STALL, renderStall(engine.isStalled()));

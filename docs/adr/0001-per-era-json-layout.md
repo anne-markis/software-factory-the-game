@@ -26,10 +26,12 @@ content/
     projects.json
 ```
 
-**Load merge rule:** active content = `start` + the **current** era’s
-decisions / challenges / projects. The engine may hold `state.eraId` read
-from content. P0.2 does **not** evaluate `entryAnyOf` in tick and does not
-advance the player out of Studio.
+**Load merge rule:** active content = `start` + the **resolved** catalog
+for the current era (every prior rung, then this era’s files as a delta;
+ADR 0008). The engine holds `state.eraId` from content. After each tick it
+evaluates the **next** era’s `entryAnyOf` (one rung; no skip) and reloads
+that bundle via a loader. Tick does not hardcode era names. Fixtures that
+omit a loader stay on their bundle.
 
 **Entry criteria** are an OR of paths (`entryAnyOf`). Each path is an AND
 of optional floors: `minBudget`, `minReputation`, `minCompletedProjects`,
@@ -46,6 +48,11 @@ Studio when costs fit that scale.
 
 ## Consequences
 
-Studio ships filled; Company and Megacorp ship as empty `[]` shells in
-P0.2. Authors add later-era cards under that era’s folder, not by tagging
-Studio cards. The graph viewer (ADR 0003) reads the same bundles.
+Studio ships filled. Later era folders are **deltas**: the loader inherits
+every prior rung so owned instances keep paying after the shop swaps
+(ADR 0008). Do not copy Studio JSON into Company or Megacorp. New later-era
+cards go under that era’s folder, not by tagging Studio cards. Entry floors
+live in `content/eras.json` only. Crossing an era is silent by default
+(heading changes; no Events line; not a next-goal); set `"silentEntry": false`
+to announce. The graph viewer (ADR 0003) reads the same resolved bundles and
+plots native cards per era.

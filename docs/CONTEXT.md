@@ -1,10 +1,10 @@
 # Software Factory — authoring context
 
 Living glossary for content authors and maintainers. Product direction lives
-in `docs/VISION.md`; field-by-field JSON rules live in
-`docs/CONTENT-AUTHORING.md`. Locked architecture decisions are ADRs 0001–0006
-under `docs/adr/`. If this glossary and the loader disagree, the code in
-`src/engine/` wins.
+in `docs/VISION.md`; how the layers fit lives in `docs/ARCHITECTURE.md`;
+field-by-field JSON rules live in `docs/CONTENT-AUTHORING.md`. Locked
+architecture decisions are ADRs 0001–0008 under `docs/adr/`. If this glossary
+and the loader disagree, the code in `src/engine/` wins.
 
 ## Scale eras (not tracks)
 
@@ -14,13 +14,22 @@ scale invites), not which capability fantasy the player picked.
 
 - **Studio** — short tutorial-scale opening (~$10k start). Hires *and* early
   agents belong here; do not gate “AI” as its own era.
-- **Company** — where most playtime will live. Empty shell in P0.2.
-- **Megacorp** — institutional scale. Empty shell in P0.2.
+- **Company** — where most playtime will live: same loop, higher cost of
+  play, homing in on the dark factory (deeper agentic investment,
+  Paperclips autonomy: the fleet staffs itself). Crossing is silent by
+  default (heading changes; no Events line; not a next-goal). Floors live
+  in `content/eras.json`. Catalog inherits Studio ids (ADR 0008).
+  Exponential accelerators (viral acquire, compounding agents, paid-tier
+  flow mods) are the next content wave so these gates play as takeoff, not
+  a linear sit. Direction in
+  [`docs/superpowers/specs/2026-08-14-company-era-brainstorm.md`](superpowers/specs/2026-08-14-company-era-brainstorm.md).
+- **Megacorp** — institutional scale. Floors live in `content/eras.json`.
+  Intentionally a long-horizon gate until Company accelerators land.
 
 Capability mix (hire-heavy, agent-heavy, process-heavy) **meanders inside**
-an era. Crossing an era is irreversible once entry criteria fire. P0.2
-authors entry predicates in `content/eras.json` for the graph viewer and
-later milestones; the tick does not advance `eraId` yet (ADR 0001).
+an era. Crossing an era is irreversible once entry criteria fire. The tick
+evaluates the next era’s `entryAnyOf` (OR of AND-floors) and reloads
+that era’s bundle; it does not hardcode era names (ADR 0001).
 
 ## Retired: tracks, tags, `hasTag`
 
@@ -73,8 +82,8 @@ Progression edges live in content, not in TypeScript that knows story beats:
 - Challenges: `minHumanDevs` / `maxHumanDevs`, `minTechDebt`, `minDay`,
   `minCompletedProjects`, `requiresAnyDecision`, `lacksDecision`.
 - Projects: `requiresCompleted`, `requiresReputation`.
-- Era entry (authored, not yet evaluated in tick): `entryAnyOf` OR of
-  `{ minBudget, minReputation, minCompletedProjects, minUsers }` paths.
+- Era entry (evaluated each tick for the **next** rung only): `entryAnyOf`
+  OR of `{ minBudget, minReputation, minCompletedProjects, minUsers }` paths.
 
 `human: true` on a decision is headcount for challenge predicates, not a
 track label.
@@ -92,8 +101,11 @@ content/
     projects.json
 ```
 
-Active content = `start` + **one** era bundle. Company and Megacorp ship as
-empty `[]` shells in P0.2.
+Active content = `start` + the **resolved** catalog for the current era
+(prior rungs inherited, this folder is the delta — ADR 0008). Put new
+Company cards in `content/eras/company/`. Do not copy Studio files into
+later eras. New Company cards are still directed by the 2026-08-14
+brainstorm spec.
 
 ## Authoring tools
 

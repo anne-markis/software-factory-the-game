@@ -1,9 +1,9 @@
 # Architecture decision records
 
 Locked P0.2 decisions for the decision-graph / era cut. Consult these
-before authoring content or extending the loader. The authoring guide
-(`docs/CONTENT-AUTHORING.md`) and glossary (`docs/CONTEXT.md`) must agree
-with this set.
+before authoring content or extending the loader. The architecture guide
+(`docs/ARCHITECTURE.md`), authoring guide (`docs/CONTENT-AUTHORING.md`),
+and glossary (`docs/CONTEXT.md`) must agree with this set.
 
 | ADR | Title |
 | --- | --- |
@@ -14,6 +14,7 @@ with this set.
 | [0005](0005-generic-stock-linked-fields.md) | Generic stock-linked fields (approach) |
 | [0006](0006-stock-linked-content-schema.md) | Stock-linked content JSON schema |
 | [0007](0007-polyform-noncommercial.md) | PolyForm Noncommercial license |
+| [0008](0008-era-catalog-inheritance.md) | Era catalog inheritance |
 
 When an ADR and `src/engine/` disagree, the code wins; update the ADR
 deliberately rather than letting docs drift.

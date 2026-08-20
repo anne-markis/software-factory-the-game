@@ -25,3 +25,5 @@ non-obvious bits:
   loudly on typos.
 - The game engine (`src/engine/`) is deterministic and DOM-free (enforced by
   `purity.test.ts`); saves persist to browser `localStorage` only.
+- Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Later era
+  folders are deltas (ADR 0008); do not copy Studio JSON forward.

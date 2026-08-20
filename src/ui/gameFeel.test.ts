@@ -76,6 +76,12 @@ describe("gameFeel stat flash (issue #67)", () => {
     expect(root.querySelector(".v-flow")!.classList.contains("stat-flash")).toBe(true);
   });
 
+  it("does not put Era in the cockpit stats bar", () => {
+    const content = makeContent();
+    const views = cockpitStatViews(initialState(content), content);
+    expect(views.map((v) => v.label)).toEqual(["Day", "Backlog", "Budget", "Points/Day"]);
+  });
+
   it("includes a Users delivery stat after Reputation (Studio spine, issue #88)", () => {
     const content = makeContent();
     const state = initialState(content);

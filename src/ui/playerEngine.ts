@@ -1,4 +1,4 @@
-import { Engine } from "../engine/engine";
+import { Engine, type LoadEraContent } from "../engine/engine";
 import type { GameContent, GameState } from "../engine/types";
 
 /**
@@ -11,8 +11,12 @@ import type { GameContent, GameState } from "../engine/types";
  * Engine.initialState stays unpaused so unit tests that tick a bare Engine
  * keep working without an explicit resume.
  */
-export function createPlayerEngine(content: GameContent, saved?: GameState): Engine {
-  const engine = new Engine(content, saved);
+export function createPlayerEngine(
+  content: GameContent,
+  saved?: GameState,
+  loadEra?: LoadEraContent,
+): Engine {
+  const engine = new Engine(content, saved, loadEra);
   if (!saved) engine.pause();
   return engine;
 }

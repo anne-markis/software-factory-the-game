@@ -383,6 +383,42 @@ describe("parseDecisions", () => {
     ).toThrow(/ghost/);
   });
 
+  it("allows a later-era card to require an inherited id", () => {
+    const prior = parseDecisions([
+      { id: "test-suite", name: "Tests", description: "x", category: "tame-debt", cost: {}, effects: [], removable: true },
+    ]);
+    const defs = parseDecisions(
+      [
+        {
+          id: "ci-cd",
+          name: "CI",
+          description: "x",
+          category: "change-structure",
+          cost: {},
+          effects: [],
+          removable: true,
+          requires: ["test-suite"],
+        },
+      ],
+      "content/eras/company/decisions.json",
+      prior,
+    );
+    expect(defs.map((d) => d.id)).toEqual(["ci-cd"]);
+  });
+
+  it("rejects copying an inherited decision id into a later era file", () => {
+    const prior = parseDecisions([
+      { id: "agent", name: "Agent", description: "x", category: "ship-faster", cost: {}, effects: [], removable: true },
+    ]);
+    expect(() =>
+      parseDecisions(
+        [{ id: "agent", name: "Agent", description: "x", category: "ship-faster", cost: {}, effects: [], removable: true }],
+        "content/eras/company/decisions.json",
+        prior,
+      ),
+    ).toThrow(/inherited/);
+  });
+
   it("rejects duplicate decision ids", () => {
     expect(() =>
       parseDecisions([
@@ -475,6 +511,29 @@ describe("parseChallenges", () => {
     expect(defs.every((c) => c.probScaling === undefined)).toBe(true);
     // Every event is spaced by its own cooldown on top of the global gap.
     expect(defs.every((c) => c.cooldownDays !== undefined)).toBe(true);
+  });
+
+  it("ships Production incident only as a Company delta, inherited into Megacorp", () => {
+    const studio = loadShippedContent("studio");
+    const company = loadShippedContent("company");
+    const megacorp = loadShippedContent("megacorp");
+    expect(studio.challenges.some((c) => c.id === "prod-incident")).toBe(false);
+    const incident = company.challenges.find((c) => c.id === "prod-incident");
+    expect(incident).toMatchObject({
+      name: "Production incident",
+      probabilityPerDay: 0.01,
+      cooldownDays: 60,
+      condition: { minCompletedProjects: 1 },
+      probScaling: { stat: "techDebt", per: 500, add: 0.01 },
+    });
+    expect(incident!.effects).toEqual([
+      { type: "addToStock", stock: "budget", value: -8000 },
+      { type: "addToStock", stock: "reputation", value: -2 },
+      { type: "addToStock", stock: "users", value: -15 },
+      { type: "modifyRate", target: "all", op: "mul", value: 0.8, durationDays: 3 },
+    ]);
+    expect(company.challenges.filter((c) => c.id === "prod-incident")).toHaveLength(1);
+    expect(megacorp.challenges.find((c) => c.id === "prod-incident")).toEqual(incident);
   });
 
   it("pins the playtest-locked lean challenge rates (issue #86 knobs)", () => {
@@ -761,8 +820,21 @@ describe("per-era content layout (issue #90)", () => {
     expect(eras.startingEraId).toBe("studio");
     expect(eras.eras.map((e) => e.id)).toEqual(["studio", "company", "megacorp"]);
     expect(eras.eras[0].entryAnyOf).toBeUndefined();
-    expect(eras.eras[1].entryAnyOf!.length).toBeGreaterThan(0);
-    expect(eras.eras[2].entryAnyOf!.length).toBeGreaterThan(0);
+    expect(eras.eras[1].entryAnyOf).toEqual([{ minBudget: 1000000 }]);
+    expect(eras.eras[1].silentEntry).toBeUndefined();
+    expect(eras.eras[2].entryAnyOf).toEqual([{ minBudget: 100000000 }]);
+    expect(eras.eras[2].silentEntry).toBeUndefined();
+  });
+
+  it("keeps silentEntry false when a later era opts into an announced crossing", () => {
+    const cfg = parseErasConfig({
+      startingEraId: "studio",
+      eras: [
+        { id: "studio", name: "Studio" },
+        { id: "loud", name: "Loud", silentEntry: false, entryAnyOf: [{ minBudget: 1 }] },
+      ],
+    });
+    expect(cfg.eras[1].silentEntry).toBe(false);
   });
 
   it("rejects a starting era that declares entry criteria", () => {
@@ -774,7 +846,7 @@ describe("per-era content layout (issue #90)", () => {
     ).toThrow(/starting era/);
   });
 
-  it("loadShippedContent serves Studio cards and empty Company/Megacorp shells", () => {
+  it("loadShippedContent inherits Studio catalogs into Company and Megacorp deltas", () => {
     const studio = loadShippedContent();
     expect(studio.eraId).toBe("studio");
     expect(studio.decisions.length).toBeGreaterThan(0);
@@ -783,13 +855,49 @@ describe("per-era content layout (issue #90)", () => {
 
     const company = loadShippedContent("company");
     expect(company.eraId).toBe("company");
-    expect(company.decisions).toEqual([]);
-    expect(company.challenges).toEqual([]);
-    expect(company.projects).toEqual([]);
+    expect(company.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
+    expect(company.challenges.map((d) => d.id)).toEqual([
+      ...studio.challenges.map((d) => d.id),
+      "prod-incident",
+    ]);
+    expect(company.projects.map((d) => d.id)).toEqual(studio.projects.map((d) => d.id));
 
     const megacorp = loadShippedContent("megacorp");
     expect(megacorp.eraId).toBe("megacorp");
-    expect(megacorp.decisions).toEqual([]);
+    expect(megacorp.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
+    expect(megacorp.challenges.map((d) => d.id)).toEqual(company.challenges.map((d) => d.id));
+  });
+
+  it("loadActiveContent merges prior-era catalogs so later folders stay deltas", () => {
+    const card = (id: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      name: id,
+      description: id,
+      category: "ship-faster",
+      cost: {},
+      effects: [],
+      removable: true,
+      ...extra,
+    });
+    const eras = {
+      startingEraId: "studio",
+      eras: [
+        { id: "studio", name: "Studio" },
+        { id: "company", name: "Company", entryAnyOf: [{ minBudget: 1 }] },
+      ],
+    };
+    const bundles = {
+      studio: { decisions: [card("agent")], challenges: [], projects: [] },
+      company: {
+        decisions: [card("autonomous-pull", { requires: ["agent"] })],
+        challenges: [],
+        projects: [],
+      },
+    };
+    const company = loadActiveContent(startJson, eras, bundles, "company");
+    expect(company.decisions.map((d) => d.id)).toEqual(["agent", "autonomous-pull"]);
+    const studio = loadActiveContent(startJson, eras, bundles, "studio");
+    expect(studio.decisions.map((d) => d.id)).toEqual(["agent"]);
   });
 
   it("loadActiveContent refuses unknown era ids without hardcoding names in tick", () => {
@@ -809,8 +917,8 @@ describe("per-era content layout (issue #90)", () => {
     ).toThrow(/No content bundle registered/);
   });
 
-  it("keeps the player in Studio across ticks (P0.2 does not advance eras)", () => {
-    const e = new Engine(loadShippedContent());
+  it("stays in Studio across early ticks when entry floors are not met", () => {
+    const e = new Engine(loadShippedContent(), undefined, loadShippedContent);
     expect(e.getState().eraId).toBe("studio");
     for (let i = 0; i < 50; i++) e.tick();
     expect(e.getState().eraId).toBe("studio");

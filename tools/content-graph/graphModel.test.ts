@@ -72,6 +72,20 @@ describe("content graph model", () => {
     );
   });
 
+  it("does not repeat inherited Studio decisions as Company or Megacorp nodes", () => {
+    const model = buildGraphModel(shippedEraBundles());
+    const studioIds = model.nodes
+      .filter((node) => node.kind === "decision" && node.eraId === "studio")
+      .map((node) => node.sourceId);
+    expect(studioIds).toContain("test-suite");
+    expect(
+      model.nodes.filter((node) => node.kind === "decision" && node.eraId === "company"),
+    ).toEqual([]);
+    expect(
+      model.nodes.filter((node) => node.kind === "decision" && node.eraId === "megacorp"),
+    ).toEqual([]);
+  });
+
   it("turns every shipped entryAnyOf path into a labeled edge between era nodes", () => {
     const model = buildGraphModel(shippedEraBundles());
     const eraEdges = model.edges.filter((edge) => edge.kind === "era-entry");

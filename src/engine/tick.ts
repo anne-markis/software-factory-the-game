@@ -53,6 +53,8 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
 // churnRatePerDay), clamped at 0. stockFlowMods owned by decisions add to the
 // flow's acquirePerDay / churnRatePerDay (Studio ships none). Base churn only.
 function runStockFlows(state: GameState, content: GameContent): void {
+  state.userAcquireFlow = 0;
+  state.userChurnFlow = 0;
   for (const flow of content.start.stockFlows ?? []) {
     if (flow.condition?.minCompletedProjects !== undefined && state.completedProjects < flow.condition.minCompletedProjects) {
       continue;
@@ -70,6 +72,10 @@ function runStockFlows(state: GameState, content: GameContent): void {
     const fromStock = flow.acquirePerStock ? state.stocks[flow.acquirePerStock.stock] * flow.acquirePerStock.perUnit : 0;
     const grossGain = acquirePerDay + fromStock;
     const churnAmount = state.stocks[flow.stock] * churnRate;
+    if (flow.stock === "users") {
+      state.userAcquireFlow += grossGain;
+      state.userChurnFlow += churnAmount;
+    }
     state.stocks[flow.stock] = Math.max(0, state.stocks[flow.stock] + grossGain - churnAmount);
   }
 }
@@ -86,6 +92,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
   // later-purchased decision can still rescue an earlier decision's payroll;
   // otherwise outcomes would depend arbitrarily on purchase order.
   let totalIncome = 0;
+  state.userIncomeFlow = 0;
   for (const inst of snapshot) {
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
@@ -94,7 +101,9 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     // stacked on top of any flat incomePerDay. The subscription card reads
     // users; useless at 0 users (contributes exactly 0).
     if (def.incomeFromStock) {
-      totalIncome += state.stocks[def.incomeFromStock.stock] * def.incomeFromStock.perUnit;
+      const fromStock = state.stocks[def.incomeFromStock.stock] * def.incomeFromStock.perUnit;
+      totalIncome += fromStock;
+      if (def.incomeFromStock.stock === "users") state.userIncomeFlow += fromStock;
     }
     // Probabilistic income burst scaled by a stock's level (one-time-product
     // card). Rolled per owned decision each day; on a hit it credits
@@ -105,6 +114,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
         const burst = state.stocks[def.burstFromStock.stock] * def.burstFromStock.perUnit;
         if (burst > 0) {
           totalIncome += burst;
+          if (def.burstFromStock.stock === "users") state.userIncomeFlow += burst;
           log(state, `${def.name}: +$${burst.toFixed(0)} from a product sale burst`);
         }
       }

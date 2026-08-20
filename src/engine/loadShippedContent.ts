@@ -1,4 +1,5 @@
-// Static imports of the shipped per-era JSON layout (issue #90 / ADR §2.1).
+// Static imports of the shipped per-era JSON layout (issue #90 / ADR 0001).
+// Later era files are deltas; loadActiveContent inherits prior rungs (ADR 0008).
 // Vite and Vitest need eager module paths; the map is validated against
 // eras.json so a missing shell fails at load rather than silently falling
 // back. Tick never imports this file — only UI / tests assemble GameContent.
@@ -39,7 +40,7 @@ const ERA_BUNDLES: Record<string, EraBundleJson> = {
   },
 };
 
-/** Active content = start.json + the requested era (default: eras.startingEraId). */
+/** Active content = start.json + resolved catalog for the requested era (inherited prior rungs). */
 export function loadShippedContent(eraId?: string): GameContent {
   return loadActiveContent(startJson, erasJson, ERA_BUNDLES, eraId);
 }
