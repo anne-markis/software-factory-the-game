@@ -105,7 +105,7 @@ function pageScaffold(): string {
   // Issue #7: time controls + Reset sit above the stats bar and loop panels
   // so pause/speed/reset stay reachable without scrolling past the loops.
   // Reset is a static sibling of the patched time-controls so pause/speed
-  // flips never rebuild it; CSS pins it to the left of that same row.
+  // flips never rebuild it; CSS pins it to the right of that same row.
   // Eras stay off the title: crossings are silent and the heading is just
   // the game name. Issue #40: choices interrupt sits with chrome (before
   // loops) so pending decisions are not buried under Alter the system /
@@ -113,8 +113,8 @@ function pageScaffold(): string {
   return `
     <h1 class="game-title">Software Factory</h1>
     <div class="chrome-row">
-      <button id="reset">Reset game</button>
       <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
+      <button id="reset">Reset game</button>
     </div>
     <div ${SECTION_ATTR}="${STATS}"></div>
     <div ${SECTION_ATTR}="${GAMBLE_REVEAL}"></div>

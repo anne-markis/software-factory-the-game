@@ -338,7 +338,7 @@ describe("appView node identity across renders (issue #6)", () => {
 });
 
 describe("appView page layout (issue #7)", () => {
-  it("places Reset on the left of the same row as time controls, above the stats bar", () => {
+  it("places Start/speed on the left of the chrome row and Reset on the right", () => {
     const h = mount();
     const order = () => {
       const kids = Array.from(h.root.children) as HTMLElement[];
@@ -358,8 +358,8 @@ describe("appView page layout (issue #7)", () => {
 
     const row = h.root.querySelector(".chrome-row")!;
     expect(row).toBeTruthy();
-    expect(row.firstElementChild!.id).toBe("reset");
-    expect(row.querySelector('[data-section="time-controls"]')).not.toBeNull();
+    expect(row.firstElementChild!.getAttribute("data-section")).toBe("time-controls");
+    expect(row.lastElementChild!.id).toBe("reset");
     expect(row.contains(pauseButton(h.root))).toBe(true);
     expect(h.root.querySelector('[data-section="next-goal"]')).toBeNull();
     expect(h.root.querySelector(".next-goal")).toBeNull();
@@ -367,7 +367,7 @@ describe("appView page layout (issue #7)", () => {
     h.engine.tick();
     h.view.render();
     expect(order()).toEqual(before);
-    expect(row.firstElementChild!.id).toBe("reset");
+    expect(row.lastElementChild!.id).toBe("reset");
   });
 });
 

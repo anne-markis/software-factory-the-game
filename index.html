@@ -43,12 +43,11 @@
          crossings still swap the shop/pool, but Studio/Company never appear
          as a heading or tab title. */
       .game-title { font-size: 1.6rem; margin: 0 0 0.75rem; }
-      /* Reset sits on the same row as Start/speed, pinned to the left edge;
-         the time-control cluster stays on the right of that row. Reset is a
-         static sibling (not inside the patched time-controls block) so
-         pause/speed flips never rebuild it. */
+      /* Start/speed sit on the left of the chrome row; Reset is pinned to
+         the right of that same row. Reset is a static sibling (not inside
+         the patched time-controls block) so pause/speed flips never rebuild it. */
       .chrome-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.5rem; }
-      .chrome-row #reset { margin-left: 0; }
+      .chrome-row #reset { margin-left: auto; }
       /* Top stats bar (Day / Backlog / Budget / Points/Day): each stat is a
          fixed-width slot (label + tabular-nums value) so a value changing
          width on tick never shifts anything below. auto-fit (not auto-fill)

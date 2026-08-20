@@ -34,9 +34,10 @@ describe("top stats layout (issue #99)", () => {
 });
 
 describe("chrome row layout", () => {
-  it("puts Reset and time controls on one flex row with Reset at the left", () => {
+  it("puts Start/speed and Reset on one flex row with Reset offset to the right", () => {
     expect(html).toMatch(/\.chrome-row\s*\{[^}]*display:\s*flex/);
     expect(html).toMatch(/\.chrome-row\s*\{[^}]*justify-content:\s*space-between/);
+    expect(html).toMatch(/\.chrome-row #reset\s*\{[^}]*margin-left:\s*auto/);
     expect(html).not.toMatch(/\.era-kicker/);
     expect(html).not.toMatch(/\.next-goal/);
   });
