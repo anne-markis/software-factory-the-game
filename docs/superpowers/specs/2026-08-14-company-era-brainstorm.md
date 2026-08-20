@@ -485,7 +485,7 @@ swarm catalog.
 
 ## 7. Projects
 
-### 7.1 Move the old ladder out of Studio
+### 7.1 Old ladder is a later-era delta
 
 `content/eras/studio/projects.json` holds the Studio follow-up (tiny gigs
 + unique v1–v5). The old client ladder is a later-era delta: Company v0
