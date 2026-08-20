@@ -82,6 +82,24 @@ describe("gameFeel stat flash (issue #67)", () => {
     expect(views.map((v) => v.label)).toEqual(["Day", "Backlog", "Budget", "Points/Day"]);
   });
 
+  it("cockpit Backlog is unshipped work, not the Ready-stage stock (ADR 0009)", () => {
+    const content = makeContent();
+    const state = initialState(content);
+    const atStart = cockpitStatViews(state, content).find((v) => v.label === "Backlog")!;
+    expect(atStart.value).toBe("300");
+    // Pull moves 50 pts into In Progress: Ready-stage stock drops, unshipped does not.
+    state.stocks.backlog -= 50;
+    state.stocks.inProgress += 50;
+    const afterPull = cockpitStatViews(state, content).find((v) => v.label === "Backlog")!;
+    expect(afterPull.value).toBe("300");
+    // Shipping 10 pts is what burns the hero Backlog down.
+    state.stocks.done = 0;
+    state.stocks.inProgress -= 10;
+    state.stocks.shipped += 10;
+    const afterShip = cockpitStatViews(state, content).find((v) => v.label === "Backlog")!;
+    expect(afterShip.value).toBe("290");
+  });
+
   it("includes a Users delivery stat after Reputation (Studio spine, issue #88)", () => {
     const content = makeContent();
     const state = initialState(content);

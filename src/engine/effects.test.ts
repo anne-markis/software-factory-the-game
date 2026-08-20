@@ -48,6 +48,7 @@ describe("applyEffects", () => {
     expect(s.stocks.techDebt).toBe(0);
     applyEffects(s, [{ type: "addToStock", stock: "backlog", value: 200 }], "src-1");
     expect(s.stocks.backlog).toBe(500); // Studio start backlog 300 + 200
+    expect(s.projects[0]!.remaining).toBe(500); // ADR 0009: pipeline inject attaches to remaining
   });
 
   it("scaleStock multiplies the target stock immediately, clamped at zero, leaving siblings untouched", () => {

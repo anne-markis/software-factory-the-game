@@ -4,6 +4,7 @@ import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifier
 import { continuousDeployActive } from "./continuousDeploy";
 import { detectArchetypes } from "./archetypes";
 import { detectMilestones } from "./milestones";
+import { attachInjectedWork, committedWork, unshippedWork } from "./work";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -16,8 +17,16 @@ export function log(state: GameState, message: string): void {
 // Attribute shipped points FIFO across projects, pay revenue and bonuses.
 // Release 1 always has exactly one project; the FIFO loop already handles many.
 // Shipped points with no project in flight intentionally earn nothing (no contract, no pay).
+//
+// Surplus (pipeline work not committed to any in-flight remaining) ships
+// first and is not credited. That leftover is rework injected while no
+// contract was running; crediting it would complete the next project early
+// (ADR 0009). Extra work injected *during* a contract is attached onto
+// remaining, so it delays that contract instead of becoming surplus.
 function attributeShipped(state: GameState, shippedFlow: number): void {
-  let remaining = shippedFlow;
+  const pipelineBefore = unshippedWork(state) + shippedFlow;
+  const surplus = Math.max(0, pipelineBefore - committedWork(state));
+  let remaining = Math.max(0, shippedFlow - Math.min(shippedFlow, surplus));
   while (remaining > 0 && state.projects.length > 0) {
     const p = state.projects[0];
     const applied = Math.min(remaining, p.remaining);
@@ -193,7 +202,14 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   // gives the beta a clean 300-point burndown -- no debt-driven backlog growth
   // fighting the very first delivery -- while preserving the reinforcing
   // debt->rework loop for every project after it.
-  if (state.completedProjects >= 1) state.stocks.backlog += debtGain;
+  //
+  // ADR 0009: refill is injected work. Attach it onto the oldest in-flight
+  // contract so rework delays delivery instead of FIFO-counting as progress.
+  // With no project in flight it stays unattributed surplus.
+  if (state.completedProjects >= 1) {
+    state.stocks.backlog += debtGain;
+    attachInjectedWork(state, debtGain);
+  }
 
   // Organic stock flows (users acquisition) run after shipping/debt and read
   // this tick's completedProjects, so they turn on the same tick the beta

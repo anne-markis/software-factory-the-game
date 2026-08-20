@@ -15,6 +15,7 @@ and glossary (`docs/CONTEXT.md`) must agree with this set.
 | [0006](0006-stock-linked-content-schema.md) | Stock-linked content JSON schema |
 | [0007](0007-polyform-noncommercial.md) | PolyForm Noncommercial license |
 | [0008](0008-era-catalog-inheritance.md) | Era catalog inheritance |
+| [0009](0009-single-work-ledger.md) | Single work ledger |
 
 When an ADR and `src/engine/` disagree, the code wins; update the ADR
 deliberately rather than letting docs drift.

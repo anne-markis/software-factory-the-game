@@ -3,6 +3,7 @@ import { Engine } from "./engine";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
 import { loadShippedContent } from "./loadShippedContent";
+import { committedWork, unshippedWork } from "./work";
 import type { Effect, GameContent, GameState } from "./types";
 
 function fullContent(): GameContent {
@@ -15,6 +16,12 @@ function assertInvariants(s: Readonly<GameState>, day: number): void {
     expect(Number.isFinite(v), `stock ${name} finite at day ${day}`).toBe(true);
   }
   expect(s.pointsPerDay).toBeGreaterThanOrEqual(0);
+  // ADR 0009: in-flight remaining cannot exceed unshipped pipeline work.
+  // Extra inflow attaches to remaining; leftover surplus sits in the pipeline
+  // *ahead* of remaining, never the other way around.
+  expect(committedWork(s), `committed remaining vs pipeline at day ${day}`).toBeLessThanOrEqual(
+    unshippedWork(s) + 1e-6,
+  );
 }
 
 describe("simulation", () => {
@@ -108,10 +115,11 @@ describe("simulation", () => {
   // events, two of which (model-deprecation, runaway-agent-loop) are gated on
   // owning something from the agent ladder -- so the idle player, which owns
   // nothing, only ever sees scope-creep, and only after the beta ships
-  // (minCompletedProjects 1). Scope creep adds backlog, never cash, and the
-  // project tracks points shipped rather than the backlog stock, so the idle
-  // trajectory is nearly the challenge-free one: the beta still completes on
-  // day 302 and the +$800 bonus is still the only income the run ever sees.
+  // (minCompletedProjects 1). After the beta there is no in-flight project, so
+  // scope creep is unattributed surplus (ADR 0009) and cannot change the beta's
+  // completion day. The idle trajectory is nearly the challenge-free one: the
+  // beta still completes on day 302 and the +$800 bonus is still the only
+  // income the run ever sees.
   //
   // RE-PINNED for content wave (release 8, task 4.5): challenge rolls are now
   // hashed per challenge (hashRoll on gameSeed/day/id) instead of drawn

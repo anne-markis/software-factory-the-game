@@ -5,6 +5,7 @@
 
 import type { GameContent, GameState } from "../engine/types";
 import { budgetRunwayDays, RUNWAY_WARN_DAYS } from "./runway";
+import { unshippedWork } from "../engine/work";
 
 // Local copies — avoid a render.ts ↔ gameFeel.ts import cycle (render
 // delegates row HTML here for the shared flash path).
@@ -47,7 +48,8 @@ export function cockpitStatViews(state: Readonly<GameState>, content: GameConten
     runway === null ? `$${fmt(state.stocks.budget)}` : `$${fmt(state.stocks.budget)} (${dayLabel})`;
   return [
     { label: "Day", value: String(state.day), widthClass: "v-day", material: false },
-    { label: "Backlog", value: fmt(state.stocks.backlog), widthClass: "v-flow", material: true },
+    // ADR 0009: cockpit Backlog is unshipped work, not the Ready-stage stock.
+    { label: "Backlog", value: fmt(unshippedWork(state)), widthClass: "v-flow", material: true },
     {
       label: "Budget",
       value: budgetValue,

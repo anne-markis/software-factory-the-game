@@ -28,7 +28,7 @@ describe("loopDiagramSvg", () => {
     const state = initialState(content);
     const svg = loopDiagramSvg(state, content);
     expect(svg).toContain("<svg");
-    for (const label of ["Backlog", "In Progress", "Done", "Shipped"]) expect(svg).toContain(label);
+    for (const label of ["Ready", "In Progress", "Done", "Shipped"]) expect(svg).toContain(label);
     expect(svg).toContain("300"); // backlog value (Studio start backlog 300)
     // Issue #9: before any tick has run, no flow has actually happened yet on
     // any stage, even though every stage's base capacity is 1.0/day. The
@@ -61,7 +61,7 @@ describe("loopDiagramSvg", () => {
     // a full purchase (requires/budget/gamble are exercised elsewhere).
     state.decisions.push({ instanceId: "inst-cd", defId: "ci-cd" });
     const svg = loopDiagramSvg(state, content);
-    expect(svg).toContain("Backlog");
+    expect(svg).toContain("Ready");
     expect(svg).toContain("In Progress");
     expect(svg).toContain("Shipped");
     expect(svg).not.toContain(">Done<");

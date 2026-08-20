@@ -23,7 +23,9 @@ function realizedFlow(state: Readonly<GameState>, rate: RateId): number {
 }
 
 const FULL_STAGES: { key: "backlog" | "inProgress" | "done" | "shipped"; label: string }[] = [
-  { key: "backlog", label: "Backlog" },
+  // ADR 0009: first stage is Ready (waiting to pull). Cockpit "Backlog" is
+  // unshipped work across Ready + In Progress + Done, not this box.
+  { key: "backlog", label: "Ready" },
   { key: "inProgress", label: "In Progress" },
   { key: "done", label: "Done" },
   { key: "shipped", label: "Shipped" },
@@ -33,7 +35,7 @@ const FULL_STAGES: { key: "backlog" | "inProgress" | "done" | "shipped"; label: 
 // pins at 0 (tick.ts ships the whole done stock every tick), so a box for it
 // would only ever read 0 and add nothing.
 const CD_STAGES: { key: "backlog" | "inProgress" | "shipped"; label: string }[] = [
-  { key: "backlog", label: "Backlog" },
+  { key: "backlog", label: "Ready" },
   { key: "inProgress", label: "In Progress" },
   { key: "shipped", label: "Shipped" },
 ];
