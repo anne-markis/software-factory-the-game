@@ -1,6 +1,7 @@
 import type { GameContent, GameState, ProjectDef } from "./types";
 import { availability } from "./decisions";
 import { log } from "./tick";
+import { unshippedWork } from "./work";
 
 export interface ProjectAvailability {
   def: ProjectDef;
@@ -45,7 +46,7 @@ export function startProject(state: GameState, content: GameContent, defId: stri
 }
 
 export function isStalled(state: GameState, content: GameContent): boolean {
-  const pipelineEmpty = state.stocks.backlog + state.stocks.inProgress + state.stocks.done <= 0;
+  const pipelineEmpty = unshippedWork(state) <= 0;
   if (!pipelineEmpty) return false;
   const anyProject = projectAvailability(state, content).some((p) => p.startable);
   const anyDecision = availability(state, content).some((a) => a.purchasable);

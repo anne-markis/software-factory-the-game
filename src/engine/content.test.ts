@@ -168,6 +168,15 @@ describe("parseStartConfig", () => {
   it("accepts an empty milestones array", () => {
     expect(() => parseStartConfig({ ...startJson, milestones: [] })).not.toThrow();
   });
+
+  // ADR 0009: the seed Ready queue is the starting contract. Independently
+  // authored stocks.backlog vs initialProject.sizePoints is how the two
+  // ledgers first diverge.
+  it("rejects stocks.backlog that does not match initialProject.sizePoints", () => {
+    expect(() =>
+      parseStartConfig({ ...startJson, stocks: { ...startJson.stocks, backlog: 299 } }),
+    ).toThrow(/stocks\.backlog \(299\) must equal initialProject\.sizePoints \(300\)/);
+  });
 });
 
 describe("parseDecisions", () => {

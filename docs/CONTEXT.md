@@ -3,7 +3,7 @@
 Living glossary for content authors and maintainers. Product direction lives
 in `docs/VISION.md`; how the layers fit lives in `docs/ARCHITECTURE.md`;
 field-by-field JSON rules live in `docs/CONTENT-AUTHORING.md`. Locked
-architecture decisions are ADRs 0001–0008 under `docs/adr/`. If this glossary
+architecture decisions are ADRs 0001–0009 under `docs/adr/`. If this glossary
 and the loader disagree, the code in `src/engine/` wins.
 
 ## Scale eras (not tracks)
@@ -54,6 +54,14 @@ Every named quantity the engine writes is a **stock** (`Stocks` in
 Launch beta project completes (`completionStockGrants`), then grows via
 always-on **stock flows** and can slow delivery via **stock drag**.
 Monetization decisions *read* users; they do not invent a second population.
+
+Pipeline stage stocks say *where* unshipped work sits. `backlog` is the
+Ready queue (waiting to pull), not the cockpit hero metric. Cockpit
+**Backlog** is `backlog + inProgress + done` (ADR 0009). In-flight
+`ActiveProject.remaining` is the same work attributed to a contract;
+injected pipeline work (debt, scope creep) attaches to remaining so it
+delays delivery instead of counting as free progress. Users still grant
+when remaining hits ~0 (the work has shipped).
 
 ## Stock-linked content (generic, not named after fiction)
 

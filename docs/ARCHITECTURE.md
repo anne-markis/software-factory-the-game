@@ -2,7 +2,7 @@
 
 How Software Factory is put together, and how to extend it. Product
 direction lives in [`VISION.md`](VISION.md). Locked decisions are
-[`adr/`](adr/README.md). JSON field rules are
+[`adr/`](adr/README.md) (0001–0009). JSON field rules are
 [`CONTENT-AUTHORING.md`](CONTENT-AUTHORING.md). The glossary is
 [`CONTEXT.md`](CONTEXT.md). If a doc and `src/engine/` disagree, the
 code wins.
@@ -42,13 +42,28 @@ build (ADR 0003).
 If a change needs the DOM to decide affordability, income, era
 crossing, or effect resolution, it is in the wrong layer.
 
+## One work ledger
+
+Pipeline stocks and `ActiveProject.remaining` are two views of the same
+work (ADR 0009). Stage stocks say where unshipped points sit; remaining
+says which contract they belong to. Extra inflow (debt refill, scope
+creep, any `addToStock` / `scaleStock` on `backlog` / `inProgress` /
+`done`) must attach to remaining when a project is in flight. The
+cockpit Backlog hero metric is unshipped work (`backlog + inProgress +
+done`), not the Ready-stage stock. The Delivery diagram labels that
+first stage Ready.
+
+Do not seed `start.json` `stocks.backlog` independently of
+`initialProject.sizePoints` — the loader rejects a mismatch.
+
 ## Keep business logic out of the view
 
 `src/ui/` is a thin client of the engine, not a second rules engine.
 
 **UI may:** paint stocks, diagrams, and shop copy; send clicks
 (`applyDecision`, pause, speed); hold clock speed and `localStorage`
-keys; format numbers for display.
+keys; format numbers for display; hang a DevTools cheat API (`sf` in
+`devConsole.ts`) that writes budget/points through the work ledger.
 
 **UI may not:** invent tick math, duplicate eligibility checks “for
 convenience,” special-case card ids, or advance eras. Speed is a view

@@ -3,26 +3,52 @@ import { Engine } from "./engine";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
 import { loadShippedContent } from "./loadShippedContent";
+import { surplusGrewWhileInFlight, surplusWork, workLedgerIssues } from "./work";
 import type { Effect, GameContent, GameState } from "./types";
 
 function fullContent(): GameContent {
   return loadShippedContent();
 }
 
-function assertInvariants(s: Readonly<GameState>, day: number): void {
+type WorkSnap = Pick<GameState, "stocks" | "projects" | "completedProjects">;
+
+function snapshotWork(s: Readonly<GameState>): WorkSnap {
+  return {
+    stocks: { ...s.stocks },
+    projects: s.projects.map((p) => ({ ...p })),
+    completedProjects: s.completedProjects,
+  };
+}
+
+function assertInvariants(s: Readonly<GameState>, day: number, prev?: WorkSnap): void {
   for (const [name, v] of Object.entries(s.stocks)) {
     expect(v, `stock ${name} at day ${day}`).toBeGreaterThanOrEqual(0);
     expect(Number.isFinite(v), `stock ${name} finite at day ${day}`).toBe(true);
   }
   expect(s.pointsPerDay).toBeGreaterThanOrEqual(0);
+  expect(workLedgerIssues(s), `work ledger at day ${day}`).toEqual([]);
+  if (prev && surplusGrewWhileInFlight(prev, s)) {
+    expect.fail(
+      `day ${day}: surplus grew while a project was in flight (${surplusWork(prev)} → ${surplusWork(s)}); pipeline inflow was not attached to remaining`,
+    );
+  }
+}
+
+function ledgerWatcher(): (s: Readonly<GameState>, day: number) => void {
+  let prev: WorkSnap | undefined;
+  return (s, day) => {
+    assertInvariants(s, day, prev);
+    prev = snapshotWork(s);
+  };
 }
 
 describe("simulation", () => {
   it("idle strategy: 2000 days with full content violates no invariants", () => {
     const e = new Engine(fullContent());
+    const check = ledgerWatcher();
     for (let day = 1; day <= 2000; day++) {
       e.tick();
-      assertInvariants(e.getState(), day);
+      check(e.getState(), day);
     }
   });
 
@@ -60,6 +86,7 @@ describe("simulation", () => {
     const c = fullContent();
     c.challenges = [];
     const e = new Engine(c);
+    const check = ledgerWatcher();
     const at: Record<number, number> = {};
     let completionDay = 0;
     let firstZeroDay = 0;
@@ -70,6 +97,7 @@ describe("simulation", () => {
     for (let day = 1; day <= 2000; day++) {
       e.tick();
       const s = e.getState();
+      check(s, day);
       if (completionDay === 0 && s.completedProjects >= 1) {
         completionDay = day;
         repAfterCompletion = s.stocks.reputation;
@@ -108,10 +136,11 @@ describe("simulation", () => {
   // events, two of which (model-deprecation, runaway-agent-loop) are gated on
   // owning something from the agent ladder -- so the idle player, which owns
   // nothing, only ever sees scope-creep, and only after the beta ships
-  // (minCompletedProjects 1). Scope creep adds backlog, never cash, and the
-  // project tracks points shipped rather than the backlog stock, so the idle
-  // trajectory is nearly the challenge-free one: the beta still completes on
-  // day 302 and the +$800 bonus is still the only income the run ever sees.
+  // (minCompletedProjects 1). After the beta there is no in-flight project, so
+  // scope creep is unattributed surplus (ADR 0009) and cannot change the beta's
+  // completion day. The idle trajectory is nearly the challenge-free one: the
+  // beta still completes on day 302 and the +$800 bonus is still the only
+  // income the run ever sees.
   //
   // RE-PINNED for content wave (release 8, task 4.5): challenge rolls are now
   // hashed per challenge (hashRoll on gameSeed/day/id) instead of drawn
@@ -131,12 +160,14 @@ describe("simulation", () => {
   // challenge-dependent values.
   it("idle with full content: no monetization means the users grant never pays off; drains to zero within the horizon", () => {
     const e = new Engine(fullContent());
+    const check = ledgerWatcher();
     let budgetAt300 = NaN;
     let completionDay = 0;
     let sawUsers = false;
     for (let day = 1; day <= 2000; day++) {
       e.tick();
       const s = e.getState();
+      check(s, day);
       if (completionDay === 0 && s.completedProjects >= 1) completionDay = day;
       if (s.stocks.users > 0) sawUsers = true;
       if (day === 300) budgetAt300 = s.stocks.budget;
@@ -238,6 +269,7 @@ describe("simulation", () => {
   it("smart strategy (mid-tier observation): completes the beta, then runs dry without monetization", () => {
     const content = fullContent();
     const e = new Engine(content);
+    const check = ledgerWatcher();
     let hires = 0;
     let budgetAt1000 = NaN;
     let completionDay = 0;
@@ -264,7 +296,7 @@ describe("simulation", () => {
       if (completionDay === 0 && s.completedProjects >= 1) completionDay = day;
       if (completionDay > 0) peakBudgetAfterCompletion = Math.max(peakBudgetAfterCompletion, s.stocks.budget);
       if (day === 1000) budgetAt1000 = s.stocks.budget;
-      assertInvariants(s, day);
+      check(s, day);
     }
     expect(completionDay).toBeGreaterThan(0); // observed: day 1010
     expect(completionDay).toBeLessThan(1800); // still comfortably within the 2000-day horizon
@@ -308,6 +340,7 @@ describe("simulation", () => {
     const PROJECT_RESERVE = 600; // keep this much beyond a project's upfront cost
     const content = fullContent();
     const e = new Engine(content);
+    const check = ledgerWatcher();
     let startedSmallCrm = false;
     let lastCompleted = 0;
     let everBroke = false;
@@ -352,7 +385,7 @@ describe("simulation", () => {
       if (s.stocks.budget === 0) everBroke = true;
       peakUsers = Math.max(peakUsers, s.stocks.users);
       if ([500, 1000, 2000].includes(day)) budgetAtDay[day] = s.stocks.budget;
-      assertInvariants(s, day);
+      check(s, day);
     }
     return {
       completedProjects: e.getState().completedProjects,
@@ -578,6 +611,7 @@ describe("simulation", () => {
   it("short Studio session: monetize, ship the beta, then unlock the agent ladder in gate order", () => {
     const content = fullContent();
     const e = new Engine(content);
+    const check = ledgerWatcher();
     const monetization = ["subscription", "one-time-product"];
     const ladder = ["agent", "agent", "agent-harness", "agent-orchestration"];
     const buys: string[] = [];
@@ -610,7 +644,7 @@ describe("simulation", () => {
         e.resolveChoice(pc.challengeId, def.choice!.options[0].id);
       }
       if (completedDay > 0) minBudgetAfterLaunch = Math.min(minBudgetAfterLaunch, s.stocks.budget);
-      assertInvariants(s, day);
+      check(s, day);
     }
     expect(buys).toEqual([
       "d1:subscription",
@@ -637,6 +671,7 @@ describe("simulation", () => {
   it("greedy strategy: buy everything affordable each day, invariants hold", () => {
     const content = fullContent();
     const e = new Engine(content);
+    const check = ledgerWatcher();
     let peakPointsPerDay = 0;
     for (let day = 1; day <= 2000; day++) {
       e.tick();
@@ -680,7 +715,7 @@ describe("simulation", () => {
         const def = content.challenges.find((c) => c.id === pc.challengeId)!;
         e.resolveChoice(pc.challengeId, def.choice!.options[0].id);
       }
-      assertInvariants(e.getState(), day);
+      check(e.getState(), day);
     }
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);

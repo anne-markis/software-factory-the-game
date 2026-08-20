@@ -135,6 +135,14 @@ export function parseStartConfig(json: unknown): StartConfig {
     }
     prevReputation = m.reputation;
   }
+  // ADR 0009: the seed Ready queue *is* the starting contract. Duplicating
+  // the 300 in stocks.backlog and initialProject.sizePoints independently is
+  // how those two ledgers first diverge.
+  if (cfg.stocks.backlog !== cfg.initialProject.sizePoints) {
+    throw new Error(
+      `Invalid content in content/start.json: stocks.backlog (${cfg.stocks.backlog}) must equal initialProject.sizePoints (${cfg.initialProject.sizePoints})`,
+    );
+  }
   return cfg;
 }
 

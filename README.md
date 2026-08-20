@@ -13,6 +13,11 @@ people, agents, and process; survive random challenges; scale points/day.
 
     npm run test
 
+To jump to a boundary without playing a full run, open the browser
+DevTools console on the running game and type `sf.help()`. `sf.budget(n)`
+and `sf.points(n)` (optionally park points in `"inProgress"` or `"done"`)
+write through the work ledger and save.
+
 ## Deploy
 
 `npm run build` produces a fully static, self-contained bundle in `dist/`

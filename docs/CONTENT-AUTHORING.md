@@ -10,7 +10,7 @@ The locked model this guide must match: **eras not tracks**, no
 tags/`hasTag` curriculum, **stock-linked** fields and predicates, **later
 era folders are deltas**. Glossary: [`docs/CONTEXT.md`](CONTEXT.md).
 Architecture: [`docs/ARCHITECTURE.md`](ARCHITECTURE.md). Decisions:
-[ADRs 0001–0008](adr/README.md). Direction: [`docs/VISION.md`](VISION.md).
+[ADRs 0001–0009](adr/README.md). Direction: [`docs/VISION.md`](VISION.md).
 
 ## 1. Where content lives, and how it is checked
 
@@ -345,6 +345,14 @@ reputation specifically. `users` is the product-growth stock (section 5):
 it stays 0 until Launch beta's `completionStockGrants` fire; do not
 `addToStock` users from a random challenge unless you mean to skip that
 gate.
+
+A positive or negative write to a pipeline stock (`backlog`,
+`inProgress`, `done`) is injected work (ADR 0009). While a project is
+in flight it attaches to that project's `remaining`, so `scope-creep`'s
+`+75` backlog *delays* the current contract instead of counting as free
+progress. With no project in flight it sits as unattributed surplus and
+ships first without completing the next contract early. `shipped` is
+not a pipeline stock for this purpose.
 
 ### `scaleStock`
 
@@ -854,7 +862,11 @@ The **starting** project is not in that file: it lives on
 upfront, `payoutPerPoint: 0`, `$800` completion bonus, `+1` reputation,
 and `completionStockGrants: [{ "stock": "users", "amount": 30 }]`).
 
-- `sizePoints` (> 0) - added to `backlog` when the project starts.
+- `sizePoints` (> 0) - added to `backlog` (the Ready queue) when the
+  project starts, and set as that project's `remaining`. Extra pipeline
+  inflow after that attaches to remaining (ADR 0009) rather than being a
+  second, anonymous bag of points. `start.json` must seed
+  `stocks.backlog` equal to `initialProject.sizePoints`.
 - `upfrontCost` (>= 0) - charged from budget when the project starts.
 - `payoutPerPoint` (>= 0) - revenue per shipped point while this project
   is the oldest one in flight (projects are paid FIFO: shipped points are

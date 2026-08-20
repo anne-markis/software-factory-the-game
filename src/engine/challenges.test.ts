@@ -49,6 +49,7 @@ describe("rollChallenges", () => {
     expect(hashRoll(SEED, 86, "scope-creep")).toBeLessThan(0.01);
     rollChallenges(s, noRng, c);
     expect(s.stocks.backlog).toBe(375); // Studio start backlog 300 + 75
+    expect(s.projects[0]!.remaining).toBe(375); // ADR 0009: scope creep is more contract work
     expect(s.log.some((l) => l.message.includes("Scope creep"))).toBe(true);
   });
 

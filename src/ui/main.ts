@@ -4,6 +4,7 @@ import { mountAppView } from "./appView";
 import { createPlayerEngine } from "./playerEngine";
 import { saveGame, loadGame, clearSave, saveSpeed, loadSpeed } from "./storage";
 import { advance, type Speed } from "./tickDriver";
+import { installDevConsole } from "./devConsole";
 
 // Per-era loader: start.json + the save's era (or Studio). Tick advances
 // one-way when entryAnyOf fires; the loader keeps owned defs resolvable.
@@ -42,6 +43,15 @@ const view = mountAppView({
     }
   },
   onError: (message) => alert(message),
+});
+
+// DevTools cheats (`sf.help()`): UI-only writes through the live state
+// escape hatch, then re-render + save. Uninstall on HMR so a stale `sf`
+// cannot mutate a disposed engine.
+const uninstallDevConsole = installDevConsole({
+  engine,
+  render: () => view.render(),
+  save: () => saveGame(engine.getState()),
 });
 
 // Fixed-timestep driver (design doc section 4): a 100ms wall-clock interval
@@ -98,5 +108,6 @@ if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     clearInterval(intervalId);
     view.dispose();
+    uninstallDevConsole();
   });
 }

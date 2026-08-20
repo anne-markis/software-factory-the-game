@@ -1,5 +1,6 @@
 import type { Effect, GameContent, GameState, Modifier, ModifierTarget } from "./types";
 import { log } from "./tick";
+import { attachInjectedWork, isPipelineStock } from "./work";
 
 export interface EffectContext {
   instanceId?: string;
@@ -53,10 +54,13 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
       case "modifyDebtMultiplier":
         pushModifier(state, source, "debtMultiplier", effect.op, effect.value, effect.durationDays);
         break;
-      case "addToStock":
-        state.stocks[effect.stock] = Math.max(0, state.stocks[effect.stock] + effect.value);
+      case "addToStock": {
+        const before = state.stocks[effect.stock];
+        state.stocks[effect.stock] = Math.max(0, before + effect.value);
+        if (isPipelineStock(effect.stock)) attachInjectedWork(state, state.stocks[effect.stock] - before);
         break;
-      case "scaleStock":
+      }
+      case "scaleStock": {
         // Immediate, like addToStock: no modifier is created, so a scaled
         // stock does not show up as a Friction/Cycle-speed/Leak-size
         // contributor in the Progress system panel -- only a paired
@@ -64,8 +68,13 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // refactor/rebuild cards used) would surface there. factor 0 wipes the
         // stock entirely; factor > 1 (a future challenge doubling backlog,
         // say) is schema-legal too. Clamped at 0 like every other stock write.
-        state.stocks[effect.stock] = Math.max(0, state.stocks[effect.stock] * effect.factor);
+        // ADR 0009: a pipeline-stage scale is injected/removed work, so the
+        // oldest in-flight remaining moves by the actual clamped delta.
+        const before = state.stocks[effect.stock];
+        state.stocks[effect.stock] = Math.max(0, before * effect.factor);
+        if (isPipelineStock(effect.stock)) attachInjectedWork(state, state.stocks[effect.stock] - before);
         break;
+      }
       case "sickness": {
         const inst = state.decisions.find((d) => d.instanceId === ctx.instanceId);
         // Silently no-ops when the instance is gone; the challenge roller only

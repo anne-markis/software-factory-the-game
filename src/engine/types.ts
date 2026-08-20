@@ -24,6 +24,12 @@ export interface Stocks {
 
 export type StockName = keyof Stocks;
 
+// Unshipped delivery stages. `backlog` here is the Ready queue (work waiting
+// to be pulled), not the cockpit "Backlog" hero metric — that reads the sum
+// of these three (ADR 0009). Shipped is excluded: it already left the factory.
+export const PIPELINE_STOCKS = ["backlog", "inProgress", "done"] as const;
+export type PipelineStock = (typeof PIPELINE_STOCKS)[number];
+
 export type RateId = "pull" | "finish" | "deploy";
 export const RATE_IDS: readonly RateId[] = ["pull", "finish", "deploy"];
 
@@ -207,6 +213,10 @@ export interface ProjectDef {
 export interface ActiveProject {
   defId: string;
   name: string;
+  // Unshipped points still owed on this contract (ADR 0009). Extra pipeline
+  // inflow (debt refill, scope creep, addToStock/scaleStock on a pipeline
+  // stock) attaches here while the project is in flight, so remaining tracks
+  // the work, not a parallel ship-countdown. Completes at ~0 in attributeShipped.
   remaining: number;
   payoutPerPoint: number;
   completionBonus: number;

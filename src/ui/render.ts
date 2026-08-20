@@ -209,7 +209,7 @@ export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: 
   const flight = inFlight
     .map((p) => {
       const eta = formatProjectEta(p.remaining, state.pointsPerDay);
-      return `<div>${esc(p.name)}: ${fmt(p.remaining)} points left ($${fmt(p.payoutPerPoint)}/pt, $${fmt(p.completionBonus)} on completion) · ${esc(eta)}</div>`;
+      return `<div data-project-status="${esc(p.defId)}">${esc(p.name)}: ${fmt(p.remaining)} points left ($${fmt(p.payoutPerPoint)}/pt, $${fmt(p.completionBonus)} on completion) · ${esc(eta)}</div>`;
     })
     .join("");
   return `<h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}`;

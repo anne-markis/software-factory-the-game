@@ -45,7 +45,7 @@ describe("renderStats", () => {
     const html = renderStats(e.getState(), c);
     expect(html).toContain('<div class="stats">');
     expect(html).toContain(
-      '<span class="stat"><span class="stat-label">Day</span> <span class="stat-value v-day">0</span></span>',
+      '<span class="stat" data-stat="day"><span class="stat-label">Day</span> <span class="stat-value v-day">0</span></span>',
     );
     expect(html).toContain('<span class="stat-label">Backlog</span> <span class="stat-value v-flow">');
     expect(html).toContain('<span class="stat-label">Budget</span> <span class="stat-value v-budget">$');
@@ -340,7 +340,7 @@ describe("renderProjectsStatus", () => {
     expect(html).toContain("· stalled");
     // The Start buttons live in the sibling offers section, not here, so the
     // per-tick progress update cannot tear them down (issue #6).
-    expect(html).not.toContain("data-project");
+    expect(html).not.toContain('data-project="');
   });
 
   // Issue #17 / P0.1 FR-3: derived ~days from remaining ÷ Points/Day.
