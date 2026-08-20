@@ -62,7 +62,8 @@ Do not seed `start.json` `stocks.backlog` independently of
 
 **UI may:** paint stocks, diagrams, and shop copy; send clicks
 (`applyDecision`, pause, speed); hold clock speed and `localStorage`
-keys; format numbers for display.
+keys; format numbers for display; hang a DevTools cheat API (`sf` in
+`devConsole.ts`) that writes budget/points through the work ledger.
 
 **UI may not:** invent tick math, duplicate eligibility checks “for
 convenience,” special-case card ids, or advance eras. Speed is a view
