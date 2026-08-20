@@ -2,7 +2,8 @@
 
 Living glossary for content authors and maintainers. Product direction lives
 in `docs/VISION.md`; how the layers fit lives in `docs/ARCHITECTURE.md`;
-field-by-field JSON rules live in `docs/CONTENT-AUTHORING.md`. Locked
+schema gotchas live in `docs/CONTENT-AUTHORING.md` (field types are in
+`src/engine/content.ts`; shipped cards are in `content/`). Locked
 architecture decisions are ADRs 0001–0009 under `docs/adr/`. If this glossary
 and the loader disagree, the code in `src/engine/` wins.
 
@@ -89,7 +90,8 @@ Progression edges live in content, not in TypeScript that knows story beats:
 - Decision shop: `requires`, `requiresCounts`, `unique`, cost.
 - Challenges: `minHumanDevs` / `maxHumanDevs`, `minTechDebt`, `minDay`,
   `minCompletedProjects`, `requiresAnyDecision`, `lacksDecision`.
-- Projects: `requiresCompleted`, `requiresReputation`.
+- Projects: `requiresCompleted` (count), `requiresCompletedId` (specific
+  catalog or start-project id), `unique`, `requiresReputation`.
 - Era entry (evaluated each tick for the **next** rung only): `entryAnyOf`
   OR of `{ minBudget, minReputation, minCompletedProjects, minUsers }` paths.
 

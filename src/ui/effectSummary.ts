@@ -76,7 +76,7 @@ function describeEffect(effect: Effect): string | null {
       return "removes the Done stage";
     case "sickness":
       // Schema-legal but functionally inert on a decision's own effects (see
-      // docs/CONTENT-AUTHORING.md section 3): applyDecision never threads an
+      // docs/CONTENT-AUTHORING.md, Effects): applyDecision never threads an
       // instanceId through, so this never actually does anything when it
       // lives here. Nothing to summarize; filtered out by the caller.
       return null;

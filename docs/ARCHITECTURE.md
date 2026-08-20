@@ -2,7 +2,7 @@
 
 How Software Factory is put together, and how to extend it. Product
 direction lives in [`VISION.md`](VISION.md). Locked decisions are
-[`adr/`](adr/README.md) (0001–0009). JSON field rules are
+[`adr/`](adr/README.md) (0001–0009). Schema gotchas are
 [`CONTENT-AUTHORING.md`](CONTENT-AUTHORING.md). The glossary is
 [`CONTEXT.md`](CONTEXT.md). If a doc and `src/engine/` disagree, the
 code wins.
