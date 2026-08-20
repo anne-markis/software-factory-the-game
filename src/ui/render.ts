@@ -18,7 +18,7 @@ export function fmt(n: number): string {
 }
 
 // Top bar keeps the cockpit glanceables: clock, work waiting, money, and
-// throughput. Flow-stage and quality stocks live under the Delivery system
+// throughput. Flow-stage and quality stocks live under the Delivery loop
 // (see renderDeliveryStats) so they sit next to the diagram they describe.
 // Markup is shared with gameFeel.syncStatRow (issue #67 in-place flash).
 export function renderStats(state: Readonly<GameState>, content: GameContent): string {
@@ -26,7 +26,7 @@ export function renderStats(state: Readonly<GameState>, content: GameContent): s
 }
 
 // Issue #8: In Progress / Done / Shipped / Tech Debt / Reputation sit under
-// the Delivery system panel. Same fixed-width value slots as the top bar so
+// the Delivery loop panel. Same fixed-width value slots as the top bar so
 // ticking numbers never jitter this row either.
 export function renderDeliveryStats(state: Readonly<GameState>): string {
   return statsRowHtml(deliveryStatViews(state), "delivery-stats");

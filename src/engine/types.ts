@@ -373,7 +373,7 @@ export interface GameState {
   // whatever was actually sitting in Done that tick -- see tick.ts). Each is
   // capped by the stock actually available that tick (backlog for pull,
   // inProgress for finish), NOT the stage's uncapped rate. Added for issue
-  // #9: the Delivery system diagram's arrows and the Progress system panel's
+  // #9: the Delivery loop diagram's arrows and the Progress loop panel's
   // exit box used to print raw stage capacity (effectiveRate) and claim it
   // equaled throughput, which is only true when the relevant stock fully
   // saturates that stage every tick -- these fields let the UI show what

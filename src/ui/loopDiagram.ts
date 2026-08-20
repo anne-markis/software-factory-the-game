@@ -156,9 +156,9 @@ function debtRegenLoop(startX: number, endX: number, debt: string): string {
 const DEFS = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`;
 
 function ariaLabel(binding: BindingStage | null): string {
-  if (binding === "done") return "Delivery system, Done capacity-bound";
-  if (binding === "inProgress") return "Delivery system, In Progress capacity-bound";
-  return "Delivery system";
+  if (binding === "done") return "Delivery loop, Done capacity-bound";
+  if (binding === "inProgress") return "Delivery loop, In Progress capacity-bound";
+  return "Delivery loop";
 }
 
 function teachingCaption(): string {

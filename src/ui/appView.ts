@@ -33,7 +33,6 @@ import {
   renderBuildStamp,
 } from "./render";
 import { getBuildInfo } from "./buildInfo";
-import { eraDisplayName } from "../engine/eras";
 import { loopDiagramSvg } from "./loopDiagram";
 import { usersLoopSvg } from "./usersLoop";
 import { inProgressPanelSvg } from "./inProgressPanel";
@@ -48,7 +47,6 @@ import {
   syncStatRow,
   type GambleReveal,
 } from "./gameFeel";
-import { renderNextGoal } from "./nextGoal";
 
 export interface AppViewDeps {
   root: HTMLElement;
@@ -84,15 +82,13 @@ export interface AppView {
 // unlike before -- are not churned by the driver at all. Section containers
 // are empty until the first render patches them.
 //
-  // Issue #67: Delivery system diagram, delivery-stats, and Progress system are
+  // Issue #67: Delivery loop diagram, delivery-stats, and Progress loop are
 // separate sections so material stock numbers can update in place (flash)
 // without rebuilding the SVG wrappers every time a digit moves. Gamble reveal
 // is its own ephemeral section between stats and the loops.
 // Issue #40: Choices live in glanceable chrome (not the scrollable side rail)
 // so a Decision-needed interrupt stays reachable while shopping at speed.
 const STATS = "stats";
-const ERA = "era";
-const NEXT_GOAL = "next-goal";
 const DELIVERY_LOOP = "delivery-loop";
 const DELIVERY_STATS = "delivery-stats";
 const USERS_LOOP = "users-loop";
@@ -108,22 +104,25 @@ const LOG = "log";
 function pageScaffold(): string {
   // Issue #7: time controls + Reset sit above the stats bar and loop panels
   // so pause/speed/reset stay reachable without scrolling past the loops.
-  // Issue #65: next-goal sits with the glanceable chrome (below stats, above
-  // loops) so the endless-run lean stays visible without opening Projects.
-  // Issue #40: choices interrupt sits with chrome (before loops) so pending
-  // decisions are not buried under Alter the system / Events scroll.
+  // Reset is a static sibling of the patched time-controls so pause/speed
+  // flips never rebuild it; CSS pins it to the right of that same row.
+  // Eras stay off the title: crossings are silent and the heading is just
+  // the game name. Issue #40: choices interrupt sits with chrome (before
+  // loops) so pending decisions are not buried under Alter the system /
+  // Events scroll.
   return `
-    <h1 class="game-title">Software Factory <span class="era-kicker" ${SECTION_ATTR}="${ERA}"></span></h1>
-    <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
-    <button id="reset">Reset game</button>
+    <h1 class="game-title">Software Factory</h1>
+    <div class="chrome-row">
+      <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
+      <button id="reset">Reset game</button>
+    </div>
     <div ${SECTION_ATTR}="${STATS}"></div>
-    <div ${SECTION_ATTR}="${NEXT_GOAL}"></div>
     <div ${SECTION_ATTR}="${GAMBLE_REVEAL}"></div>
     <div ${SECTION_ATTR}="${CHOICES}"></div>
     <div class="loops">
       <div class="delivery-column">
-        <div class="panel"><h3>Delivery system</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
-        <div class="panel"><h3>Users system</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
+        <div class="panel"><h3>Delivery loop</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
+        <div class="panel"><h3>User loop</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
         <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>
       </div>
       <div ${SECTION_ATTR}="${PROGRESS_LOOP}"></div>
@@ -224,10 +223,6 @@ export function mountAppView(deps: AppViewDeps): AppView {
     softPauseForNewChoices([...engine.getState().pendingChoices]);
     content = engine.getContent();
     const state = engine.getState();
-    const eraName = eraDisplayName(content.eras, state.eraId);
-    page.patch(ERA, eraName);
-    const tabTitle = `${eraName} — Software Factory`;
-    if (document.title !== tabTitle) document.title = tabTitle;
     if (state.eraId !== lastEraId) {
       lastEraId = state.eraId;
       decisions.setScaffold(decisionsPanelScaffold(content));
@@ -236,7 +231,6 @@ export function mountAppView(deps: AppViewDeps): AppView {
     // finish without the string-memo path tearing the nodes down each tick.
     syncStatRow(page.section(STATS)!, "stats", cockpitStatViews(state, content), flash);
     syncStatRow(page.section(DELIVERY_STATS)!, "delivery-stats", deliveryStatViews(state), flash);
-    page.patch(NEXT_GOAL, renderNextGoal(state, content));
     page.patch(DELIVERY_LOOP, loopDiagramSvg(state, content));
     page.patch(USERS_LOOP, usersLoopSvg(state, content));
     page.patch(PROGRESS_LOOP, inProgressPanelSvg(state, content));

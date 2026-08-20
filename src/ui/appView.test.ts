@@ -96,7 +96,7 @@ function pauseButton(root: HTMLElement): HTMLElement {
 }
 
 describe("appView delivery-column stats layout (issue #8)", () => {
-  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery system", () => {
+  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
     const h = mount();
     const top = h.root.querySelector(".stats")!;
     expect(top).toBeTruthy();
@@ -106,10 +106,10 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     const deliveryCol = h.root.querySelector(".delivery-column")!;
     expect(deliveryCol).toBeTruthy();
     const colHeadings = Array.from(deliveryCol.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(colHeadings).toEqual(["Delivery system", "Users system"]);
+    expect(colHeadings).toEqual(["Delivery loop", "User loop"]);
     const under = deliveryCol.querySelector(".delivery-stats")!;
     expect(under).toBeTruthy();
-    // Stats sit after the Delivery + Users system panels inside the same column
+    // Stats sit after the Delivery + User loop panels inside the same column
     // (issue #67: wrapped in a data-section host for in-place flash sync).
     const panels = deliveryCol.querySelectorAll(":scope > .panel");
     expect(panels).toHaveLength(2);
@@ -118,17 +118,19 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users"]);
 
-    // Progress system remains a sibling of the delivery column, not a parent of those stats.
+    // Progress loop remains a sibling of the delivery column, not a parent of those stats.
     const loops = h.root.querySelector(".loops")!;
     expect(loops.contains(deliveryCol)).toBe(true);
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toEqual(["Delivery system", "Users system", "Progress system"]);
-    expect(headings).not.toContain("Delivery loop");
-    expect(headings).not.toContain("Progress loop");
-    expect(headings).not.toContain("Users loop");
+    expect(headings).toEqual(["Delivery loop", "User loop", "Progress loop"]);
+    expect(headings).not.toContain("Delivery system");
+    expect(headings).not.toContain("Progress system");
+    expect(headings).not.toContain("Users system");
+    expect(headings).not.toContain("User system");
+    expect(h.root.textContent).toContain("Alter the system");
     expect(under.closest(".panel")).toBeNull();
 
-    const usersLoop = deliveryCol.querySelector('[aria-label="Users system"]');
+    const usersLoop = deliveryCol.querySelector('[aria-label="User loop"]');
     expect(usersLoop).not.toBeNull();
     expect(deliveryCol.textContent).toContain(USERS_LOOP_CAPTION);
   });
@@ -152,21 +154,24 @@ describe("appView delivery-column stats layout (issue #8)", () => {
   });
 });
 
-describe("appView era identity and silent Company entry", () => {
-  it("shows Studio on the title, then Company with no Events line after the budget floor fires", () => {
+describe("appView era identity stays off the player chrome", () => {
+  it("never shows an era name on the title, then silently swaps into Company after the budget floor fires", () => {
     const content = loadShippedContent();
     const restored = initialState(content);
     restored.stocks.budget = content.eras!.eras.find((era) => era.id === "company")!.entryAnyOf![0].minBudget! + 20;
     const h = mount({ content, restored, loadEra: loadShippedContent, richBudget: false });
-    expect(h.root.querySelector(".era-kicker")!.textContent).toBe("Studio");
-    expect(document.title).toBe("Studio — Software Factory");
+    expect(h.root.querySelector("h1.game-title")!.textContent!.trim()).toBe("Software Factory");
+    expect(h.root.querySelector(".era-kicker")).toBeNull();
+    expect(h.root.textContent).not.toContain("Studio");
+    expect(document.title).not.toMatch(/Studio|Company/);
     expect(h.root.querySelector('[data-next-era="company"]')).toBeNull();
     h.engine.tick();
     h.view.render();
-    expect(h.root.querySelector(".era-kicker")!.textContent).toBe("Company");
-    expect(document.title).toBe("Company — Software Factory");
+    expect(h.root.querySelector("h1.game-title")!.textContent!.trim()).toBe("Software Factory");
+    expect(h.root.textContent).not.toContain("Company");
     expect(h.root.textContent).not.toContain("Entered Company");
     expect(h.root.querySelector('[data-next-era="megacorp"]')).toBeNull();
+    expect(h.engine.getState().eraId).toBe("company");
   });
 });
 
@@ -333,27 +338,36 @@ describe("appView node identity across renders (issue #6)", () => {
 });
 
 describe("appView page layout (issue #7)", () => {
-  it("places time controls and Reset above the stats bar and loop panels", () => {
+  it("places Start/speed on the left of the chrome row and Reset on the right", () => {
     const h = mount();
     const order = () => {
       const kids = Array.from(h.root.children) as HTMLElement[];
       return {
-        time: kids.findIndex((el) => el.getAttribute("data-section") === "time-controls"),
-        reset: kids.findIndex((el) => el.id === "reset"),
+        title: kids.findIndex((el) => el.matches("h1.game-title")),
+        chrome: kids.findIndex((el) => el.classList.contains("chrome-row")),
         stats: kids.findIndex((el) => el.getAttribute("data-section") === "stats"),
         loops: kids.findIndex((el) => el.classList.contains("loops")),
       };
     };
     const before = order();
     expect(h.root.querySelector("h1.game-title")).toBe(h.root.children[0]);
-    expect(before.time).toBe(1);
-    expect(before.reset).toBe(2);
-    expect(before.stats).toBeGreaterThan(before.reset);
+    expect(before.title).toBe(0);
+    expect(before.chrome).toBe(1);
+    expect(before.stats).toBeGreaterThan(before.chrome);
     expect(before.loops).toBeGreaterThan(before.stats);
+
+    const row = h.root.querySelector(".chrome-row")!;
+    expect(row).toBeTruthy();
+    expect(row.firstElementChild!.getAttribute("data-section")).toBe("time-controls");
+    expect(row.lastElementChild!.id).toBe("reset");
+    expect(row.contains(pauseButton(h.root))).toBe(true);
+    expect(h.root.querySelector('[data-section="next-goal"]')).toBeNull();
+    expect(h.root.querySelector(".next-goal")).toBeNull();
     // Scaffold is static: order holds across ticks.
     h.engine.tick();
     h.view.render();
     expect(order()).toEqual(before);
+    expect(row.lastElementChild!.id).toBe("reset");
   });
 });
 
@@ -663,40 +677,12 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
   });
 });
 
-describe("appView next-goal indicator (issue #65)", () => {
-  it("renders an always-visible next-goal between stats and the loops", () => {
+describe("appView next-goal indicator is not shown", () => {
+  it("does not render the Next line on a fresh game", () => {
     const h = mount();
-    const host = h.root.querySelector('[data-section="next-goal"]')!;
-    expect(host).not.toBeNull();
-    expect(host.querySelector(".next-goal")).not.toBeNull();
-    expect(host.textContent).toContain("Next");
-    expect(host.textContent).toContain("Trusted vendor");
-    expect(host.textContent).toMatch(/0\/5 reputation/);
-    expect(host.textContent).toContain("Legacy platform migration");
-
-    const stats = h.root.querySelector('[data-section="stats"]')!;
-    const loops = h.root.querySelector(".loops")!;
-    expect(stats.compareDocumentPosition(host) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(host.compareDocumentPosition(loops) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("advances the milestone line when reputation crosses a threshold", () => {
-    const h = mount();
-    h.state.stocks.reputation = 5;
-    h.view.render();
-    const host = h.root.querySelector('[data-section="next-goal"]')!;
-    expect(host.querySelector('[data-next-milestone="established"]')).not.toBeNull();
-    expect(host.textContent).toContain("Established shop");
-    expect(host.textContent).toMatch(/5\/15 reputation/);
-  });
-
-  it("shows the top-out copy when milestones and contract gates are cleared", () => {
-    const h = mount();
-    h.state.stocks.reputation = 70;
-    h.state.completedProjects = 2;
-    h.view.render();
-    const host = h.root.querySelector('[data-section="next-goal"]')!;
-    expect(host.querySelector('[data-next-top="1"]')).not.toBeNull();
-    expect(host.textContent).toContain("Top milestone reached — keep shipping");
+    expect(h.root.querySelector('[data-section="next-goal"]')).toBeNull();
+    expect(h.root.querySelector(".next-goal")).toBeNull();
+    expect(h.root.textContent).not.toMatch(/\bNext\b/);
+    expect(h.root.textContent).not.toContain("Trusted vendor");
   });
 });
