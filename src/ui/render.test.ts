@@ -132,9 +132,9 @@ describe("renderDecisions", () => {
     expect(html).toContain("Nothing yet. You are a solo dev.");
   });
 
-  // Issue #24: scaffold lays out one patchable section per decision plus the
-  // Owned list, matching the projects/choices nested-region pattern.
-  it("decisionsPanelScaffold exposes a section shell for every decision and Owned", () => {
+  // Issue #24 / #110: scaffold lays out one patchable section per shop-visible
+  // decision plus the Owned list. Owned unique cards omit their shells.
+  it("decisionsPanelScaffold exposes a section shell for every shop-visible decision and Owned", () => {
     const c = content();
     const html = decisionsPanelScaffold(c);
     expect(html).toContain(`<h3>Alter the system</h3>`);
@@ -146,6 +146,20 @@ describe("renderDecisions", () => {
     }
     // Scaffold is structure only — no live Buy buttons yet.
     expect(html).not.toContain("data-buy=");
+  });
+
+  it("decisionsPanelScaffold omits shells for owned unique decisions (issue #110)", () => {
+    const c = content();
+    const e = new Engine(c);
+    e.applyDecision("test-suite");
+    const html = decisionsPanelScaffold(c, e.getState().decisions);
+    expect(html).not.toContain(`${SECTION_ATTR}="${decisionNodeSection("test-suite")}"`);
+    // Downstream ci-cd stays in the shop layout.
+    expect(html).toContain(`${SECTION_ATTR}="${decisionNodeSection("ci-cd")}"`);
+    // Repeatable agent still has a shell even after purchase.
+    e.applyDecision("agent");
+    const afterAgent = decisionsPanelScaffold(c, e.getState().decisions);
+    expect(afterAgent).toContain(`${SECTION_ATTR}="${decisionNodeSection("agent")}"`);
   });
 
   it("buying test-suite unlocks ci-cd (Buy enabled, no longer locked)", () => {
@@ -202,17 +216,36 @@ describe("renderDecisions", () => {
     expect(html).toContain("&lt;img");
   });
 
-  it("shows an owned unique decision as owned instead of vanishing from the tree", () => {
+  it("hides an owned unique decision from the shop while keeping it in Owned (issue #110)", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // test-suite is unique and owned: still present, no Buy button, marked owned.
-    expect(html).not.toContain('data-buy="test-suite"');
-    expect(html).toContain("Add test suite");
-    expect(html).toContain("tt-owned");
-    expect(html).toContain("owned");
-    // basic-dev (repeatable, not owned yet) stays buyable.
-    expect(html).toContain('data-buy="basic-dev"');
+    const shop = html.slice(0, html.indexOf("<h3>Owned</h3>"));
+    const owned = html.slice(html.indexOf("<h3>Owned</h3>"));
+    // Card node is gone: no tt-node name, no tt-owned placeholder, no Buy.
+    // Chain <h4> may still use the root name (layout not redesigned).
+    expect(shop).not.toContain('<div class="tt-node-name">Add test suite</div>');
+    expect(shop).not.toContain("tt-owned");
+    expect(shop).not.toContain('data-buy="test-suite"');
+    // Still listed under Owned.
+    expect(owned).toContain("Add test suite");
+    // Locked-then-unlocked downstream stays visible; basic-dev stays buyable.
+    expect(shop).toContain('data-buy="ci-cd"');
+    expect(shop).toContain('data-buy="basic-dev"');
+  });
+
+  it("returns a removable unique card to the shop after Remove (issue #110)", () => {
+    const e = new Engine(content());
+    e.applyDecision("subscription");
+    const owned = [...e.getState().decisions];
+    expect(owned).toHaveLength(1);
+    let html = renderDecisions(e.availableDecisions(), owned, content());
+    expect(html.slice(0, html.indexOf("<h3>Owned</h3>"))).not.toContain("Subscription plan");
+    e.removeDecision(owned[0]!.instanceId);
+    html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const shop = html.slice(0, html.indexOf("<h3>Owned</h3>"));
+    expect(shop).toContain("Subscription plan");
+    expect(shop).toContain('data-buy="subscription"');
   });
 
   it("shows a repeatable decision's owned count while keeping the Buy button live", () => {
