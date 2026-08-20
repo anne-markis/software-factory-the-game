@@ -102,7 +102,7 @@ describe("renderStats", () => {
 });
 
 describe("renderDeliveryStats", () => {
-  // Issue #8: flow/quality stocks under the Delivery system, same slot pattern.
+  // Issue #8: flow/quality stocks under the Delivery loop, same slot pattern.
   it("renders In Progress, Done, Shipped, Tech Debt, and Reputation with fixed-width value slots", () => {
     const c = content();
     const e = new Engine(c);

@@ -32,3 +32,12 @@ describe("top stats layout (issue #99)", () => {
     expect(Number(m![1])).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe("chrome row layout", () => {
+  it("puts Reset and time controls on one flex row with Reset at the left", () => {
+    expect(html).toMatch(/\.chrome-row\s*\{[^}]*display:\s*flex/);
+    expect(html).toMatch(/\.chrome-row\s*\{[^}]*justify-content:\s*space-between/);
+    expect(html).not.toMatch(/\.era-kicker/);
+    expect(html).not.toMatch(/\.next-goal/);
+  });
+});

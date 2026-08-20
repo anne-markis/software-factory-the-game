@@ -59,8 +59,8 @@ describe("inProgressPanelSvg", () => {
   it("renders the loop, exit flow, leak arc, and footer on a fresh engine", () => {
     const e = new Engine(content());
     const svg = inProgressPanelSvg(e.getState(), content());
-    expect(svg).toContain("Progress system");
-    expect(svg).not.toContain("Progress loop");
+    expect(svg).toContain("Progress loop");
+    expect(svg).not.toContain("Progress system");
     expect(svg).toContain("work cycling");
     expect(svg).toContain("Cycle speed");
     expect(svg).toContain("Base 1.0/day");

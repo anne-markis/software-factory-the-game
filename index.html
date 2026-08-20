@@ -39,10 +39,16 @@
       }
       body { font-family: ui-monospace, monospace; max-width: 1280px; margin: 1rem auto; padding: 0 1rem; color: var(--fg); background: var(--bg); }
       button { font-family: inherit; margin: 2px; }
-      /* Era lives on the title, not in the flashing stats bar: identity, not
-         a grind target. Studio → Company is a silent heading swap. */
+      /* Title is the game name only. Eras stay off the player chrome — silent
+         crossings still swap the shop/pool, but Studio/Company never appear
+         as a heading or tab title. */
       .game-title { font-size: 1.6rem; margin: 0 0 0.75rem; }
-      .era-kicker { color: var(--fg-dim); font-weight: 500; font-size: 0.7em; margin-left: 0.35rem; }
+      /* Reset sits on the same row as Start/speed, pinned to the left edge;
+         the time-control cluster stays on the right of that row. Reset is a
+         static sibling (not inside the patched time-controls block) so
+         pause/speed flips never rebuild it. */
+      .chrome-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.5rem; }
+      .chrome-row #reset { margin-left: 0; }
       /* Top stats bar (Day / Backlog / Budget / Points/Day): each stat is a
          fixed-width slot (label + tabular-nums value) so a value changing
          width on tick never shifts anything below. auto-fit (not auto-fill)
@@ -50,7 +56,7 @@
          auto-fill kept 170px columns on a wide page, and Budget + "(500 days)"
          overflowed into Points/Day (issue #99 text blending). minmax covers
          the label plus runway suffix. Issue #8 moved flow/quality stocks
-         under the Delivery system. */
+         under the Delivery loop. */
       .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.5rem 1.5rem; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
       .stat { display: inline-flex; align-items: baseline; gap: 0.5rem; }
       .stat-label { color: var(--fg-dim); }
@@ -69,26 +75,6 @@
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-users { min-width: 8ch; } /* Users */
       .stat-value.v-rate { min-width: 5ch; } /* Points/Day */
-      /* Issue #65: endless-run next lean — glanceable under the stats bar,
-         monospace voice, no card chrome. Sticky so shop scroll does not bury
-         it (pairs with cockpit intent even without tabbed spend). */
-      [data-section="next-goal"]:not(:empty) {
-        position: sticky;
-        top: 0;
-        z-index: 4;
-        margin: 0 0 0.75rem;
-        background: var(--bg);
-        border-bottom: 1px solid var(--border);
-      }
-      .next-goal {
-        padding: 0.35rem 0;
-        font-size: 0.95rem;
-        color: var(--fg);
-        white-space: normal;
-      }
-      .next-goal-label { color: var(--fg-dim); font-weight: bold; }
-      .next-goal-sep { color: var(--fg-dim); }
-      .next-goal-item { color: var(--fg); }
       /* Issue #67: brief pulse when a material cockpit/delivery number
          changes. Amber underline + opacity (existing risk tone), single
          shot — presence without a new effect language. prefers-reduced-motion
@@ -144,7 +130,7 @@
         margin-bottom: 0;
       }
       .choice-interrupt-item { margin-top: 0.35rem; }
-      /* Issue #8: relocated stocks under the Delivery system column. Flex
+      /* Issue #8: relocated stocks under the Delivery loop column. Flex
          wrap (not the 900px loops stack) so they stay inside that column
          at any width without introducing a horizontal scrollbar. */
       .delivery-column { min-width: 0; }
@@ -202,7 +188,7 @@
          The active control (current speed while running, Start while
          paused) uses the same dimming/weight vocabulary as .tt-owned
          rather than a new color. */
-      .time-controls { margin-bottom: 0.5rem; }
+      .time-controls { margin-bottom: 0; }
       .tc-btn { display: inline-block; min-width: 4.5rem; text-align: center; opacity: 0.6; }
       .tc-btn.tc-active { opacity: 1; font-weight: bold; }
       .stall { background: var(--stall-bg); color: var(--stall-fg); padding: 0.5rem; font-weight: bold; }

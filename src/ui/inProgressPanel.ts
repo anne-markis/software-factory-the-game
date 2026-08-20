@@ -81,7 +81,7 @@ function buildRateGroupNodes(state: Readonly<GameState>, content: GameContent, g
 
   // Tech-debt drag (Release 15): once the debt stock climbs past its grace
   // band the multiplier drops below 1 and shows here as friction. It scales
-  // all rates (effectiveRate), so it feeds the outer Delivery system implicitly
+  // all rates (effectiveRate), so it feeds the outer Delivery loop implicitly
   // via the rates -- no separate node is needed there.
   if (group === "friction") {
     const drag = debtDragMultiplier(state);
@@ -284,7 +284,7 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
   const footer = `<text x="${LEFT_X}" y="${totalHeight - 10}" font-size="12" fill="currentColor">The inner system's pace sets outer throughput; its leak feeds outer backlog.</text>`;
 
   const svg = `
-    <svg viewBox="0 0 ${VIEW_W} ${totalHeight}" width="100%" role="img" aria-label="Progress system">
+    <svg viewBox="0 0 ${VIEW_W} ${totalHeight}" width="100%" role="img" aria-label="Progress loop">
       ${defs}
       ${loop}
       ${exit}
@@ -295,5 +295,5 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       ${footer}
     </svg>`;
 
-  return `<div class="panel"><h3>Progress system</h3>${svg}</div>`;
+  return `<div class="panel"><h3>Progress loop</h3>${svg}</div>`;
 }
