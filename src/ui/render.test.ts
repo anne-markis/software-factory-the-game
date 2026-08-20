@@ -371,23 +371,20 @@ describe("renderProjectOffers", () => {
     const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
     const e = new Engine(c);
     const html = renderProjectOffers(e.availableProjects(), e.getState());
-    expect(html).toContain('data-project="small-crm" ');
-    expect(html).toContain('data-project="big-migration" disabled');
-    expect(html).toContain("requires 1 completed project(s)");
+    expect(html).toContain('data-project="gig-bugfix" ');
+    expect(html).toContain('data-project="ship-v1" disabled');
+    expect(html).toContain("requires completed Launch beta");
     expect(html).toContain("drops efficiency to 85%");
   });
 
-  it("shows the reputation gate reason once the completed-count floor is already met (reputation reasons flow through the same reason field as completions/afford)", () => {
+  it("shows the version-ladder gate reason until Launch beta has completed", () => {
     const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
     const s = initialState(c);
-    // big-migration requires 1 completed project AND 5 reputation. Satisfy
-    // the completion floor but leave reputation below its gate so the
-    // reputation reason -- not the completion reason -- is what renders.
-    s.completedProjects = 1;
-    s.stocks.reputation = 1;
     const html = renderProjectOffers(projectAvailability(s, c), s);
-    expect(html).toContain('data-project="big-migration" disabled');
-    expect(html).toContain("requires 5 reputation");
+    expect(html).toContain('data-project="ship-v1" disabled');
+    expect(html).toContain("requires completed Launch beta");
+    expect(html).toContain('data-project="ship-v2" disabled');
+    expect(html).toContain("requires completed Ship v1");
   });
 
   it("does not change as in-flight work progresses, so the Start buttons survive the tick", () => {

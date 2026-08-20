@@ -73,35 +73,32 @@ describe("nextMilestoneGoal", () => {
 });
 
 describe("nextContractGoal", () => {
-  it("skips affordability-only locks and surfaces the nearest progression gate", () => {
-    // Fresh game: small-crm may be unaffordable but is not progression-locked.
-    // big-migration / mobile-app need 1 completion + 5 reputation.
+  it("skips startable gigs and surfaces the nearest version-ladder gate", () => {
+    // Fresh game: tiny gigs are startable ($0 upfront). Ship v1–v5 wait on
+    // the prior version (v1 on Launch beta). Sort is reputation, then
+    // completed-count, then id — ship-v1 wins among the locked versions.
     const e = new Engine(content);
     const g = nextContractGoal(e.getState(), content);
     expect(g).not.toBeNull();
     expect(g!.reason).toMatch(/requires /);
-    // Lowest gate among progression locks: both mobile-app and big-migration
-    // need 1 completion + 5 rep; sort is by reputation then completions then id.
-    expect(g!.id).toBe("big-migration");
+    expect(g!.id).toBe("ship-v1");
   });
 
-  it("ignores unlocked tiers and advances to the next progression gate", () => {
+  it("ignores unlocked versions and advances to the next rung", () => {
     const e = engineWith((s) => {
       s.completedProjects = 1;
-      s.stocks.reputation = 5;
+      s.completedProjectIds = ["launch-beta"];
       s.stocks.budget = 100_000;
     });
-    // With 1 completion + 5 rep, big-migration and mobile-app are unlocked;
-    // enterprise still needs 2 completions + 15 rep.
     const g = nextContractGoal(e.getState(), content);
-    expect(g?.id).toBe("enterprise-replatform");
-    expect(g?.reason).toMatch(/requires/);
+    expect(g?.id).toBe("ship-v2");
+    expect(g?.reason).toMatch(/requires completed Ship v1/);
   });
 
   it("returns null when no progression-locked contracts remain", () => {
     const e = engineWith((s) => {
-      s.completedProjects = 2;
-      s.stocks.reputation = 15;
+      s.completedProjects = 6;
+      s.completedProjectIds = ["launch-beta", "ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"];
       s.stocks.budget = 100_000;
     });
     expect(nextContractGoal(e.getState(), content)).toBeNull();
@@ -114,7 +111,7 @@ describe("selectNextGoal / renderNextGoal", () => {
     const sel = selectNextGoal(e.getState(), content);
     expect(sel.top).toBeNull();
     expect(sel.milestone?.id).toBe("trusted");
-    expect(sel.contract?.id).toBe("big-migration");
+    expect(sel.contract?.id).toBe("ship-v1");
 
     const html = renderNextGoal(e.getState(), content);
     expect(html).toContain('class="next-goal"');
@@ -122,8 +119,8 @@ describe("selectNextGoal / renderNextGoal", () => {
     expect(html).toContain('data-next-milestone="trusted"');
     expect(html).toContain("Trusted vendor");
     expect(html).toContain("0/5 reputation");
-    expect(html).toContain('data-next-contract="big-migration"');
-    expect(html).toContain("Legacy platform migration");
+    expect(html).toContain('data-next-contract="ship-v1"');
+    expect(html).toContain("Ship v1");
   });
 
   it("omits era floors from next-goal by default in Studio and Company", () => {
@@ -158,7 +155,8 @@ describe("selectNextGoal / renderNextGoal", () => {
   it("shows the top-out state when milestones and contract gates are cleared", () => {
     const e = engineWith((s) => {
       s.stocks.reputation = 70;
-      s.completedProjects = 2;
+      s.completedProjects = 6;
+      s.completedProjectIds = ["launch-beta", "ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"];
       s.stocks.budget = 100_000;
     });
     const sel = selectNextGoal(e.getState(), content);

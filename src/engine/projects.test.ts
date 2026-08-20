@@ -12,68 +12,100 @@ function content(overrides: Partial<GameContent["start"]["stocks"]> = {}): GameC
   return { start, decisions: [], challenges: [], projects: parseProjects(projectsJson) };
 }
 
+function shrinkStart(c: GameContent, size = 2): void {
+  c.start.initialProject.sizePoints = size;
+  c.start.stocks.backlog = size;
+}
+
 describe("projects", () => {
   it("startProject charges upfront cost and adds points to backlog", () => {
     const e = new Engine(content());
-    e.startProject("small-crm");
+    e.startProject("gig-plugin");
     const s = e.getState();
-    expect(s.stocks.budget).toBe(8000);
-    expect(s.stocks.backlog).toBe(5300); // Studio start backlog 300 + small-crm sizePoints 5000
+    expect(s.stocks.budget).toBe(10000); // Studio gigs are $0 upfront
+    expect(s.stocks.backlog).toBe(750); // Studio start backlog 300 + plugin 450
     expect(s.projects).toHaveLength(2);
   });
 
   it("applies the context-switch tax with multiple projects in flight", () => {
     const e = new Engine(content());
     expect(contextSwitchTax(e.getState())).toBe(1);
-    e.startProject("small-crm");
+    e.startProject("gig-bugfix");
     expect(contextSwitchTax(e.getState())).toBeCloseTo(0.85);
     expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(1.7); // base pull 2 x 0.85
     expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(0.85); // base finish 1 x 0.85
   });
 
-  it("gates projects on completedProjects and budget", () => {
+  it("gates versions on the prior completed id and paid work on budget", () => {
     const e = new Engine(content());
-    expect(() => e.startProject("big-migration")).toThrow(/requires/);
-    const poor = new Engine(content({ budget: 100 }));
-    expect(() => poor.startProject("small-crm")).toThrow(/afford/);
+    expect(() => e.startProject("ship-v1")).toThrow(/requires completed Launch beta/);
+    const paid: ProjectDef = {
+      id: "paid-gig",
+      name: "Paid gig",
+      sizePoints: 10,
+      upfrontCost: 500,
+      payoutPerPoint: 1,
+      completionBonus: 0,
+      reputationReward: 0,
+    };
+    const poor = new Engine({ ...content({ budget: 100 }), projects: [paid] });
+    expect(() => poor.startProject("paid-gig")).toThrow(/afford/);
   });
 
   it("FIFO attribution completes the oldest project first and pays its bonus", () => {
     const c = content();
-    c.start.initialProject.sizePoints = 2;
-    c.start.stocks.backlog = 2;
+    shrinkStart(c);
     const e = new Engine(c);
-    e.startProject("small-crm"); // backlog now 2 + 5000
+    e.startProject("gig-plugin"); // backlog now 2 + 450
     // run until the first 2 shipped points complete the initial project
     for (let i = 0; i < 12; i++) e.tick();
     const s = e.getState();
     expect(s.completedProjects).toBe(1);
+    expect(s.completedProjectIds).toEqual(["launch-beta"]);
     expect(s.projects).toHaveLength(1);
-    expect(s.projects[0].defId).toBe("small-crm");
+    expect(s.projects[0].defId).toBe("gig-plugin");
     expect(s.log.some((l) => l.message.includes("Project complete: Launch beta"))).toBe(true);
   });
 
   it("rejects starting a project already in flight", () => {
     const e = new Engine(content());
-    e.startProject("small-crm");
-    expect(() => e.startProject("small-crm")).toThrow(/already in flight/);
+    e.startProject("gig-bugfix");
+    expect(() => e.startProject("gig-bugfix")).toThrow(/already in flight/);
   });
 
-  it("allows restarting a project after completion (current policy: projects are repeatable)", () => {
+  it("allows restarting a repeatable gig after completion", () => {
     const c = content();
-    c.start.initialProject.sizePoints = 2;
-    c.start.stocks.backlog = 2;
+    shrinkStart(c);
     const e = new Engine(c);
     for (let i = 0; i < 6; i++) e.tick(); // complete the tiny initial project
     expect(e.getState().completedProjects).toBe(1);
-    e.startProject("small-crm");
-    e.getState().projects.forEach((p) => expect(p.defId).toBe("small-crm"));
+    e.startProject("gig-bugfix");
+    e.getState().projects.forEach((p) => expect(p.defId).toBe("gig-bugfix"));
+  });
+
+  it("unlocks Ship v1 after Launch beta and keeps v2 locked until v1 completes", () => {
+    const c = content();
+    shrinkStart(c);
+    const v1 = c.projects.find((p) => p.id === "ship-v1")!;
+    v1.sizePoints = 2;
+    const e = new Engine(c);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(false);
+    for (let i = 0; i < 6; i++) e.tick();
+    expect(e.getState().completedProjectIds).toEqual(["launch-beta"]);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(true);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-v2")!.startable).toBe(false);
+    e.startProject("ship-v1");
+    (e.getState() as GameState).debtMultiplierBase = 0; // isolate the ladder from debt refill
+    for (let i = 0; i < 20 && e.getState().completedProjects < 2; i++) e.tick();
+    expect(e.getState().completedProjectIds).toEqual(["launch-beta", "ship-v1"]);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-v2")!.startable).toBe(true);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.reason).toBe("already completed");
+    expect(() => e.startProject("ship-v1")).toThrow(/already completed/);
   });
 
   // Release 17: requiresReputation gates a tier ON TOP OF requiresCompleted
-  // and affordability. Task 2 owns the shipped content's actual gated tiers
-  // (big-migration/enterprise/mobile), so this uses an inline fixture project
-  // rather than editing content/projects.json for a Task-1-only contract.
+  // and affordability. Company owns the shipped gated tiers (big-migration),
+  // so this uses an inline fixture rather than that catalog.
   it("gates a project on requiresReputation: locked below threshold, startable at threshold, re-locked after a reputation loss", () => {
     const fixture: ProjectDef = {
       id: "rep-gated",
@@ -118,10 +150,11 @@ describe("projects", () => {
   });
 
   it("isStalled when pipeline is empty and nothing is affordable", () => {
-    const c = content({ backlog: 0, budget: 10 });
-    const e = new Engine(c);
+    const empty = content({ backlog: 0, budget: 10 });
+    empty.projects = [];
+    const e = new Engine(empty);
     expect(e.isStalled()).toBe(true);
-    const rich = new Engine(content({ backlog: 0, budget: 5000 }));
-    expect(rich.isStalled()).toBe(false); // can afford small-crm
+    const withGigs = new Engine(content({ backlog: 0, budget: 10 }));
+    expect(withGigs.isStalled()).toBe(false); // $0 tiny gigs are the relief valve
   });
 });

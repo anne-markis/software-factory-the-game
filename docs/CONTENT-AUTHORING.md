@@ -812,8 +812,7 @@ log entry. Each entry is:
   `milestones` must be written in threshold order. The shipped four -
   `trusted` at 5, `established` at 15, `leader` at 35, `titan` at 70 -
   already are, and line up with the `requiresReputation` tiers on
-  `big-migration`/`mobile-app` (5) and `enterprise-replatform` (15) in
-  `content/eras/studio/projects.json`.
+  `big-migration` (5, Company) and `enterprise-replatform` (15, Megacorp).
 - `name` (string, required) - a short label for the milestone.
 - `message` (string, required) - the full line written to the event log
   the first tick reputation reaches `reputation`.
@@ -847,13 +846,13 @@ A project (`content/eras/<eraId>/projects.json`) is:
 
 ```json
 {
-  "id": "small-crm",
-  "name": "Small CRM build",
-  "sizePoints": 5000,
-  "upfrontCost": 2000,
-  "payoutPerPoint": 21,
-  "completionBonus": 1500,
-  "reputationReward": 5
+  "id": "gig-landing-page",
+  "name": "Landing page",
+  "sizePoints": 150,
+  "upfrontCost": 0,
+  "payoutPerPoint": 16,
+  "completionBonus": 300,
+  "reputationReward": 1
 }
 ```
 
@@ -880,19 +879,31 @@ and `completionStockGrants: [{ "stock": "users", "amount": 30 }]`).
   a running count) before this one is startable. It is **not** a
   reference to a specific project's id - two projects can both set
   `requiresCompleted: 1` and both become available as soon as any one
-  project finishes (`big-migration` and `mobile-app` both do this
-  today). Completing Launch beta counts as 1.
+  project finishes (`big-migration` does this in Company). Completing
+  Launch beta counts as 1. Prefer `requiresCompletedId` when the gate is
+  a specific prior project (Studio's version ladder) so optional gigs
+  cannot skip the sequence.
+- `requiresCompletedId` (optional string) - the player must have completed
+  this specific project id (`state.completedProjectIds`). The id may be
+  `start.json`'s `initialProject` (`launch-beta`) or another catalog id,
+  including one inherited from a prior era. Self-references and unknown
+  ids fail `validateContentGraph`. Checked after the completed-count
+  floor and before `requiresReputation`.
+- `unique` (optional bool) - when true, the project cannot be started
+  again after it has completed (Studio `ship-v1`…`ship-v5`). Tiny client
+  gigs omit this and stay repeatable, matching the default.
 - `reputationReward` (required, >= 0) - reputation credited once, in
   addition to the completion bonus, when the project's `remaining` reaches
   (approximately) zero (`attributeShipped` in `src/engine/tick.ts`). Every
   project must set this - the schema has no default - though `0` is legal
   for a project that shouldn't move the reputation stock at all.
 - `requiresReputation` (optional, >= 0) - a reputation floor gating this
-  project's availability, on top of `requiresCompleted` when both are set
-  (both must hold). Checked by `projectAvailability`
-  (`src/engine/projects.ts`) right after the `requiresCompleted` check and
-  before the affordability check. See section 7 for why this is
-  live-recomputed on every call rather than a one-time unlock.
+  project's availability, on top of `requiresCompleted` /
+  `requiresCompletedId` when those are set (every set condition must
+  hold). Checked by `projectAvailability` (`src/engine/projects.ts`)
+  after the completed checks and before the affordability check. See
+  section 7 for why this is live-recomputed on every call rather than a
+  one-time unlock.
 - `completionStockGrants` (optional array) - `{ stock, amount }` grants
   paid on completion alongside bonus and reputation (ADR 0006). Copied
   onto the in-flight project at start, so a later content edit does not
@@ -900,12 +911,15 @@ and `completionStockGrants: [{ "stock": "users", "amount": 30 }]`).
   which is what starts the users economy. Amount may be negative (clamped
   so the stock never goes below 0).
 
-The shipped Studio offer list still includes the older client ladder
-(`small-crm` at tier 0; `big-migration`/`mobile-app` at tier 1, both
-`requiresReputation: 5`; `enterprise-replatform` at tier 2,
-`requiresReputation: 15`) in `content/eras/studio/projects.json`. Those
-are optional after beta; the tutorial solvency rule is finish Launch beta
-on starting resources without them. Multiple projects can be in flight at
+The shipped Studio offer list is tiny client gigs (Weekend bugfix,
+Landing page, Client plugin — 100–450 pts, $0 upfront, cash + reputation,
+repeatable) plus a unique own-product ladder (`ship-v1`…`ship-v5`) that
+unlocks after Launch beta. Versions pay a completion bonus and grant
+users; they do not pay per point. The old client ladder
+(`small-crm` / `big-migration`) lives in Company; `enterprise-replatform`
+is a Megacorp delta. Gigs and versions are optional after beta; the
+tutorial solvency rule is finish Launch beta on starting resources
+without them. Multiple projects can be in flight at
 once; starting an additional one applies the context-switch tax
 (`contextSwitchFactor ^ (n - 1)`) to all rates, so stacking projects
 trades raw throughput for parallel income streams.
@@ -935,22 +949,24 @@ content-authored pieces make up its loop:
   negative.
 - Gates contracts via `ProjectDef.requiresReputation` (section 6,
   optional): `projectAvailability` (`src/engine/projects.ts`) checks it
-  alongside `requiresCompleted` - both conditions must hold when both are
-  set - after the completed-projects check and before the affordability
-  check. This check is live-recomputed on every call, not cached at the
-  moment a tier first unlocks: if reputation later drops back below a
-  project's `requiresReputation` threshold (from an `addToStock`
-  reputation hit), that project disappears from the startable list
-  again immediately, with no extra mechanism required to re-lock it.
+  alongside `requiresCompleted` / `requiresCompletedId` - every set
+  condition must hold - after those completed checks and before the
+  affordability check. This check is live-recomputed on every call, not
+  cached at the moment a tier first unlocks: if reputation later drops
+  back below a project's `requiresReputation` threshold (from an
+  `addToStock` reputation hit), that project disappears from the
+  startable list again immediately, with no extra mechanism required to
+  re-lock it.
 
 Put together, this is a reinforcing loop with a downward spiral built in:
 completing projects raises reputation, which unlocks higher-paying,
-higher-`reputationReward` contracts (section 6's ladder), whose
-completion raises reputation further. Studio currently has no reputation
-hit in the challenge pool — the spiral is ready for a later-era
-`addToStock` / `minTechDebt` event (retired `prod-incident` /
-`security-breach` were that shape). The `simulation.test.ts` "downward
-spiral" probe still pins the *re-lock* mechanic: a reputation drop below
+higher-`reputationReward` Company contracts (`small-crm` then
+`big-migration`), whose completion raises reputation further. Studio
+currently has no reputation hit in the challenge pool — the spiral is
+ready for a later-era `addToStock` / `minTechDebt` event (retired
+`prod-incident` / `security-breach` were that shape). The
+`simulation.test.ts` "downward spiral" probe still pins the *re-lock*
+mechanic on Company's `big-migration`: a reputation drop below
 `requiresReputation` hides the contract again immediately. The reputation
 loop is meant to mirror the tech-debt "limits to growth"/"shifting the
 burden" dynamic (section 5) one level up, on the contracts layer instead

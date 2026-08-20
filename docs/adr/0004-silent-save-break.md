@@ -18,8 +18,9 @@ Bump `SAVE_VERSION` when the content/schema contract is incompatible.
 that error and starts a fresh game. Old saves are wiped **silently** —
 no migration, no warning banner.
 
-Shipped value as of the lean Studio shop (issue #89) is `SAVE_VERSION = 3`
-(v2 was the users / Launch beta spine).
+Shipped value as of the Studio project redo (tiny gigs + unique v1–v5;
+old contract ladder moved to later eras) is `SAVE_VERSION = 4`
+(v3 was the lean Studio shop, issue #89; v2 was the users / Launch beta spine).
 
 ## Consequences
 

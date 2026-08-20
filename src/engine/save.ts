@@ -1,17 +1,20 @@
 import type { GameState } from "./types";
 
-// Bumped to 3 for the lean Studio shop and challenge pool (issue #89). A v2
-// save can hold owned instances and challenge cooldowns keyed to ids that no
-// longer exist in content (copilot, the org ladder, agent-swarm, the retired
-// challenges), and a v2 game was balanced around the old base pull rate; there
-// is nothing sensible to migrate those to. Bumped to 2 before that for the
-// Studio spine (issue #88): the users stock, the launch-beta starting project,
-// the 300-point backlog, and the always-on stockDrags/stockFlows.
+// Bumped to 4 for the Studio project redo: tiny gigs + v1–v5 replace the old
+// contract ladder in Studio, and unique versions need completedProjectIds. A
+// v3 save can have small-crm / mobile-app in flight as Studio contracts those
+// ids no longer offer. Bumped to 3 for the lean Studio shop and challenge pool
+// (issue #89). A v2 save can hold owned instances and challenge cooldowns keyed
+// to ids that no longer exist in content (copilot, the org ladder, agent-swarm,
+// the retired challenges), and a v2 game was balanced around the old base pull
+// rate; there is nothing sensible to migrate those to. Bumped to 2 before that
+// for the Studio spine (issue #88): the users stock, the launch-beta starting
+// project, the 300-point backlog, and the always-on stockDrags/stockFlows.
 //
 // deserialize rejects mismatched versions, and the UI's loadGame swallows that
 // error and starts fresh, so old saves are wiped silently rather than resumed
 // into an inconsistent state.
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export function serialize(state: Readonly<GameState>): string {
   return JSON.stringify({ version: SAVE_VERSION, state });
@@ -84,6 +87,12 @@ export function deserialize(json: string): GameState {
   }
   if (state.userIncomeFlow === undefined) {
     state.userIncomeFlow = 0;
+  }
+  // Completed-id set for unique versions / requiresCompletedId. Content-free
+  // like milestonesSeen, so it defaults here. SAVE_VERSION 4 rejects genuine
+  // v3 saves; this only guards hand-built current-version states.
+  if (state.completedProjectIds === undefined) {
+    state.completedProjectIds = [];
   }
   // Defensive default for the users stock (issue #88). The SAVE_VERSION bumps
   // mean genuine pre-#88 saves are rejected before reaching here, so this only

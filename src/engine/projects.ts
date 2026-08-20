@@ -9,11 +9,26 @@ export interface ProjectAvailability {
   reason?: string;
 }
 
+function completedIds(state: GameState): string[] {
+  return state.completedProjectIds ?? [];
+}
+
+function projectName(content: GameContent, id: string): string {
+  if (content.start.initialProject.id === id) return content.start.initialProject.name;
+  return content.projects.find((p) => p.id === id)?.name ?? id;
+}
+
 export function projectAvailability(state: GameState, content: GameContent): ProjectAvailability[] {
   return content.projects.map((def) => {
     if (state.projects.some((p) => p.defId === def.id)) return { def, startable: false, reason: "already in flight" };
+    if (def.unique && completedIds(state).includes(def.id)) {
+      return { def, startable: false, reason: "already completed" };
+    }
     const needed = def.requiresCompleted ?? 0;
     if (state.completedProjects < needed) return { def, startable: false, reason: `requires ${needed} completed project(s)` };
+    if (def.requiresCompletedId !== undefined && !completedIds(state).includes(def.requiresCompletedId)) {
+      return { def, startable: false, reason: `requires completed ${projectName(content, def.requiresCompletedId)}` };
+    }
     if (def.requiresReputation !== undefined && state.stocks.reputation < def.requiresReputation) {
       return { def, startable: false, reason: `requires ${def.requiresReputation} reputation` };
     }

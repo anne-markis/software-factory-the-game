@@ -120,20 +120,20 @@ describe("work ledger (ADR 0009)", () => {
     s.stocks.inProgress = 0;
     s.stocks.done = 0;
     expect(s.projects).toHaveLength(0);
-    e.startProject("small-crm");
+    e.startProject("gig-plugin");
     const live = e.getState() as GameState;
     live.debtMultiplierBase = 0; // isolate surplus-first from debt refill
-    expect(live.projects[0]!.remaining).toBe(5000);
-    expect(unshippedWork(live)).toBe(5050);
+    expect(live.projects[0]!.remaining).toBe(450);
+    expect(unshippedWork(live)).toBe(500);
 
     const shippedAtStart = e.getState().stocks.shipped;
     for (let i = 0; i < 200 && e.getState().stocks.shipped - shippedAtStart < 50; i++) e.tick();
     // The 50 leftover points shipped and must not have been credited. The last
     // tick can overshoot surplus by a fraction of one day's deploy (users
-    // drag makes deploy < 1), so remaining may drop a hair under 5000.
+    // drag makes deploy < 1), so remaining may drop a hair under 450.
     expect(e.getState().completedProjects).toBe(1);
     expect(e.getState().stocks.shipped - shippedAtStart).toBeGreaterThanOrEqual(50);
-    expect(e.getState().projects[0]!.remaining).toBeGreaterThan(4999);
+    expect(e.getState().projects[0]!.remaining).toBeGreaterThan(449);
   });
 });
 
@@ -235,7 +235,7 @@ describe("work ledger conservation across every mutation path", () => {
     s.stocks.inProgress = 0;
     s.stocks.done = 0;
     const surplusBefore = surplusWork(s);
-    e.startProject("small-crm");
+    e.startProject("gig-plugin");
     expect(surplusWork(e.getState())).toBeCloseTo(surplusBefore, 8);
     expect(workLedgerIssues(e.getState())).toEqual([]);
   });

@@ -59,12 +59,12 @@ Studio: first principles, systems hooks, settled leans, open forks.
 | **Users** | 0 until beta; then organic `1.5 + 0.1×reputation` / day, 1% churn; support drag above 25 users |
 | **Shop (9)** | better-tooling · agent ×N · agent-harness · agent-orchestration · basic-dev (gamble, no `requires`) · test-suite → ci-cd · subscription · one-time-product |
 | **Challenges (3)** | scope-creep (after 1 completion) · model-deprecation · runaway-agent-loop |
-| **Studio projects.json** | small-crm / mobile-app / big-migration / enterprise-replatform — **the old contract ladder**, not the planned tiny gigs / v1–v5 |
+| **Studio projects.json** | tiny gigs (bugfix / landing page / plugin) + unique Ship v1–v5; Launch beta still in `start.json` |
 
-Plan-settled Studio pieces that **did not ship**: went-viral, prod-incident,
-angry-users, laptop-dies, the product version ladder, tiny client gigs.
-Those are Studio follow-ups, not Company content — but they change how
-fast a player can trip Company entry (see §5).
+Plan-settled Studio pieces that **did not ship**: went-viral, angry-users,
+laptop-dies. Prod-incident shipped as a Company delta. Tiny client gigs
+and the product version ladder now live in `content/eras/studio/projects.json`;
+the old contract ladder is a Company/Megacorp delta.
 
 ### Engine facts that bind Company
 
@@ -487,12 +487,9 @@ swarm catalog.
 
 ### 7.1 Move the old ladder out of Studio
 
-`content/eras/studio/projects.json` currently holds Company-shaped
-work. That makes Studio long and makes `minCompletedProjects: 4` look
-affordable for the wrong reason. **Lean:** move the ladder out of
-Studio; Company v0 keeps **two** client rungs. Studio projects become
-whatever the Studio follow-up actually ships (tiny gigs / v1–v5) or
-stay empty aside from `start.json`’s Launch beta.
+`content/eras/studio/projects.json` holds the Studio follow-up (tiny gigs
++ unique v1–v5). The old client ladder is a later-era delta: Company v0
+keeps **two** client rungs; Megacorp takes enterprise.
 
 | id | Size | Role in Company |
 | --- | --- | --- |
@@ -524,12 +521,12 @@ contracts** (cash + rep, no direct users). Concurrency tax is the
 teach: CRM *and* a product launch is how Company players stall
 themselves — if we even ship the second family in v0.
 
-### 7.3 Studio project follow-up (out of this era, but blocking honesty)
+### 7.3 Studio project follow-up (shipped)
 
-If Studio never gets tiny gigs / versions, players will keep using CRM
-as “the next thing after beta” until someone moves the file. Company
-entry numbers and Company project gates should be authored **as if**
-that move already happened.
+Tiny gigs and the unique v1–v5 ladder live in
+`content/eras/studio/projects.json`. Company entry numbers and Company
+project gates assume that Studio catalog, not the old CRM-as-next-thing
+offer.
 
 ---
 
@@ -675,10 +672,8 @@ starting positions, not locks.
    implementation.
 5. **Paid-tier launch project** vs paid-tier *decision* alone.
 6. **enterprise-replatform** waits for Megacorp (lean).
-7. **Studio leftovers** (viral, gigs/versions) — Company ships
-   prod-incident (live, `content/eras/company/challenges.json`); the
-   *projects* should not stay in
-   Studio just because Company is empty.
+7. **Studio leftovers** (viral) — gigs/versions shipped in Studio;
+   Company ships prod-incident (live, `content/eras/company/challenges.json`).
 
 Closed by the lesson-and-fun filter **and** the dark-factory attractor
 (not open): senior, manager, contractor, standup, marketing/CS/

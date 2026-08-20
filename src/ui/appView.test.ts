@@ -293,13 +293,13 @@ describe("appView node identity across renders (issue #6)", () => {
 
   it("keeps the same project Start button node across ticks even while an in-flight project's remaining points change", () => {
     const h = mount();
-    const before = h.root.querySelector<HTMLElement>('[data-project="small-crm"]')!;
+    const before = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
     expect(before).toBeTruthy();
     const remainingBefore = h.root.textContent!.match(/Launch beta: [\d,.]+ points left/)![0];
     for (let i = 0; i < 10; i++) {
       h.engine.tick();
       h.view.render();
-      expect(h.root.querySelector('[data-project="small-crm"]')).toBe(before);
+      expect(h.root.querySelector('[data-project="gig-bugfix"]')).toBe(before);
     }
     // The volatile in-flight line beside the button did update.
     const remainingAfter = h.root.textContent!.match(/Launch beta: [\d,.]+ points left/)![0];
@@ -459,8 +459,8 @@ describe("appView click delegation on the stable root", () => {
 
   it("starts a project through data-project", () => {
     const h = mount();
-    h.root.querySelector<HTMLElement>('[data-project="small-crm"]')!.click();
-    expect(h.engine.getState().projects.some((p) => p.defId === "small-crm")).toBe(true);
+    h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!.click();
+    expect(h.engine.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
     expect(h.actions).toBe(1);
   });
 
