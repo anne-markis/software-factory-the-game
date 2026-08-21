@@ -24,6 +24,7 @@ import {
   PROJECTS_STATUS_SECTION,
   PROJECTS_OFFERS_SECTION,
   decisionsPanelScaffold,
+  ownedPanelScaffold,
   decisionNodeSection,
   renderDecisionNode,
   renderOwnedList,
@@ -136,6 +137,7 @@ function pageScaffold(): string {
       </div>
       <div class="side">
         <div ${SECTION_ATTR}="${LOG}"></div>
+        ${ownedPanelScaffold()}
       </div>
     </div>
     ${renderBuildStamp(getBuildInfo())}
@@ -219,7 +221,6 @@ export function mountAppView(deps: AppViewDeps): AppView {
       if (a.code === "already-owned") continue;
       decisions.patch(decisionNodeSection(a.def.id), renderDecisionNode(a, ownedCounts.get(a.def.id) ?? 0));
     }
-    decisions.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
   }
 
   function render(): void {
@@ -250,6 +251,8 @@ export function mountAppView(deps: AppViewDeps): AppView {
     projects.patch(PROJECTS_OFFERS_SECTION, renderProjectOffers(engine.availableProjects(), state));
     renderChoicesRegion([...state.pendingChoices], state.day);
     page.patch(LOG, renderLog(state.log));
+    // Issue #114: Owned sits under Events in `.side`, patched on the page region.
+    page.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
   }
 
   function togglePause(): void {

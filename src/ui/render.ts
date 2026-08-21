@@ -176,6 +176,7 @@ function renderShopLayout(
 // Panel chrome + per-decision section shells for cards still in the shop.
 // Owned unique defs are omitted (issue #110); appView rebuilds this scaffold
 // when that set changes so Buy-button identity stays stable across ticks.
+// Issue #114: Owned lives under Events in `.side`, not under Alter the system.
 export function decisionsPanelScaffold(
   content: GameContent,
   ownedInstances: readonly DecisionInstance[] = [],
@@ -187,8 +188,12 @@ export function decisionsPanelScaffold(
     hide,
   );
   return `
-    <div class="panel"><h3>Alter the system</h3>${shop}</div>
-    <div class="panel"><h3>Owned</h3><div ${SECTION_ATTR}="${OWNED_LIST_SECTION}"></div></div>`;
+    <div class="panel"><h3>Alter the system</h3>${shop}</div>`;
+}
+
+/** Owned panel chrome for the right rail (issue #114). */
+export function ownedPanelScaffold(): string {
+  return `<div class="panel"><h3>Owned</h3><div ${SECTION_ATTR}="${OWNED_LIST_SECTION}"></div></div>`;
 }
 
 // Issue #15: Owned entries carry the same cost line and derived-effects
@@ -222,9 +227,9 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
     (def) => renderDecisionNode(availById.get(def.id)!, ownedCounts.get(def.id) ?? 0),
     hide,
   );
+  // Shop only — Owned is patched separately under Events (issue #114).
   return `
-    <div class="panel"><h3>Alter the system</h3>${shop}</div>
-    <div class="panel"><h3>Owned</h3>${renderOwnedList(ownedInstances, content)}</div>`;
+    <div class="panel"><h3>Alter the system</h3>${shop}</div>`;
 }
 
 export function renderLog(log: readonly LogEntry[]): string {
