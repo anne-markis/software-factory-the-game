@@ -609,6 +609,17 @@ describe("parseChallenges", () => {
       reputationReward: 1,
     });
     expect(bugfix.unique).toBeUndefined();
+    const refactor = defs.find((p) => p.id === "small-refactor")!;
+    expect(refactor).toMatchObject({
+      name: "Small refactor",
+      sizePoints: 50,
+      upfrontCost: 0,
+      payoutPerPoint: 0,
+      completionBonus: 0,
+      reputationReward: 0,
+    });
+    expect(refactor.unique).toBeUndefined();
+    expect(refactor.completionStockGrants).toEqual([{ stock: "techDebt", amount: -50 }]);
     const v1 = defs.find((p) => p.id === "ship-v1")!;
     expect(v1).toMatchObject({
       name: "Ship v1",
@@ -751,6 +762,7 @@ describe("parseProjects", () => {
       "gig-bugfix",
       "gig-landing-page",
       "gig-plugin",
+      "small-refactor",
       "ship-v1",
       "ship-v2",
       "ship-v3",

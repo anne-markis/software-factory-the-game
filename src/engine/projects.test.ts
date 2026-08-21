@@ -83,6 +83,41 @@ describe("projects", () => {
     e.getState().projects.forEach((p) => expect(p.defId).toBe("gig-bugfix"));
   });
 
+  // Issue #112: Small refactor burns techDebt via completionStockGrants (−50),
+  // pays nothing, and stays repeatable (not unique).
+  it("Small refactor reduces techDebt by 50 clamped at 0, without budget or reputation, and is repeatable", () => {
+    const c = content();
+    shrinkStart(c);
+    const refactor = c.projects.find((p) => p.id === "small-refactor")!;
+    refactor.sizePoints = 2;
+    const e = new Engine(c);
+    for (let i = 0; i < 6; i++) e.tick(); // complete Launch beta
+    expect(e.getState().completedProjects).toBe(1);
+
+    const s = e.getState() as GameState;
+    s.stocks.techDebt = 20;
+    s.debtMultiplierBase = 0; // isolate grant from tick debt accrual
+    const budgetBefore = s.stocks.budget;
+    const repBefore = s.stocks.reputation;
+    const dayBefore = s.day;
+
+    e.startProject("small-refactor");
+    for (let i = 0; i < 20 && e.getState().completedProjects < 2; i++) e.tick();
+    expect(e.getState().completedProjects).toBe(2);
+    expect(e.getState().completedProjectIds).toContain("small-refactor");
+    // 20 + (−50) clamps at 0, not −30.
+    expect(e.getState().stocks.techDebt).toBe(0);
+    // No payoutPerPoint / completionBonus / reputationReward — only daily burn.
+    const days = e.getState().day - dayBefore;
+    expect(e.getState().stocks.budget).toBeCloseTo(budgetBefore - 20 * days, 5);
+    expect(e.getState().stocks.reputation).toBe(repBefore);
+
+    // Repeatable: startable again after completion (not unique).
+    expect(e.availableProjects().find((p) => p.def.id === "small-refactor")!.startable).toBe(true);
+    e.startProject("small-refactor");
+    expect(e.getState().projects.some((p) => p.defId === "small-refactor")).toBe(true);
+  });
+
   it("unlocks Ship v1 after Launch beta and keeps v2 locked until v1 completes", () => {
     const c = content();
     shrinkStart(c);
