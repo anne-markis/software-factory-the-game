@@ -223,12 +223,20 @@ describe("renderDecisions", () => {
     const shop = html.slice(0, html.indexOf("<h3>Owned</h3>"));
     const owned = html.slice(html.indexOf("<h3>Owned</h3>"));
     // Card node is gone: no tt-node name, no tt-owned placeholder, no Buy.
-    // Chain <h4> may still use the root name (layout not redesigned).
     expect(shop).not.toContain('<div class="tt-node-name">Add test suite</div>');
     expect(shop).not.toContain("tt-owned");
     expect(shop).not.toContain('data-buy="test-suite"');
     // Still listed under Owned.
     expect(owned).toContain("Add test suite");
+    // Empty root tier collapses: header follows the remaining card; no orphan arrow.
+    expect(shop).toContain("<h4>CI/CD pipeline</h4>");
+    expect(shop).not.toContain("<h4>Add test suite</h4>");
+    expect(shop).toMatch(
+      /<h4>CI\/CD pipeline<\/h4><div class="tt-chain-row"><div class="tt-tier">[^]*?data-buy="ci-cd"[^]*?<\/div><\/div><\/div>/,
+    );
+    expect(shop).not.toMatch(
+      /<h4>CI\/CD pipeline<\/h4><div class="tt-chain-row">[^]*?tt-arrow[^]*?data-buy="ci-cd"/,
+    );
     // Locked-then-unlocked downstream stays visible; basic-dev stays buyable.
     expect(shop).toContain('data-buy="ci-cd"');
     expect(shop).toContain('data-buy="basic-dev"');

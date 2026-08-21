@@ -141,9 +141,9 @@ export function renderDecisionNode(a: Availability, ownedCount: number): string 
 
 // Shared chain/standalone layout. `renderNode` is either a live card
 // (string tests / renderDecisions) or an empty data-section shell (scaffold).
-// `hideDefIds` drops owned unique cards from the shop (issue #110) without
-// changing engine availability; empty tiers/chains are omitted so arrows do
-// not point at a hole.
+// `hideDefIds` drops owned unique cards from the shop (issue #110 / #117).
+// Empty tiers and chains are omitted so arrows do not point at a hole and
+// remaining cards are not left offset.
 function renderShopLayout(
   content: GameContent,
   renderNode: (def: DecisionDef) => string,
@@ -152,19 +152,19 @@ function renderShopLayout(
   const tree = buildTechTree(content);
   const chains = tree.chains
     .map((chain: TechChain) => {
-      // Issue #110: omit owned unique *nodes* only. Keep tier columns and the
-      // chain header (named after the root) so we do not collapse empty tiers
-      // or redesign chain layout.
-      const columns = chain.tiers
+      const visibleTiers = chain.tiers
+        .map((tier) => tier.filter((def) => !hideDefIds.has(def.id)))
+        .filter((tier) => tier.length > 0);
+      if (visibleTiers.length === 0) return "";
+      const columns = visibleTiers
         .map((tier) => {
-          const nodes = tier
-            .filter((def) => !hideDefIds.has(def.id))
-            .map((def) => renderNode(def))
-            .join("");
+          const nodes = tier.map((def) => renderNode(def)).join("");
           return `<div class="tt-tier">${nodes}</div>`;
         })
         .join(`<div class="tt-arrow">&rarr;</div>`);
-      return `<div class="tt-chain"><h4>${esc(chain.name)}</h4><div class="tt-chain-row">${columns}</div></div>`;
+      // Header follows the first still-visible card (not a hidden owned root).
+      const headerName = visibleTiers[0]![0]!.name;
+      return `<div class="tt-chain"><h4>${esc(headerName)}</h4><div class="tt-chain-row">${columns}</div></div>`;
     })
     .join("");
   const standalone = tree.standalone.filter((def) => !hideDefIds.has(def.id));
