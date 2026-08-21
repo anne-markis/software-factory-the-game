@@ -138,7 +138,9 @@
       .panel h4 { margin: 0.75rem 0 0.25rem; font-size: 0.95rem; }
       .panel h4:first-of-type { margin-top: 0.25rem; }
       .panel h4 small { font-weight: normal; color: var(--fg-dim); }
-      .log { max-height: 160px; overflow-y: auto; font-size: 0.85rem; }
+      /* Fixed ~7-line Events history; older lines scroll inside the box so
+         Owned below it stays visible in the right rail (issue #114). */
+      .log { line-height: 1.35; max-height: calc(1.35em * 7); overflow-y: auto; font-size: 0.85rem; }
       /* Tech tree (Alter the system). Each chain is a left-to-right row of tier
          columns joined by an arrow glyph; nodes stack vertically within a
          column. Node card sizes are fixed by their own static content (cost,
@@ -202,7 +204,6 @@
          media query below stacks tiers so that scroll region is unused. */
       .main { min-width: 0; }
       .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
-      .side .log { max-height: 50vh; }
       /* Issue #45: quiet build identity under the game. Dim so it never
          competes with the loops or time controls; still selectable for
          bug reports. */
