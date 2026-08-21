@@ -188,12 +188,13 @@ export function mountAppView(deps: AppViewDeps): AppView {
     }, GAMBLE_REVEAL_MS);
   }
 
-  function renderChoicesRegion(pending: readonly PendingChoice[], day: number): void {
+  function renderChoicesRegion(pending: readonly PendingChoice[], day: number, paused: boolean): void {
     // The scaffold (option buttons included) is rewritten only when the set of
     // pending choices changes; the countdown beside them is patched per day.
     choices.setScaffold(renderChoicesScaffold(pending, content.challenges));
     for (const pc of pending) {
-      choices.patch(choiceCountdownSection(pc.challengeId), renderChoiceCountdown(pc, day));
+      // Issue #115: hide the timer copy while paused (soft-pause or manual).
+      choices.patch(choiceCountdownSection(pc.challengeId), renderChoiceCountdown(pc, day, paused));
     }
   }
 
@@ -249,7 +250,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     renderDecisionsRegion();
     projects.patch(PROJECTS_STATUS_SECTION, renderProjectsStatus([...state.projects], state));
     projects.patch(PROJECTS_OFFERS_SECTION, renderProjectOffers(engine.availableProjects(), state));
-    renderChoicesRegion([...state.pendingChoices], state.day);
+    renderChoicesRegion([...state.pendingChoices], state.day, state.paused);
     page.patch(LOG, renderLog(state.log));
     // Issue #114: Owned sits under Events in `.side`, patched on the page region.
     page.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));

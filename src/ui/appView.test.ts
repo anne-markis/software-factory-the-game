@@ -312,6 +312,11 @@ describe("appView node identity across renders (issue #6)", () => {
     restored.day = 5;
     restored.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: 8 }];
     const h = mount({ content, restored });
+    // Soft-pause hides the countdown (issue #115); Start so the timer can tick.
+    expect(h.engine.getState().paused).toBe(true);
+    expect(h.root.textContent).not.toContain("days left");
+    h.engine.resume();
+    h.view.render();
     const before = h.root.querySelector<HTMLElement>('[data-choice="model-deprecation"][data-option="pay-migration"]')!;
     expect(before).toBeTruthy();
     expect(h.root.textContent).toContain("(3 days left)");
@@ -600,6 +605,19 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     expect(h.engine.getState().paused).toBe(true);
     expect(pauseButton(h.root).textContent).toBe("Start");
     expect(h.actions).toBe(actionsBefore + 1);
+  });
+
+  // Issue #115: soft-pause freezes expiresDay, so the interrupt must not show a fake timer.
+  it("hides days-left on a soft-paused Decision-needed interrupt", () => {
+    const content = makeContent(parseChallenges(challengesJson));
+    const restored = initialState(content);
+    restored.day = 5;
+    restored.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: 8 }];
+    const h = mount({ content, restored });
+    expect(h.engine.getState().paused).toBe(true);
+    expect(h.root.querySelector(".choice-interrupt")).not.toBeNull();
+    expect(h.root.textContent).not.toContain("days left");
+    expect(h.root.textContent).not.toContain("days to respond");
   });
 
   it("does not re-pause every render while the same choice stays pending", () => {
