@@ -407,10 +407,30 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const name = buy.closest(".tt-node")!.querySelector(".tt-node-name")!.textContent!;
     buy.click();
     expect(h.engine.getState().decisions.some((d) => d.defId === id)).toBe(true);
-    const owned = h.root.querySelectorAll(".panel")[0];
-    expect(owned).toBeTruthy();
-    expect(h.root.textContent).toContain(name);
+    const side = h.root.querySelector(".side")!;
+    const ownedHeading = Array.from(side.querySelectorAll("h3")).find((el) => el.textContent === "Owned");
+    expect(ownedHeading).toBeTruthy();
+    const ownedPanel = ownedHeading!.closest(".panel")!;
+    expect(ownedPanel.textContent).toContain(name);
+    // Left column no longer hosts Owned between shop and Projects (issue #114).
+    const main = h.root.querySelector(".main")!;
+    expect(Array.from(main.querySelectorAll("h3")).map((el) => el.textContent)).not.toContain("Owned");
     expect(h.actions).toBe(1);
+  });
+
+  it("places Owned under Events in the right rail (issue #114)", () => {
+    const h = mount();
+    const side = h.root.querySelector(".side")!;
+    const headings = Array.from(side.querySelectorAll("h3")).map((el) => el.textContent);
+    expect(headings).toEqual(["Events", "Owned"]);
+    expect(side.querySelector('[data-section="owned-list"]')!.textContent).toContain(
+      "Nothing yet. You are a solo dev.",
+    );
+    const main = h.root.querySelector(".main")!;
+    const mainHeadings = Array.from(main.querySelectorAll("h3")).map((el) => el.textContent);
+    expect(mainHeadings[0]).toBe("Alter the system");
+    expect(mainHeadings.some((t) => t?.startsWith("Projects"))).toBe(true);
+    expect(mainHeadings).not.toContain("Owned");
   });
 
   it("drops a resolved choice out of the DOM", () => {

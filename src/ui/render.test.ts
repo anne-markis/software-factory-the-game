@@ -5,6 +5,8 @@ import {
   renderDeliveryStats,
   renderDecisions,
   decisionsPanelScaffold,
+  ownedPanelScaffold,
+  renderOwnedList,
   decisionNodeSection,
   OWNED_LIST_SECTION,
   renderLog,
@@ -129,23 +131,32 @@ describe("renderDecisions", () => {
     expect(html).toContain('data-buy="ci-cd" disabled');
     expect(html).toContain("requires Add test suite");
     expect(html).toContain("tt-locked");
-    expect(html).toContain("Nothing yet. You are a solo dev.");
+    // Empty Owned copy lives in the right-rail panel (issue #114), not the shop.
+    expect(html).not.toContain("Nothing yet. You are a solo dev.");
+    expect(renderOwnedList([], content())).toContain("Nothing yet. You are a solo dev.");
   });
 
   // Issue #24 / #110: scaffold lays out one patchable section per shop-visible
-  // decision plus the Owned list. Owned unique cards omit their shells.
-  it("decisionsPanelScaffold exposes a section shell for every shop-visible decision and Owned", () => {
+  // decision. Owned unique cards omit their shells. Issue #114: Owned chrome
+  // is no longer part of the shop scaffold.
+  it("decisionsPanelScaffold exposes a section shell for every shop-visible decision without Owned", () => {
     const c = content();
     const html = decisionsPanelScaffold(c);
     expect(html).toContain(`<h3>Alter the system</h3>`);
     expect(html).not.toContain("Alter the loop");
-    expect(html).toContain(`<h3>Owned</h3>`);
-    expect(html).toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
+    expect(html).not.toContain(`<h3>Owned</h3>`);
+    expect(html).not.toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
     for (const def of c.decisions) {
       expect(html).toContain(`${SECTION_ATTR}="${decisionNodeSection(def.id)}"`);
     }
     // Scaffold is structure only — no live Buy buttons yet.
     expect(html).not.toContain("data-buy=");
+  });
+
+  it("ownedPanelScaffold exposes the Owned list patch target (issue #114)", () => {
+    const html = ownedPanelScaffold();
+    expect(html).toContain(`<h3>Owned</h3>`);
+    expect(html).toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
   });
 
   it("decisionsPanelScaffold omits shells for owned unique decisions (issue #110)", () => {
@@ -183,7 +194,7 @@ describe("renderDecisions", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
     const inst = e.getState().decisions[0];
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const html = renderOwnedList([...e.getState().decisions], content());
     expect(html).toContain(`data-remove="${inst.instanceId}"`);
     expect(html).toContain(`[${inst.gambleLabel}]`);
   });
@@ -194,8 +205,7 @@ describe("renderDecisions", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
     e.applyDecision("agent");
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    const ownedHtml = html.slice(html.indexOf("<h3>Owned</h3>"));
+    const ownedHtml = renderOwnedList([...e.getState().decisions], content());
     expect(ownedHtml).toContain("owned-item");
     expect(ownedHtml).toContain('<div class="owned-cost">$7/day</div>');
     expect(ownedHtml).toContain('<div class="owned-cost">$10 once + $4/day</div>');
@@ -219,13 +229,13 @@ describe("renderDecisions", () => {
   it("hides an owned unique decision from the shop while keeping it in Owned (issue #110)", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
-    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    const shop = html.slice(0, html.indexOf("<h3>Owned</h3>"));
-    const owned = html.slice(html.indexOf("<h3>Owned</h3>"));
+    const shop = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const owned = renderOwnedList([...e.getState().decisions], content());
     // Card node is gone: no tt-node name, no tt-owned placeholder, no Buy.
     expect(shop).not.toContain('<div class="tt-node-name">Add test suite</div>');
     expect(shop).not.toContain("tt-owned");
     expect(shop).not.toContain('data-buy="test-suite"');
+    expect(shop).not.toContain("<h3>Owned</h3>");
     // Still listed under Owned.
     expect(owned).toContain("Add test suite");
     // Empty root tier collapses: header follows the remaining card; no orphan arrow.
@@ -247,11 +257,10 @@ describe("renderDecisions", () => {
     e.applyDecision("subscription");
     const owned = [...e.getState().decisions];
     expect(owned).toHaveLength(1);
-    let html = renderDecisions(e.availableDecisions(), owned, content());
-    expect(html.slice(0, html.indexOf("<h3>Owned</h3>"))).not.toContain("Subscription plan");
+    let shop = renderDecisions(e.availableDecisions(), owned, content());
+    expect(shop).not.toContain("Subscription plan");
     e.removeDecision(owned[0]!.instanceId);
-    html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    const shop = html.slice(0, html.indexOf("<h3>Owned</h3>"));
+    shop = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     expect(shop).toContain("Subscription plan");
     expect(shop).toContain('data-buy="subscription"');
   });
