@@ -123,31 +123,37 @@ describe("renderDeliveryStats", () => {
 });
 
 describe("renderDecisions", () => {
-  it("shows a prerequisite-locked node (ci-cd on a fresh game) visibly, dimmed, with its requirement", () => {
+  it("hides a prerequisite-locked node (ci-cd on a fresh game) until its requires are met (issue #121)", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // ci-cd is present (not hidden) but its Buy button is disabled and it
-    // carries the human-readable requirement.
-    expect(html).toContain('data-buy="ci-cd" disabled');
-    expect(html).toContain("requires Add test suite");
-    expect(html).toContain("tt-locked");
+    // ci-cd is omitted entirely — no name, no disabled Buy, no requires reason.
+    expect(html).not.toContain('data-buy="ci-cd"');
+    expect(html).not.toContain("requires Add test suite");
+    expect(html).not.toContain("tt-locked");
+    expect(html).not.toContain("CI/CD pipeline");
     // Empty Owned copy lives in the right-rail panel (issue #114), not the shop.
     expect(html).not.toContain("Nothing yet. You are a solo dev.");
     expect(renderOwnedList([], content())).toContain("Nothing yet. You are a solo dev.");
   });
 
-  // Issue #24 / #110: scaffold lays out one patchable section per shop-visible
-  // decision. Owned unique cards omit their shells. Issue #114: Owned chrome
-  // is no longer part of the shop scaffold.
+  // Issue #24 / #110 / #121: scaffold lays out one patchable section per
+  // shop-visible decision. Owned unique and missing-requires omit their shells.
+  // Issue #114: Owned chrome is no longer part of the shop scaffold.
   it("decisionsPanelScaffold exposes a section shell for every shop-visible decision without Owned", () => {
     const c = content();
-    const html = decisionsPanelScaffold(c);
+    const e = new Engine(c);
+    const avail = e.availableDecisions();
+    const html = decisionsPanelScaffold(c, [], avail);
     expect(html).toContain(`<h3>Alter the system</h3>`);
     expect(html).not.toContain("Alter the loop");
     expect(html).not.toContain(`<h3>Owned</h3>`);
     expect(html).not.toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
-    for (const def of c.decisions) {
-      expect(html).toContain(`${SECTION_ATTR}="${decisionNodeSection(def.id)}"`);
+    for (const a of avail) {
+      if (a.code === "missing-requires" || a.code === "already-owned") {
+        expect(html).not.toContain(`${SECTION_ATTR}="${decisionNodeSection(a.def.id)}"`);
+      } else {
+        expect(html).toContain(`${SECTION_ATTR}="${decisionNodeSection(a.def.id)}"`);
+      }
     }
     // Scaffold is structure only — no live Buy buttons yet.
     expect(html).not.toContain("data-buy=");
@@ -163,13 +169,14 @@ describe("renderDecisions", () => {
     const c = content();
     const e = new Engine(c);
     e.applyDecision("test-suite");
-    const html = decisionsPanelScaffold(c, e.getState().decisions);
+    const avail = e.availableDecisions();
+    const html = decisionsPanelScaffold(c, e.getState().decisions, avail);
     expect(html).not.toContain(`${SECTION_ATTR}="${decisionNodeSection("test-suite")}"`);
-    // Downstream ci-cd stays in the shop layout.
+    // Downstream ci-cd is unlocked and stays in the shop layout.
     expect(html).toContain(`${SECTION_ATTR}="${decisionNodeSection("ci-cd")}"`);
     // Repeatable agent still has a shell even after purchase.
     e.applyDecision("agent");
-    const afterAgent = decisionsPanelScaffold(c, e.getState().decisions);
+    const afterAgent = decisionsPanelScaffold(c, e.getState().decisions, e.availableDecisions());
     expect(afterAgent).toContain(`${SECTION_ATTR}="${decisionNodeSection("agent")}"`);
   });
 
@@ -188,6 +195,9 @@ describe("renderDecisions", () => {
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], c);
     expect(html).toContain('data-buy="better-tooling" disabled');
     expect(html).toContain("cannot afford");
+    // Prerequisite-locked cards stay hidden even when broke.
+    expect(html).not.toContain('data-buy="ci-cd"');
+    expect(html).not.toContain("requires Add test suite");
   });
 
   it("shows owned instances with gamble outcome and remove button", () => {
@@ -278,9 +288,11 @@ describe("renderDecisions", () => {
 
   it("renders each node's chain (or standalone) placement and a short category tag", () => {
     const e = new Engine(content());
+    // Unlock the agent ladder so a chain arrow is present (issue #121 hides
+    // unmet-requires cards, so a fresh shop has single-tier chains only).
+    e.applyDecision("agent");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // Chain headers, named after each chain's root (issue #89 leaves two:
-    // test-suite -> ci-cd and the agent ladder).
+    // Chain headers: test-suite root still visible; agent ladder shows harness.
     expect(html).toContain("Add test suite");
     expect(html).toContain("Add coding agent");
     // basic-dev lost its senior-dev/eng-manager tiers, so it renders as a
@@ -301,6 +313,9 @@ describe("renderDecisions", () => {
 
   it("renders a card's authored description in full, with no first-sentence truncation, plus a derived effects line", () => {
     const e = new Engine(content());
+    // Unlock orchestration so its long description is in the shop (issue #121).
+    e.applyDecision("agent");
+    e.applyDecision("agent");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     // agent-orchestration's description (>110 chars, multiple sentences) is a
     // known long-ish entry -- assert it appears whole, not clipped to its first
