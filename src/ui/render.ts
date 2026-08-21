@@ -352,6 +352,8 @@ export function renderChoicesScaffold(pending: readonly PendingChoice[], challen
   return `<div class="panel choice-interrupt" role="alert" aria-label="Decision needed"><h3>Decision needed</h3>${blocks}</div>`;
 }
 
-export function renderChoiceCountdown(pc: PendingChoice, day: number): string {
+/** Issue #115: while paused the day clock is frozen, so "N days left" is a fake countdown. */
+export function renderChoiceCountdown(pc: PendingChoice, day: number, paused = false): string {
+  if (paused) return "";
   return `(${pc.expiresDay - day} days left)`;
 }

@@ -372,9 +372,14 @@ describe("renderChoicesScaffold", () => {
 });
 
 describe("renderChoiceCountdown", () => {
-  it("renders the remaining days", () => {
+  it("renders the remaining days while the clock is running", () => {
     expect(renderChoiceCountdown({ challengeId: "model-deprecation", expiresDay: 8 }, 5)).toBe("(3 days left)");
     expect(renderChoiceCountdown({ challengeId: "model-deprecation", expiresDay: 8 }, 6)).toBe("(2 days left)");
+  });
+
+  // Issue #115: soft-pause freezes expiresDay, so a ticking countdown would lie.
+  it("renders nothing while paused", () => {
+    expect(renderChoiceCountdown({ challengeId: "model-deprecation", expiresDay: 8 }, 5, true)).toBe("");
   });
 });
 
