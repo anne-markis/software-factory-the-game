@@ -359,6 +359,10 @@ Final verification (orchestrator)
   output.
 - Subagents do not commit or push — you do.
 - Stop cleanly rather than ship an uncertain fix.
+- Scope by the **current issue's acceptance criteria only** (including criteria
+  clarified or widened by later comments on that issue). Do not treat stale
+  Out of scope notes, adjacent issues, or prior agent decisions as binding
+  when they conflict with those criteria.
 - Prefer fixing root cause over patching symptoms.
 - Visual fixes require Subagent D (UX Verifier) and screenshots in the
   PR description; Non-visual fixes skip both.

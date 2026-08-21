@@ -396,6 +396,10 @@ Final verification (orchestrator)
   fresh command output or browser observation.
 - Subagents do not commit or push — you do.
 - Stop cleanly rather than ship an uncertain or over-scoped change.
+- Scope by the **current issue's acceptance criteria only** (including criteria
+  clarified or widened by later comments on that issue). Do not treat stale
+  Out of scope notes, adjacent issues, or prior agent decisions as binding
+  when they conflict with those criteria.
 - Implement what the issue asks; do not redesign adjacent systems.
 - When an enhancement touches defaults or player onboarding, verify a fresh
   game / reset path, not only mid-game saves.
