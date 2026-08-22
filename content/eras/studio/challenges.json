@@ -11,21 +11,13 @@
   {
     "id": "model-deprecation",
     "name": "Model deprecation",
-    "description": "Your AI vendor is sunsetting the model your agents run on. Pay to migrate now, or limp along on a degraded fallback.",
+    "description": "Your AI vendor sunsets the model your agents run on. Finish rate -30% for 30 days while you limp along on a degraded fallback.",
     "probabilityPerDay": 0.001,
     "condition": {
       "requiresAnyDecision": ["agent", "agent-harness", "agent-orchestration"]
     },
     "cooldownDays": 365,
-    "effects": [],
-    "choice": {
-      "expiresInDays": 4,
-      "defaultOptionId": "pay-migration",
-      "options": [
-        { "id": "pay-migration", "label": "Pay to migrate ($300)", "effects": [{ "type": "addToStock", "stock": "budget", "value": -300 }] },
-        { "id": "degraded-fallback", "label": "Run on the degraded fallback (finish -30% for 30 days)", "effects": [{ "type": "modifyRate", "target": "finish", "op": "mul", "value": 0.7, "durationDays": 30 }] }
-      ]
-    }
+    "effects": [{ "type": "modifyRate", "target": "finish", "op": "mul", "value": 0.7, "durationDays": 30 }]
   },
   {
     "id": "runaway-agent-loop",
