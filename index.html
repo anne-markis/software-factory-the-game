@@ -48,25 +48,25 @@
          the patched time-controls block) so pause/speed flips never rebuild it. */
       .chrome-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.5rem; }
       .chrome-row #reset { margin-left: auto; }
-      /* Top stats bar (Day / Backlog / Budget / Points/Day): each stat is a
-         fixed-width slot (label + tabular-nums value) so a value changing
-         width on tick never shifts anything below. auto-fit (not auto-fill)
-         collapses empty tracks so the four cockpit stats share the row —
-         auto-fill kept 170px columns on a wide page, and Budget + "(500 days)"
-         overflowed into Points/Day (issue #99 text blending). minmax covers
-         the label plus runway suffix. Issue #8 moved flow/quality stocks
-         under the Delivery loop. */
-      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.5rem 1.5rem; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
-      .stat { display: inline-flex; align-items: baseline; gap: 0.5rem; }
+      /* Top stats bar (Day / Backlog / Budget / Points/Day): fixed 4-column
+         grid so Budget + runway cannot paint into Points/Day (issue #113).
+         minmax(0, 1fr) lets each track shrink; .stat min-width:0 + overflow
+         clips long runway strings inside the cell. tabular-nums + value
+         min-widths keep tick updates from reflowing the loops below.
+         Issue #8 moved flow/quality stocks under the Delivery loop. */
+      .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem 1rem; align-items: baseline; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
+      .stat { display: inline-flex; align-items: baseline; gap: 0.5rem; min-width: 0; overflow: hidden; }
       .stat-label { color: var(--fg-dim); }
       .stat-value { display: inline-block; font-variant-numeric: tabular-nums; text-align: right; }
       .stat-value.v-day { min-width: 5ch; } /* Day: up to ~5 digits */
       .stat-value.v-flow { min-width: 9ch; } /* Backlog/Shipped: e.g. "12,345.6" */
       .stat-value.v-count { min-width: 6ch; } /* In Progress/Done */
-      /* Budget may append "(N days)" runway; keep a wider slot so the
-         suffix does not reflow neighboring stats when crossing comma or
-         day-count boundaries. */
-      .stat-value.v-budget { min-width: 32ch; } /* Budget: e.g. "$5,000,020 (250,001 days)" */
+      /* Budget may append "(N days)" runway. No ch min-width: a wide
+         right-aligned slot wasted space after the label and clipped the
+         amount (issue #113). Left-align so a tight column keeps the $
+         visible and clips the runway suffix first. The 4-column grid
+         keeps neighbors stable. */
+      .stat-value.v-budget { min-width: 0; text-align: left; }
       /* Issue #37: low runway telegraph — reuse the existing danger red
          so payroll cliff reads before Events fill with removals. */
       .stat-value.budget-low { color: var(--accent-red); font-weight: bold; }

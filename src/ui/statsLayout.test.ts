@@ -3,33 +3,33 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Issue #99: top-bar Budget + runway overflowed into Points/Day because
-// auto-fill kept empty 170px tracks. Pin the layout rules that stop the blend.
+// Issue #113: Budget + runway still painted into Points/Day under
+// auto-fit/minmax. Pin a fixed 4-column template so each stat stays in
+// its track (no auto-fit / auto-fill / ch-width arms races).
 
 const html = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../index.html"), "utf-8");
 
-describe("top stats layout (issue #99)", () => {
-  it("uses auto-fit so empty tracks do not pin slots at the minmax floor", () => {
-    expect(html).toMatch(/\.stats\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit,/);
+describe("top stats layout (issue #113)", () => {
+  it("uses a fixed 4-column grid so each stat owns one track", () => {
+    expect(html).toMatch(/\.stats\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
+    expect(html).not.toMatch(/\.stats\s*\{[^}]*auto-fit/);
     expect(html).not.toMatch(/\.stats\s*\{[^}]*auto-fill/);
-  });
-
-  it("gives each slot enough minmax for Budget plus runway days", () => {
-    const m = html.match(/\.stats\s*\{[^}]*minmax\((\d+(?:\.\d+)?)rem/);
-    expect(m).not.toBeNull();
-    expect(Number(m![1])).toBeGreaterThanOrEqual(16);
-  });
-
-  it("keeps a Budget value slot wider than the fresh-game runway string", () => {
-    const m = html.match(/\.stat-value\.v-budget\s*\{[^}]*min-width:\s*(\d+)ch/);
-    expect(m).not.toBeNull();
-    expect(Number(m![1])).toBeGreaterThanOrEqual(22);
   });
 
   it("separates neighboring stats with a column gap of at least 1rem", () => {
     const m = html.match(/\.stats\s*\{[^}]*gap:\s*[\d.]+rem\s+([\d.]+)rem/);
     expect(m).not.toBeNull();
     expect(Number(m![1])).toBeGreaterThanOrEqual(1);
+  });
+
+  it("keeps tabular nums so ticking values do not reflow the loops below", () => {
+    expect(html).toMatch(/\.stat-value\s*\{[^}]*font-variant-numeric:\s*tabular-nums/);
+  });
+
+  // A large ch min-width + text-align:right left an empty gap after the
+  // Budget label while the amount clipped away inside the cell.
+  it("does not pin Budget to a wide ch min-width that wastes the cell", () => {
+    expect(html).not.toMatch(/\.stat-value\.v-budget\s*\{[^}]*min-width:\s*\d+ch/);
   });
 });
 
