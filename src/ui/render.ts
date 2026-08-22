@@ -289,17 +289,20 @@ export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: 
   return `<h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}`;
 }
 
-// Offers that stay in the Projects list when not startable. Prerequisite
-// gates (requiresCompleted / requiresCompletedId / requiresReputation) are
-// omitted (issue #123). "already completed" stays until #122 hides finished
-// uniques; "already in flight" stays (out of scope for both).
+// Issue #123: omit unmet prerequisite rows only. Cannot-afford stays visible
+// (and disabled). "already completed" / "already in flight" stay until their
+// own tickets (#122 / out of scope).
+function isUnmetPrerequisiteOffer(o: ProjectAvailability): boolean {
+  if (o.startable || !o.reason) return false;
+  // Reasons authored in projectAvailability (projects.ts).
+  if (/^requires \d+ completed project\(s\)$/.test(o.reason)) return true;
+  if (o.reason.startsWith("requires completed ")) return true;
+  if (/^requires \d+(\.\d+)? reputation$/.test(o.reason)) return true;
+  return false;
+}
+
 function isVisibleProjectOffer(o: ProjectAvailability): boolean {
-  if (o.startable) return true;
-  return (
-    o.reason === "cannot afford" ||
-    o.reason === "already in flight" ||
-    o.reason === "already completed"
-  );
+  return !isUnmetPrerequisiteOffer(o);
 }
 
 export function renderProjectOffers(offers: ProjectAvailability[], state: Readonly<GameState>): string {
