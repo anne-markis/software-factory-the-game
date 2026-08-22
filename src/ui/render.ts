@@ -289,12 +289,24 @@ export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: 
   return `<h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}`;
 }
 
+// Issue #123: omit unmet prerequisite rows. Keep only startable offers plus
+// the non-gate lock reasons projectAvailability already uses as exact strings.
+function isVisibleProjectOffer(o: ProjectAvailability): boolean {
+  if (o.startable) return true;
+  return (
+    o.reason === "cannot afford" ||
+    o.reason === "already in flight" ||
+    o.reason === "already completed"
+  );
+}
+
 export function renderProjectOffers(offers: ProjectAvailability[], state: Readonly<GameState>): string {
   // Efficiency preview for starting one more project. Depends on how many are
   // already in flight, not on per-tick progress, so this string is stable
   // between starts and completions -- which is what lets the memo hold.
   const taxNext = Math.pow(state.contextSwitchFactor, state.projects.length);
   return offers
+    .filter(isVisibleProjectOffer)
     .map((o) => {
       const disabled = o.startable ? "" : "disabled";
       const reason = o.reason ? ` (${esc(o.reason)})` : "";
