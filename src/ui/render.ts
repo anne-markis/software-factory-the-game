@@ -99,22 +99,44 @@ export function ownedUniqueScaffoldKey(
   return [...ownedUniqueDefIds(ownedInstances, content)].sort().join(",");
 }
 
+// Shop-hidden ids: owned unique (#110) plus unmet-requires (#121).
+// cannot-afford stays visible; repeatable owned cards stay visible.
+export function shopHiddenDefIds(
+  avail: readonly Availability[],
+  ownedInstances: readonly DecisionInstance[],
+  content: GameContent,
+): Set<string> {
+  const hide = ownedUniqueDefIds(ownedInstances, content);
+  for (const a of avail) {
+    if (a.code === "missing-requires") hide.add(a.def.id);
+  }
+  return hide;
+}
+
+// Rebuild shop shells when owned-unique or missing-requires membership changes
+// (buy / remove / unlock). Affordability flips still patch in place.
+export function shopScaffoldKey(
+  avail: readonly Availability[],
+  ownedInstances: readonly DecisionInstance[],
+  content: GameContent,
+): string {
+  return [...shopHiddenDefIds(avail, ownedInstances, content)].sort().join(",");
+}
+
 // Renders one tech-tree node card. States (mutually exclusive):
 //  - owned unique: omitted from the shop (issue #110); this helper returns ""
 //    if called anyway
 //  - owned repeatable: not dimmed, keeps the Buy button, shows "owned xN"
-//  - missing-requires: dimmed but VISIBLE (reverses the old hide-until-
-//    unlocked behavior so the ladder ahead is visible), Buy disabled
+//  - missing-requires: omitted from the shop (issue #121); defensive ""
 //  - cannot-afford: Buy disabled, reason shown
 //  - purchasable: Buy enabled
 export function renderDecisionNode(a: Availability, ownedCount: number): string {
   const def = a.def;
-  // Owned unique cards are filtered out of the shop layout; defensive empty
-  // return keeps a stray patch from painting a tt-owned placeholder.
-  if (a.code === "already-owned") return "";
+  // Owned unique and unmet-requires cards are filtered out of the shop layout;
+  // defensive empty return keeps a stray patch from painting a placeholder.
+  if (a.code === "already-owned" || a.code === "missing-requires") return "";
   const ownedRepeatable = ownedCount > 0;
-  const stateClass =
-    a.code === "missing-requires" ? "tt-locked" : a.code === "cannot-afford" ? "tt-cannot-afford" : "tt-buyable";
+  const stateClass = a.code === "cannot-afford" ? "tt-cannot-afford" : "tt-buyable";
 
   let stateLine = "";
   if (ownedRepeatable) stateLine += `<span class="tt-tag-state">owned x${ownedCount}</span>`;
@@ -141,7 +163,7 @@ export function renderDecisionNode(a: Availability, ownedCount: number): string 
 
 // Shared chain/standalone layout. `renderNode` is either a live card
 // (string tests / renderDecisions) or an empty data-section shell (scaffold).
-// `hideDefIds` drops owned unique cards from the shop (issue #110 / #117).
+// `hideDefIds` drops owned unique (#110) and missing-requires (#121) cards.
 // Empty tiers and chains are omitted so arrows do not point at a hole and
 // remaining cards are not left offset.
 function renderShopLayout(
@@ -174,14 +196,16 @@ function renderShopLayout(
 }
 
 // Panel chrome + per-decision section shells for cards still in the shop.
-// Owned unique defs are omitted (issue #110); appView rebuilds this scaffold
-// when that set changes so Buy-button identity stays stable across ticks.
+// Owned unique (#110) and missing-requires (#121) defs are omitted; appView
+// rebuilds this scaffold when that hide set changes so Buy-button identity
+// stays stable across ticks.
 // Issue #114: Owned lives under Events in `.side`, not under Alter the system.
 export function decisionsPanelScaffold(
   content: GameContent,
   ownedInstances: readonly DecisionInstance[] = [],
+  avail: readonly Availability[] = [],
 ): string {
-  const hide = ownedUniqueDefIds(ownedInstances, content);
+  const hide = shopHiddenDefIds(avail, ownedInstances, content);
   const shop = renderShopLayout(
     content,
     (def) => `<div ${SECTION_ATTR}="${decisionNodeSection(def.id)}"></div>`,
@@ -221,7 +245,7 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
   const availById = new Map(avail.map((a) => [a.def.id, a]));
   const ownedCounts = new Map<string, number>();
   for (const inst of ownedInstances) ownedCounts.set(inst.defId, (ownedCounts.get(inst.defId) ?? 0) + 1);
-  const hide = ownedUniqueDefIds(ownedInstances, content);
+  const hide = shopHiddenDefIds(avail, ownedInstances, content);
   const shop = renderShopLayout(
     content,
     (def) => renderDecisionNode(availById.get(def.id)!, ownedCounts.get(def.id) ?? 0),

@@ -28,7 +28,7 @@ import {
   decisionNodeSection,
   renderDecisionNode,
   renderOwnedList,
-  ownedUniqueScaffoldKey,
+  shopScaffoldKey,
   OWNED_LIST_SECTION,
   renderStall,
   renderTimeControls,
@@ -159,8 +159,14 @@ export function mountAppView(deps: AppViewDeps): AppView {
   // Issue #24: tech-tree Buy buttons each live in their own patched section so
   // one node's affordability flip cannot tear down every other Buy button.
   const decisions = createRegion(page.section(DECISIONS)!);
-  decisions.setScaffold(decisionsPanelScaffold(content, engine.getState().decisions));
-  let lastOwnedUniqueKey = ownedUniqueScaffoldKey(engine.getState().decisions, content);
+  decisions.setScaffold(
+    decisionsPanelScaffold(content, engine.getState().decisions, engine.availableDecisions()),
+  );
+  let lastShopKey = shopScaffoldKey(
+    engine.availableDecisions(),
+    engine.getState().decisions,
+    content,
+  );
   const choices = createRegion(page.section(CHOICES)!);
 
   const flash = createFlashController();
@@ -218,8 +224,8 @@ export function mountAppView(deps: AppViewDeps): AppView {
       ownedCounts.set(inst.defId, (ownedCounts.get(inst.defId) ?? 0) + 1);
     }
     for (const a of engine.availableDecisions()) {
-      // Owned unique cards have no shop shell (issue #110); patch is a no-op.
-      if (a.code === "already-owned") continue;
+      // Owned unique (#110) and missing-requires (#121) have no shop shell.
+      if (a.code === "already-owned" || a.code === "missing-requires") continue;
       decisions.patch(decisionNodeSection(a.def.id), renderDecisionNode(a, ownedCounts.get(a.def.id) ?? 0));
     }
   }
@@ -229,13 +235,14 @@ export function mountAppView(deps: AppViewDeps): AppView {
     softPauseForNewChoices([...engine.getState().pendingChoices]);
     content = engine.getContent();
     const state = engine.getState();
-    const ownedUniqueKey = ownedUniqueScaffoldKey(state.decisions, content);
-    // Rebuild shop shells on era change or when a unique card is bought/removed
-    // (issue #110). Tick-to-tick affordability flips still patch in place.
-    if (state.eraId !== lastEraId || ownedUniqueKey !== lastOwnedUniqueKey) {
+    const avail = engine.availableDecisions();
+    const shopKey = shopScaffoldKey(avail, state.decisions, content);
+    // Rebuild shop shells on era change, owned-unique buy/remove (#110), or
+    // missing-requires unlock (#121). Affordability flips still patch in place.
+    if (state.eraId !== lastEraId || shopKey !== lastShopKey) {
       lastEraId = state.eraId;
-      lastOwnedUniqueKey = ownedUniqueKey;
-      decisions.setScaffold(decisionsPanelScaffold(content, state.decisions));
+      lastShopKey = shopKey;
+      decisions.setScaffold(decisionsPanelScaffold(content, state.decisions, avail));
     }
     // Issue #67: sync cockpit + delivery stats in place so .stat-flash can
     // finish without the string-memo path tearing the nodes down each tick.

@@ -218,6 +218,19 @@ describe("appView game feel (issue #67)", () => {
     expect(h.root.querySelector(".gamble-reveal")).toBeNull();
     expect(h.root.querySelector(".log")!.textContent).toMatch(/Purchased: .*test suite/i);
   });
+
+  // Issue #121: missing-requires cards are absent until the gate is met; buying
+  // the prereq rebuilds the shop scaffold so the unlocked card gets a Buy shell.
+  it("hides ci-cd until test-suite is bought, then shows it (issue #121)", () => {
+    const h = mount();
+    expect(h.root.querySelector('[data-buy="ci-cd"]')).toBeNull();
+    expect(h.root.textContent).not.toContain("requires Add test suite");
+    h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!.click();
+    const cicd = h.root.querySelector<HTMLElement>('[data-buy="ci-cd"]');
+    expect(cicd).toBeTruthy();
+    expect(cicd!.hasAttribute("disabled")).toBe(false);
+    expect(h.root.querySelector('[data-buy="test-suite"]')).toBeNull();
+  });
 });
 
 describe("appView node identity across renders (issue #6)", () => {
