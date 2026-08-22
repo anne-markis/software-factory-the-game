@@ -13,13 +13,14 @@ const STAGE_STOCK: Record<StoryPointStage, "backlog" | "inProgress" | "done"> = 
 export const DEV_CONSOLE_HELP = `Software Factory cheats (this tab’s console)
 
   sf.help()
+  sf.era()                       // current era id (studio / company / megacorp)
   sf.budget()                    // current $
   sf.budget(50000)               // set $
   sf.points()                    // unshipped story points (cockpit Backlog)
   sf.points(40)                  // set oldest contract + Ready queue to 40
   sf.points(40, "inProgress")    // same, but park them in In Progress (WIP bubble)
   sf.points(40, "done")          // park them in Done
-  sf.peek()                      // stocks + in-flight remaining
+  sf.peek()                      // era + stocks + in-flight remaining
 
 Story-point cheats keep the work ledger in sync (Ready/IP/Done + project remaining).`;
 
@@ -64,6 +65,7 @@ export function setStoryPoints(state: GameState, value: number, stage: StoryPoin
 
 export interface CheatPeek {
   day: number;
+  era: string;
   budget: number;
   unshipped: number;
   ready: number;
@@ -74,9 +76,10 @@ export interface CheatPeek {
   remaining: { name: string; points: number }[];
 }
 
-export function peekCheats(state: Pick<GameState, "day" | "stocks" | "projects">): CheatPeek {
+export function peekCheats(state: Pick<GameState, "day" | "eraId" | "stocks" | "projects">): CheatPeek {
   return {
     day: state.day,
+    era: state.eraId,
     budget: state.stocks.budget,
     unshipped: unshippedWork(state),
     ready: state.stocks.backlog,
@@ -90,6 +93,7 @@ export function peekCheats(state: Pick<GameState, "day" | "stocks" | "projects">
 
 export interface DevCheats {
   help(): string;
+  era(): string;
   budget(value?: number): number;
   points(value?: number, stage?: StoryPointStage): number;
   peek(): CheatPeek;
@@ -121,6 +125,9 @@ export function installDevConsole(host: DevConsoleHost): () => void {
     help() {
       console.info(DEV_CONSOLE_HELP);
       return DEV_CONSOLE_HELP;
+    },
+    era() {
+      return live(host.engine).eraId;
     },
     budget(value?: number) {
       const state = live(host.engine);
