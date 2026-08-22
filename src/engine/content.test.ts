@@ -507,12 +507,14 @@ describe("parseDecisions", () => {
 describe("parseChallenges", () => {
   it("ships exactly the three lean Studio challenges (issue #89)", () => {
     const defs = parseChallenges(challengesJson);
-    // The lean pool: one delivery event, one agent choice, one agent cash
+    // The lean pool: one delivery event, one agent finish drag, one agent cash
     // hit. Hire drama (sickness, key-dev-poached), org/calendar pain
     // (meeting-creep, team-conflict), free money (cloud-credits,
     // open-source-windfall), ddos, security-breach, api-price-hike,
     // laptop-dies and prod-incident all leave Studio (§5.4).
     expect(defs.map((c) => c.id)).toEqual(["scope-creep", "model-deprecation", "runaway-agent-loop"]);
+    // Issue #118: shipped challenges are immediate (no Decision-needed / expiry).
+    expect(defs.every((c) => c.choice === undefined)).toBe(true);
     // Nothing left in the pool rolls per human dev or scales on tech debt, so
     // the hire is a pure budget/delivery tradeoff and debt bites only through
     // the always-on drag.
@@ -557,16 +559,20 @@ describe("parseChallenges", () => {
     expect(scope.condition).toEqual({ minCompletedProjects: 1 });
     expect(scope.effects).toEqual([{ type: "addToStock", stock: "backlog", value: 75 }]);
 
-    // model-deprecation: 0.4%/day, 80-day cooldown, gated on owning anything
-    // from the agent ladder (the cut swarm/self-learning ids are gone).
+    // model-deprecation: 0.1%/day, 365-day cooldown, gated on owning anything
+    // from the agent ladder; immediate finish drag (no choice / expiry, #118).
     const deprecation = defs.find((c) => c.id === "model-deprecation")!;
-    expect(deprecation.probabilityPerDay).toBe(0.004);
-    expect(deprecation.cooldownDays).toBe(80);
+    expect(deprecation.probabilityPerDay).toBe(0.001);
+    expect(deprecation.cooldownDays).toBe(365);
     expect(deprecation.condition).toEqual({
       requiresAnyDecision: ["agent", "agent-harness", "agent-orchestration"],
     });
-    expect(deprecation.choice!.defaultOptionId).toBe("pay-migration");
-    expect(deprecation.choice!.options.map((o) => o.id)).toEqual(["pay-migration", "degraded-fallback"]);
+    expect(deprecation.choice).toBeUndefined();
+    expect(deprecation.effects).toEqual([
+      { type: "modifyRate", target: "finish", op: "mul", value: 0.7, durationDays: 30 },
+    ]);
+    expect(deprecation.description.toLowerCase()).toContain("finish");
+    expect(deprecation.description.toLowerCase()).toContain("30");
 
     // runaway-agent-loop: same agent gate; the cash hit came down from $200 to
     // $60 (a survivable slip on a Studio budget) and the copy names the amount.

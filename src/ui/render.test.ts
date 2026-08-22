@@ -24,7 +24,7 @@ import {
 } from "./render";
 import { SECTION_ATTR } from "./domPatch";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
-import { challengesJson, decisionsJson, projectsJson, startJson } from "../engine/loadShippedContent";
+import { decisionsJson, projectsJson, startJson } from "../engine/loadShippedContent";
 import { Engine, initialState } from "../engine/engine";
 import { projectAvailability } from "../engine/projects";
 import type { GameContent } from "../engine/types";
@@ -361,40 +361,58 @@ describe("renderLog", () => {
 });
 
 describe("renderChoicesScaffold", () => {
+  // Engine still supports choice challenges for fixtures / later eras; shipped
+  // Studio content is immediate-only (issue #118).
+  const fixtureChoice = parseChallenges([
+    {
+      id: "fixture-choice",
+      name: "Fixture choice",
+      description: "Pick one.",
+      probabilityPerDay: 0,
+      effects: [],
+      choice: {
+        expiresInDays: 4,
+        defaultOptionId: "pay",
+        options: [
+          { id: "pay", label: "Pay", effects: [] },
+          { id: "skip", label: "Skip", effects: [] },
+        ],
+      },
+    },
+  ]);
+
   it("renders nothing without pending choices", () => {
-    expect(renderChoicesScaffold([], parseChallenges(challengesJson))).toBe("");
+    expect(renderChoicesScaffold([], fixtureChoice)).toBe("");
   });
 
   it("renders option buttons and a countdown placeholder for a pending choice", () => {
-    const challenges = parseChallenges(challengesJson);
-    const html = renderChoicesScaffold([{ challengeId: "model-deprecation", expiresDay: 8 }], challenges);
-    expect(html).toContain('data-choice="model-deprecation" data-option="pay-migration"');
+    const html = renderChoicesScaffold([{ challengeId: "fixture-choice", expiresDay: 8 }], fixtureChoice);
+    expect(html).toContain('data-choice="fixture-choice" data-option="pay"');
     expect(html).toContain("Decision needed");
     // Issue #40: interrupt affordance uses class chrome + alertdialog role.
     expect(html).toContain('class="panel choice-interrupt"');
     expect(html).toContain('role="alert"');
     // The countdown is patched separately (issue #6) so the day ticking down
     // does not rebuild the option buttons: the scaffold carries only its slot.
-    expect(html).toContain(`<em data-section="${choiceCountdownSection("model-deprecation")}"></em>`);
+    expect(html).toContain(`<em data-section="${choiceCountdownSection("fixture-choice")}"></em>`);
     expect(html).not.toContain("days left");
   });
 
   it("keeps the same scaffold string as days pass, so the memo holds", () => {
-    const challenges = parseChallenges(challengesJson);
-    const pending = [{ challengeId: "model-deprecation", expiresDay: 8 }];
-    expect(renderChoicesScaffold(pending, challenges)).toBe(renderChoicesScaffold(pending, challenges));
+    const pending = [{ challengeId: "fixture-choice", expiresDay: 8 }];
+    expect(renderChoicesScaffold(pending, fixtureChoice)).toBe(renderChoicesScaffold(pending, fixtureChoice));
   });
 });
 
 describe("renderChoiceCountdown", () => {
   it("renders the remaining days while the clock is running", () => {
-    expect(renderChoiceCountdown({ challengeId: "model-deprecation", expiresDay: 8 }, 5)).toBe("(3 days left)");
-    expect(renderChoiceCountdown({ challengeId: "model-deprecation", expiresDay: 8 }, 6)).toBe("(2 days left)");
+    expect(renderChoiceCountdown({ challengeId: "fixture-choice", expiresDay: 8 }, 5)).toBe("(3 days left)");
+    expect(renderChoiceCountdown({ challengeId: "fixture-choice", expiresDay: 8 }, 6)).toBe("(2 days left)");
   });
 
-  // Issue #115: soft-pause freezes expiresDay, so a ticking countdown would lie.
+  // Issue #115: manual pause freezes expiresDay, so a ticking countdown would lie.
   it("renders nothing while paused", () => {
-    expect(renderChoiceCountdown({ challengeId: "model-deprecation", expiresDay: 8 }, 5, true)).toBe("");
+    expect(renderChoiceCountdown({ challengeId: "fixture-choice", expiresDay: 8 }, 5, true)).toBe("");
   });
 });
 

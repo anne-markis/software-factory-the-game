@@ -211,19 +211,53 @@ describe("rollChallenges", () => {
   });
 
   it("resolveChoice applies the chosen option and clears the pending choice", () => {
-    const c = content();
+    const challenges = parseChallenges([
+      {
+        id: "fixture-choice",
+        name: "Fixture",
+        description: "desc",
+        probabilityPerDay: 0,
+        effects: [],
+        choice: {
+          expiresInDays: 4,
+          defaultOptionId: "pay",
+          options: [
+            { id: "pay", label: "Pay", effects: [{ type: "addToStock", stock: "budget", value: -300 }] },
+            { id: "degrade", label: "Degrade", effects: [{ type: "modifyRate", target: "finish", op: "mul", value: 0.7, durationDays: 30 }] },
+          ],
+        },
+      },
+    ]);
+    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
     const s = initialState(c);
-    s.pendingChoices.push({ challengeId: "model-deprecation", expiresDay: 10 });
-    resolveChoice(s, c, "model-deprecation", "pay-migration");
+    s.pendingChoices.push({ challengeId: "fixture-choice", expiresDay: 10 });
+    resolveChoice(s, c, "fixture-choice", "pay");
     expect(s.stocks.budget).toBe(9700); // 10000 - 300
     expect(s.pendingChoices).toHaveLength(0);
   });
 
   it("resolveChoice's other option applies its modifier instead of the cash cost", () => {
-    const c = content();
+    const challenges = parseChallenges([
+      {
+        id: "fixture-choice",
+        name: "Fixture",
+        description: "desc",
+        probabilityPerDay: 0,
+        effects: [],
+        choice: {
+          expiresInDays: 4,
+          defaultOptionId: "pay",
+          options: [
+            { id: "pay", label: "Pay", effects: [{ type: "addToStock", stock: "budget", value: -300 }] },
+            { id: "degrade", label: "Degrade", effects: [{ type: "modifyRate", target: "finish", op: "mul", value: 0.7, durationDays: 30 }] },
+          ],
+        },
+      },
+    ]);
+    const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
     const s = initialState(c);
-    s.pendingChoices.push({ challengeId: "model-deprecation", expiresDay: 10 });
-    resolveChoice(s, c, "model-deprecation", "degraded-fallback");
+    s.pendingChoices.push({ challengeId: "fixture-choice", expiresDay: 10 });
+    resolveChoice(s, c, "fixture-choice", "degrade");
     expect(s.stocks.budget).toBe(10000); // no cash paid
     expect(s.modifiers.some((m) => m.target === "finish" && m.op === "mul" && m.value === 0.7)).toBe(true);
   });
@@ -428,18 +462,19 @@ describe("rollChallenges", () => {
 });
 
 describe("model-deprecation (requiresAnyDecision)", () => {
-  it("fires and queues its choice on a firing day once an agent-line decision is owned", () => {
+  it("fires immediately with a finish drag once an agent-line decision is owned", () => {
     const c = content();
     const s = initialState(c);
     applyDecision(s, c, "agent", createRng(1));
-    // Day 15: hashRoll(SEED, 15, "model-deprecation") = 0.0036, still under the
-    // retuned 0.4%/day probability (issue #89 dropped it from 1.5%).
-    s.day = 15;
-    expect(hashRoll(SEED, 15, "model-deprecation")).toBeLessThan(0.004);
+    // Day 216: hashRoll(SEED, 216, "model-deprecation") ≈ 0.0007, under the
+    // retuned 0.1%/day probability (issue #118).
+    s.day = 216;
+    expect(hashRoll(SEED, 216, "model-deprecation")).toBeLessThan(0.001);
     rollChallenges(s, noRng, c);
-    const pending = s.pendingChoices.find((pc) => pc.challengeId === "model-deprecation");
-    expect(pending).toBeDefined();
-    expect(pending!.expiresDay).toBe(19); // day 15 + expiresInDays 4
+    expect(s.pendingChoices).toHaveLength(0);
+    expect(s.modifiers.some((m) => m.target === "finish" && m.op === "mul" && m.value === 0.7)).toBe(true);
+    expect(s.challengeLastFired["model-deprecation"]).toBe(216);
+    expect(s.log.some((e) => e.message.startsWith("Model deprecation:"))).toBe(true);
   });
 
   it("stays eligible when agent is removed while the later agent-harness card remains owned", () => {
@@ -452,9 +487,10 @@ describe("model-deprecation (requiresAnyDecision)", () => {
     expect(s.decisions.map((d) => d.defId)).toContain("agent-harness");
     expect(s.decisions.map((d) => d.defId)).not.toContain("agent");
 
-    s.day = 15;
+    s.day = 216;
     rollChallenges(s, noRng, c);
-    expect(s.pendingChoices.some((pc) => pc.challengeId === "model-deprecation")).toBe(true);
+    expect(s.challengeLastFired["model-deprecation"]).toBe(216);
+    expect(s.modifiers.some((m) => m.target === "finish" && m.op === "mul" && m.value === 0.7)).toBe(true);
   });
 
   it("is condition-gated: never fires without an agent-line decision owned, even at probability 1.0", () => {
@@ -467,23 +503,16 @@ describe("model-deprecation (requiresAnyDecision)", () => {
         condition: {
           requiresAnyDecision: ["agent", "agent-harness", "agent-orchestration"],
         },
-        cooldownDays: 80,
-        effects: [],
-        choice: {
-          expiresInDays: 4,
-          defaultOptionId: "pay-migration",
-          options: [
-            { id: "pay-migration", label: "Pay", effects: [] },
-            { id: "degraded-fallback", label: "Degrade", effects: [] },
-          ],
-        },
+        cooldownDays: 365,
+        effects: [{ type: "modifyRate", target: "finish", op: "mul", value: 0.7, durationDays: 30 }],
       },
     ]);
     const c: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges, projects: [] };
     const s = initialState(c);
     s.day = 20;
     rollChallenges(s, noRng, c);
-    expect(s.pendingChoices).toHaveLength(0);
+    expect(s.challengeLastFired["model-deprecation"]).toBeUndefined();
+    expect(s.modifiers).toHaveLength(0);
   });
 });
 
