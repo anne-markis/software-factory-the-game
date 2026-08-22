@@ -525,6 +525,22 @@ describe("renderProjectOffers", () => {
     expect(html).toContain("cannot afford");
   });
 
+  // Issue #122: finished unique versions leave the offers list; repeatables stay.
+  it("hides an already-completed unique offer while keeping repeatable gigs (issue #122)", () => {
+    const c = studioProjects();
+    const s = initialState(c);
+    s.completedProjects = 2;
+    s.completedProjectIds = ["launch-beta", "ship-v1"];
+    const html = renderProjectOffers(projectAvailability(s, c), s);
+    expect(html).not.toContain('data-project="ship-v1"');
+    expect(html).not.toContain("already completed");
+    // Next ladder step is unlocked and still shown.
+    expect(html).toContain('data-project="ship-v2"');
+    // Repeatable gigs remain offerable after any completions.
+    expect(html).toContain('data-project="gig-bugfix"');
+    expect(projectAvailability(s, c).find((p) => p.def.id === "gig-bugfix")!.startable).toBe(true);
+  });
+
   it("does not change as in-flight work progresses, so the Start buttons survive the tick", () => {
     const c = studioProjects();
     const s = initialState(c);
