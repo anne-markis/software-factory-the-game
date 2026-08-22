@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { Engine } from "../engine/engine";
 import { parseStartConfig, parseProjects } from "../engine/content";
-import { projectsJson, startJson } from "../engine/loadShippedContent";
+import { loadShippedContent, projectsJson, startJson } from "../engine/loadShippedContent";
 import { committedWork, unshippedWork, workLedgerIssues } from "../engine/work";
 import type { GameContent, GameState } from "../engine/types";
 import {
@@ -81,12 +81,18 @@ describe("cheat mutators (ledger-safe)", () => {
     expect(workLedgerIssues(s)).toEqual([]);
   });
 
-  it("peekCheats reports budget, unshipped, and remaining", () => {
-    const e = new Engine(content());
+  it("peekCheats reports era, budget, unshipped, and remaining", () => {
+    const e = new Engine(loadShippedContent());
     const snap = peekCheats(e.getState());
+    expect(snap.era).toBe("studio");
     expect(snap.budget).toBe(10000);
     expect(snap.unshipped).toBe(300);
     expect(snap.remaining[0]).toEqual({ name: "Launch beta", points: 300 });
+  });
+
+  it("peekCheats reports the restored era id, not the start-bundle default", () => {
+    const snap = peekCheats(new Engine(loadShippedContent("company")).getState());
+    expect(snap.era).toBe("company");
   });
 });
 
@@ -109,8 +115,10 @@ describe("installDevConsole", () => {
       },
     });
     expect(window.sf).toBeDefined();
+    expect(window.sf!.help()).toContain("sf.era");
     expect(window.sf!.help()).toContain("sf.budget");
     expect(DEV_CONSOLE_HELP).toContain("sf.points");
+    expect(window.sf!.era()).toBe("_fixture");
 
     expect(window.sf!.budget(25000)).toBe(25000);
     expect(e.getState().stocks.budget).toBe(25000);
@@ -125,12 +133,20 @@ describe("installDevConsole", () => {
     expect(window.sf).toBeUndefined();
   });
 
-  it("budget()/points() with no args are reads and do not save", () => {
-    const e = new Engine(content());
+  it("budget()/points()/era() with no args are reads and do not save", () => {
+    const e = new Engine(loadShippedContent());
     let saves = 0;
     installDevConsole({ engine: e, render: () => {}, save: () => { saves++; } });
     expect(window.sf!.budget()).toBe(10000);
     expect(window.sf!.points()).toBe(300);
+    expect(window.sf!.era()).toBe("studio");
     expect(saves).toBe(0);
+  });
+
+  it("era() follows a silent Company crossing", () => {
+    const e = new Engine(loadShippedContent("company"));
+    installDevConsole({ engine: e, render: () => {}, save: () => {} });
+    expect(window.sf!.era()).toBe("company");
+    expect(window.sf!.peek().era).toBe("company");
   });
 });
