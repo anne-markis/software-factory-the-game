@@ -45,6 +45,10 @@ describe("tech-tree mobile layout (issue #18)", () => {
     expect(mobile!).toMatch(/\.tt-tier\s*\.tt-node\s*\{[^}]*width:\s*100%/);
   });
 
+  it("lets the flat shop grid fill the narrow viewport width", () => {
+    expect(mobile!).toMatch(/\.tt-shop-grid\s*\.tt-node(?:\s*,[^/{]*)?\{[^}]*width:\s*100%/);
+  });
+
   it("reorients chain arrows for the vertical stack", () => {
     expect(mobile!).toMatch(/\.tt-arrow\s*\{[^}]*transform:\s*rotate\(90deg\)/);
   });

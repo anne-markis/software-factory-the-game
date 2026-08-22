@@ -2,7 +2,7 @@ import type { Availability } from "../engine/decisions";
 import { contextSwitchTax } from "../engine/modifiers";
 import type { ProjectAvailability } from "../engine/projects";
 import type { DecisionCategory, DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
-import { buildTechTree, type TechChain } from "./techTree";
+import { buildTechTree } from "./techTree";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { SECTION_ATTR } from "./domPatch";
 import { formatBuiltAt, type BuildInfo } from "./buildInfo";
@@ -161,38 +161,31 @@ export function renderDecisionNode(a: Availability, ownedCount: number): string 
   </div>`;
 }
 
-// Shared chain/standalone layout. `renderNode` is either a live card
-// (string tests / renderDecisions) or an empty data-section shell (scaffold).
+// Flat wrapping shop. `renderNode` is a live card (string tests /
+// renderDecisions) or an empty data-section shell (scaffold).
 // `hideDefIds` drops owned unique (#110) and missing-requires (#121) cards.
-// Empty tiers and chains are omitted so arrows do not point at a hole and
-// remaining cards are not left offset.
+// Order is still the tree-walk (chains by root, then standalone) so this
+// flatten does not silently reorder; JSON array order is a later change.
 function renderShopLayout(
   content: GameContent,
   renderNode: (def: DecisionDef) => string,
   hideDefIds: ReadonlySet<string> = new Set(),
 ): string {
   const tree = buildTechTree(content);
-  const chains = tree.chains
-    .map((chain: TechChain) => {
-      const visibleTiers = chain.tiers
-        .map((tier) => tier.filter((def) => !hideDefIds.has(def.id)))
-        .filter((tier) => tier.length > 0);
-      if (visibleTiers.length === 0) return "";
-      const columns = visibleTiers
-        .map((tier) => {
-          const nodes = tier.map((def) => renderNode(def)).join("");
-          return `<div class="tt-tier">${nodes}</div>`;
-        })
-        .join(`<div class="tt-arrow">&rarr;</div>`);
-      // Header follows the first still-visible card (not a hidden owned root).
-      const headerName = visibleTiers[0]![0]!.name;
-      return `<div class="tt-chain"><h4>${esc(headerName)}</h4><div class="tt-chain-row">${columns}</div></div>`;
-    })
-    .join("");
-  const standalone = tree.standalone.filter((def) => !hideDefIds.has(def.id));
-  if (standalone.length === 0) return chains;
-  const nodes = standalone.map((def) => renderNode(def)).join("");
-  return `${chains}<div class="tt-standalone"><h4>Standalone</h4><div class="tt-standalone-grid">${nodes}</div></div>`;
+  const defs: DecisionDef[] = [];
+  for (const chain of tree.chains) {
+    for (const tier of chain.tiers) {
+      for (const def of tier) {
+        if (!hideDefIds.has(def.id)) defs.push(def);
+      }
+    }
+  }
+  for (const def of tree.standalone) {
+    if (!hideDefIds.has(def.id)) defs.push(def);
+  }
+  const nodes = defs.map(renderNode).join("");
+  if (!nodes) return "";
+  return `<div class="tt-shop-grid">${nodes}</div>`;
 }
 
 // Panel chrome + per-decision section shells for cards still in the shop.

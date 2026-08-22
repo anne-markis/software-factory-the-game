@@ -40,7 +40,8 @@ retire ids a previous save might still own (ADR 0004).
 
 Shape: `decisionSchema` in `src/engine/content.ts`. `id` must be unique
 across the **resolved** catalog. `category` is a closed enum (`DecisionCategory`
-in `src/engine/types.ts`) and only controls shop section. There are no
+in `src/engine/types.ts`). It is required authored metadata; the player shop
+is a flat wrapping list and does not group by category. There are no
 decision `tags`. `human: true` is headcount for challenge predicates, not
 a track label.
 

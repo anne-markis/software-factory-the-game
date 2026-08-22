@@ -33,6 +33,10 @@ function content(): GameContent {
   return { start: parseStartConfig(startJson), decisions: parseDecisions(decisionsJson), challenges: [], projects: [] };
 }
 
+function shopBuyIds(html: string): string[] {
+  return [...html.matchAll(/data-buy="([^"]+)"/g)].map((m) => m[1]!);
+}
+
 describe("esc", () => {
   it("escapes html-significant characters", () => {
     expect(esc(`<b>&"x"</b>`)).toBe("&lt;b&gt;&amp;&quot;x&quot;&lt;/b&gt;");
@@ -248,16 +252,9 @@ describe("renderDecisions", () => {
     expect(shop).not.toContain("<h3>Owned</h3>");
     // Still listed under Owned.
     expect(owned).toContain("Add test suite");
-    // Empty root tier collapses: header follows the remaining card; no orphan arrow.
-    expect(shop).toContain("<h4>CI/CD pipeline</h4>");
-    expect(shop).not.toContain("<h4>Add test suite</h4>");
-    expect(shop).toMatch(
-      /<h4>CI\/CD pipeline<\/h4><div class="tt-chain-row"><div class="tt-tier">[^]*?data-buy="ci-cd"[^]*?<\/div><\/div><\/div>/,
-    );
-    expect(shop).not.toMatch(
-      /<h4>CI\/CD pipeline<\/h4><div class="tt-chain-row">[^]*?tt-arrow[^]*?data-buy="ci-cd"/,
-    );
-    // Locked-then-unlocked downstream stays visible; basic-dev stays buyable.
+    // Unlocked downstream sits in the flat list with no chain header.
+    expect(shop).not.toMatch(/<h4>/);
+    expect(shop).not.toContain("Standalone");
     expect(shop).toContain('data-buy="ci-cd"');
     expect(shop).toContain('data-buy="basic-dev"');
   });
@@ -286,23 +283,51 @@ describe("renderDecisions", () => {
     expect(html).toContain('data-buy="agent"');
   });
 
-  it("renders each node's chain (or standalone) placement and a short category tag", () => {
+  it("renders a flat wrapping shop: no chain headers, Standalone, or arrows", () => {
     const e = new Engine(content());
-    // Unlock the agent ladder so a chain arrow is present (issue #121 hides
-    // unmet-requires cards, so a fresh shop has single-tier chains only).
-    e.applyDecision("agent");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // Chain headers: test-suite root still visible; agent ladder shows harness.
-    expect(html).toContain("Add test suite");
-    expect(html).toContain("Add coding agent");
-    // basic-dev lost its senior-dev/eng-manager tiers, so it renders as a
-    // standalone card rather than a chain root.
-    expect(html).toContain("Hire basic developer");
-    expect(html).toContain("Standalone");
-    expect(html).toContain("&rarr;");
-    // DecisionCategory values mapped to short player-facing labels.
+    expect(html).toContain('<div class="tt-node-name">Add test suite</div>');
+    expect(html).toContain('<div class="tt-node-name">Add coding agent</div>');
+    expect(html).toContain('<div class="tt-node-name">Hire basic developer</div>');
+    expect(html).not.toMatch(/<h4>/);
+    expect(html).not.toContain("Standalone");
+    expect(html).not.toContain("tt-arrow");
+    expect(html).not.toContain("&rarr;");
+    expect(html).toContain("tt-shop-grid");
+    // Category tags stay on the fat card; slimming is a later change.
     expect(html).toContain('<span class="tt-cat">speed</span>');
     expect(html).toContain('<span class="tt-cat">debt</span>');
+  });
+
+  it("keeps today's tree-walk order, not JSON array order", () => {
+    const e = new Engine(content());
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    // Chains first (test-suite, then agent), then the four standalones.
+    // JSON order would put basic-dev between test-suite and agent.
+    expect(shopBuyIds(html)).toEqual([
+      "test-suite",
+      "agent",
+      "basic-dev",
+      "better-tooling",
+      "subscription",
+      "one-time-product",
+    ]);
+  });
+
+  it("inserts an unlocked downstream card into the flat list without a chain header", () => {
+    const e = new Engine(content());
+    e.applyDecision("test-suite");
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(html).not.toMatch(/<h4>/);
+    expect(html).not.toContain("Standalone");
+    expect(shopBuyIds(html)).toEqual([
+      "ci-cd",
+      "agent",
+      "basic-dev",
+      "better-tooling",
+      "subscription",
+      "one-time-product",
+    ]);
   });
 
   it("no longer renders the retired unlock-count hint", () => {
