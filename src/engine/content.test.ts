@@ -203,12 +203,12 @@ describe("parseDecisions", () => {
     // The hire is always in the shop: no requires, no count gate (§5.2.2).
     expect(dev.requires).toBeUndefined();
     expect(dev.requiresCounts).toBeUndefined();
-    // Release 13: every shipped decision must carry a required category so
-    // the shop can group them into sections.
+    // Every shipped decision must carry a required category (schema);
+    // the player shop no longer groups by it.
     expect(defs.every((d) => d.category)).toBe(true);
   });
 
-  it("categorizes every shipped decision for the shop's sectioned layout (Release 13)", () => {
+  it("categorizes every shipped decision (required schema field)", () => {
     const defs = parseDecisions(decisionsJson);
     expect(defs.find((d) => d.id === "test-suite")!.category).toBe("tame-debt");
     expect(defs.find((d) => d.id === "subscription")!.category).toBe("earn-income");

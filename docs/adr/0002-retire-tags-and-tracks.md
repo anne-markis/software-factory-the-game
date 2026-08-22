@@ -24,8 +24,9 @@ ownership already expressible in JSON:
 - `minTechDebt`, `minDay`, `minCompletedProjects`
 - project `requiresCompleted` / `requiresReputation`
 
-Shop layout uses required `category`, not tags. `human: true` remains a
-headcount flag for challenge predicates (redesign parked).
+Shop layout used required `category`, not tags; the player shop is now a
+flat list and does not group by it. `human: true` remains a headcount
+flag for challenge predicates (redesign parked).
 
 Do not invent a replacement track layer (no tag enums, no “you are on
 track X” player copy).
@@ -36,3 +37,5 @@ Agent-line challenges gate on owned agent-ladder ids via
 `requiresAnyDecision`. Hire-drama / org-calendar challenges that used
 `hasTag: "human"` either use `minHumanDevs` or leave Studio. Authoring
 docs must not instruct authors to use track tags (S-2 / issue #92).
+The player shop no longer groups by `category`; do not invent a
+replacement grouping layer. The field stays required on the schema.

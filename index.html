@@ -141,18 +141,18 @@
       /* Fixed ~7-line Events history; older lines scroll inside the box so
          Owned below it stays visible in the right rail (issue #114). */
       .log { line-height: 1.35; max-height: calc(1.35em * 7); overflow-y: auto; font-size: 0.85rem; }
-      /* Tech tree (Alter the system). Each chain is a left-to-right row of tier
-         columns joined by an arrow glyph; nodes stack vertically within a
-         column. Node card sizes are fixed by their own static content (cost,
-         category, description are constant per node once rendered) so ticking
-         numbers elsewhere on the page never reflow this panel -- see the R14
-         layout-stability guarantee referenced in render.ts. */
+      /* Alter the system. Visible cards wrap in one grid (no chain headers,
+         Standalone heading, or arrows). Node card sizes are fixed by their
+         own static content (cost, category, description are constant per
+         node once rendered) so ticking numbers elsewhere on the page never
+         reflow this panel -- see the R14 layout-stability guarantee
+         referenced in render.ts. */
       .tt-chain { margin-bottom: 1rem; }
       .tt-chain-row { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; }
       .tt-tier { display: flex; flex-direction: column; gap: 0.5rem; min-width: 190px; }
       .tt-arrow { flex: none; align-self: center; padding: 0 0.5rem; color: var(--fg-dim); font-size: 1.1rem; }
-      .tt-standalone-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-      .tt-standalone-grid .tt-node, .tt-tier .tt-node { width: 190px; }
+      .tt-shop-grid, .tt-standalone-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .tt-shop-grid .tt-node, .tt-standalone-grid .tt-node, .tt-tier .tt-node { width: 190px; }
       .tt-node { border: 1px solid var(--border); padding: 0.4rem 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
       .tt-node-name { font-weight: bold; }
       .tt-node-meta { color: var(--fg-dim); display: flex; justify-content: space-between; gap: 0.5rem; margin: 0.15rem 0; }
@@ -198,10 +198,11 @@
       /* minmax(0, 1fr) on the track alone isn't enough: a grid item's default
          min-width is auto (its content's min-content size), so the tech
          tree's fixed-width tier columns would still overflow the .main
-         column and drag the whole page into horizontal scroll. min-width: 0
-         lets .main shrink to the track. On wide viewports, overflow stays
-         inside .tt-chain-row (overflow-x: auto); on narrow viewports the
-         media query below stacks tiers so that scroll region is unused. */
+         column and drag the whole page into horizontal scroll.          min-width: 0
+         lets .main shrink to the track. On wide viewports, leftover
+         .tt-chain-row overflow-x is unused (the shop is a wrapping grid);
+         on narrow viewports the media query below still stacks any leftover
+         tier chrome. */
       .main { min-width: 0; }
       .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
       /* Issue #45: quiet build identity under the game. Dim so it never
@@ -226,7 +227,7 @@
           gap: 0.25rem;
         }
         .tt-tier { min-width: 0; width: 100%; }
-        .tt-standalone-grid .tt-node, .tt-tier .tt-node { width: 100%; max-width: 100%; }
+        .tt-shop-grid .tt-node, .tt-standalone-grid .tt-node, .tt-tier .tt-node { width: 100%; max-width: 100%; }
         .tt-arrow {
           transform: rotate(90deg);
           padding: 0.15rem 0;

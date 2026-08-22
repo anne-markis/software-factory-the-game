@@ -80,9 +80,9 @@ export interface Synergy {
   gamble?: GambleOutcome[]; // replaces base gamble when owned
 }
 
-// Which shop section a decision renders under (see renderDecisions in
-// src/ui/render.ts). Required on every decision so the shop can always
-// group visible entries -- there is no "uncategorized" fallback.
+// Player-facing category tag on a shop card (see CATEGORY_LABELS in
+// src/ui/render.ts). Required on every decision; the shop is a flat list
+// and does not group by this field.
 export type DecisionCategory = "ship-faster" | "earn-income" | "tame-debt" | "prevent-trouble" | "change-structure";
 
 // Additive stock-flow modifier owned by a decision (ADR 0006 / issue #85).

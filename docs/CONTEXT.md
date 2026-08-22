@@ -37,7 +37,8 @@ that era’s bundle; it does not hardcode era names (ADR 0001).
 First-class **tracks** (solo / startup / megacorp / darkfactory as peer
 endgames) and the **tag curriculum** (`DecisionDef.tags`,
 `ChallengeDef.condition.hasTag`) are retired (ADR 0002). Do not teach
-authors to label cards with track affinity. Shop grouping uses `category`.
+authors to label cards with track affinity. `category` is required authored
+metadata; the player shop is a flat list and does not group by it.
 Challenge eligibility uses stocks, human headcount, and live decision
 ownership.
 
