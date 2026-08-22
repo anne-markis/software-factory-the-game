@@ -25,6 +25,12 @@ describe("top stats layout (issue #113)", () => {
   it("keeps tabular nums so ticking values do not reflow the loops below", () => {
     expect(html).toMatch(/\.stat-value\s*\{[^}]*font-variant-numeric:\s*tabular-nums/);
   });
+
+  // A large ch min-width + text-align:right left an empty gap after the
+  // Budget label while the amount clipped away inside the cell.
+  it("does not pin Budget to a wide ch min-width that wastes the cell", () => {
+    expect(html).not.toMatch(/\.stat-value\.v-budget\s*\{[^}]*min-width:\s*\d+ch/);
+  });
 });
 
 describe("chrome row layout", () => {

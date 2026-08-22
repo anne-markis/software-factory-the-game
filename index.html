@@ -61,10 +61,12 @@
       .stat-value.v-day { min-width: 5ch; } /* Day: up to ~5 digits */
       .stat-value.v-flow { min-width: 9ch; } /* Backlog/Shipped: e.g. "12,345.6" */
       .stat-value.v-count { min-width: 6ch; } /* In Progress/Done */
-      /* Budget may append "(N days)" runway; keep a wider slot so the
-         suffix does not reflow neighboring stats when crossing comma or
-         day-count boundaries. */
-      .stat-value.v-budget { min-width: 32ch; } /* Budget: e.g. "$5,000,020 (250,001 days)" */
+      /* Budget may append "(N days)" runway. No ch min-width: a wide
+         right-aligned slot wasted space after the label and clipped the
+         amount (issue #113). Left-align so a tight column keeps the $
+         visible and clips the runway suffix first. The 4-column grid
+         keeps neighbors stable. */
+      .stat-value.v-budget { min-width: 0; text-align: left; }
       /* Issue #37: low runway telegraph — reuse the existing danger red
          so payroll cliff reads before Events fill with removals. */
       .stat-value.budget-low { color: var(--accent-red); font-weight: bold; }
