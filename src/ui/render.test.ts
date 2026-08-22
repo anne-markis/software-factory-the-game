@@ -283,7 +283,7 @@ describe("renderDecisions", () => {
     expect(html).toContain('data-buy="agent"');
   });
 
-  it("renders a flat wrapping shop: no chain headers, Standalone, or arrows", () => {
+  it("renders a flat shop: no chain headers, Standalone, or arrows", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     expect(html).toContain('<div class="tt-node-name">Add test suite</div>');

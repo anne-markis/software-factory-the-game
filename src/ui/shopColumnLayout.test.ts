@@ -1,0 +1,66 @@
+import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Issue #139: Alter the system is one vertical column at every viewport.
+// Flatten (#138) left a wrapping grid plus leftover chain-row CSS
+// (190px nodes, overflow-x: auto, 900px stack/rotate). Stacking is now
+// the only layout — desktop and mobile share it. Slimming is a later
+// change; this file pins list-flow only.
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const indexHtmlPath = path.resolve(__dirname, "../../index.html");
+const html = fs.readFileSync(indexHtmlPath, "utf-8");
+
+function extractMaxWidth900Block(css: string): string | null {
+  const startMatch = css.match(/@media\s*\(max-width:\s*900px\)\s*\{/);
+  if (!startMatch || startMatch.index === undefined) return null;
+  let i = startMatch.index + startMatch[0].length;
+  let depth = 1;
+  const start = i;
+  while (i < css.length && depth > 0) {
+    if (css[i] === "{") depth++;
+    else if (css[i] === "}") depth--;
+    i++;
+  }
+  return css.slice(start, i - 1);
+}
+
+describe("shop single-column layout (issue #139)", () => {
+  it("stacks .tt-shop-grid as a column with no wrap", () => {
+    expect(html).toMatch(/\.tt-shop-grid\s*\{[^}]*display:\s*flex/);
+    expect(html).toMatch(/\.tt-shop-grid\s*\{[^}]*flex-direction:\s*column/);
+    expect(html).not.toMatch(/\.tt-shop-grid[^{]*\{[^}]*flex-wrap:\s*wrap/);
+  });
+
+  it("makes shop cards fill the Alter the system column", () => {
+    expect(html).toMatch(/\.tt-shop-grid\s+\.tt-node\s*\{[^}]*width:\s*100%/);
+    // No leftover 190px node/tier widths from the old chain columns.
+    expect(html).not.toMatch(/\.tt-(?:shop-grid|standalone-grid|tier)[^{]*\{[^}]*190px/);
+    expect(html).not.toMatch(/min-width:\s*190px/);
+  });
+
+  it("does not create a horizontal scroll region inside the shop", () => {
+    expect(html).not.toMatch(/\.tt-chain-row\s*\{[^}]*overflow-x:\s*auto/);
+    expect(html).not.toMatch(/\.tt-shop-grid\s*\{[^}]*overflow-x:\s*auto/);
+  });
+
+  it("retires leftover chain/grid chrome", () => {
+    expect(html).not.toMatch(/\.tt-chain-row\b/);
+    expect(html).not.toMatch(/\.tt-standalone-grid\b/);
+    expect(html).not.toMatch(/\.tt-tier\b/);
+    expect(html).not.toMatch(/\.tt-arrow\b/);
+  });
+
+  it("keeps the 900px page-layout query without tech-tree row/arrow special-cases", () => {
+    const mobile = extractMaxWidth900Block(html);
+    expect(mobile).not.toBeNull();
+    expect(mobile!).toMatch(/\.cols\s*\{[^}]*grid-template-columns:\s*1fr/);
+    expect(mobile!).not.toMatch(/\.tt-chain-row/);
+    expect(mobile!).not.toMatch(/\.tt-tier/);
+    expect(mobile!).not.toMatch(/\.tt-arrow/);
+    expect(mobile!).not.toMatch(/\.tt-shop-grid/);
+    expect(mobile!).not.toMatch(/rotate\(90deg\)/);
+  });
+});
