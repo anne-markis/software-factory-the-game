@@ -96,13 +96,14 @@ function escapeRegExp(s: string): string {
 // non-nested rule blocks, which is all this stylesheet has.
 //
 // A plain first-match regex isn't enough: this stylesheet has compound
-// selector lists like ".tt-standalone-grid .tt-node, .tt-tier .tt-node"
-// which also contain the literal substring ".tt-node {" (at the end of the
-// combinator chain) and would be matched before the real standalone
-// ".tt-node { border: ... }" rule. So each candidate match is checked for
-// isolation: walking backward from it (skipping whitespace) must land on a
-// rule/block boundary ("{", "}", ";", or the "<style>" tag's ">"), not on
-// another selector token that means this is part of a compound selector.
+// selector lists like ".tt-shop-grid .tt-node" which also contain the
+// literal substring ".tt-node {" (at the end of the combinator chain)
+// and would be matched before the real standalone ".tt-node { border:
+// ... }" rule. So each candidate match is checked for isolation:
+// walking backward from it (skipping whitespace) must land on a
+// rule/block boundary ("{", "}", ";", or the "<style>" tag's ">"), not
+// on another selector token that means this is part of a compound
+// selector.
 function isIsolatedSelectorMatch(cssScope: string, matchIndex: number): boolean {
   let j = matchIndex - 1;
   while (j >= 0 && /\s/.test(cssScope[j])) j--;
@@ -222,7 +223,6 @@ const PAIRS: Pair[] = [
   { label: "body text on body background", fg: bodyFg, bg, category: "text" },
   { label: ".stat-label on body background", fg: tokenColor(".stat-label", "color"), bg, category: "text" },
   { label: ".panel h4 small on body background", fg: tokenColor(".panel h4 small", "color"), bg, category: "text" },
-  { label: ".tt-arrow on body background", fg: tokenColor(".tt-arrow", "color"), bg, category: "text" },
   { label: ".tt-node-meta on body background", fg: tokenColor(".tt-node-meta", "color"), bg, category: "text" },
   { label: ".tt-gamble on body background", fg: tokenColor(".tt-gamble", "color"), bg, category: "text" },
   { label: ".tt-node-desc on body background", fg: tokenColor(".tt-node-desc", "color"), bg, category: "text" },

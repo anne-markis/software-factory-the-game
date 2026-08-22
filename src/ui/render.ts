@@ -161,8 +161,8 @@ export function renderDecisionNode(a: Availability, ownedCount: number): string 
   </div>`;
 }
 
-// Flat wrapping shop. `renderNode` is a live card (string tests /
-// renderDecisions) or an empty data-section shell (scaffold).
+// Single-column shop (issue #139). `renderNode` is a live card (string
+// tests / renderDecisions) or an empty data-section shell (scaffold).
 // `hideDefIds` drops owned unique (#110) and missing-requires (#121) cards.
 // Order is still the tree-walk (chains by root, then standalone) so this
 // flatten does not silently reorder; JSON array order is a later change.

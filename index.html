@@ -141,18 +141,13 @@
       /* Fixed ~7-line Events history; older lines scroll inside the box so
          Owned below it stays visible in the right rail (issue #114). */
       .log { line-height: 1.35; max-height: calc(1.35em * 7); overflow-y: auto; font-size: 0.85rem; }
-      /* Alter the system. Visible cards wrap in one grid (no chain headers,
-         Standalone heading, or arrows). Node card sizes are fixed by their
-         own static content (cost, category, description are constant per
-         node once rendered) so ticking numbers elsewhere on the page never
-         reflow this panel -- see the R14 layout-stability guarantee
-         referenced in render.ts. */
-      .tt-chain { margin-bottom: 1rem; }
-      .tt-chain-row { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; }
-      .tt-tier { display: flex; flex-direction: column; gap: 0.5rem; min-width: 190px; }
-      .tt-arrow { flex: none; align-self: center; padding: 0 0.5rem; color: var(--fg-dim); font-size: 1.1rem; }
-      .tt-shop-grid, .tt-standalone-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-      .tt-shop-grid .tt-node, .tt-standalone-grid .tt-node, .tt-tier .tt-node { width: 190px; }
+      /* Alter the system (issue #139). One vertical column of full-width
+         cards at every viewport — no wrap, no leftover 190px chain
+         columns, no overflow-x scroll. Card internals stay fat; slimming
+         is a later change. Node copy is static per card so ticking
+         numbers elsewhere never reflow this panel (R14). */
+      .tt-shop-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+      .tt-shop-grid .tt-node { width: 100%; }
       .tt-node { border: 1px solid var(--border); padding: 0.4rem 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
       .tt-node-name { font-weight: bold; }
       .tt-node-meta { color: var(--fg-dim); display: flex; justify-content: space-between; gap: 0.5rem; margin: 0.15rem 0; }
@@ -196,13 +191,9 @@
       .loops { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
       .cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; align-items: start; }
       /* minmax(0, 1fr) on the track alone isn't enough: a grid item's default
-         min-width is auto (its content's min-content size), so the tech
-         tree's fixed-width tier columns would still overflow the .main
-         column and drag the whole page into horizontal scroll.          min-width: 0
-         lets .main shrink to the track. On wide viewports, leftover
-         .tt-chain-row overflow-x is unused (the shop is a wrapping grid);
-         on narrow viewports the media query below still stacks any leftover
-         tier chrome. */
+         min-width is auto (its content's min-content size). min-width: 0
+         lets .main shrink to the track so a wide shop card cannot drag
+         the page into horizontal scroll. */
       .main { min-width: 0; }
       .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
       /* Issue #45: quiet build identity under the game. Dim so it never
@@ -210,29 +201,13 @@
          bug reports. */
       .build-stamp { margin-top: 1.5rem; font-size: 0.8rem; color: var(--fg-dim); }
       .build-stamp a { color: inherit; }
-      /* Issue #18: below the single-column layout threshold, stack tech-tree
-         tiers top-to-bottom instead of one overflow-x region per chain.
-         Fixed 190px card widths + 2–4 tiers overflow ~390px phones and force
-         a sideways swipe per row while the page itself scrolls vertically.
-         Full-width cards keep names/descriptions readable without truncation
-         at the viewport edge; rotate the existing → glyph to read as ↓. */
+      /* Page layout only. Shop cards already stack at every width
+         (issue #139); this query no longer special-cases tech-tree
+         rows or arrows. */
       @media (max-width: 900px) {
         .loops { grid-template-columns: 1fr; }
         .cols { grid-template-columns: 1fr; }
         .side { position: static; order: -1; max-height: none; }
-        .tt-chain-row {
-          flex-direction: column;
-          align-items: stretch;
-          overflow-x: visible;
-          gap: 0.25rem;
-        }
-        .tt-tier { min-width: 0; width: 100%; }
-        .tt-shop-grid .tt-node, .tt-standalone-grid .tt-node, .tt-tier .tt-node { width: 100%; max-width: 100%; }
-        .tt-arrow {
-          transform: rotate(90deg);
-          padding: 0.15rem 0;
-          align-self: center;
-        }
       }
     </style>
   </head>
