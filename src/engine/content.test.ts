@@ -557,11 +557,11 @@ describe("parseChallenges", () => {
     expect(scope.condition).toEqual({ minCompletedProjects: 1 });
     expect(scope.effects).toEqual([{ type: "addToStock", stock: "backlog", value: 75 }]);
 
-    // model-deprecation: 0.4%/day, 80-day cooldown, gated on owning anything
+    // model-deprecation: 0.1%/day, 365-day cooldown, gated on owning anything
     // from the agent ladder (the cut swarm/self-learning ids are gone).
     const deprecation = defs.find((c) => c.id === "model-deprecation")!;
-    expect(deprecation.probabilityPerDay).toBe(0.004);
-    expect(deprecation.cooldownDays).toBe(80);
+    expect(deprecation.probabilityPerDay).toBe(0.001);
+    expect(deprecation.cooldownDays).toBe(365);
     expect(deprecation.condition).toEqual({
       requiresAnyDecision: ["agent", "agent-harness", "agent-orchestration"],
     });

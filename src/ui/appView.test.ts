@@ -323,13 +323,11 @@ describe("appView node identity across renders (issue #6)", () => {
     const content = makeContent(parseChallenges(challengesJson));
     const restored = initialState(content);
     restored.day = 5;
+    restored.paused = false;
     restored.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: 8 }];
     const h = mount({ content, restored });
-    // Soft-pause hides the countdown (issue #115); Start so the timer can tick.
-    expect(h.engine.getState().paused).toBe(true);
-    expect(h.root.textContent).not.toContain("days left");
-    h.engine.resume();
-    h.view.render();
+    // Issue #118: choice appear does not pause — countdown is live while running.
+    expect(h.engine.getState().paused).toBe(false);
     const before = h.root.querySelector<HTMLElement>('[data-choice="model-deprecation"][data-option="pay-migration"]')!;
     expect(before).toBeTruthy();
     expect(h.root.textContent).toContain("(3 days left)");
@@ -590,7 +588,7 @@ describe("appView click delegation on the stable root", () => {
   });
 });
 
-describe("appView Decision-needed interrupt (issue #40)", () => {
+describe("appView Decision-needed interrupt (issue #40 / #118)", () => {
   it("places the choices interrupt in glanceable chrome above the loops", () => {
     const content = makeContent(parseChallenges(challengesJson));
     const restored = initialState(content);
@@ -608,23 +606,23 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     expect(h.root.querySelector('[data-choice="model-deprecation"]')).not.toBeNull();
   });
 
-  it("soft-pauses when a Decision-needed challenge newly appears", () => {
+  // Issue #118: challenges must never stop gameplay — sticky UI + Events only.
+  it("does not pause when a Decision-needed challenge newly appears", () => {
     const content = makeContent(parseChallenges(challengesJson));
     const h = mount({ content });
     expect(h.engine.getState().paused).toBe(false);
-    const actionsBefore = h.actions;
     h.state.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: h.state.day + 3 }];
     h.view.render();
-    expect(h.engine.getState().paused).toBe(true);
-    expect(pauseButton(h.root).textContent).toBe("Start");
-    expect(h.actions).toBe(actionsBefore + 1);
+    expect(h.engine.getState().paused).toBe(false);
+    expect(pauseButton(h.root).textContent).toBe("Pause");
   });
 
-  // Issue #115: soft-pause freezes expiresDay, so the interrupt must not show a fake timer.
-  it("hides days-left on a soft-paused Decision-needed interrupt", () => {
+  // Issue #115: hide days-left while manually paused (expiresDay is frozen).
+  it("hides days-left on a manually paused Decision-needed interrupt", () => {
     const content = makeContent(parseChallenges(challengesJson));
     const restored = initialState(content);
     restored.day = 5;
+    restored.paused = true;
     restored.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: 8 }];
     const h = mount({ content, restored });
     expect(h.engine.getState().paused).toBe(true);
@@ -633,19 +631,15 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     expect(h.root.textContent).not.toContain("days to respond");
   });
 
-  it("does not re-pause every render while the same choice stays pending", () => {
+  it("shows days-left while the clock is running with a pending choice", () => {
     const content = makeContent(parseChallenges(challengesJson));
     const restored = initialState(content);
     restored.day = 5;
+    restored.paused = false;
     restored.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: 8 }];
     const h = mount({ content, restored });
-    // Mount soft-paused once; Start and re-render must stay running.
-    expect(h.engine.getState().paused).toBe(true);
-    h.engine.resume();
-    h.view.render();
     expect(h.engine.getState().paused).toBe(false);
-    h.view.render();
-    expect(h.engine.getState().paused).toBe(false);
+    expect(h.root.textContent).toContain("days left");
   });
 
   it("resolves a choice from the interrupt surface and clears it", () => {
@@ -660,71 +654,16 @@ describe("appView Decision-needed interrupt (issue #40)", () => {
     expect(h.root.querySelector("[data-choice]")).toBeNull();
   });
 
-  // Issue #89: the soft pause is a courtesy, not a mode. Answering the
-  // interrupt hands time back on the same click, so the day counter does not
-  // sit frozen behind a Start the player has no reason to look for.
-  it("resumes the day clock when a choice option is picked", () => {
+  it("does not change pause state when a choice option is picked", () => {
     const content = makeContent(parseChallenges(challengesJson));
     const restored = initialState(content);
     restored.day = 5;
+    restored.paused = false;
     restored.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: 8 }];
     const h = mount({ content, restored });
-    expect(h.engine.getState().paused).toBe(true); // soft-paused on appear
     h.root.querySelector<HTMLElement>('[data-choice="model-deprecation"][data-option="pay-migration"]')!.click();
     expect(h.engine.getState().paused).toBe(false);
     expect(pauseButton(h.root).textContent).toBe("Pause");
-  });
-
-  // ...but only once the last interrupt is answered. Resuming while another
-  // choice is still on screen would tick down its expiry while the player is
-  // reading it. The lean Studio pool ships one choice challenge (issue #89), so
-  // the second one here is a fixture.
-  it("stays paused while another interrupt is still waiting, and resumes on the last one", () => {
-    const second: GameContent["challenges"][number] = {
-      id: "vendor-audit",
-      name: "Vendor audit",
-      description: "Your vendor wants a compliance review.",
-      probabilityPerDay: 0,
-      effects: [],
-      choice: {
-        expiresInDays: 4,
-        defaultOptionId: "cooperate",
-        options: [{ id: "cooperate", label: "Cooperate", effects: [] }],
-      },
-    };
-    const content = makeContent([...parseChallenges(challengesJson), second]);
-    const restored = initialState(content);
-    restored.day = 5;
-    restored.pendingChoices = [
-      { challengeId: "model-deprecation", expiresDay: 8 },
-      { challengeId: "vendor-audit", expiresDay: 9 },
-    ];
-    const h = mount({ content, restored });
-    expect(h.engine.getState().paused).toBe(true);
-
-    h.root.querySelector<HTMLElement>('[data-choice="model-deprecation"][data-option="pay-migration"]')!.click();
-    expect(h.engine.getState().pendingChoices).toHaveLength(1);
-    expect(h.engine.getState().paused).toBe(true);
-    expect(pauseButton(h.root).textContent).toBe("Start");
-
-    h.root.querySelector<HTMLElement>('[data-choice="vendor-audit"][data-option="cooperate"]')!.click();
-    expect(h.engine.getState().pendingChoices).toHaveLength(0);
-    expect(h.engine.getState().paused).toBe(false);
-  });
-
-  it("keeps soft-pausing for the next interrupt after an auto-resume", () => {
-    const content = makeContent(parseChallenges(challengesJson));
-    const h = mount({ content });
-    h.state.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: h.state.day + 4 }];
-    h.view.render();
-    expect(h.engine.getState().paused).toBe(true);
-    h.root.querySelector<HTMLElement>('[data-choice="model-deprecation"][data-option="pay-migration"]')!.click();
-    expect(h.engine.getState().paused).toBe(false);
-    // A later re-fire of the same challenge is a new interrupt, not a resolved
-    // one: the auto-resume must not have made the soft pause a one-shot.
-    h.state.pendingChoices = [{ challengeId: "model-deprecation", expiresDay: h.state.day + 4 }];
-    h.view.render();
-    expect(h.engine.getState().paused).toBe(true);
   });
 });
 

@@ -12,11 +12,11 @@
     "id": "model-deprecation",
     "name": "Model deprecation",
     "description": "Your AI vendor is sunsetting the model your agents run on. Pay to migrate now, or limp along on a degraded fallback.",
-    "probabilityPerDay": 0.004,
+    "probabilityPerDay": 0.001,
     "condition": {
       "requiresAnyDecision": ["agent", "agent-harness", "agent-orchestration"]
     },
-    "cooldownDays": 80,
+    "cooldownDays": 365,
     "effects": [],
     "choice": {
       "expiresInDays": 4,

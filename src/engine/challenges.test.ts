@@ -432,14 +432,14 @@ describe("model-deprecation (requiresAnyDecision)", () => {
     const c = content();
     const s = initialState(c);
     applyDecision(s, c, "agent", createRng(1));
-    // Day 15: hashRoll(SEED, 15, "model-deprecation") = 0.0036, still under the
-    // retuned 0.4%/day probability (issue #89 dropped it from 1.5%).
-    s.day = 15;
-    expect(hashRoll(SEED, 15, "model-deprecation")).toBeLessThan(0.004);
+    // Day 216: hashRoll(SEED, 216, "model-deprecation") ≈ 0.0007, under the
+    // retuned 0.1%/day probability (issue #118).
+    s.day = 216;
+    expect(hashRoll(SEED, 216, "model-deprecation")).toBeLessThan(0.001);
     rollChallenges(s, noRng, c);
     const pending = s.pendingChoices.find((pc) => pc.challengeId === "model-deprecation");
     expect(pending).toBeDefined();
-    expect(pending!.expiresDay).toBe(19); // day 15 + expiresInDays 4
+    expect(pending!.expiresDay).toBe(220); // day 216 + expiresInDays 4
   });
 
   it("stays eligible when agent is removed while the later agent-harness card remains owned", () => {
@@ -452,7 +452,7 @@ describe("model-deprecation (requiresAnyDecision)", () => {
     expect(s.decisions.map((d) => d.defId)).toContain("agent-harness");
     expect(s.decisions.map((d) => d.defId)).not.toContain("agent");
 
-    s.day = 15;
+    s.day = 216;
     rollChallenges(s, noRng, c);
     expect(s.pendingChoices.some((pc) => pc.challengeId === "model-deprecation")).toBe(true);
   });

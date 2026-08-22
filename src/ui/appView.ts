@@ -172,9 +172,6 @@ export function mountAppView(deps: AppViewDeps): AppView {
   const flash = createFlashController();
   let gambleReveal: GambleReveal | null = null;
   let gambleRevealTimer: ReturnType<typeof setTimeout> | null = null;
-  // Issue #40: track which pending challenges we have already soft-paused for
-  // so Start is not immediately re-paused every frame while the choice waits.
-  let softPausedChoiceIds = new Set<string>();
 
   function clearGambleRevealTimer(): void {
     if (gambleRevealTimer !== null) {
@@ -199,22 +196,9 @@ export function mountAppView(deps: AppViewDeps): AppView {
     // pending choices changes; the countdown beside them is patched per day.
     choices.setScaffold(renderChoicesScaffold(pending, content.challenges));
     for (const pc of pending) {
-      // Issue #115: hide the timer copy while paused (soft-pause or manual).
+      // Issue #115: hide the timer copy while manually paused.
       choices.patch(choiceCountdownSection(pc.challengeId), renderChoiceCountdown(pc, day, paused));
     }
-  }
-
-  /** Soft-pause once when a Decision-needed challenge newly appears (issue #40). */
-  function softPauseForNewChoices(pending: readonly PendingChoice[]): boolean {
-    const ids = pending.map((pc) => pc.challengeId);
-    const appeared = ids.filter((id) => !softPausedChoiceIds.has(id));
-    // Drop ids that are no longer pending so a later re-fire can soft-pause again.
-    softPausedChoiceIds = new Set(ids);
-    if (appeared.length === 0) return false;
-    if (engine.getState().paused) return false;
-    engine.pause();
-    deps.onAction();
-    return true;
   }
 
   function renderDecisionsRegion(): void {
@@ -231,8 +215,6 @@ export function mountAppView(deps: AppViewDeps): AppView {
   }
 
   function render(): void {
-    // Soft-pause before painting so time controls show Start on the same frame.
-    softPauseForNewChoices([...engine.getState().pendingChoices]);
     content = engine.getContent();
     const state = engine.getState();
     const avail = engine.availableDecisions();
@@ -317,19 +299,6 @@ export function mountAppView(deps: AppViewDeps): AppView {
       engine.removeDecision(target.dataset.remove);
     } else if (target.dataset.choice && target.dataset.option) {
       engine.resolveChoice(target.dataset.choice, target.dataset.option);
-      // Issue #89: answering the interrupt hands time back. The soft pause
-      // (issue #40) is what stopped the clock when the choice appeared, so
-      // without this the day counter stays frozen after the player has already
-      // dealt with it -- and the pause reads as a bug rather than a courtesy.
-      // Resuming here also matches the speed buttons' resume-on-click.
-      //
-      // Only once the last interrupt is answered: with two choices queued,
-      // resuming on the first would start the clock ticking down the second
-      // one's expiry while the player is still reading it, which is the
-      // opposite of what the soft pause is for.
-      if (engine.getState().paused && engine.getState().pendingChoices.length === 0) {
-        engine.resume();
-      }
     } else if (target.dataset.project) {
       try {
         engine.startProject(target.dataset.project);
