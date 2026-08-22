@@ -437,28 +437,96 @@ describe("renderProjectsStatus", () => {
 });
 
 describe("renderProjectOffers", () => {
-  it("shows offers with gating reasons and the efficiency preview", () => {
-    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+  function studioProjects(): GameContent {
+    return {
+      start: parseStartConfig(startJson),
+      decisions: [],
+      challenges: [],
+      projects: parseProjects(projectsJson),
+    };
+  }
+
+  // Issue #123: unmet prerequisite rows are omitted; startable gigs stay.
+  it("shows startable offers and the efficiency preview, omitting Ship v1–v5 gates", () => {
+    const c = studioProjects();
     const e = new Engine(c);
     const html = renderProjectOffers(e.availableProjects(), e.getState());
     expect(html).toContain('data-project="gig-bugfix" ');
-    expect(html).toContain('data-project="ship-v1" disabled');
-    expect(html).toContain("requires completed Launch beta");
+    expect(html).toContain("Weekend bugfix");
     expect(html).toContain("drops efficiency to 85%");
+    for (const id of ["ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
+      expect(html).not.toContain(`data-project="${id}"`);
+    }
+    expect(html).not.toContain("requires completed Launch beta");
+    expect(html).not.toContain("requires completed Ship v1");
   });
 
-  it("shows the version-ladder gate reason until Launch beta has completed", () => {
-    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+  it("reveals Ship v1 after Launch beta completes, keeping v2–v5 hidden (issue #123)", () => {
+    const c = studioProjects();
     const s = initialState(c);
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
     const html = renderProjectOffers(projectAvailability(s, c), s);
-    expect(html).toContain('data-project="ship-v1" disabled');
-    expect(html).toContain("requires completed Launch beta");
-    expect(html).toContain('data-project="ship-v2" disabled');
-    expect(html).toContain("requires completed Ship v1");
+    expect(html).toContain('data-project="ship-v1"');
+    expect(html).not.toContain("requires completed Launch beta");
+    for (const id of ["ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
+      expect(html).not.toContain(`data-project="${id}"`);
+    }
+    expect(html).not.toContain("requires completed Ship v1");
+  });
+
+  it("hides a reputation-gated offer below the floor and shows it at the floor (issue #123)", () => {
+    const fixture = {
+      id: "rep-gated",
+      name: "Reputation Gated Contract",
+      sizePoints: 1000,
+      upfrontCost: 0,
+      payoutPerPoint: 10,
+      completionBonus: 500,
+      reputationReward: 3,
+      requiresReputation: 5,
+    };
+    const c: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: [],
+      challenges: [],
+      projects: [fixture],
+    };
+    const s = initialState(c);
+    expect(s.stocks.reputation).toBe(0);
+    expect(renderProjectOffers(projectAvailability(s, c), s)).not.toContain('data-project="rep-gated"');
+    expect(renderProjectOffers(projectAvailability(s, c), s)).not.toContain("requires 5 reputation");
+    s.stocks.reputation = 5;
+    const unlocked = renderProjectOffers(projectAvailability(s, c), s);
+    expect(unlocked).toContain('data-project="rep-gated"');
+    expect(unlocked).not.toContain("requires 5 reputation");
+  });
+
+  it("keeps cannot-afford offers visible and disabled (issue #123)", () => {
+    const fixture = {
+      id: "pricey",
+      name: "Pricey Contract",
+      sizePoints: 100,
+      upfrontCost: 50_000,
+      payoutPerPoint: 10,
+      completionBonus: 100,
+      reputationReward: 1,
+    };
+    const c: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: [],
+      challenges: [],
+      projects: [fixture],
+    };
+    const s = initialState(c);
+    s.stocks.budget = 0;
+    const html = renderProjectOffers(projectAvailability(s, c), s);
+    expect(html).toContain('data-project="pricey" disabled');
+    expect(html).toContain("cannot afford");
   });
 
   it("does not change as in-flight work progresses, so the Start buttons survive the tick", () => {
-    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const c = studioProjects();
     const s = initialState(c);
     const before = renderProjectOffers(projectAvailability(s, c), s);
     s.projects[0].remaining -= 25;

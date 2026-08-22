@@ -289,12 +289,26 @@ export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: 
   return `<h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}`;
 }
 
+// Offers that stay in the Projects list when not startable. Prerequisite
+// gates (requiresCompleted / requiresCompletedId / requiresReputation) are
+// omitted (issue #123). "already completed" stays until #122 hides finished
+// uniques; "already in flight" stays (out of scope for both).
+function isVisibleProjectOffer(o: ProjectAvailability): boolean {
+  if (o.startable) return true;
+  return (
+    o.reason === "cannot afford" ||
+    o.reason === "already in flight" ||
+    o.reason === "already completed"
+  );
+}
+
 export function renderProjectOffers(offers: ProjectAvailability[], state: Readonly<GameState>): string {
   // Efficiency preview for starting one more project. Depends on how many are
   // already in flight, not on per-tick progress, so this string is stable
   // between starts and completions -- which is what lets the memo hold.
   const taxNext = Math.pow(state.contextSwitchFactor, state.projects.length);
   return offers
+    .filter(isVisibleProjectOffer)
     .map((o) => {
       const disabled = o.startable ? "" : "disabled";
       const reason = o.reason ? ` (${esc(o.reason)})` : "";
