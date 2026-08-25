@@ -17,8 +17,7 @@ describe("netRecurringBurnPerDay", () => {
 
   it("adds owned perDay upkeep and subtracts incomePerDay", () => {
     const c = content();
-    // The lean Studio shop has no flat-incomePerDay card left (issue #89 cut
-    // support-retainer; subscription scales with users instead), so the flat
+    // The lean Studio shop has no flat-incomePerDay card left (cut support-retainer; subscription scales with users instead), so the flat
     // branch is pinned against a fixture card bolted onto shipped content.
     c.decisions = [
       ...c.decisions,
@@ -41,7 +40,7 @@ describe("netRecurringBurnPerDay", () => {
     expect(netRecurringBurnPerDay(e.getState(), c)).toBe(19);
   });
 
-  // Studio spine (issue #88): subscription income scales with the users stock,
+  // Studio spine: subscription income scales with the users stock,
   // so runway reflects the user-driven recurring revenue at the current level.
   it("subtracts subscription incomeFromStock at the current users level", () => {
     const c = content();

@@ -5,7 +5,8 @@ the source of truth; if this guide disagrees with the loader, the code
 wins. Glossary: [`CONTEXT.md`](CONTEXT.md). Architecture:
 [`ARCHITECTURE.md`](ARCHITECTURE.md). Locked decisions: [ADRs
 0001–0009](adr/README.md). Shipped cards and floor numbers live in
-`content/`.
+`content/`. Do not cite GitHub issues in JSON, comments, or this guide;
+the files here are complete without ticket history.
 
 ## Where content lives
 

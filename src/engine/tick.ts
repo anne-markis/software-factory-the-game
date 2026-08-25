@@ -38,7 +38,7 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
     if (p.remaining <= 1e-9) {
       state.stocks.budget += p.completionBonus;
       state.stocks.reputation += p.reputationReward;
-      // Studio spine (issue #88): pay any stock grants recorded on this
+      // Studio spine: pay any stock grants recorded on this
       // project (the Launch beta grants +30 users, which is what flips the
       // users economy on). Clamp at 0 like every other stock write. Log a
       // users grant when non-zero so the beta launch reads clearly.
@@ -57,7 +57,7 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
   }
 }
 
-// Always-on stock flows (Studio organic acquisition, issue #88). Runs after
+// Always-on stock flows (Studio organic acquisition). Runs after
 // shipping, once per configured flow whose condition holds. Deterministic (no
 // rng): grossGain (flat acquirePerDay plus acquirePerStock.perUnit per point
 // of another stock, e.g. reputation) minus churn (stocks[stock] *
@@ -98,8 +98,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
   // burn would throw the burn deficit away entirely once budget had been
   // driven to 0, turning any owned income decision into a permanent,
   // risk-free income stream instead of being consumed by ongoing burn
-  // (issue #13). This still credits ALL income (from the same snapshot the
-  // payroll loop below uses) before charging ANY payroll, so income from a
+  // This still credits ALL income (from the same snapshot the payroll loop below uses) before charging ANY payroll, so income from a
   // later-purchased decision can still rescue an earlier decision's payroll;
   // otherwise outcomes would depend arbitrarily on purchase order.
   let totalIncome = 0;
@@ -108,7 +107,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
     if (def.incomePerDay) totalIncome += def.incomePerDay;
-    // Studio monetization (issue #85): income scaled by a stock's level,
+    // Studio monetization: income scaled by a stock's level,
     // stacked on top of any flat incomePerDay. The subscription card reads
     // users; useless at 0 users (contributes exactly 0).
     if (def.incomeFromStock) {
@@ -119,7 +118,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     // Probabilistic income burst scaled by a stock's level (one-time-product
     // card). Rolled per owned decision each day; on a hit it credits
     // stocks[stock] * perUnit. Netted into the same income step as everything
-    // else so it is consumed by burn like flat income (issue #13 semantics).
+    // else so it is consumed by burn like flat income (semantics).
     if (def.burstFromStock) {
       if (rng.next() < def.burstFromStock.probabilityPerDay) {
         const burst = state.stocks[def.burstFromStock.stock] * def.burstFromStock.perUnit;
@@ -199,7 +198,7 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
 
   const debtGain = shippedFlow * effectiveDebtMultiplier(state);
   state.stocks.techDebt += debtGain;
-  // Studio spine (issue #88): tech debt always accrues, but it only refills
+  // Studio spine: tech debt always accrues, but it only refills
   // the backlog once the first project (the Launch beta) has completed. This
   // gives the beta a clean 300-point burndown -- no debt-driven backlog growth
   // fighting the very first delivery -- while preserving the reinforcing

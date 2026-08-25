@@ -2,7 +2,6 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-19
-- **Issues:** follow-on to [#90](https://github.com/anne-markis/software-factory-the-game/issues/90) / ADR 0001
 
 ## Context
 

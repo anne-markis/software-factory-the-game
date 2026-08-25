@@ -47,8 +47,8 @@ Options considered:
 Recorded 2026-07-18 (Release 11). continuousDeployActive checks base
 effects only, deliberately: activation is a definition-level property,
 not a purchase-time numeric swap. No shipped content hits this;
-documented in code and the authoring guide. Updated 2026-08-04 (issue
-#14): the applied synergy provider IS now recorded on the instance as
+documented in code and the authoring guide. Updated 2026-08-04:
+the applied synergy provider IS now recorded on the instance as
 DecisionInstance.appliedSynergyIfOwned, so the second option below is
 available should this ever need to change -- continuousDeployActive
 still ignores it on purpose.

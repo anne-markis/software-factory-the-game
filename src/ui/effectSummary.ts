@@ -154,8 +154,7 @@ function summarizeGamble(gamble: GambleOutcome[]): string {
 
 // Pure: same DecisionDef always yields the same string. Returns "" only for a
 // decision with no effects, no gamble, and no income of any kind; no shipped
-// Studio card is in that shape today (issue #89 gave the agent multipliers
-// real effects of their own), and a card that lands there renders no derived
+// Studio card is in that shape today (gave the agent multipliers real effects of their own), and a card that lands there renders no derived
 // line at all rather than a blank one.
 export function summarizeDecisionEffects(def: DecisionDef): string {
   const parts: string[] = [];
@@ -164,7 +163,7 @@ export function summarizeDecisionEffects(def: DecisionDef): string {
     if (s) parts.push(s);
   }
   if (def.incomePerDay) parts.push(`+$${fmtNum(def.incomePerDay)}/day`);
-  // Studio monetization (issue #88): telegraph that these cards scale with a
+  // Studio monetization: telegraph that these cards scale with a
   // stock (users), so a card at 0 users reads as "0 income for now" rather
   // than a blank line. incomeFromStock is steady per-day; burstFromStock is
   // occasional, so it is labelled as a chance-based burst.

@@ -22,25 +22,25 @@ import type { GameContent } from "./types";
 describe("parseStartConfig", () => {
   it("parses the shipped start.json", () => {
     const cfg = parseStartConfig(startJson);
-    // Studio spine (issue #88): backlog matches the 300-point Launch beta so
+    // Studio spine: backlog matches the 300-point Launch beta so
     // the beta gets a clean burndown; users start at 0.
     expect(cfg.stocks.backlog).toBe(300);
     expect(cfg.stocks.users).toBe(0);
     expect(cfg.stocks.budget).toBe(10000);
     expect(cfg.debtMultiplier).toBe(0.5);
-    // Pull headroom (issue #89): pull runs at 2/day against finish and deploy at
+    // Pull headroom: pull runs at 2/day against finish and deploy at
     // 1/day, so the slowest stage is downstream of pull and the shop's
     // finish-side agent ladder has somewhere to put its capacity. With pull also
     // at 1 the ladder bought nothing: throughput is the min across the stages,
     // so a tripled finish rate could not move a single extra point.
     expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, deploy: 1 });
-    // Studio lean challenge pool (issue #89): a 35-day global gap, down from
+    // Studio lean challenge pool: a 35-day global gap, down from
     // 50 -- the pool shrank to three events, so a shorter gap keeps them from
     // disappearing entirely without crowding a short era.
     expect(cfg.challengeSpacingDays).toBe(35);
   });
 
-  it("parses the Studio spine start config: launch-beta project, stock drags and flows (issue #88)", () => {
+  it("parses the Studio spine start config: launch-beta project, stock drags and flows", () => {
     const cfg = parseStartConfig(startJson);
     // Launch beta: $0-ish client fiction (payoutPerPoint 0), a cash bonus, and
     // a users grant on completion -- the only thing that lifts users off 0.
@@ -180,7 +180,7 @@ describe("parseStartConfig", () => {
 });
 
 describe("parseDecisions", () => {
-  it("parses the shipped decisions.json: the lean Studio shop (issue #89)", () => {
+  it("parses the shipped decisions.json: the lean Studio shop", () => {
     const defs = parseDecisions(decisionsJson);
     const ids = defs.map((d) => d.id);
     // The Studio spine's whole shop, in content order. Everything else (the
@@ -215,7 +215,7 @@ describe("parseDecisions", () => {
     expect(defs.find((d) => d.id === "ci-cd")!.category).toBe("change-structure");
   });
 
-  it("pins the Studio agent ladder: stackable agents, unique harness, count-gated orchestration (issue #89)", () => {
+  it("pins the Studio agent ladder: stackable agents, unique harness, count-gated orchestration", () => {
     const defs = parseDecisions(decisionsJson);
 
     // agent is the only repeatable card in the shop: no `unique`, and its
@@ -262,7 +262,7 @@ describe("parseDecisions", () => {
     expect(orch.cost.perDay!).toBeGreaterThan(harness.cost.perDay!);
   });
 
-  it("pins the Studio monetization and delivery cards (issues #88, #89)", () => {
+  it("pins the Studio monetization and delivery cards", () => {
     const defs = parseDecisions(decisionsJson);
     // Release 11: ci-cd's permanent deploy speedup (modifyRate mul 1.1) is
     // replaced by the structural continuousDeploy marker; the temporary
@@ -317,7 +317,7 @@ describe("parseDecisions", () => {
     ]);
   });
 
-  it("parses a requiresCounts gate and rejects malformed ones (issue #89)", () => {
+  it("parses a requiresCounts gate and rejects malformed ones", () => {
     const base = { name: "x", description: "x", category: "ship-faster" as const, cost: {}, effects: [], removable: true };
     const defs = parseDecisions([
       { ...base, id: "seat" },
@@ -505,7 +505,7 @@ describe("parseDecisions", () => {
 });
 
 describe("parseChallenges", () => {
-  it("ships exactly the three lean Studio challenges (issue #89)", () => {
+  it("ships exactly the three lean Studio challenges", () => {
     const defs = parseChallenges(challengesJson);
     // The lean pool: one delivery event, one agent finish drag, one agent cash
     // hit. Hire drama (sickness, key-dev-poached), org/calendar pain
@@ -513,7 +513,7 @@ describe("parseChallenges", () => {
     // open-source-windfall), ddos, security-breach, api-price-hike,
     // laptop-dies and prod-incident all leave Studio (§5.4).
     expect(defs.map((c) => c.id)).toEqual(["scope-creep", "model-deprecation", "runaway-agent-loop"]);
-    // Issue #118: shipped challenges are immediate (no Decision-needed / expiry).
+    // shipped challenges are immediate (no Decision-needed / expiry).
     expect(defs.every((c) => c.choice === undefined)).toBe(true);
     // Nothing left in the pool rolls per human dev or scales on tech debt, so
     // the hire is a pure budget/delivery tradeoff and debt bites only through
@@ -547,7 +547,7 @@ describe("parseChallenges", () => {
     expect(megacorp.challenges.find((c) => c.id === "prod-incident")).toEqual(incident);
   });
 
-  it("pins the playtest-locked lean challenge rates (issue #86 knobs)", () => {
+  it("pins the playtest-locked lean challenge rates (knobs)", () => {
     const defs = parseChallenges(challengesJson);
 
     // scope-creep: 1%/day, 45-day cooldown, and held back until the Launch
@@ -560,7 +560,7 @@ describe("parseChallenges", () => {
     expect(scope.effects).toEqual([{ type: "addToStock", stock: "backlog", value: 75 }]);
 
     // model-deprecation: 0.1%/day, 365-day cooldown, gated on owning anything
-    // from the agent ladder; immediate finish drag (no choice / expiry, #118).
+    // from the agent ladder; immediate finish drag (no choice / expiry).
     const deprecation = defs.find((c) => c.id === "model-deprecation")!;
     expect(deprecation.probabilityPerDay).toBe(0.001);
     expect(deprecation.cooldownDays).toBe(365);
@@ -585,7 +585,7 @@ describe("parseChallenges", () => {
     expect(runaway.description).toContain("$60");
   });
 
-  it("parses a minCompletedProjects condition and rejects a fractional one (issue #89)", () => {
+  it("parses a minCompletedProjects condition and rejects a fractional one", () => {
     const defs = parseChallenges([
       {
         id: "x", name: "x", description: "x", probabilityPerDay: 0.1, effects: [],
@@ -918,7 +918,7 @@ describe("validateContentGraph", () => {
   });
 });
 
-describe("per-era content layout (issue #90)", () => {
+describe("per-era content layout", () => {
   it("parses eras.json with Studio start and later-era entry shells", () => {
     const eras = parseErasConfig(erasJson);
     expect(eras.startingEraId).toBe("studio");

@@ -1,4 +1,4 @@
-// Static imports of the shipped per-era JSON layout (issue #90 / ADR 0001).
+// Static imports of the shipped per-era JSON layout (ADR 0001).
 // Later era files are deltas; loadActiveContent inherits prior rungs (ADR 0008).
 // Vite and Vitest need eager module paths; the map is validated against
 // eras.json so a missing shell fails at load rather than silently falling

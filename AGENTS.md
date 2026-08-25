@@ -27,3 +27,5 @@ non-obvious bits:
   `purity.test.ts`); saves persist to browser `localStorage` only.
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Later era
   folders are deltas (ADR 0008); do not copy Studio JSON forward.
+- Code is the context: do not cite GitHub issues in comments, tests, or
+  docs. Use the current working tree; old tickets are not part of context.

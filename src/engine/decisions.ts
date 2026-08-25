@@ -30,7 +30,7 @@ export function availability(state: GameState, content: GameContent): Availabili
       return { def, purchasable: false, code: "already-owned" as const, reason: "already owned" };
     }
     const missing = (def.requires ?? []).filter((r) => !owned(state, r)).map((id) => defName(content, id));
-    // Count gates (issue #89) are the same kind of lock as `requires`, so they
+    // Count gates are the same kind of lock as `requires`, so they
     // share its reason line -- the count is spelled out because "requires Add
     // coding agent" would read as satisfied to a player who owns one.
     for (const gate of def.requiresCounts ?? []) {

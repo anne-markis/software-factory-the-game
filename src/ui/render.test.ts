@@ -51,7 +51,7 @@ describe("esc", () => {
 });
 
 describe("renderStats", () => {
-  // Issue #8: top bar keeps Day / Backlog / Budget / Points/Day only.
+  // top bar keeps Day / Backlog / Budget / Points/Day only.
   it("renders the top-bar stats as label + width-classed value spans (no flow/quality stocks)", () => {
     const c = content();
     const e = new Engine(c);
@@ -70,7 +70,7 @@ describe("renderStats", () => {
     expect(html).not.toContain("Reputation");
   });
 
-  // Issue #37: Budget must telegraph runway before payroll wipe.
+  // Budget must telegraph runway before payroll wipe.
   it("appends runway days to Budget when recurring burn is positive", () => {
     const c = content();
     const e = new Engine(c);
@@ -115,7 +115,7 @@ describe("renderStats", () => {
 });
 
 describe("renderDeliveryStats", () => {
-  // Issue #8: flow/quality stocks under the Delivery loop, same slot pattern.
+  // flow/quality stocks under the Delivery loop, same slot pattern.
   it("renders In Progress, Done, Shipped, Tech Debt, and Reputation with fixed-width value slots", () => {
     const c = content();
     const e = new Engine(c);
@@ -134,7 +134,7 @@ describe("renderDeliveryStats", () => {
 });
 
 describe("renderDecisions", () => {
-  it("hides a prerequisite-locked node (ci-cd on a fresh game) until its requires are met (issue #121)", () => {
+  it("hides a prerequisite-locked node (ci-cd on a fresh game) until its requires are met", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     // ci-cd is omitted entirely — no name, no disabled Buy, no requires reason.
@@ -142,14 +142,14 @@ describe("renderDecisions", () => {
     expect(html).not.toContain("requires Add test suite");
     expect(html).not.toContain("tt-locked");
     expect(html).not.toContain("CI/CD pipeline");
-    // Empty Owned copy lives in the right-rail panel (issue #114), not the shop.
+    // Empty Owned copy lives in the right-rail panel, not the shop.
     expect(html).not.toContain("Nothing yet. You are a solo dev.");
     expect(renderOwnedList([], content())).toContain("Nothing yet. You are a solo dev.");
   });
 
-  // Issue #24 / #110 / #121: scaffold lays out one patchable section per
+  // scaffold lays out one patchable section per
   // shop-visible decision. Owned unique and missing-requires omit their shells.
-  // Issue #114: Owned chrome is no longer part of the shop scaffold.
+  // Owned chrome is no longer part of the shop scaffold.
   it("decisionsPanelScaffold exposes a section shell for every shop-visible decision without Owned", () => {
     const c = content();
     const e = new Engine(c);
@@ -170,13 +170,13 @@ describe("renderDecisions", () => {
     expect(html).not.toContain("data-buy=");
   });
 
-  it("ownedPanelScaffold exposes the Owned list patch target (issue #114)", () => {
+  it("ownedPanelScaffold exposes the Owned list patch target", () => {
     const html = ownedPanelScaffold();
     expect(html).toContain(`<h3>Owned</h3>`);
     expect(html).toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
   });
 
-  it("decisionsPanelScaffold omits shells for owned unique decisions (issue #110)", () => {
+  it("decisionsPanelScaffold omits shells for owned unique decisions", () => {
     const c = content();
     const e = new Engine(c);
     e.applyDecision("test-suite");
@@ -220,8 +220,7 @@ describe("renderDecisions", () => {
     expect(html).toContain(`[${inst.gambleLabel}]`);
   });
 
-  // Issue #15: Owned entries surface cost + derived effects (same helpers as
-  // shop cards) so upkeep trim does not require scrolling Alter the system.
+  // Owned entries surface cost + derived effects (same helpers as shop cards) so upkeep trim does not require scrolling Alter the system.
   it("shows cost and derived effects on each Owned entry", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
@@ -247,7 +246,7 @@ describe("renderDecisions", () => {
     expect(html).toContain("&lt;img");
   });
 
-  it("hides an owned unique decision from the shop while keeping it in Owned (issue #110)", () => {
+  it("hides an owned unique decision from the shop while keeping it in Owned", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
     const shop = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
@@ -266,7 +265,7 @@ describe("renderDecisions", () => {
     expect(shop).toContain('data-buy="basic-dev"');
   });
 
-  it("returns a removable unique card to the shop after Remove (issue #110)", () => {
+  it("returns a removable unique card to the shop after Remove", () => {
     const e = new Engine(content());
     e.applyDecision("subscription");
     const owned = [...e.getState().decisions];
@@ -281,7 +280,7 @@ describe("renderDecisions", () => {
 
   it("shows a repeatable decision's owned count while keeping the Buy button live", () => {
     const e = new Engine(content());
-    // agent is the Studio shop's stackable card (issue #89): buying a second
+    // agent is the Studio shop's stackable card: buying a second
     // copy shows the count without retiring the Buy button.
     e.applyDecision("agent");
     e.applyDecision("agent");
@@ -301,16 +300,16 @@ describe("renderDecisions", () => {
     expect(html).not.toContain("tt-arrow");
     expect(html).not.toContain("&rarr;");
     expect(html).toContain("tt-shop-grid");
-    // Category tags left with the fat card (issue #140).
+    // Category tags left with the fat card.
     expect(html).not.toContain("tt-cat");
     expect(html).not.toContain(">speed<");
     expect(html).not.toContain(">debt<");
   });
 
-  // Issue #141: shop order is the resolved catalog array (decisions.json),
+  // shop order is the resolved catalog array (decisions.json),
   // not the requires-graph tree-walk. Hidden ids leave a hole — they are
   // not pulled forward and not regrouped under a chain header.
-  it("paints fresh Studio shop in decisions.json order (issue #141)", () => {
+  it("paints fresh Studio shop in decisions.json order", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     // ci-cd / harness / orchestration stay hidden (unmet requires).
@@ -324,7 +323,7 @@ describe("renderDecisions", () => {
     ]);
   });
 
-  it("inserts unlocked CI/CD into its JSON slot after test-suite, not at the end (issue #141)", () => {
+  it("inserts unlocked CI/CD into its JSON slot after test-suite, not at the end", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
@@ -342,7 +341,7 @@ describe("renderDecisions", () => {
     ]);
   });
 
-  it("inserts harness and orchestration after agent once two agents are owned (issue #141)", () => {
+  it("inserts harness and orchestration after agent once two agents are owned", () => {
     const e = new Engine(content());
     e.applyDecision("agent");
     e.applyDecision("agent");
@@ -359,7 +358,7 @@ describe("renderDecisions", () => {
     ]);
   });
 
-  it("keeps scaffold shells in the same catalog order as live Buy buttons (issue #141)", () => {
+  it("keeps scaffold shells in the same catalog order as live Buy buttons", () => {
     const c = content();
     const e = new Engine(c);
     const avail = e.availableDecisions();
@@ -385,7 +384,7 @@ describe("renderDecisions", () => {
 
   it("renders a card's authored description in full, with no first-sentence truncation, plus a derived effects line", () => {
     const e = new Engine(content());
-    // Unlock orchestration so its long description is in the shop (issue #121).
+    // Unlock orchestration so its long description is in the shop.
     e.applyDecision("agent");
     e.applyDecision("agent");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
@@ -398,7 +397,7 @@ describe("renderDecisions", () => {
     expect(html).toContain(`<div class="tt-node-desc">${orchestrationDesc}</div>`);
     expect(html).not.toContain("...");
     // Description + derived effects live in the disclosure, not on the row
-    // (issue #140). test-suite's derived line is a known, stable case.
+    // test-suite's derived line is a known, stable case.
     expect(html).toContain('<div class="tt-effects">all rates x0.5 for 5d, debt x0.5</div>');
     const orch = html.indexOf("A planner splits work");
     const orchDetails = html.lastIndexOf('<div class="tt-node-details">', orch);
@@ -409,7 +408,7 @@ describe("renderDecisions", () => {
   it("flags gamble decisions with a chip and omits it from deterministic ones", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // basic-dev is the lean shop's only gamble hire (issue #89 cut senior-dev),
+    // basic-dev is the lean shop's only gamble hire (cut senior-dev),
     // so exactly one card carries the chip. A deterministic decision
     // (test-suite) does not.
     const gambleChips = html.match(/class="tt-gamble"/g) ?? [];
@@ -420,9 +419,9 @@ describe("renderDecisions", () => {
     expect(html).not.toContain("(gamble)");
   });
 
-  // Issue #140: slim shop row — Buy | name, gamble, owned, cost. Description
+  // slim shop row — Buy | name, gamble, owned, cost. Description
   // and derived effects move into a disclosure; category tags leave the chrome.
-  it("renders a slim row with left Buy, name, optional gamble/owned, and cost (issue #140)", () => {
+  it("renders a slim row with left Buy, name, optional gamble/owned, and cost", () => {
     const e = new Engine(content());
     const avail = e.availableDecisions();
     const testSuite = avail.find((a) => a.def.id === "test-suite")!;
@@ -449,7 +448,7 @@ describe("renderDecisions", () => {
     expect(html).not.toContain(`title="${testSuite.def.description}"`);
   });
 
-  it("keeps the gamble chip on the row, not only in the disclosure (issue #140)", () => {
+  it("keeps the gamble chip on the row, not only in the disclosure", () => {
     const e = new Engine(content());
     const basic = e.availableDecisions().find((a) => a.def.id === "basic-dev")!;
     const { chrome, details } = nodeParts(renderDecisionNode(basic, 0));
@@ -459,7 +458,7 @@ describe("renderDecisions", () => {
     expect(details).not.toContain("tt-gamble");
   });
 
-  it("shows repeatable owned xN on the row with a live Buy (issue #140)", () => {
+  it("shows repeatable owned xN on the row with a live Buy", () => {
     const e = new Engine(content());
     e.applyDecision("agent");
     e.applyDecision("agent");
@@ -471,7 +470,7 @@ describe("renderDecisions", () => {
     expect(html).not.toContain("disabled");
   });
 
-  it("keeps cannot-afford reason on the row without opening details (issue #140)", () => {
+  it("keeps cannot-afford reason on the row without opening details", () => {
     const c = content();
     c.start.stocks.budget = 0;
     const e = new Engine(c);
@@ -502,7 +501,7 @@ describe("renderLog", () => {
 
 describe("renderChoicesScaffold", () => {
   // Engine still supports choice challenges for fixtures / later eras; shipped
-  // Studio content is immediate-only (issue #118).
+  // Studio content is immediate-only.
   const fixtureChoice = parseChallenges([
     {
       id: "fixture-choice",
@@ -529,10 +528,10 @@ describe("renderChoicesScaffold", () => {
     const html = renderChoicesScaffold([{ challengeId: "fixture-choice", expiresDay: 8 }], fixtureChoice);
     expect(html).toContain('data-choice="fixture-choice" data-option="pay"');
     expect(html).toContain("Decision needed");
-    // Issue #40: interrupt affordance uses class chrome + alertdialog role.
+    // interrupt affordance uses class chrome + alertdialog role.
     expect(html).toContain('class="panel choice-interrupt"');
     expect(html).toContain('role="alert"');
-    // The countdown is patched separately (issue #6) so the day ticking down
+    // The countdown is patched separately so the day ticking down
     // does not rebuild the option buttons: the scaffold carries only its slot.
     expect(html).toContain(`<em data-section="${choiceCountdownSection("fixture-choice")}"></em>`);
     expect(html).not.toContain("days left");
@@ -550,7 +549,7 @@ describe("renderChoiceCountdown", () => {
     expect(renderChoiceCountdown({ challengeId: "fixture-choice", expiresDay: 8 }, 6)).toBe("(2 days left)");
   });
 
-  // Issue #115: manual pause freezes expiresDay, so a ticking countdown would lie.
+  // manual pause freezes expiresDay, so a ticking countdown would lie.
   it("renders nothing while paused", () => {
     expect(renderChoiceCountdown({ challengeId: "fixture-choice", expiresDay: 8 }, 5, true)).toBe("");
   });
@@ -564,14 +563,14 @@ describe("renderProjectsStatus", () => {
     expect(html).toContain("Projects (efficiency 100%)");
     expect(html).toContain("Launch beta: 300 points left");
     // Fresh engine has not ticked yet — realized Points/Day is 0 → stalled
-    // (issue #17 / FR-3.2).
+    // (FR-3.2).
     expect(html).toContain("· stalled");
     // The Start buttons live in the sibling offers section, not here, so the
-    // per-tick progress update cannot tear them down (issue #6).
+    // per-tick progress update cannot tear them down.
     expect(html).not.toContain('data-project="');
   });
 
-  // Issue #17 / P0.1 FR-3: derived ~days from remaining ÷ Points/Day.
+  // P0.1 FR-3: derived ~days from remaining ÷ Points/Day.
   it("shows ~N days at current rate when Points/Day is positive", () => {
     const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
     const s = initialState(c);
@@ -604,7 +603,7 @@ describe("renderProjectOffers", () => {
     };
   }
 
-  // Issue #123: unmet prerequisite rows are omitted; startable gigs stay.
+  // unmet prerequisite rows are omitted; startable gigs stay.
   it("shows startable offers and the efficiency preview, omitting Ship v1–v5 gates", () => {
     const c = studioProjects();
     const e = new Engine(c);
@@ -619,7 +618,7 @@ describe("renderProjectOffers", () => {
     expect(html).not.toContain("requires completed Ship v1");
   });
 
-  it("reveals Ship v1 after Launch beta completes, keeping v2–v5 hidden (issue #123)", () => {
+  it("reveals Ship v1 after Launch beta completes, keeping v2–v5 hidden", () => {
     const c = studioProjects();
     const s = initialState(c);
     s.completedProjects = 1;
@@ -633,7 +632,7 @@ describe("renderProjectOffers", () => {
     expect(html).not.toContain("requires completed Ship v1");
   });
 
-  it("hides a reputation-gated offer below the floor and shows it at the floor (issue #123)", () => {
+  it("hides a reputation-gated offer below the floor and shows it at the floor", () => {
     const fixture = {
       id: "rep-gated",
       name: "Reputation Gated Contract",
@@ -660,7 +659,7 @@ describe("renderProjectOffers", () => {
     expect(unlocked).not.toContain("requires 5 reputation");
   });
 
-  it("keeps cannot-afford offers visible and disabled (issue #123)", () => {
+  it("keeps cannot-afford offers visible and disabled", () => {
     const fixture = {
       id: "pricey",
       name: "Pricey Contract",
@@ -683,8 +682,8 @@ describe("renderProjectOffers", () => {
     expect(html).toContain("cannot afford");
   });
 
-  // Issue #122: finished unique versions leave the offers list; repeatables stay.
-  it("hides an already-completed unique offer while keeping repeatable gigs (issue #122)", () => {
+  // finished unique versions leave the offers list; repeatables stay.
+  it("hides an already-completed unique offer while keeping repeatable gigs", () => {
     const c = studioProjects();
     const s = initialState(c);
     s.completedProjects = 2;
@@ -739,7 +738,7 @@ describe("renderTimeControls", () => {
     expect(html).toContain('class="tc-btn tc-active" data-speed="5"');
   });
 
-  it("flips the pause button's label to Start when paused (issue #98)", () => {
+  it("flips the pause button's label to Start when paused", () => {
     const html = renderTimeControls(true, 1, [1, 2, 5]);
     expect(html).toContain(">Start<");
     expect(html).not.toContain(">Pause<");
@@ -755,7 +754,7 @@ describe("renderTimeControls", () => {
   });
 });
 
-describe("renderBuildStamp (issue #45)", () => {
+describe("renderBuildStamp", () => {
   it("renders version, deployed time, and a repo link", () => {
     const html = renderBuildStamp({
       version: "v2026.08.05-12",

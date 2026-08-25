@@ -2,7 +2,6 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-12
-- **Issues:** [#85](https://github.com/anne-markis/software-factory-the-game/issues/85) (schema lock), [#88](https://github.com/anne-markis/software-factory-the-game/issues/88) (Studio spine)
 
 ## Context
 
@@ -48,7 +47,7 @@ Keep `minTechDebt` until a content rewrite needs generic floors. A nested
 **not** in the shipped schema (inert fields were dropped rather than
 left as a footgun). Use `minTechDebt` for debt floors.
 
-### Studio spine values (issue #86 / #88, not sacred forever)
+### Studio spine values (not sacred forever)
 
 Users stay 0 until Launch beta completes, then +30 users and +$800.
 Organic flow after `minCompletedProjects: 1`: `1.5 + reputation × 0.1`

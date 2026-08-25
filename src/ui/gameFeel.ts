@@ -1,4 +1,4 @@
-// Issue #67 / P0.1 US-6: perceptible change (stat flash) and hire-gamble reveal.
+// P0.1 US-6: perceptible change (stat flash) and hire-gamble reveal.
 // Presentation-only — no engine/state changes. Flashes update .stat-value nodes
 // in place so a CSS animation can finish without being torn down by the
 // string-memo patch path (which rebuilds markup whenever a number moves).
@@ -26,7 +26,7 @@ export const STAT_FLASH_MS = 480;
 export const STAT_FLASH_COOLDOWN_MS = 600;
 /**
  * Auto-dismiss for the gamble reveal. Long enough to notice while scrolled
- * into Alter the system; sticky CSS keeps it in view (issue #67 UX).
+ * into Alter the system; sticky CSS keeps it in view (UX).
  */
 export const GAMBLE_REVEAL_MS = 5000;
 
@@ -71,7 +71,7 @@ export function deliveryStatViews(state: Readonly<GameState>): StatView[] {
     { stat: "shipped", label: "Shipped", value: fmt(state.stocks.shipped), widthClass: "v-flow", material: true },
     { stat: "techDebt", label: "Tech Debt", value: fmt(state.stocks.techDebt), widthClass: "v-debt", material: true },
     { stat: "reputation", label: "Reputation", value: fmt(state.stocks.reputation), widthClass: "v-rep", material: true },
-    // Studio spine (issue #88): the users stock sits after Reputation. Stays
+    // Studio spine: the users stock sits after Reputation. Stays
     // 0 until the Launch beta completes, then drives monetization.
     { stat: "users", label: "Users", value: fmt(state.stocks.users), widthClass: "v-users", material: true },
   ];

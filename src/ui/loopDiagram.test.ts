@@ -30,7 +30,7 @@ describe("loopDiagramSvg", () => {
     expect(svg).toContain("<svg");
     for (const label of ["Ready", "In Progress", "Done", "Shipped"]) expect(svg).toContain(label);
     expect(svg).toContain("300"); // backlog value (Studio start backlog 300)
-    // Issue #9: before any tick has run, no flow has actually happened yet on
+    // before any tick has run, no flow has actually happened yet on
     // any stage, even though every stage's base capacity is 1.0/day. The
     // arrows must show the realized (zero) flow, not the uncapped rate.
     expect(svg).not.toContain("1.0/day");
@@ -39,7 +39,7 @@ describe("loopDiagramSvg", () => {
     expect(svg.match(/<line /g)).toHaveLength(3); // pull, finish, deploy
   });
 
-  it("issue #9: on a fresh game's first tick, shows each arrow's realized flow, not its raw capacity", () => {
+  it("on a fresh game's first tick, shows each arrow's realized flow, not its raw capacity", () => {
     const content = emptyContent();
     const state = initialState(content);
     // First tick: the backlog is plentiful so pull saturates its 2.0/day
@@ -69,9 +69,8 @@ describe("loopDiagramSvg", () => {
     expect(svg.match(/<line /g)).toHaveLength(2); // pull, finish only
   });
 
-  // Issue #19 / FR-2.1: Delivery loop needs terse teaching copy (steady vs
-  // growing boxes). Voice-matched to the Progress panel footer.
-  describe("issue #19: Delivery loop teaching caption", () => {
+  // FR-2.1: Delivery loop needs terse teaching copy (steady vs growing boxes). Voice-matched to the Progress panel footer.
+  describe("Delivery loop teaching caption", () => {
     it("includes the steady-vs-growing caption on a fresh four-box Delivery loop", () => {
       const content = emptyContent();
       const svg = loopDiagramSvg(initialState(content), content);
@@ -79,7 +78,7 @@ describe("loopDiagramSvg", () => {
       expect(DELIVERY_LOOP_CAPTION).toMatch(/steady/i);
       expect(DELIVERY_LOOP_CAPTION).toMatch(/growing/i);
       expect(DELIVERY_LOOP_CAPTION).toMatch(/bottleneck/i);
-      // Caption text itself must set fill=currentColor (issue #10).
+      // Caption text itself must set fill=currentColor.
       expect(svg).toMatch(
         new RegExp(`<text[^>]*fill="currentColor"[^>]*>${DELIVERY_LOOP_CAPTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
       );
@@ -104,7 +103,7 @@ describe("loopDiagramSvg", () => {
     });
   });
 
-  // Issue #10 follow-up: <rect>/<line>/<path> shapes use stroke="currentColor"
+  // follow-up: <rect>/<line>/<path> shapes use stroke="currentColor"
   // and correctly inherit dark-mode text color, but SVG's fill defaults to
   // black independent of the surrounding CSS cascade -- a <text> element
   // without an explicit fill renders unreadable black-on-black in dark mode
@@ -113,7 +112,7 @@ describe("loopDiagramSvg", () => {
   // stylesheet, which darkMode.test.ts already covers and which never sees
   // this dynamically-built markup at all) so a future <text> element added
   // without fill="currentColor" fails immediately instead of shipping invisible.
-  it("issue #10: every <text> element sets fill=currentColor so it adapts to dark mode", () => {
+  it("every <text> element sets fill=currentColor so it adapts to dark mode", () => {
     const content = fullDecisionsContent();
     const state = initialState(content);
     const svgs = [loopDiagramSvg(state, content)];
@@ -129,10 +128,10 @@ describe("loopDiagramSvg", () => {
     }
   });
 
-  // Issue #64: binding-stage bottleneck cue. Thresholds are BINDING_INFLOW_RATIO
+  // binding-stage bottleneck cue. Thresholds are BINDING_INFLOW_RATIO
   // (inflow capacity ≥ 1.5× outflow) and BINDING_SUSTAINED_DAYS (stock ≥ 3 days
   // of outflow capacity). Fixture mirrors tick.test.ts's deploy-bottleneck case.
-  describe("issue #64: binding-stage bottleneck cue", () => {
+  describe("binding-stage bottleneck cue", () => {
     function injectStrongDev(state: GameState): void {
       state.decisions.push({ instanceId: "inst-dev", defId: "basic-dev" });
       state.modifiers.push(

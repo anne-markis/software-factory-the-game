@@ -37,8 +37,7 @@ describe("rollChallenges", () => {
   it("fires a challenge on a day whose hashed roll lands under its probability", () => {
     const c = content();
     const s = initialState(c);
-    // RE-PINNED for the lean Studio pool (issue #89: scope-creep 1%/day, gated
-    // on a completed project instead of minDay). Day 86 is the pinned day on
+    // RE-PINNED for the lean Studio pool (scope-creep 1%/day, gated on a completed project instead of minDay). Day 86 is the pinned day on
     // which, among this player's eligible challenges, only scope-creep rolls
     // under its probability: hashRoll(SEED, 86, "scope-creep") = 0.0089 < 0.01,
     // while model-deprecation (0.09) and runaway-agent-loop (0.82) are both
@@ -53,7 +52,7 @@ describe("rollChallenges", () => {
     expect(s.log.some((l) => l.message.includes("Scope creep"))).toBe(true);
   });
 
-  it("respects minCompletedProjects: scope-creep stays quiet until the first project ships (issue #89)", () => {
+  it("respects minCompletedProjects: scope-creep stays quiet until the first project ships", () => {
     const c = content();
     const s = initialState(c);
     // Same pinned firing day as above, but nothing has shipped yet.
@@ -262,8 +261,7 @@ describe("rollChallenges", () => {
     expect(s.modifiers.some((m) => m.target === "finish" && m.op === "mul" && m.value === 0.7)).toBe(true);
   });
 
-  // The shipped Studio pool has no removeHuman challenge (hire drama left with
-  // issue #89's lean pool), so the effect's engine wiring is pinned against a
+  // The shipped Studio pool has no removeHuman challenge (hire drama left with lean pool), so the effect's engine wiring is pinned against a
   // fixture rather than content. It stays supported for later eras.
   function poachChallenge() {
     return parseChallenges([
@@ -354,8 +352,7 @@ describe("rollChallenges", () => {
   });
 
   it("perHumanDev challenges roll each human dev independently: same day, one instance sick and the other not", () => {
-    // Fixture: the lean Studio pool ships no perHumanDev challenge (sickness
-    // left with the hire drama, issue #89), but the per-instance roll keying is
+    // Fixture: the lean Studio pool ships no perHumanDev challenge (sickness left with the hire drama), but the per-instance roll keying is
     // engine behavior later eras rely on. The fixture keeps the "sickness" id so
     // the pinned rolls below are the same ones this test has always used.
     const challenges = parseChallenges([
@@ -467,7 +464,7 @@ describe("model-deprecation (requiresAnyDecision)", () => {
     const s = initialState(c);
     applyDecision(s, c, "agent", createRng(1));
     // Day 216: hashRoll(SEED, 216, "model-deprecation") ≈ 0.0007, under the
-    // retuned 0.1%/day probability (issue #118).
+    // retuned 0.1%/day probability.
     s.day = 216;
     expect(hashRoll(SEED, 216, "model-deprecation")).toBeLessThan(0.001);
     rollChallenges(s, noRng, c);

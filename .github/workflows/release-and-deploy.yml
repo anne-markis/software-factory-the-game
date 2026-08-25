@@ -39,7 +39,7 @@ jobs:
       - name: Run tests
         run: npm run test
 
-      # Compute CalVer identity before build so the in-game stamp (issue #45)
+      # Compute CalVer identity before build so the in-game stamp
       # carries the same tag the release step creates below.
       - name: Compute release identity
         id: release

@@ -2,7 +2,6 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-12
-- **Issues:** [#90](https://github.com/anne-markis/software-factory-the-game/issues/90), plan §2.1
 
 ## Context
 

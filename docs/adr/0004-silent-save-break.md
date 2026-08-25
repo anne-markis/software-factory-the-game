@@ -2,7 +2,6 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-12
-- **Issues:** [#88](https://github.com/anne-markis/software-factory-the-game/issues/88)
 
 ## Context
 
@@ -20,7 +19,7 @@ no migration, no warning banner.
 
 Shipped value as of the Studio project redo (tiny gigs + unique v1–v5;
 old contract ladder moved to later eras) is `SAVE_VERSION = 4`
-(v3 was the lean Studio shop, issue #89; v2 was the users / Launch beta spine).
+(v3 was the lean Studio shop; v2 was the users / Launch beta spine).
 
 ## Consequences
 

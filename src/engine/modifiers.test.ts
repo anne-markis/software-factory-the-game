@@ -59,7 +59,7 @@ describe("debtDragMultiplier", () => {
   });
 });
 
-// Studio spine (issue #88): the users support drag. Mirrors debtDrag but keyed
+// Studio spine: the users support drag. Mirrors debtDrag but keyed
 // on a stock and pointed at a rate (or "all"). Uses clean fixture constants
 // rather than the shipped tuning so the arithmetic is exact.
 describe("stockDragMultiplier", () => {

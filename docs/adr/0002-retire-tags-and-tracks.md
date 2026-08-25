@@ -2,7 +2,6 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-12
-- **Issues:** [#87](https://github.com/anne-markis/software-factory-the-game/issues/87) (S-1)
 
 ## Context
 
@@ -36,6 +35,6 @@ track X” player copy).
 Agent-line challenges gate on owned agent-ladder ids via
 `requiresAnyDecision`. Hire-drama / org-calendar challenges that used
 `hasTag: "human"` either use `minHumanDevs` or leave Studio. Authoring
-docs must not instruct authors to use track tags (S-2 / issue #92).
+docs must not instruct authors to use track tags (S-2).
 The player shop no longer groups by `category`; do not invent a
 replacement grouping layer. The field stays required on the schema.

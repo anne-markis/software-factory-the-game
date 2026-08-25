@@ -3,11 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Issue #10: index.html never declares `color-scheme` or explicit
+// index.html never declares `color-scheme` or explicit
 // foreground/background colors, so under prefers-color-scheme: dark the
 // browser's forced-dark heuristic inverts the default canvas + default text
 // pairing (body has no authored color/background) while every *authored*
-// hex value in the stylesheet (#666, #999, #a60, #c00, #444, #fdd, ...)
+// hex value in the stylesheet (#666, #a60, #c00, #fdd, ...)
 // stays exactly as written -- because color-scheme's auto-adjustment only
 // ever touches the default canvas/text pairing, never explicit author
 // colors. That mismatch is what collapses contrast to near-invisible.
@@ -234,9 +234,9 @@ const PAIRS: Pair[] = [
     bg,
     category: "text",
   },
-  // Issue #37: low-runway Budget warning reuses --accent-red.
+  // low-runway Budget warning reuses --accent-red.
   { label: ".stat-value.budget-low on body background", fg: tokenColor(".stat-value.budget-low", "color"), bg, category: "text" },
-  // Issue #67: hire/gamble reveal outcome reuses --accent-amber.
+  // hire/gamble reveal outcome reuses --accent-amber.
   { label: ".gamble-reveal-outcome on body background", fg: tokenColor(".gamble-reveal-outcome", "color"), bg, category: "text" },
 ];
 
@@ -255,8 +255,8 @@ PAIRS.push({ label: ".stall text on .stall background", fg: stallFg, bg: stallBg
 
 // Borders are UI components (3:1), not text (4.5:1). .panel's light-mode
 // border (#999 on #fff, ~2.85:1) is a pre-existing, out-of-scope shortfall
-// unrelated to issue #10 (dark mode) -- flagged in the handoff note rather
-// than silently changed, since the ticket is dark-mode-only and light mode
+// unrelated to dark mode -- flagged in the handoff note rather
+// than silently changed, since this check is dark-mode-only and light mode
 // must stay visually unchanged. Only dark mode is gated here.
 const UI_PAIRS: Pair[] = [
   { label: ".panel border on body background", fg: tokenColor(".panel", "border"), bg, category: "ui" },

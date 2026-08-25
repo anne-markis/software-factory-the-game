@@ -47,8 +47,7 @@ describe("decisions", () => {
   });
 
   it("uses the synergy variant when the synergy decision is owned", () => {
-    // Shipped Studio content has no synergies any more (issue #89 replaced the
-    // agent/harness synergy with global multipliers), so the engine's
+    // Shipped Studio content has no synergies any more (replaced the agent/harness synergy with global multipliers), so the engine's
     // purchase-time synergy selection is pinned against a fixture instead.
     const c = content();
     c.decisions = [
@@ -68,13 +67,13 @@ describe("decisions", () => {
     expect(debtMods).toEqual([1.1, 1.2]);
     // The applied variant is recorded on the instance that got it, and only on
     // that one: the first worker predates the provider, so it kept the base
-    // effects (see archetypes.ts's debt mitigation check, issue #14).
+    // effects (see archetypes.ts's debt mitigation check).
     const workers = s.decisions.filter((d) => d.defId === "worker");
     expect(workers.map((d) => d.appliedSynergyIfOwned)).toEqual([undefined, "provider"]);
     expect(s.decisions.find((d) => d.defId === "provider")!.appliedSynergyIfOwned).toBeUndefined();
   });
 
-  it("stacks agents linearly: N copies are worth N times one copy (issue #89)", () => {
+  it("stacks agents linearly: N copies are worth N times one copy", () => {
     const e = new Engine(content());
     const base = effectiveRate(e.getState(), "finish");
     e.applyDecision("agent");
@@ -91,7 +90,7 @@ describe("decisions", () => {
     expect(effectiveRate(s, "deploy")).toBeCloseTo(base);
   });
 
-  it("harness and orchestration multiply every agent, including ones bought before them (issue #89)", () => {
+  it("harness and orchestration multiply every agent, including ones bought before them", () => {
     const e = new Engine(content());
     e.applyDecision("agent");
     e.applyDecision("agent");
@@ -106,7 +105,7 @@ describe("decisions", () => {
     expect(effectiveDebtMultiplier(s)).toBeLessThan(0.5); // below the un-agented base
   });
 
-  it("gates agent-orchestration on owning at least two agents (requiresCounts, issue #89)", () => {
+  it("gates agent-orchestration on owning at least two agents (requiresCounts)", () => {
     const e = new Engine(content());
     // No agents: the reason spells the count out, since "requires Add coding
     // agent" would read as satisfied to a player who owns one.
@@ -175,8 +174,7 @@ describe("decisions", () => {
   });
 
   it("swaps in a synergy's gamble table when its provider is owned", () => {
-    // Fixture-based since Studio content ships no synergies (the eng-manager
-    // odds-tightener left with the org ladder, issue #89). Both engines share
+    // Fixture-based since Studio content ships no synergies (the eng-manager odds-tightener left with the org ladder). Both engines share
     // seed 20260714, whose second gamble roll is 0.8411 (observed): the base
     // table (0.5/0.5) lands in "Bad" and the tightened one (0.9/0.1) in "Good".
     const withProvider = () => {

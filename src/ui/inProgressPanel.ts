@@ -225,8 +225,7 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
   const exitBoxY = loopCy - EXIT_BOX_H / 2;
 
   const shipped = continuousDeployActive(state, content);
-  // Issue #9: show the realized finish flow (what actually moved out of
-  // In Progress this tick, capped by whatever was actually sitting there),
+  // show the realized finish flow (what actually moved out of In Progress this tick, capped by whatever was actually sitting there),
   // not the stage's uncapped capacity (effectiveRate) -- they only agree
   // once the stage is fully saturated every tick. tick.ts already computes
   // and persists this as state.finishFlow, mirroring pointsPerDay.
@@ -244,7 +243,7 @@ export function inProgressPanelSvg(state: Readonly<GameState>, content: GameCont
       <text x="${LOOP_CX}" y="${loopCy - 4}" text-anchor="middle" font-size="14" fill="currentColor">work cycling</text>
       <text x="${LOOP_CX}" y="${loopCy + 12}" text-anchor="middle" font-size="14" fill="currentColor">inside In Progress</text>`;
 
-  // No "= outer loop throughput" caption here (issue #9): even with the
+  // No "= outer loop throughput" caption here: even with the
   // realized finish flow above, that equivalence isn't generally true --
   // finish and deploy are different stages, and finish flow can keep
   // outrunning deploy flow indefinitely (Done piling up) whenever ci-cd

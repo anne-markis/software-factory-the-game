@@ -4,7 +4,7 @@
 // wiring it cannot be tested without -- content loading, localStorage, the
 // interval driver, keyboard, and HMR.
 //
-// Issue #6: this used to be one `root.innerHTML = ...` per render, which the
+// this used to be one `root.innerHTML = ...` per render, which the
 // 100ms driver could fire ~10x/second, destroying and recreating every button.
 // A mousedown/mouseup gesture straddling one of those rebuilds produces no
 // click at all, so Pause/Start, speed, Buy, Start and choice options
@@ -84,11 +84,11 @@ export interface AppView {
 // unlike before -- are not churned by the driver at all. Section containers
 // are empty until the first render patches them.
 //
-  // Issue #67: Delivery loop diagram, delivery-stats, and Progress loop are
+  // Delivery loop diagram, delivery-stats, and Progress loop are
 // separate sections so material stock numbers can update in place (flash)
 // without rebuilding the SVG wrappers every time a digit moves. Gamble reveal
 // is its own ephemeral section between stats and the loops.
-// Issue #40: Choices live in glanceable chrome (not the scrollable side rail)
+// Choices live in glanceable chrome (not the scrollable side rail)
 // so a Decision-needed interrupt stays reachable while shopping at speed.
 const STATS = "stats";
 const DELIVERY_LOOP = "delivery-loop";
@@ -104,13 +104,12 @@ const CHOICES = "choices";
 const LOG = "log";
 
 function pageScaffold(): string {
-  // Issue #7: time controls + Reset sit above the stats bar and loop panels
+  // time controls + Reset sit above the stats bar and loop panels
   // so pause/speed/reset stay reachable without scrolling past the loops.
   // Reset is a static sibling of the patched time-controls so pause/speed
   // flips never rebuild it; CSS pins it to the right of that same row.
   // Eras stay off the title: crossings are silent and the heading is just
-  // the game name. Issue #40: choices interrupt sits with chrome (before
-  // loops) so pending decisions are not buried under Alter the system /
+  // the game name. Choices interrupt sits with chrome (before loops) so pending decisions are not buried under Alter the system /
   // Events scroll.
   return `
     <h1 class="game-title">Software Factory</h1>
@@ -156,7 +155,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
   // so the containers inside keep stable identity too.
   const projects = createRegion(page.section(PROJECTS)!);
   projects.setScaffold(projectsPanelScaffold());
-  // Issue #24: tech-tree Buy buttons each live in their own patched section so
+  // tech-tree Buy buttons each live in their own patched section so
   // one node's affordability flip cannot tear down every other Buy button.
   const decisions = createRegion(page.section(DECISIONS)!);
   decisions.setScaffold(
@@ -196,7 +195,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     // pending choices changes; the countdown beside them is patched per day.
     choices.setScaffold(renderChoicesScaffold(pending, content.challenges));
     for (const pc of pending) {
-      // Issue #115: hide the timer copy while manually paused.
+      // hide the timer copy while manually paused.
       choices.patch(choiceCountdownSection(pc.challengeId), renderChoiceCountdown(pc, day, paused));
     }
   }
@@ -208,7 +207,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
       ownedCounts.set(inst.defId, (ownedCounts.get(inst.defId) ?? 0) + 1);
     }
     for (const a of engine.availableDecisions()) {
-      // Owned unique (#110) and missing-requires (#121) have no shop shell.
+      // Owned unique and missing-requires have no shop shell.
       if (a.code === "already-owned" || a.code === "missing-requires") continue;
       decisions.patch(decisionNodeSection(a.def.id), renderDecisionNode(a, ownedCounts.get(a.def.id) ?? 0));
     }
@@ -219,14 +218,14 @@ export function mountAppView(deps: AppViewDeps): AppView {
     const state = engine.getState();
     const avail = engine.availableDecisions();
     const shopKey = shopScaffoldKey(avail, state.decisions, content);
-    // Rebuild shop shells on era change, owned-unique buy/remove (#110), or
-    // missing-requires unlock (#121). Affordability flips still patch in place.
+    // Rebuild shop shells on era change, owned-unique buy/remove, or
+    // missing-requires unlock. Affordability flips still patch in place.
     if (state.eraId !== lastEraId || shopKey !== lastShopKey) {
       lastEraId = state.eraId;
       lastShopKey = shopKey;
       decisions.setScaffold(decisionsPanelScaffold(content, state.decisions, avail));
     }
-    // Issue #67: sync cockpit + delivery stats in place so .stat-flash can
+    // sync cockpit + delivery stats in place so .stat-flash can
     // finish without the string-memo path tearing the nodes down each tick.
     syncStatRow(page.section(STATS)!, "stats", cockpitStatViews(state, content), flash);
     syncStatRow(page.section(DELIVERY_STATS)!, "delivery-stats", deliveryStatViews(state), flash);
@@ -241,7 +240,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     projects.patch(PROJECTS_OFFERS_SECTION, renderProjectOffers(engine.availableProjects(), state));
     renderChoicesRegion([...state.pendingChoices], state.day, state.paused);
     page.patch(LOG, renderLog(state.log));
-    // Issue #114: Owned sits under Events in `.side`, patched on the page region.
+    // Owned sits under Events in `.side`, patched on the page region.
     page.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
   }
 
@@ -256,7 +255,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
   }
 
   // Event delegation on the root: the listener lives on an element that is
-  // never replaced, and (since issue #6) neither are the buttons underneath it
+  // never replaced, and (since) neither are the buttons underneath it
   // unless their own content changed.
   const listeners = new AbortController();
   root.addEventListener("click", (ev) => {
@@ -273,7 +272,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
         engine.applyDecision(defId);
         render();
         deps.onAction();
-        // Issue #67: gamble purchases get a short on-screen reveal beyond the
+        // gamble purchases get a short on-screen reveal beyond the
         // Events log line (hire outcomes and any similarly rolled decision).
         // Shown after render so the sticky toast is the last paint.
         const state = engine.getState();
@@ -289,15 +288,14 @@ export function mountAppView(deps: AppViewDeps): AppView {
       }
       return;
     } else if (target.closest(".tt-node") && !target.closest(".tt-node-details")) {
-      // Issue #140: first tap on the row chrome (name, not Buy) discloses
+      // first tap on the row chrome (name, not Buy) discloses
       // description + effects. Never purchases. Buy is its own tap target.
       const node = target.closest<HTMLElement>(".tt-node")!;
       const open = node.classList.toggle("tt-open");
       node.querySelector(".tt-node-disclose")?.setAttribute("aria-expanded", open ? "true" : "false");
       return;
     } else if (target.dataset.remove) {
-      // Issue #16 / FR-7.1: Remove is irreversible (modifiers dropped, one-time
-      // cost not refunded). Gate it behind the same native confirm pattern
+      // FR-7.1: Remove is irreversible (modifiers dropped, one-time cost not refunded). Gate it behind the same native confirm pattern
       // Reset already uses so a misclick on a dense Owned list cannot wipe a
       // sunk-cost hire in one gesture.
       if (!confirm("Remove this decision? One-time cost is not refunded.")) {
@@ -314,7 +312,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
       }
     } else if (target.dataset.speed) {
       // Changing speed applies immediately and persists. Selecting a speed
-      // while paused also resumes: after issue #38's start-paused default,
+      // while paused also resumes: after the start-paused default,
       // the bright 1x control was the natural "start the day clock" click
       // and previously did nothing, leaving Day stuck at 0.
       const next = Number(target.dataset.speed) as Speed;

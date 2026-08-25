@@ -3,13 +3,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Issue #113: Budget + runway still painted into Points/Day under
+// Budget + runway still painted into Points/Day under
 // auto-fit/minmax. Pin a fixed 4-column template so each stat stays in
 // its track (no auto-fit / auto-fill / ch-width arms races).
 
 const html = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../index.html"), "utf-8");
 
-describe("top stats layout (issue #113)", () => {
+describe("top stats layout", () => {
   it("uses a fixed 4-column grid so each stat owns one track", () => {
     expect(html).toMatch(/\.stats\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
     expect(html).not.toMatch(/\.stats\s*\{[^}]*auto-fit/);

@@ -3,11 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Issue #139: Alter the system is one vertical column at every viewport.
-// Flatten (#138) left a wrapping grid plus leftover chain-row CSS
+// Alter the system is one vertical column at every viewport.
+// Flatten left a wrapping grid plus leftover chain-row CSS
 // (190px nodes, overflow-x: auto, 900px stack/rotate). Stacking is now
-// the only layout — desktop and mobile share it. Issue #140 slims each
-// row (left Buy column + hover/tap disclosure); this file pins list-flow
+// the only layout — desktop and mobile share it. Each row is slim
+// (left Buy column + hover/tap disclosure); this file pins list-flow
 // and that shared Buy column.
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,7 +28,7 @@ function extractMaxWidth900Block(css: string): string | null {
   return css.slice(start, i - 1);
 }
 
-describe("shop single-column layout (issue #139)", () => {
+describe("shop single-column layout", () => {
   it("stacks .tt-shop-grid as a column with no wrap", () => {
     expect(html).toMatch(/\.tt-shop-grid\s*\{[^}]*display:\s*flex/);
     expect(html).toMatch(/\.tt-shop-grid\s*\{[^}]*flex-direction:\s*column/);
@@ -66,7 +66,7 @@ describe("shop single-column layout (issue #139)", () => {
   });
 });
 
-describe("shop slim row layout (issue #140)", () => {
+describe("shop slim row layout", () => {
   it("puts every Buy in a shared left column", () => {
     expect(html).toMatch(/\.tt-node-row\s*\{[^}]*display:\s*grid/);
     expect(html).toMatch(/\.tt-node-row\s*\{[^}]*grid-template-columns:\s*3\.4rem\s+1fr/);

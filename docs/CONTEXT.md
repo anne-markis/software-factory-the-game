@@ -5,7 +5,8 @@ in `docs/VISION.md`; how the layers fit lives in `docs/ARCHITECTURE.md`;
 schema gotchas live in `docs/CONTENT-AUTHORING.md` (field types are in
 `src/engine/content.ts`; shipped cards are in `content/`). Locked
 architecture decisions are ADRs 0001–0009 under `docs/adr/`. If this glossary
-and the loader disagree, the code in `src/engine/` wins.
+and the loader disagree, the code in `src/engine/` wins. GitHub tickets are
+not authoring context; describe the current system here, not old issues.
 
 ## Scale eras (not tracks)
 

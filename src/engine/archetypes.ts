@@ -14,9 +14,7 @@ import { debtDragMultiplier } from "./modifiers";
 // continuousDeploy.ts).
 
 // A decision "raises the debt multiplier" if a base effect pushes it upward:
-// a mul above 1, or an add above 0 (the stacking agent card, issue #89 --
-// linear stacking made add the natural op, and an additive raiser is every bit
-// as much of a raiser as a multiplicative one). Derived from effects, not a
+// a mul above 1, or an add above 0 (the stacking agent card, -- linear stacking made add the natural op, and an additive raiser is every bit as much of a raiser as a multiplicative one). Derived from effects, not a
 // hardcoded id list, so new content is classified automatically.
 function raisesDebt(content: GameContent, defId: string): boolean {
   const def = content.decisions.find((d) => d.id === defId);
@@ -30,9 +28,7 @@ function raisesDebt(content: GameContent, defId: string): boolean {
 // Where a set of effects leaves the debt multiplier, starting from `base`.
 // Evaluated exactly the way effectiveDebtMultiplier does it -- adds first, then
 // muls -- so an additive debt term counts here the same as it does in the
-// simulation (issue #89: the stacking agent card made add a real op on this
-// target, and the old mul-only product silently ignored it, which would read a
-// +0.1 raiser as debt-neutral). Used to compare a synergy variant against the
+// simulation (the stacking agent card made add a real op on this target, and the old mul-only product silently ignored it, which would read a +0.1 raiser as debt-neutral). Used to compare a synergy variant against the
 // base effects it replaces.
 function debtMulOutcome(base: number, effects: readonly { type: string; op?: string; value?: number }[]): number {
   let value = base;
@@ -75,16 +71,13 @@ function synergyKey(defId: string, ifOwned: string): string {
 
 // Keys for the (decision, synergy provider) pairs whose synergy variant
 // mitigates debt: the variant's debt-multiplier product comes out below the
-// def's base product. No Studio card ships a synergy any more (issue #89
-// replaced the agent/harness synergy with global multipliers), but content can
+// def's base product. No Studio card ships a synergy any more (replaced the agent/harness synergy with global multipliers), but content can
 // still author them, so the classification stays.
 //
 // Structural mitigation like this is only real for an instance that was
 // actually purchased under the synergy -- synergies are selected at purchase
 // time and recorded as DecisionInstance.appliedSynergyIfOwned -- so owning the
-// provider proves nothing on its own (issue #14: when agent-harness carried the
-// mitigating synergy, the very first agent could never have been bought under
-// it, yet owning the harness used to suppress shifting-the-burden).
+// provider proves nothing on its own (when agent-harness carried the mitigating synergy, the very first agent could never have been bought under it, yet owning the harness used to suppress shifting-the-burden).
 // Keyed per pair rather than by provider id so a provider whose synergy is
 // debt-mitigating on one decision cannot credit an instance of another
 // decision whose synergy with it leaves debt untouched.

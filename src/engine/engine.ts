@@ -13,7 +13,7 @@ export function initialState(content: GameContent): GameState {
   return {
     day: 0,
     paused: false,
-    // Per-era content (issue #90): hold the active era id from content.
+    // Per-era content: hold the active era id from content.
     // Hand-built fixtures may omit era metadata; fall back to
     // eras.startingEraId, then to a fixture id.
     eraId: content.eraId ?? content.eras?.startingEraId ?? "_fixture",
@@ -26,7 +26,7 @@ export function initialState(content: GameContent): GameState {
     debtDragPerPoint: s.debtDrag.dragPerPoint,
     debtDragMaxDrag: s.debtDrag.maxDrag,
     // Copied from content like the debtDrag config, so effectiveRate's
-    // stockDragMultiplier stays content-free (issue #88). Default [] when
+    // stockDragMultiplier stays content-free. Default [] when
     // content ships no drags.
     stockDrags: (s.stockDrags ?? []).map((d) => ({ ...d })),
     archetypesSeen: [],
@@ -99,7 +99,7 @@ export class Engine {
       if (restored.stocks.reputation === undefined) {
         restored.stocks.reputation = content.start.stocks.reputation;
       }
-      // Studio spine (issue #88): users stock and always-on stockDrags config.
+      // Studio spine: users stock and always-on stockDrags config.
       // The SAVE_VERSION bump to 2 means real legacy saves are rejected before
       // reaching here, but these defensive backfills keep a hand-constructed or
       // mid-migration state safe (users defaults to 0, drags from content).
@@ -109,7 +109,7 @@ export class Engine {
       if (restored.stockDrags === undefined) {
         restored.stockDrags = (content.start.stockDrags ?? []).map((d) => ({ ...d }));
       }
-      // Per-era content (issue #90): legacy saves predate eraId; backfill from
+      // Per-era content: legacy saves predate eraId; backfill from
       // the active content bundle (Studio in P0.2).
       if (restored.eraId === undefined) {
         restored.eraId = content.eraId ?? content.eras?.startingEraId ?? "_fixture";

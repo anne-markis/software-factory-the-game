@@ -3,7 +3,7 @@ import { RATE_IDS } from "../engine/types";
 import { effectiveDebtMultiplier, effectiveRate } from "../engine/modifiers";
 import { continuousDeployActive } from "../engine/continuousDeploy";
 
-// Issue #9: the arrows must show what actually flowed through each stage
+// The arrows must show what actually flowed through each stage
 // this tick, not the stage's uncapped rate (effectiveRate) -- those only
 // agree when the stage's upstream stock fully saturates it every tick, and
 // diverge whenever a stage is stock-limited (fresh game, post-stall, a newly
@@ -45,16 +45,16 @@ const BOX_H = 60;
 const GAP = 60;
 const Y = 30;
 const VIEW_W = 860;
-// Room below the debt-regen arc for the FR-2.1 teaching caption (#19).
+// Room below the debt-regen arc for the FR-2.1 teaching caption.
 const VIEW_H = 188;
 
-// Issue #19 / FR-2.1: terse Delivery-loop teaching caption, voice-matched to
+// FR-2.1: terse Delivery-loop teaching caption, voice-matched to
 // the Progress panel footer ("The inner system's pace sets outer throughput…").
-// Binding-stage visual cue (FR-2.2 / #64) is separate; this copy always shows.
+// Binding-stage visual cue (FR-2.2) is separate; this copy always shows.
 export const DELIVERY_LOOP_CAPTION =
   "A steady box means balanced flow; a growing box marks the bottleneck.";
 
-// Issue #64: binding-stage bottleneck cue (machine-side only).
+// binding-stage bottleneck cue (machine-side only).
 //
 // Threshold (documented for the PR / DoD):
 // - Inflow capacity must be clearly ahead of outflow: inflowRate >=

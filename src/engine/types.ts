@@ -12,7 +12,7 @@ export interface Stocks {
   // (named stage keys only) is unaffected. Clamped at 0 like every other
   // stock (applyEffects' addToStock/scaleStock already do this generically).
   reputation: number;
-  // Users (Studio spine, issue #88): the product-growth stock. Stays 0 until
+  // Users (Studio spine): the product-growth stock. Stays 0 until
   // the Launch beta project completes (which grants +30 via
   // completionStockGrants), then grows via start.stockFlows organic
   // acquisition (gated on minCompletedProjects) and drives monetization
@@ -81,11 +81,11 @@ export interface Synergy {
 }
 
 // Closed enum on every decision (schema). The shop no longer paints a
-// player-facing category tag (issue #140); keep the field for authoring.
+// player-facing category tag; keep the field for authoring.
 // The shop is a flat list and does not group by this field.
 export type DecisionCategory = "ship-faster" | "earn-income" | "tame-debt" | "prevent-trouble" | "change-structure";
 
-// Additive stock-flow modifier owned by a decision (ADR 0006 / issue #85).
+// Additive stock-flow modifier owned by a decision (ADR 0006).
 // Nudges an existing start.stockFlows entry for the named stock: deltas are
 // summed across all owned decisions and added to that flow's own
 // acquirePerDay / churnRatePerDay each tick. Studio ships none (types/schema
@@ -104,8 +104,7 @@ export interface DecisionDef {
   human?: boolean;
   cost: { oneTime?: number; perDay?: number };
   incomePerDay?: number;
-  // Per-day income scaled by a stock's current level (Studio monetization,
-  // issue #85). Stacks additively on top of the flat incomePerDay in
+  // Per-day income scaled by a stock's current level (Studio monetization). Stacks additively on top of the flat incomePerDay in
   // chargeUpkeep: totalIncome += stocks[stock] * perUnit. The subscription
   // card reads users at $0.75/user/day; useless at 0 users.
   incomeFromStock?: { stock: StockName; perUnit: number };
@@ -119,8 +118,7 @@ export interface DecisionDef {
   effects: Effect[];
   gamble?: GambleOutcome[];
   requires?: string[];
-  // Ownership gates that count instances rather than just presence (issue
-  // #89): each entry demands at least `count` owned instances of `id`. Used by
+  // Ownership gates that count instances rather than just presence: each entry demands at least `count` owned instances of `id`. Used by
   // agent-orchestration, which only makes sense once there are >= 2 agents to
   // coordinate. Composes with `requires` (both must hold); ids are
   // cross-checked by parseDecisions like `requires` ids are.
@@ -165,7 +163,7 @@ export interface ChallengeDef {
     maxHumanDevs?: number;
     minTechDebt?: number;
     minDay?: number;
-    // Completed-project floor (issue #89): the challenge only fires once the
+    // Completed-project floor: the challenge only fires once the
     // player has finished at least this many projects. Studio uses it to hold
     // scope-creep back until the Launch beta has shipped, keeping the opening
     // tutorial stretch quiet without pinning a calendar day.
@@ -211,7 +209,7 @@ export interface ProjectDef {
   // (or while it is already in flight). Studio's v1–v5 ladder is unique;
   // tiny client gigs omit this and stay repeatable. Default false.
   unique?: boolean;
-  // Stocks granted on completion (Studio spine, issue #88). Applied in
+  // Stocks granted on completion (Studio spine). Applied in
   // attributeShipped's completion branch alongside the budget/reputation
   // rewards. The Launch beta grants +30 users this way, which is what starts
   // the users economy (users stay 0 until then). Clamped at 0 like every
@@ -251,7 +249,7 @@ export interface LogEntry {
   message: string;
 }
 
-// Always-on stock drag (Studio spine, issue #88 / ADR 0006). Mirrors the
+// Always-on stock drag (Studio spine / ADR 0006). Mirrors the
 // tech-debt debtDrag shape but keyed on an arbitrary stock and pointed at a
 // specific rate (or "all", like modifyRate). Above freeBand, every excess
 // point slows the target rate(s) by dragPerPoint, capped at maxDrag. The
@@ -264,12 +262,12 @@ export interface StockDrag {
   target: RateId | "all";
 }
 
-// Always-on per-tick stock flow (Studio spine, issue #88 / ADR 0006). Runs in
+// Always-on per-tick stock flow (Studio spine / ADR 0006). Runs in
 // tick.ts after shipping. When its condition holds, the stock gains
 // acquirePerDay (flat) plus acquirePerStock.perUnit per point of another
 // stock (the organic users flow reads reputation), then loses
 // stocks[stock] * churnRatePerDay to churn. Net is clamped at 0. Base churn
-// only -- no debt/incident churn DSL in this issue.
+// only -- no debt/incident churn DSL in this schema.
 export interface StockFlow {
   stock: StockName;
   // Studio organic acquisition only turns on after the Launch beta completes.
@@ -348,7 +346,7 @@ export interface GameContent {
   decisions: DecisionDef[];
   challenges: ChallengeDef[];
   projects: ProjectDef[];
-  // Active era id + catalog from content/eras.json (issue #90). Resolved
+  // Active era id + catalog from content/eras.json. Resolved
   // decisions/challenges/projects include every prior rung (ADR 0008).
   // Always set by loadShippedContent / loadActiveContent. Optional on
   // hand-built test fixtures so unit tests can keep assembling partial graphs.
@@ -359,7 +357,7 @@ export interface GameContent {
 export interface GameState {
   day: number;
   paused: boolean;
-  // Active content era id (issue #90). Copied from GameContent.eraId at init.
+  // Active content era id. Copied from GameContent.eraId at init.
   // Advances one-way when the next era's entryAnyOf fires (see eras.ts).
   // Legacy saves predate the field; Engine backfills from content.eraId.
   eraId: string;
@@ -374,7 +372,7 @@ export interface GameState {
   debtDragFreeDebt: number;
   debtDragPerPoint: number;
   debtDragMaxDrag: number;
-  // Always-on stock drags (Studio support drag, issue #88), copied from
+  // Always-on stock drags (Studio support drag), copied from
   // content.start.stockDrags at init like the debtDrag config above so
   // effectiveRate stays content-free. Legacy saves predate it; the Engine
   // constructor backfills from content (and the SAVE_VERSION bump means old
@@ -396,8 +394,8 @@ export interface GameState {
   // (which is the realized deploy-stage flow: shippedFlow, capped by
   // whatever was actually sitting in Done that tick -- see tick.ts). Each is
   // capped by the stock actually available that tick (backlog for pull,
-  // inProgress for finish), NOT the stage's uncapped rate. Added for issue
-  // #9: the Delivery loop diagram's arrows and the Progress loop panel's
+  // inProgress for finish), NOT the stage's uncapped rate. The Delivery
+  // loop diagram's arrows and the Progress loop panel's
   // exit box used to print raw stage capacity (effectiveRate) and claim it
   // equaled throughput, which is only true when the relevant stock fully
   // saturates that stage every tick -- these fields let the UI show what

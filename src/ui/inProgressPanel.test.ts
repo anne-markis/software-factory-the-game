@@ -65,7 +65,7 @@ describe("inProgressPanelSvg", () => {
     expect(svg).toContain("Cycle speed");
     expect(svg).toContain("Base 1.0/day");
     expect(svg).toContain("escapes to Done");
-    // Issue #9: no tick has run yet on this fresh engine, so inProgress is
+    // no tick has run yet on this fresh engine, so inProgress is
     // still 0 -- nothing was there for "finish" to actually move this tick,
     // even though its base capacity is 1.0/day. The exit box must show the
     // realized (zero) flow, not the stage's uncapped capacity.
@@ -80,7 +80,7 @@ describe("inProgressPanelSvg", () => {
     expect(svg).not.toContain("= outer loop throughput");
   });
 
-  it("issue #9: exit box tracks realized finish flow across ticks, not raw finish-stage capacity", () => {
+  it("exit box tracks realized finish flow across ticks, not raw finish-stage capacity", () => {
     const e = new Engine(content());
     e.tick(); // day 1: inProgress still 0 pre-tick (pull hasn't landed anything into it yet)
     expect(exitBoxValue(inProgressPanelSvg(e.getState(), content()))).toBe("0.0");
@@ -115,8 +115,7 @@ describe("inProgressPanelSvg", () => {
   });
 
   it("shows only a debt-paydown card's temporary slowdown under Friction (scaleStock creates no modifier, Release 16)", () => {
-    // The lean Studio shop has no scaleStock card left (issue #89 cut
-    // refactoring-sprint and redesign-rebuild), so the pairing this pins --
+    // The lean Studio shop has no scaleStock card left (cut refactoring-sprint and redesign-rebuild), so the pairing this pins --
     // scaleStock alongside a temporary modifyRate -- comes from a fixture.
     const c = content();
     c.decisions = [
@@ -200,8 +199,7 @@ describe("inProgressPanelSvg", () => {
   });
 
   it("labels a ramping add-op modifier under Cycle speed with its rounded value and a (ramping) suffix", () => {
-    // No shipped Studio card ramps any more (issue #89 cut
-    // self-learning-agents), but rampRate is still an engine effect content can
+    // No shipped Studio card ramps any more (cut self-learning-agents), but rampRate is still an engine effect content can
     // use, and the panel has to label it. Inject the owned instance and its ramp
     // modifier directly via the mutable-state escape hatch, matching source to
     // instanceId so it renders through the owned-decision branch exactly as a
@@ -318,7 +316,7 @@ describe("inProgressPanelSvg", () => {
     expect(svg).not.toContain("+-0.5");
   });
 
-  // Issue #10 follow-up: <rect>/<line>/<ellipse>/<path> shapes use
+  // follow-up: <rect>/<line>/<ellipse>/<path> shapes use
   // stroke="currentColor" and correctly inherit dark-mode text color, but
   // SVG's fill defaults to black independent of the surrounding CSS cascade
   // -- a <text> element without an explicit fill renders unreadable
@@ -328,7 +326,7 @@ describe("inProgressPanelSvg", () => {
   // already covers and which never sees this dynamically-built markup at
   // all) so a future <text> element added without fill="currentColor" fails
   // immediately instead of shipping invisible.
-  it("issue #10: every <text> element sets fill=currentColor so it adapts to dark mode", () => {
+  it("every <text> element sets fill=currentColor so it adapts to dark mode", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
     e.applyDecision("test-suite");
