@@ -1,8 +1,8 @@
 import type { DecisionDef, GameContent } from "../engine/types";
 
-// Groups decisions into requires-chains for the tech-tree view (see
-// renderDecisions in render.ts). Pure and unit-testable in isolation from
-// rendering/HTML concerns -- see techTree.test.ts.
+// Groups decisions into requires-chains. The player shop no longer uses this
+// (issue #141: catalog array order). Kept as a pure grouping helper — see
+// techTree.test.ts.
 
 export interface TechChain {
   // Named after the chain's tier-0 root (see buildTechTree).

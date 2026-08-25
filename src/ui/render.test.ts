@@ -307,31 +307,70 @@ describe("renderDecisions", () => {
     expect(html).not.toContain(">debt<");
   });
 
-  it("keeps today's tree-walk order, not JSON array order", () => {
+  // Issue #141: shop order is the resolved catalog array (decisions.json),
+  // not the requires-graph tree-walk. Hidden ids leave a hole — they are
+  // not pulled forward and not regrouped under a chain header.
+  it("paints fresh Studio shop in decisions.json order (issue #141)", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // Chains first (test-suite, then agent), then the four standalones.
-    // JSON order would put basic-dev between test-suite and agent.
+    // ci-cd / harness / orchestration stay hidden (unmet requires).
     expect(shopBuyIds(html)).toEqual([
       "test-suite",
-      "agent",
       "basic-dev",
+      "agent",
       "better-tooling",
       "subscription",
       "one-time-product",
     ]);
   });
 
-  it("inserts an unlocked downstream card into the flat list without a chain header", () => {
+  it("inserts unlocked CI/CD into its JSON slot after test-suite, not at the end (issue #141)", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     expect(html).not.toMatch(/<h4>/);
     expect(html).not.toContain("Standalone");
+    // test-suite is owned-unique (hidden); ci-cd appears where the file
+    // put it — after that hole, before basic-dev.
     expect(shopBuyIds(html)).toEqual([
       "ci-cd",
-      "agent",
       "basic-dev",
+      "agent",
+      "better-tooling",
+      "subscription",
+      "one-time-product",
+    ]);
+  });
+
+  it("inserts harness and orchestration after agent once two agents are owned (issue #141)", () => {
+    const e = new Engine(content());
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(shopBuyIds(html)).toEqual([
+      "test-suite",
+      "basic-dev",
+      "agent",
+      "agent-harness",
+      "agent-orchestration",
+      "better-tooling",
+      "subscription",
+      "one-time-product",
+    ]);
+  });
+
+  it("keeps scaffold shells in the same catalog order as live Buy buttons (issue #141)", () => {
+    const c = content();
+    const e = new Engine(c);
+    const avail = e.availableDecisions();
+    const scaffold = decisionsPanelScaffold(c, [], avail);
+    const live = renderDecisions(avail, [], c);
+    const shellIds = [...scaffold.matchAll(/data-section="decision-node:([^"]+)"/g)].map((m) => m[1]!);
+    expect(shellIds).toEqual(shopBuyIds(live));
+    expect(shellIds).toEqual([
+      "test-suite",
+      "basic-dev",
+      "agent",
       "better-tooling",
       "subscription",
       "one-time-product",

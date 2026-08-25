@@ -45,6 +45,15 @@ is a flat single-column list and does not group by category. There are no
 decision `tags`. `human: true` is headcount for challenge predicates, not
 a track label.
 
+Shop order is that resolved catalog's array order — Studio file order,
+then Company delta, then Megacorp delta (ADR 0008). There is no
+`shopOrder` field and no second sort by category, chain, name, cost, or
+affordability. Hidden cards (owned unique, unmet `requires` /
+`requiresCounts`) leave a hole: later entries are not pulled forward, and
+the list is not regrouped. When a later-era file is non-empty, its cards
+appear after the inherited prior-rung array, in the order they sit in
+that file. To change player order, move the object in the JSON array.
+
 Cost may be `{}`. `incomePerDay` / `incomeFromStock` / `burstFromStock`
 credit in the same income step **before** payroll that tick. Burst rolls
 from the shared RNG; a hit is not a post-insolvency windfall.
