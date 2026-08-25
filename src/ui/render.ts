@@ -2,7 +2,6 @@ import type { Availability } from "../engine/decisions";
 import { contextSwitchTax } from "../engine/modifiers";
 import type { ProjectAvailability } from "../engine/projects";
 import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
-import { buildTechTree } from "./techTree";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { SECTION_ATTR } from "./domPatch";
 import { formatBuiltAt, type BuildInfo } from "./buildInfo";
@@ -159,26 +158,17 @@ export function renderDecisionNode(a: Availability, ownedCount: number): string 
 // Single-column shop (issue #139). `renderNode` is a live card (string
 // tests / renderDecisions) or an empty data-section shell (scaffold).
 // `hideDefIds` drops owned unique (#110) and missing-requires (#121) cards.
-// Order is still the tree-walk (chains by root, then standalone) so this
-// flatten does not silently reorder; JSON array order is a later change.
+// Issue #141: iterate `content.decisions` in loader/catalog order. Hidden
+// ids leave a hole; they are not pulled forward or regrouped.
 function renderShopLayout(
   content: GameContent,
   renderNode: (def: DecisionDef) => string,
   hideDefIds: ReadonlySet<string> = new Set(),
 ): string {
-  const tree = buildTechTree(content);
-  const defs: DecisionDef[] = [];
-  for (const chain of tree.chains) {
-    for (const tier of chain.tiers) {
-      for (const def of tier) {
-        if (!hideDefIds.has(def.id)) defs.push(def);
-      }
-    }
-  }
-  for (const def of tree.standalone) {
-    if (!hideDefIds.has(def.id)) defs.push(def);
-  }
-  const nodes = defs.map(renderNode).join("");
+  const nodes = content.decisions
+    .filter((def) => !hideDefIds.has(def.id))
+    .map(renderNode)
+    .join("");
   if (!nodes) return "";
   return `<div class="tt-shop-grid">${nodes}</div>`;
 }
