@@ -75,7 +75,7 @@ describe("simulation", () => {
     }
   });
 
-  // Studio spine idle-mechanism probe (issue #88). RE-PINNED wholesale: the
+  // Studio spine idle-mechanism probe. RE-PINNED wholesale: the
   // Studio economy replaces the 1500-pt First Contract ($17/pt) with a 300-pt
   // Launch beta that pays NOTHING per point (payoutPerPoint 0) and a $800
   // completion bonus. So an idle player earns $0 while shipping the beta and
@@ -155,7 +155,7 @@ describe("simulation", () => {
 
   // Full-content idle probe: same do-nothing player, challenges on.
   //
-  // RE-PINNED for the lean Studio pool (issue #89). The pool is now three
+  // RE-PINNED for the lean Studio pool. The pool is now three
   // events, two of which (model-deprecation, runaway-agent-loop) are gated on
   // owning something from the agent ladder -- so the idle player, which owns
   // nothing, only ever sees scope-creep, and only after the beta ships
@@ -173,7 +173,7 @@ describe("simulation", () => {
   // point of the refactor is that these values no longer move when a
   // challenge is added or reordered in content.
   //
-  // Studio spine (issue #88): the idle player owns no monetization decisions,
+  // Studio spine: the idle player owns no monetization decisions,
   // so its +30 users (and organic growth after the beta) never turn into
   // income -- the beta's $800 bonus is the only cash the run ever sees against
   // a steady -$20/day base burn, and it drains to zero well within the horizon.
@@ -275,7 +275,7 @@ describe("simulation", () => {
   // limits-to-growth threshold of 0.8). Still solvency-shaped only on
   // completedProjects >= 1; the budget checkpoints remain observations.
   //
-  // RE-PINNED for the lean Studio shop (issue #89), and the "choices matter"
+  // RE-PINNED for the lean Studio shop, and the "choices matter"
   // point this probe originally made is back: this build buys delivery
   // (test-suite, ci-cd) and two hires but NO monetization, and monetization is
   // the Studio money spine. Observed now: the Launch beta completes on day 205
@@ -285,7 +285,7 @@ describe("simulation", () => {
   // it hits the zero clamp on day 279 and stays there (budgetAt1000 0, end 0,
   // post-completion peak 601, ~1508 points shipped over the run). Scope creep is
   // the only event it ever sees; nothing else in the lean pool is eligible for a
-  // build with no agents. Unchanged by the pull headroom this issue added, since
+  // build with no agents. Unchanged by the pull headroom this change added, since
   // finish is this build's binding stage either way. The existing assertions are
   // loose enough to hold unchanged (they never asserted solvency); this stays an
   // observation probe, and the viability bars are the two probes below.
@@ -342,7 +342,7 @@ describe("simulation", () => {
   // Deliberately NO cross-probe dominance assertion: track speed is emergent
   // (spec section 2); these pin viability floors only.
   //
-  // Issue #89: the list is count-aware. `agent` is stackable now, so a repeated
+  // the list is count-aware. `agent` is stackable now, so a repeated
   // id means "own that many copies" -- the nth occurrence is only satisfied
   // once n instances are owned. Non-repeated ids behave exactly as before.
   function runBuildProbe(shoppingList: string[], opts: { onlyAfterLaunch?: boolean } = {}): {
@@ -412,7 +412,7 @@ describe("simulation", () => {
     };
   }
 
-  // Human-heavy build, RE-PINNED wholesale for the Studio spine (issue #88).
+  // Human-heavy build, RE-PINNED wholesale for the Studio spine.
   // The Studio money spine is monetization (subscription + one-time product
   // reading the users stock), NOT the client-contract ladder, so a sensible
   // human-heavy player now buys the two monetization cards early (right after
@@ -422,10 +422,10 @@ describe("simulation", () => {
   // 5000-point small-crm being an order of magnitude larger than the 300-point
   // beta -- means the follow-on contract does NOT finish inside the 2000-day
   // horizon (observed ~4530 of 5000 points shipped). The big client-contract
-  // ladder belongs to later eras / issue #89; here the viability bar is the
+  // ladder belongs to later eras / ; here the viability bar is the
   // Studio one: finish the beta and stay solvent via monetization.
   //
-  // RE-PINNED for the lean Studio shop (issue #89): the org ladder
+  // RE-PINNED for the lean Studio shop: the org ladder
   // (eng-manager, senior-dev, standup, contractor) left Studio, so "human
   // heavy" is now better-tooling plus two basic-dev hires -- the only cards that
   // lift several rates at once (better-tooling all three, each hire pull and
@@ -459,7 +459,7 @@ describe("simulation", () => {
     expect(r.budgetAtDay[2000]).toBeGreaterThan(r.budgetAtDay[500]!); // still climbing on subscription income
   });
 
-  // Automation-heavy build, RE-PINNED for the lean Studio shop (issue #89).
+  // Automation-heavy build, RE-PINNED for the lean Studio shop.
   // The shopping list is now the Studio agent ladder -- 2 agents, harness,
   // orchestration (which the ≥2-agent count gate opens), then 2 more agents --
   // plus the two monetization cards and the delivery pair.
@@ -509,15 +509,14 @@ describe("simulation", () => {
     expect(r.budgetAtDay[2000]).toBeGreaterThan(r.budgetAtDay[500]!); // still climbing on subscription income
   });
 
-  // The agent ladder's payoff, measured in two halves (issue #89). The locked
-  // agent knobs (#86) are all finish-side -- each agent adds +0.2 finish, the
+  // The agent ladder's payoff, measured in two halves. The locked
+  // agent knobs are all finish-side -- each agent adds +0.2 finish, the
   // harness multiplies finish x1.25, orchestration x1.45 -- and throughput in
   // tick.ts is the minimum across the three stages. So what the ladder buys
   // depends entirely on which stage is binding, and the shop only makes sense if
   // finish-side capacity can eventually reach the shipped stock.
   //
-  // Base rates are pull 2, finish 1, deploy 1 (the pull headroom this issue
-  // added). Nothing in the lean shop lifts pull except better-tooling (+0.1) and
+  // Base rates are pull 2, finish 1, deploy 1 (the pull headroom this change added). Nothing in the lean shop lifts pull except better-tooling (+0.1) and
   // the hire (whose gamble adds the same amount to pull and finish), so pull's
   // extra point is what the ladder eats into. Deploy is the wall behind it, and
   // the way past that wall is structural rather than a rate: test-suite -> ci-cd
@@ -602,20 +601,20 @@ describe("simulation", () => {
     expect(l.stocks.techDebt).toBeGreaterThan(i.stocks.techDebt); // 40 vs 29
   });
 
-  // Issue #89 acceptance: a SHORT Studio session on the lean shop has to hold
+  // acceptance: a SHORT Studio session on the lean shop has to hold
   // together end to end. This plays the sensible one -- monetize first, ship the
   // Launch beta on starting resources, then buy the agent ladder out of
   // subscription income -- and pins what a player sees along the way:
   //
-  //   d1-d2   subscription + one-time-product (one-time cost, no upkeep, and
+  //   d1-d2 subscription + one-time-product (one-time cost, no upkeep, and
   //           worth nothing yet at 0 users -- the setup a Studio player makes
   //           before there is anything to sell)
-  //   d302    Launch beta completes: +$800, +1 reputation, +30 users, and the
+  //   d302 Launch beta completes: +$800, +1 reputation, +30 users, and the
   //           users economy (and with it the subscription) switches on
   //   d302-05 the agent ladder, one card a day, in the order the gates imply:
   //           agent, agent, then the harness, then orchestration -- which is
   //           only offered once the second agent lands (requiresCounts 2x)
-  //   end     solvent the whole way after launch (budget bottoms out at ~3129
+  //   end solvent the whole way after launch (budget bottoms out at ~3129
   //           and ends ~11925 at day 500) with all six cards still owned
   //
   // The pre-launch-spend version of this session is the one that hurts, and it
@@ -667,7 +666,7 @@ describe("simulation", () => {
       "d305:agent-orchestration",
     ]);
     expect(orchestrationOfferedWithOneAgent).toBe(false);
-    expect(completedDay).toBe(302); // the Studio beta spine (issue #88) is untouched by the shop retune
+    expect(completedDay).toBe(302); // the Studio beta spine is untouched by the shop retune
     const s = e.getState();
     expect(s.decisions.filter((d) => d.defId === "agent")).toHaveLength(2); // stackable, and both survived payroll
     expect(minBudgetAfterLaunch).toBeGreaterThan(1000); // never near the zero clamp (observed ~3129)
@@ -732,7 +731,7 @@ describe("simulation", () => {
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
 
-    // RE-PINNED for the lean Studio shop (issue #89). This probe's loop buys
+    // RE-PINNED for the lean Studio shop. This probe's loop buys
     // at most ONE instance of each def, and the lean shop is nine cards, of
     // which exactly one (the single agent it allows itself) raises debt while
     // three cut it (test-suite, agent-harness, and -- unreachable here, since
@@ -825,7 +824,7 @@ describe("simulation", () => {
   // income you needed to recover becoming unreachable precisely because an
   // incident cost you the standing that unlocked it.
   //
-  // RE-PINNED for the lean Studio pool (issue #89): security-breach, the
+  // RE-PINNED for the lean Studio pool: security-breach, the
   // challenge that used to supply the reputation hit, is out of Studio, so the
   // hit is applied as a literal effects pair here. The mechanism under test is
   // projectAvailability's live reputation gate, not any one challenge, and the

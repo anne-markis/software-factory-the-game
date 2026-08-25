@@ -83,7 +83,7 @@ describe("projects", () => {
     e.getState().projects.forEach((p) => expect(p.defId).toBe("gig-bugfix"));
   });
 
-  // Issue #112: Small refactor burns techDebt via completionStockGrants (−50),
+  // Small refactor burns techDebt via completionStockGrants (−50),
   // pays nothing, and stays repeatable (not unique).
   it("Small refactor reduces techDebt by 50 clamped at 0, without budget or reputation, and is repeatable", () => {
     const c = content();

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Software Factory</title>
     <style>
-      /* Issue #10: without color-scheme + explicit fg/bg, prefers-color-scheme:
+      /* without color-scheme + explicit fg/bg, prefers-color-scheme:
          dark forces the canvas near-black while every hardcoded tone below
          (#666/#999/#a60/#c00/#444/#fdd, plus default body text) stays put,
          collapsing contrast to near-invisible. Custom properties hold the
@@ -49,11 +49,11 @@
       .chrome-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.5rem; }
       .chrome-row #reset { margin-left: auto; }
       /* Top stats bar (Day / Backlog / Budget / Points/Day): fixed 4-column
-         grid so Budget + runway cannot paint into Points/Day (issue #113).
+         grid so Budget + runway cannot paint into Points/Day.
          minmax(0, 1fr) lets each track shrink; .stat min-width:0 + overflow
          clips long runway strings inside the cell. tabular-nums + value
          min-widths keep tick updates from reflowing the loops below.
-         Issue #8 moved flow/quality stocks under the Delivery loop. */
+          moved flow/quality stocks under the Delivery loop. */
       .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem 1rem; align-items: baseline; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
       .stat { display: inline-flex; align-items: baseline; gap: 0.5rem; min-width: 0; overflow: hidden; }
       .stat-label { color: var(--fg-dim); }
@@ -63,18 +63,18 @@
       .stat-value.v-count { min-width: 6ch; } /* In Progress/Done */
       /* Budget may append "(N days)" runway. No ch min-width: a wide
          right-aligned slot wasted space after the label and clipped the
-         amount (issue #113). Left-align so a tight column keeps the $
+         amount. Left-align so a tight column keeps the $
          visible and clips the runway suffix first. The 4-column grid
          keeps neighbors stable. */
       .stat-value.v-budget { min-width: 0; text-align: left; }
-      /* Issue #37: low runway telegraph — reuse the existing danger red
+      /* low runway telegraph — reuse the existing danger red
          so payroll cliff reads before Events fill with removals. */
       .stat-value.budget-low { color: var(--accent-red); font-weight: bold; }
       .stat-value.v-debt { min-width: 7ch; } /* Tech Debt */
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-users { min-width: 8ch; } /* Users */
       .stat-value.v-rate { min-width: 5ch; } /* Points/Day */
-      /* Issue #67: brief pulse when a material cockpit/delivery number
+      /* brief pulse when a material cockpit/delivery number
          changes. Amber underline + opacity (existing risk tone), single
          shot — presence without a new effect language. prefers-reduced-motion
          disables it. */
@@ -94,7 +94,7 @@
       @media (prefers-reduced-motion: reduce) {
         .stat-value.stat-flash { animation: none; }
       }
-      /* Issue #67: hire/gamble reveal (not log-only). Sticky on the section
+      /* hire/gamble reveal (not log-only). Sticky on the section
          host (not the inner node) so a purchase made while scrolled into
          Alter the system still pins the outcome to the viewport. Amber
          outcome tone matches .tt-gamble; no card chrome. */
@@ -112,7 +112,7 @@
         color: var(--fg);
       }
       .gamble-reveal-outcome { color: var(--accent-amber); font-weight: bold; }
-      /* Issue #40: Decision-needed interrupt. Sticky on the section host so
+      /* Decision-needed interrupt. Sticky on the section host so
          shopping / Alter the system cannot bury the choice while the day clock
          is paused. Danger border matches prior Choices panel cue. */
       [data-section="choices"]:not(:empty) {
@@ -129,7 +129,7 @@
         margin-bottom: 0;
       }
       .choice-interrupt-item { margin-top: 0.35rem; }
-      /* Issue #8: relocated stocks under the Delivery loop column. Flex
+      /* relocated stocks under the Delivery loop column. Flex
          wrap (not the 900px loops stack) so they stay inside that column
          at any width without introducing a horizontal scrollbar. */
       .delivery-column { min-width: 0; }
@@ -139,9 +139,9 @@
       .panel h4:first-of-type { margin-top: 0.25rem; }
       .panel h4 small { font-weight: normal; color: var(--fg-dim); }
       /* Fixed ~7-line Events history; older lines scroll inside the box so
-         Owned below it stays visible in the right rail (issue #114). */
+         Owned below it stays visible in the right rail. */
       .log { line-height: 1.35; max-height: calc(1.35em * 7); overflow-y: auto; font-size: 0.85rem; }
-      /* Alter the system (issue #139 / #140). One vertical column of
+      /* Alter the system. One vertical column of
          full-width slim rows at every viewport — shared left Buy column,
          name / gamble / owned / cost on the row, description + derived
          effects on hover (desktop) or tap (mobile). Node copy is static
@@ -172,7 +172,7 @@
          -- reuses the existing #666 dim tone from .tt-cost rather than
          introducing a new color. */
       .tt-effects { color: var(--fg-dim); font-size: 0.8rem; margin-bottom: 0.25rem; }
-      /* Issue #15: Owned list mirrors shop cost + derived-effects so upkeep
+      /* Owned list mirrors shop cost + derived-effects so upkeep
          trim decisions are scannable without hunting the tech tree. */
       .owned-item { margin-bottom: 0.5rem; }
       .owned-item-head { margin-bottom: 0.15rem; }
@@ -183,7 +183,7 @@
       .tt-node.tt-owned { opacity: 0.6; }
       .tt-node.tt-owned .tt-tag-state { font-weight: bold; }
       .tt-node.tt-cannot-afford .tt-reason { color: var(--accent-red); }
-      /* Time-control group (Release 19 / issue #98): Start/Pause + one
+      /* Time-control group (Release 19): Start/Pause + one
          button per speed. Fixed-width buttons so the group's footprint
          never changes as the active marker moves or the Start/Pause label
          flips -- same no-reflow guarantee as .stat-value (see render.ts).
@@ -202,13 +202,13 @@
          the page into horizontal scroll. */
       .main { min-width: 0; }
       .side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0; max-height: calc(100vh - 2rem); overflow-y: auto; }
-      /* Issue #45: quiet build identity under the game. Dim so it never
+      /* quiet build identity under the game. Dim so it never
          competes with the loops or time controls; still selectable for
          bug reports. */
       .build-stamp { margin-top: 1.5rem; font-size: 0.8rem; color: var(--fg-dim); }
       .build-stamp a { color: inherit; }
       /* Page layout only. Shop cards already stack at every width
-         (issue #139); this query no longer special-cases tech-tree
+        ; this query no longer special-cases tech-tree
          rows or arrows. */
       @media (max-width: 900px) {
         .loops { grid-template-columns: 1fr; }

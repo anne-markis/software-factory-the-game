@@ -2,7 +2,6 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-12
-- **Issues:** [#85](https://github.com/anne-markis/software-factory-the-game/issues/85) (approach); schema in ADR 0006
 
 ## Context
 

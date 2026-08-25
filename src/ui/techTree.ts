@@ -1,7 +1,7 @@
 import type { DecisionDef, GameContent } from "../engine/types";
 
 // Groups decisions into requires-chains. The player shop no longer uses this
-// (issue #141: catalog array order). Kept as a pure grouping helper — see
+// (catalog array order). Kept as a pure grouping helper — see
 // techTree.test.ts.
 
 export interface TechChain {
@@ -20,7 +20,7 @@ export interface TechTree {
 
 // Both ownership gates read as the same prerequisite arrow to a player, so
 // the tree treats them alike: agent-orchestration's "2x agent" count gate
-// (issue #89) puts it downstream of agent exactly as a plain requires would.
+// puts it downstream of agent exactly as a plain requires would.
 function prerequisiteIds(def: DecisionDef): string[] {
   return [...(def.requires ?? []), ...(def.requiresCounts ?? []).map((r) => r.id)];
 }

@@ -36,7 +36,7 @@ const milestoneSchema = z
 const rateTarget = z.enum(["pull", "finish", "deploy", "all"]);
 const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt", "reputation", "users"]);
 
-// Stocks granted on project completion (Studio spine, issue #88). Shared by
+// Stocks granted on project completion (Studio spine). Shared by
 // ProjectDef and StartConfig.initialProject.
 const completionStockGrantsSchema = z
   .array(z.object({ stock: stockName, amount: z.number() }).strict())
@@ -61,7 +61,7 @@ const startSchema = z
         maxDrag: z.number().gt(0).lt(1),
       })
       .strict(),
-    // Always-on stock drags (Studio support drag, issue #88). freeBand >= 0,
+    // Always-on stock drags (Studio support drag). freeBand >= 0,
     // dragPerPoint > 0 (must bite), maxDrag in (0, 1) (a cap that neither
     // vanishes nor stalls throughput -- same bounds as debtDrag).
     stockDrags: z
@@ -77,7 +77,7 @@ const startSchema = z
           .strict(),
       )
       .optional(),
-    // Always-on stock flows (Studio organic acquisition, issue #88).
+    // Always-on stock flows (Studio organic acquisition).
     stockFlows: z
       .array(
         z
@@ -199,7 +199,7 @@ const decisionSchema = z
     human: z.boolean().optional(),
     cost: z.object({ oneTime: z.number().min(0).optional(), perDay: z.number().min(0).optional() }).strict(),
     incomePerDay: z.number().min(0).optional(),
-    // Studio monetization (issue #85): income scaled by a stock's level.
+    // Studio monetization: income scaled by a stock's level.
     incomeFromStock: z.object({ stock: stockName, perUnit: z.number().min(0) }).strict().optional(),
     burstFromStock: z
       .object({ stock: stockName, probabilityPerDay: z.number().min(0).max(1), perUnit: z.number().min(0) })

@@ -1,4 +1,4 @@
-// Section-scoped DOM patching (issue #6).
+// Section-scoped DOM patching.
 //
 // The page used to be rendered with a single `app.innerHTML = ...` per tick,
 // which destroyed and recreated every button up to ten times a second. A real

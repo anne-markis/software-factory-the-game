@@ -38,7 +38,7 @@ export function debtDragMultiplier(state: GameState): number {
   return 1 - drag;
 }
 
-// Always-on stock drag (Studio support drag, issue #88). Mirrors
+// Always-on stock drag (Studio support drag). Mirrors
 // debtDragMultiplier but keyed on an arbitrary stock and pointed at a rate (or
 // "all"). Multiplies the drags that target this rate: every point of a
 // dragging stock above its freeBand slows the rate by dragPerPoint, capped at

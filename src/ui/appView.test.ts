@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// Issue #6: the driver re-renders up to 10x/second while unpaused. When a
+// the driver re-renders up to 10x/second while unpaused. When a
 // render tears down and rebuilds every button, a real mousedown/mouseup
 // gesture can straddle the rebuild -- mousedown lands on a node that no
 // longer exists by mouseup, so no click event is ever produced and the
@@ -32,7 +32,7 @@ function makeContent(challenges: GameContent["challenges"] = []): GameContent {
   };
 }
 
-// Shipped Studio challenges are immediate-only (issue #118). Choice UI/engine
+// Shipped Studio challenges are immediate-only. Choice UI/engine
 // paths are pinned against this fixture so Decision-needed chrome stays covered.
 function fixtureChoiceChallenges(): GameContent["challenges"] {
   return parseChallenges([
@@ -117,7 +117,7 @@ function pauseButton(root: HTMLElement): HTMLElement {
   return el!;
 }
 
-describe("appView delivery-column stats layout (issue #8)", () => {
+describe("appView delivery-column stats layout", () => {
   it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
     const h = mount();
     const top = h.root.querySelector(".stats")!;
@@ -132,7 +132,7 @@ describe("appView delivery-column stats layout (issue #8)", () => {
     const under = deliveryCol.querySelector(".delivery-stats")!;
     expect(under).toBeTruthy();
     // Stats sit after the Delivery + User loop panels inside the same column
-    // (issue #67: wrapped in a data-section host for in-place flash sync).
+    // (wrapped in a data-section host for in-place flash sync).
     const panels = deliveryCol.querySelectorAll(":scope > .panel");
     expect(panels).toHaveLength(2);
     const statsHost = panels[1]!.nextElementSibling!;
@@ -165,7 +165,7 @@ describe("appView delivery-column stats layout (issue #8)", () => {
       h.engine.tick();
       h.view.render();
     }
-    // Issue #67: in-place sync keeps the row and value nodes identical across
+    // in-place sync keeps the row and value nodes identical across
     // ticks so flash animations are not torn down by string-memo patches.
     const after = h.root.querySelector(".delivery-stats")!;
     expect(after).toBe(before);
@@ -197,7 +197,7 @@ describe("appView era identity stays off the player chrome", () => {
   });
 });
 
-describe("appView game feel (issue #67)", () => {
+describe("appView game feel", () => {
   it("flashes a material cockpit stat when its value changes on tick", () => {
     const h = mount();
     h.view.render();
@@ -241,9 +241,9 @@ describe("appView game feel (issue #67)", () => {
     expect(h.root.querySelector(".log")!.textContent).toMatch(/Purchased: .*test suite/i);
   });
 
-  // Issue #121: missing-requires cards are absent until the gate is met; buying
+  // missing-requires cards are absent until the gate is met; buying
   // the prereq rebuilds the shop scaffold so the unlocked card gets a Buy shell.
-  it("hides ci-cd until test-suite is bought, then shows it (issue #121)", () => {
+  it("hides ci-cd until test-suite is bought, then shows it", () => {
     const h = mount();
     expect(h.root.querySelector('[data-buy="ci-cd"]')).toBeNull();
     expect(h.root.textContent).not.toContain("requires Add test suite");
@@ -255,7 +255,7 @@ describe("appView game feel (issue #67)", () => {
   });
 });
 
-describe("appView node identity across renders (issue #6)", () => {
+describe("appView node identity across renders", () => {
   it("keeps the same Pause button node across repeated renders with unchanged state", () => {
     const h = mount();
     const before = pauseButton(h.root);
@@ -298,10 +298,10 @@ describe("appView node identity across renders (issue #6)", () => {
     }
   });
 
-  // Issue #24: previously the whole Alter-the-loop block was one memoized
+  // previously the whole Alter-the-loop block was one memoized
   // string, so any single node's affordability flip rebuilt every Buy button.
   // Per-node patched sections keep unrelated Buy nodes alive.
-  it("keeps one decision's Buy button when another node's affordability flips (issue #24)", () => {
+  it("keeps one decision's Buy button when another node's affordability flips", () => {
     const content = makeContent();
     content.start.stocks.budget = 500; // exactly affords test-suite ($500)
     // richBudget: false so the start budget above is not overwritten — the
@@ -348,7 +348,7 @@ describe("appView node identity across renders (issue #6)", () => {
     restored.paused = false;
     restored.pendingChoices = [{ challengeId: "fixture-choice", expiresDay: 8 }];
     const h = mount({ content, restored });
-    // Issue #118: choice appear does not pause — countdown is live while running.
+    // choice appear does not pause — countdown is live while running.
     expect(h.engine.getState().paused).toBe(false);
     const before = h.root.querySelector<HTMLElement>('[data-choice="fixture-choice"][data-option="pay"]')!;
     expect(before).toBeTruthy();
@@ -375,7 +375,7 @@ describe("appView node identity across renders (issue #6)", () => {
   });
 });
 
-describe("appView page layout (issue #7)", () => {
+describe("appView page layout", () => {
   it("places Start/speed on the left of the chrome row and Reset on the right", () => {
     const h = mount();
     const order = () => {
@@ -410,7 +410,7 @@ describe("appView page layout (issue #7)", () => {
 });
 
 describe("appView keeps the DOM in step with state (no stale memoized regions)", () => {
-  it("shows the build stamp with version, deployed time, and repo link on mount (issue #45)", () => {
+  it("shows the build stamp with version, deployed time, and repo link on mount", () => {
     const h = mount();
     const stamp = h.root.querySelector(".build-stamp");
     expect(stamp).not.toBeNull();
@@ -450,13 +450,13 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(ownedHeading).toBeTruthy();
     const ownedPanel = ownedHeading!.closest(".panel")!;
     expect(ownedPanel.textContent).toContain(name);
-    // Left column no longer hosts Owned between shop and Projects (issue #114).
+    // Left column no longer hosts Owned between shop and Projects.
     const main = h.root.querySelector(".main")!;
     expect(Array.from(main.querySelectorAll("h3")).map((el) => el.textContent)).not.toContain("Owned");
     expect(h.actions).toBe(1);
   });
 
-  it("places Owned under Events in the right rail (issue #114)", () => {
+  it("places Owned under Events in the right rail", () => {
     const h = mount();
     const side = h.root.querySelector(".side")!;
     const headings = Array.from(side.querySelectorAll("h3")).map((el) => el.textContent);
@@ -502,7 +502,7 @@ describe("appView click delegation on the stable root", () => {
     expect(h.actions).toBe(2);
   });
 
-  it("starts the day clock when a speed is clicked while paused (issue #38)", () => {
+  it("starts the day clock when a speed is clicked while paused", () => {
     const h = mount();
     h.engine.pause();
     h.view.render();
@@ -522,7 +522,7 @@ describe("appView click delegation on the stable root", () => {
     expect(h.actions).toBe(1);
   });
 
-  it("removes an owned decision through data-remove after confirm (issue #16)", () => {
+  it("removes an owned decision through data-remove after confirm", () => {
     const h = mount();
     // Buy every removable decision that is affordable until one shows Remove.
     let removeBtn: HTMLElement | null = null;
@@ -544,7 +544,7 @@ describe("appView click delegation on the stable root", () => {
     confirmSpy.mockRestore();
   });
 
-  it("leaves owned decisions unchanged when remove confirm is canceled (issue #16)", () => {
+  it("leaves owned decisions unchanged when remove confirm is canceled", () => {
     const h = mount();
     let removeBtn: HTMLElement | null = null;
     for (const buy of Array.from(h.root.querySelectorAll<HTMLElement>("[data-buy]:not([disabled])"))) {
@@ -610,7 +610,7 @@ describe("appView click delegation on the stable root", () => {
   });
 });
 
-describe("appView Decision-needed interrupt (issue #40 / #118)", () => {
+describe("appView Decision-needed interrupt", () => {
   it("places the choices interrupt in glanceable chrome above the loops", () => {
     const content = makeContent(fixtureChoiceChallenges());
     const restored = initialState(content);
@@ -628,7 +628,7 @@ describe("appView Decision-needed interrupt (issue #40 / #118)", () => {
     expect(h.root.querySelector('[data-choice="fixture-choice"]')).not.toBeNull();
   });
 
-  // Issue #118: challenges must never stop gameplay — sticky UI + Events only.
+  // challenges must never stop gameplay — sticky UI + Events only.
   it("does not pause when a Decision-needed challenge newly appears", () => {
     const content = makeContent(fixtureChoiceChallenges());
     const h = mount({ content });
@@ -639,7 +639,7 @@ describe("appView Decision-needed interrupt (issue #40 / #118)", () => {
     expect(pauseButton(h.root).textContent).toBe("Pause");
   });
 
-  // Issue #115: hide days-left while manually paused (expiresDay is frozen).
+  // hide days-left while manually paused (expiresDay is frozen).
   it("hides days-left on a manually paused Decision-needed interrupt", () => {
     const content = makeContent(fixtureChoiceChallenges());
     const restored = initialState(content);
@@ -689,7 +689,7 @@ describe("appView Decision-needed interrupt (issue #40 / #118)", () => {
   });
 });
 
-describe("appView slim shop disclosure (issue #140)", () => {
+describe("appView slim shop disclosure", () => {
   it("toggles details on name tap without purchasing", () => {
     const h = mount();
     const buy = h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!;

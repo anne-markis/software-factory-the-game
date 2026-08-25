@@ -45,11 +45,11 @@ describe("save/load", () => {
     expect(() => deserialize(bad)).toThrow(/version/);
   });
 
-  // Lean Studio shop (issue #89): SAVE_VERSION bumped to 3 so a v2 save -- which
+  // Lean Studio shop: SAVE_VERSION bumped to 3 so a v2 save -- which
   // can own decision instances and challenge cooldowns keyed to ids that content
   // no longer defines, and was balanced around the old base pull rate -- is
   // rejected rather than resumed into an inconsistent state. Same reasoning as
-  // the #88 bump to 2 (no users stock, 1500 backlog, First Contract economy).
+  // the version-2 bump to 2 (no users stock, 1500 backlog, First Contract economy).
   // Bumped to 4 for the Studio project redo (tiny gigs + unique v1–v5; the old
   // contract ladder left Studio). The UI's loadGame swallows this error and
   // starts fresh, so old saves of either vintage are wiped silently.
@@ -131,7 +131,7 @@ describe("save/load", () => {
     expect(b.getState().gameSeed).toBe(c.start.seed);
   });
 
-  // eraId (issue #90) is copied into state at init; deserialize has no content
+  // eraId is copied into state at init; deserialize has no content
   // access, so the Engine constructor backfills from content.eraId /
   // eras.startingEraId. Legacy saves predate the field.
   it("Engine backfills a missing eraId from content (legacy save shape)", () => {
@@ -216,7 +216,7 @@ describe("save/load", () => {
     expect(restored.milestonesSeen).toEqual([]);
   });
 
-  // pullFlow/finishFlow (issue #9) are content-free like archetypesSeen/
+  // pullFlow/finishFlow are content-free like archetypesSeen/
   // milestonesSeen, so they default in deserialize itself rather than the
   // Engine constructor. Legacy saves predate both fields entirely; without a
   // default, loopDiagram.ts/inProgressPanel.ts crash calling .toFixed(1) on
@@ -235,8 +235,7 @@ describe("save/load", () => {
     expect(() => b.tick()).not.toThrow();
   });
 
-  // pointsPerDay (same realized-throughput family as pullFlow/finishFlow,
-  // issue #9) defaults in deserialize itself. Legacy saves predate the
+  // pointsPerDay (same realized-throughput family as pullFlow/finishFlow) defaults in deserialize itself. Legacy saves predate the
   // field; without a default, render.ts crashes calling .toLocaleString()
   // on undefined before the first tick ever runs.
   it("defaults a missing pointsPerDay to 0 (legacy save shape)", () => {

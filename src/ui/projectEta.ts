@@ -1,4 +1,4 @@
-// Issue #17 / P0.1 FR-3: derived project time estimate for in-flight rows.
+// P0.1 FR-3: derived project time estimate for in-flight rows.
 // Informational only — remaining points ÷ current Points/Day (realized ship
 // rate). No engine rule change.
 

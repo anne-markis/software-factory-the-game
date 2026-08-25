@@ -16,8 +16,7 @@ function ciCdContent(): GameContent {
 }
 
 describe("tick", () => {
-  // Base rates are pull 2, finish 1, deploy 1 (issue #89 gave pull headroom so
-  // the finish-side agent ladder has a stage to feed), so the stages do NOT move
+  // Base rates are pull 2, finish 1, deploy 1 (gave pull headroom so the finish-side agent ladder has a stage to feed), so the stages do NOT move
   // in lockstep: pull runs at twice the pace the rest of the line can absorb and
   // In Progress grows, which is the loop diagram's "growing box marks the
   // bottleneck" telling the player where to spend.
@@ -41,7 +40,7 @@ describe("tick", () => {
     expect(s.stocks.done).toBe(1);
   });
 
-  // Issue #9: pullFlow/finishFlow mirror pointsPerDay's realized-flow
+  // pullFlow/finishFlow mirror pointsPerDay's realized-flow
   // semantics (capped by the stock actually available that tick, not the
   // stage's uncapped rate) for the other two stages, so the loop diagram and
   // in-progress panel can show what actually moved instead of raw capacity.
@@ -62,7 +61,7 @@ describe("tick", () => {
     expect(s.finishFlow).toBe(1);
   });
 
-  // Studio spine (issue #88, AC2): tech debt STILL accrues before the first
+  // Studio spine (AC2): tech debt STILL accrues before the first
   // project completes, but it does NOT refill the backlog yet -- the Launch
   // beta gets a clean 300-point burndown. So after 3 ticks the shipped point
   // grows techDebt by 0.5 but the backlog is pure pull drawdown (300 - 6 at the
@@ -104,7 +103,7 @@ describe("tick", () => {
     expect(open.getState().stocks.backlog).toBeCloseTo(0.5, 10); // debt gain refilled the backlog
   });
 
-  // Studio spine (issue #88): the Launch beta is a $0-ish client fiction --
+  // Studio spine: the Launch beta is a $0-ish client fiction --
   // payoutPerPoint is 0 (money comes from the completion bonus + users
   // monetization, not per-point client revenue), so shipping a beta point pays
   // nothing and the budget is pure base-burn drawdown until completion.
@@ -170,10 +169,10 @@ describe("tick", () => {
     expect(b.getState()).toEqual(a.getState());
   });
 
-  // Studio spine (issue #88): the users economy. Users stay 0 until the Launch
+  // Studio spine: the users economy. Users stay 0 until the Launch
   // beta completes (its completionStockGrants add +30), organic acquisition is
   // gated on the first completion, and monetization decisions read the stock.
-  describe("Studio users economy (issue #88)", () => {
+  describe("Studio users economy", () => {
     it("users stay 0 until the beta completes, then grant +30 and $800, and organic acquisition turns on", () => {
       const content = testContent(); // start.json: launch-beta, +30 users, +$800
       content.start.initialProject.sizePoints = 2;
@@ -375,17 +374,16 @@ describe("tick", () => {
     });
   });
 
-  // Issue #13: chargeUpkeep used to clamp budget to 0 against baseBurnPerDay
+  // chargeUpkeep used to clamp budget to 0 against baseBurnPerDay
   // BEFORE crediting income, instead of netting burn against income in the
   // same step. Once budget had already been driven to 0, that clamp threw away
   // the burn deficit entirely, so any owned income decision got added on top
   // of a clean 0 with nothing left to net against -- turning insolvency into a
   // permanent, risk-free income stream instead of the intended steady 0.
-  // Probed here with the subscription card at 10 users ($7.50/day, well under
-  // the $20/day burn); issue #89's lean shop dropped support-retainer, the
+  // Probed here with the subscription card at 10 users ($7.50/day, well under the $20/day burn); lean shop dropped support-retainer, the
   // flat-incomePerDay card this test used to buy, and the netting is the same
   // for either income shape.
-  describe("insolvency does not monetize owned income decisions (issue #13)", () => {
+  describe("insolvency does not monetize owned income decisions", () => {
     it("stabilizes budget at 0, not at the income amount, once burn has driven the player insolvent", () => {
       const content = ciCdContent();
       // No pipeline flow at all, so no shipped-point revenue can leak into

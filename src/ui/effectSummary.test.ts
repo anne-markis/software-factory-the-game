@@ -78,7 +78,7 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(def)).toBe("+$8/day");
   });
 
-  // Studio monetization (issue #88): cards telegraph that they scale with a
+  // Studio monetization: cards telegraph that they scale with a
   // stock so a 0-users card reads as "income per user", not a blank line.
   it("incomeFromStock summarises as per-unit-of-stock income", () => {
     const def = base({ effects: [], incomeFromStock: { stock: "users", perUnit: 0.75 } });
@@ -98,7 +98,7 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(otp)).toBe("~8%/day burst of $1.2/user");
   });
 
-  // Issue #89: the agent ladder is the shop's headline retune, so pin what its
+  // the agent ladder is the shop's headline retune, so pin what its
   // three cards claim on their own faces -- a stacking agent reads as a flat
   // per-copy delta, the two force multipliers as multipliers.
   it("the shipped agent ladder summarises stacking adds and global multipliers", () => {
@@ -128,7 +128,7 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(def)).toBe("all rates x0.5 for 5d");
   });
 
-  // No shipped Studio card is effect-free any more (issue #89), but the
+  // No shipped Studio card is effect-free any more, but the
   // summariser still has to handle one: it returns "" so the caller omits the
   // line entirely rather than printing "no direct effect", which reads as
   // "this does nothing" on a purchase that costs real money.
@@ -219,7 +219,7 @@ describe("summarizeDecisionEffects", () => {
       }
     });
 
-    // Issue #89 emptied the intended empty set: the lean Studio shop dropped
+    // emptied the intended empty set: the lean Studio shop dropped
     // the pure synergy targets and challenge-gate cards, and agent-harness /
     // agent-orchestration now carry their own multipliers. Every shipped card
     // therefore has numbers of its own to show. A future card that summarises

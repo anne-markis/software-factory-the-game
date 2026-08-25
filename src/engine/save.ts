@@ -3,12 +3,12 @@ import type { GameState } from "./types";
 // Bumped to 4 for the Studio project redo: tiny gigs + v1–v5 replace the old
 // contract ladder in Studio, and unique versions need completedProjectIds. A
 // v3 save can have small-crm / mobile-app in flight as Studio contracts those
-// ids no longer offer. Bumped to 3 for the lean Studio shop and challenge pool
-// (issue #89). A v2 save can hold owned instances and challenge cooldowns keyed
+// ids no longer offer. Bumped to 3 for the lean Studio shop and challenge pool.
+// A v2 save can hold owned instances and challenge cooldowns keyed
 // to ids that no longer exist in content (copilot, the org ladder, agent-swarm,
 // the retired challenges), and a v2 game was balanced around the old base pull
 // rate; there is nothing sensible to migrate those to. Bumped to 2 before that
-// for the Studio spine (issue #88): the users stock, the launch-beta starting
+// for the Studio spine: the users stock, the launch-beta starting
 // project, the 300-point backlog, and the always-on stockDrags/stockFlows.
 //
 // deserialize rejects mismatched versions, and the UI's loadGame swallows that
@@ -61,8 +61,7 @@ export function deserialize(json: string): GameState {
   if (state.milestonesSeen === undefined) {
     state.milestonesSeen = [];
   }
-  // defensive defaults for saves written before pullFlow/finishFlow (issue
-  // #9's realized-throughput fix). Content-free like archetypesSeen/
+  // defensive defaults for saves written before pullFlow/finishFlow (realized-throughput fix). Content-free like archetypesSeen/
   // milestonesSeen, so they default here rather than in the Engine
   // constructor. 0 is a safe, neutral placeholder until the next tick
   // recomputes the real realized flow.
@@ -94,14 +93,14 @@ export function deserialize(json: string): GameState {
   if (state.completedProjectIds === undefined) {
     state.completedProjectIds = [];
   }
-  // Defensive default for the users stock (issue #88). The SAVE_VERSION bumps
-  // mean genuine pre-#88 saves are rejected before reaching here, so this only
+  // Defensive default for the users stock. The SAVE_VERSION bumps
+  // mean genuine pre-v2 saves are rejected before reaching here, so this only
   // guards hand-built or in-flight current-version states missing the field: 0
   // is the correct baseline (users start at 0 until the Launch beta completes).
   if (state.stocks.users === undefined) {
     state.stocks.users = 0;
   }
-  // DecisionInstance.appliedSynergyIfOwned (issue #14) needs no defaulting:
+  // DecisionInstance.appliedSynergyIfOwned needs no defaulting:
   // undefined already means "bought under the base effects", and which synergy
   // a legacy instance was bought under is unrecoverable from the save, so any
   // backfill from current ownership would invent mitigation that never

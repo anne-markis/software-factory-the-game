@@ -11,7 +11,7 @@ function content(): GameContent {
   return c;
 }
 
-describe("createPlayerEngine (issue #38)", () => {
+describe("createPlayerEngine", () => {
   it("starts a fresh game paused so ticks do not advance the day", () => {
     const e = createPlayerEngine(content());
     expect(e.getState().paused).toBe(true);

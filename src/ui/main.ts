@@ -20,7 +20,7 @@ let speed: Speed = loadSpeed();
 
 // The view owns the DOM: it writes the page scaffold once and then patches
 // only the regions whose html actually changed on each render, so interactive
-// nodes are not torn down by the driver's per-tick renders (issue #6). See
+// nodes are not torn down by the driver's per-tick renders. See
 // appView.ts and domPatch.ts. Everything environment-shaped -- persistence,
 // the reload on reset, the alert -- stays here behind these callbacks.
 const view = mountAppView({

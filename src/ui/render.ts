@@ -19,12 +19,12 @@ export function fmt(n: number): string {
 // Top bar keeps the cockpit glanceables: clock, work waiting, money, and
 // throughput. Flow-stage and quality stocks live under the Delivery loop
 // (see renderDeliveryStats) so they sit next to the diagram they describe.
-// Markup is shared with gameFeel.syncStatRow (issue #67 in-place flash).
+// Markup is shared with gameFeel.syncStatRow (in-place flash).
 export function renderStats(state: Readonly<GameState>, content: GameContent): string {
   return statsRowHtml(cockpitStatViews(state, content), "stats");
 }
 
-// Issue #8: In Progress / Done / Shipped / Tech Debt / Reputation sit under
+// In Progress / Done / Shipped / Tech Debt / Reputation sit under
 // the Delivery loop panel. Same fixed-width value slots as the top bar so
 // ticking numbers never jitter this row either.
 export function renderDeliveryStats(state: Readonly<GameState>): string {
@@ -53,7 +53,7 @@ function effectsLine(def: DecisionDef): string {
   return summary ? `<div class="tt-effects">${esc(summary)}</div>` : "";
 }
 
-// Issue #24: the decisions/tech-tree region used to be one memoized HTML
+// The decisions/tech-tree region used to be one memoized HTML
 // string. When any node's availability flipped (budget crossing a cost
 // threshold), every Buy button in the tree was torn down. Mirror the
 // projects/choices split: a content-stable scaffold holds per-node section
@@ -65,7 +65,7 @@ export function decisionNodeSection(defId: string): string {
 }
 
 // Def ids of unique decisions that currently have an owned instance.
-// Issue #110: those cards leave Alter the system while owned (Owned keeps them).
+// Those cards leave Alter the system while owned (Owned keeps them).
 export function ownedUniqueDefIds(
   ownedInstances: readonly DecisionInstance[],
   content: GameContent,
@@ -87,7 +87,7 @@ export function ownedUniqueScaffoldKey(
   return [...ownedUniqueDefIds(ownedInstances, content)].sort().join(",");
 }
 
-// Shop-hidden ids: owned unique (#110) plus unmet-requires (#121).
+// Shop-hidden ids: owned unique plus unmet-requires.
 // cannot-afford stays visible; repeatable owned cards stay visible.
 export function shopHiddenDefIds(
   avail: readonly Availability[],
@@ -112,10 +112,10 @@ export function shopScaffoldKey(
 }
 
 // Renders one tech-tree node card. States (mutually exclusive):
-//  - owned unique: omitted from the shop (issue #110); this helper returns ""
+//  - owned unique: omitted from the shop; this helper returns ""
 //    if called anyway
 //  - owned repeatable: not dimmed, keeps the Buy button, shows "owned xN"
-//  - missing-requires: omitted from the shop (issue #121); defensive ""
+//  - missing-requires: omitted from the shop; defensive ""
 //  - cannot-afford: Buy disabled, reason shown
 //  - purchasable: Buy enabled
 export function renderDecisionNode(a: Availability, ownedCount: number): string {
@@ -131,7 +131,7 @@ export function renderDecisionNode(a: Availability, ownedCount: number): string 
   const disabled = a.purchasable ? "" : "disabled";
   const button = `<button class="tt-buy" data-buy="${esc(def.id)}" ${disabled}>Buy</button>`;
 
-  // Slim row (issue #140): shared left Buy column, then name / optional
+  // Slim row: shared left Buy column, then name / optional
   // gamble chip / optional owned xN / cost. Category tags are gone (sections
   // already left). Authored description + derived effects sit in a disclosure
   // (hover on desktop, tap on mobile). cannot-afford reason stays on the row
@@ -155,10 +155,9 @@ export function renderDecisionNode(a: Availability, ownedCount: number): string 
   </div>`;
 }
 
-// Single-column shop (issue #139). `renderNode` is a live card (string
-// tests / renderDecisions) or an empty data-section shell (scaffold).
-// `hideDefIds` drops owned unique (#110) and missing-requires (#121) cards.
-// Issue #141: iterate `content.decisions` in loader/catalog order. Hidden
+// Single-column shop. `renderNode` is a live card (string tests / renderDecisions) or an empty data-section shell (scaffold).
+// `hideDefIds` drops owned unique and missing-requires cards.
+// iterate `content.decisions` in loader/catalog order. Hidden
 // ids leave a hole; they are not pulled forward or regrouped.
 function renderShopLayout(
   content: GameContent,
@@ -174,10 +173,10 @@ function renderShopLayout(
 }
 
 // Panel chrome + per-decision section shells for cards still in the shop.
-// Owned unique (#110) and missing-requires (#121) defs are omitted; appView
+// Owned unique and missing-requires defs are omitted; appView
 // rebuilds this scaffold when that hide set changes so Buy-button identity
 // stays stable across ticks.
-// Issue #114: Owned lives under Events in `.side`, not under Alter the system.
+// Owned lives under Events in `.side`, not under Alter the system.
 export function decisionsPanelScaffold(
   content: GameContent,
   ownedInstances: readonly DecisionInstance[] = [],
@@ -193,12 +192,12 @@ export function decisionsPanelScaffold(
     <div class="panel"><h3>Alter the system</h3>${shop}</div>`;
 }
 
-/** Owned panel chrome for the right rail (issue #114). */
+/** Owned panel chrome for the right rail. */
 export function ownedPanelScaffold(): string {
   return `<div class="panel"><h3>Owned</h3><div ${SECTION_ATTR}="${OWNED_LIST_SECTION}"></div></div>`;
 }
 
-// Issue #15: Owned entries carry the same cost line and derived-effects
+// Owned entries carry the same cost line and derived-effects
 // summary as shop cards so a player trimming upkeep does not have to
 // scroll back through Alter the system matching names card by card.
 export function renderOwnedList(ownedInstances: DecisionInstance[], content: GameContent): string {
@@ -229,7 +228,7 @@ export function renderDecisions(avail: Availability[], ownedInstances: DecisionI
     (def) => renderDecisionNode(availById.get(def.id)!, ownedCounts.get(def.id) ?? 0),
     hide,
   );
-  // Shop only — Owned is patched separately under Events (issue #114).
+  // Shop only — Owned is patched separately under Events.
   return `
     <div class="panel"><h3>Alter the system</h3>${shop}</div>`;
 }
@@ -242,7 +241,7 @@ export function renderLog(log: readonly LogEntry[]): string {
 }
 
 // The projects panel is split into two independently-patched sections
-// (issue #6). The in-flight lines change on every tick that moves work, while
+// The in-flight lines change on every tick that moves work, while
 // the offers below them -- which carry the Start buttons -- only change when a
 // project starts, completes, or crosses a gate. Writing the whole panel on
 // every tick destroyed those buttons ~10x/second; keeping the volatile status
@@ -267,7 +266,7 @@ export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: 
   return `<h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}`;
 }
 
-// Issues #123 / #122: omit unmet-prerequisite and already-completed rows.
+// omit unmet-prerequisite and already-completed rows.
 // Keep startable offers plus cannot-afford / already-in-flight (exact strings
 // from projectAvailability).
 function isVisibleProjectOffer(o: ProjectAvailability): boolean {
@@ -301,8 +300,7 @@ export function renderProjectOffers(offers: ProjectAvailability[], state: Readon
 // changes width.
 export function renderTimeControls(paused: boolean, speed: number, options: readonly number[]): string {
   const pauseLabel = paused ? "Start" : "Pause";
-  // When paused, Start is the active control (issue #38 start-paused, issue
-  // #98 Start not Resume): speeds stay dimmed so the bright button is the
+  // When paused, Start is the active control (start-paused, Start not Resume): speeds stay dimmed so the bright button is the
   // one that starts the day clock, not the already-selected 1x that looks
   // like a play toggle.
   const pauseActive = paused ? " tc-active" : "";
@@ -324,7 +322,7 @@ export function renderStall(stalled: boolean): string {
     : "";
 }
 
-// Quiet page footer (issue #45): version + deploy/build time + repo link.
+// Quiet page footer: version + deploy/build time + repo link.
 // Lives in the page scaffold (not a patched region) because build identity
 // never changes during a session. Version is shown as injected (CalVer tag
 // in CI, "x.y.z-dev" locally) with no extra "v" prefix so CalVer tags do
@@ -338,8 +336,7 @@ export function renderBuildStamp(info: BuildInfo): string {
 // game runs (the expiry countdown) while carrying the buttons a player is
 // actively reaching for. So the countdown lives in its own tiny patched
 // section and everything else -- including the option buttons -- is part of a
-// scaffold that only changes when the set of pending choices changes (issue
-// #6). Rebuilding on that event is correct: the buttons themselves are what
+// scaffold that only changes when the set of pending choices changes. Rebuilding on that event is correct: the buttons themselves are what
 // changed.
 export function choiceCountdownSection(challengeId: string): string {
   return `choice-countdown:${challengeId}`;
@@ -357,13 +354,13 @@ export function renderChoicesScaffold(pending: readonly PendingChoice[], challen
       return `<div class="choice-interrupt-item"><strong>${esc(def.name)}</strong>: ${esc(def.description)} <em ${SECTION_ATTR}="${choiceCountdownSection(def.id)}"></em><br/>${buttons}</div>`;
     })
     .join("");
-  // Issue #40: class-based interrupt chrome (sticky host in index.html) replaces
+  // class-based interrupt chrome (sticky host in index.html) replaces
   // the old inline border so the panel reads as a persistent affordance, not a
   // log line.
   return `<div class="panel choice-interrupt" role="alert" aria-label="Decision needed"><h3>Decision needed</h3>${blocks}</div>`;
 }
 
-/** Issue #115: while paused the day clock is frozen, so "N days left" is a fake countdown. */
+/** while paused the day clock is frozen, so "N days left" is a fake countdown. */
 export function renderChoiceCountdown(pc: PendingChoice, day: number, paused = false): string {
   if (paused) return "";
   return `(${pc.expiresDay - day} days left)`;

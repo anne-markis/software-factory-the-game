@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-20
-- **Issues:** player-reported: Ready queue at 0, users still 0, work still finishing, Projects panel ~40 pts left
+- **Reported:** player-reported: Ready queue at 0, users still 0, work still finishing, Projects panel ~40 pts left
 
 ## Context
 

@@ -125,6 +125,15 @@ decision tags (ADR 0002).
 | Lock a structural choice | a new ADR |
 | Author the decision graph | `make graph` (same loader as the game) |
 
+## Code is the context
+
+Comments, tests, and this guide describe the current system. Do not cite
+GitHub ticket numbers or ticket URLs as explanation or provenance.
+Old tickets are not part of the working context. If a rationale still
+matters, write it in the code or an ADR. Historical design snapshots
+under `docs/superpowers/` may still name tickets; they are not
+instructions for changing the code.
+
 ## Out of bounds
 
 - Backend, accounts, or runtime fetches for content.

@@ -21,7 +21,7 @@ describe("applyEffects", () => {
   it("modifyRate creates a modifier that changes effective rate", () => {
     const s = freshState();
     applyEffects(s, [{ type: "modifyRate", target: "all", op: "mul", value: 0.5, durationDays: 5 }], "src-1");
-    expect(effectiveRate(s, "pull")).toBe(1); // base pull 2 (issue #89) x 0.5
+    expect(effectiveRate(s, "pull")).toBe(1); // base pull 2 x 0.5
     expect(effectiveRate(s, "finish")).toBe(0.5); // base finish 1 x 0.5
     expect(s.modifiers[0].expiresDay).toBe(5); // day 0 + 5
   });

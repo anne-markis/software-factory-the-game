@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { formatBuiltAt, getBuildInfo } from "./buildInfo";
 
-describe("buildInfo (issue #45)", () => {
+describe("buildInfo", () => {
   it("exposes version, builtAt, and repo URL from the Vite-injected constants", () => {
     const info = getBuildInfo();
     expect(info.version.length).toBeGreaterThan(0);

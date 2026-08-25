@@ -22,7 +22,22 @@ Before touching code, read when relevant:
 - `docs/CONTENT-AUTHORING.md` — for content/ JSON changes (eras +
   stock-linked fields; `docs/CONTEXT.md` and `docs/adr/` if the locked
   model is in doubt)
-- `docs/superpowers/specs/` — if a spec exists for this area, follow it
+- `docs/superpowers/specs/` — if a spec exists for this area, follow it.
+  Historical snapshots may still name old tickets; the current issue
+  and the existing code are the context, not those ticket numbers.
+
+## Code is the context
+
+Issues are not historical context. The working tree is complete as an
+artifact. Use only:
+
+- the **current** issue's title, body, and comments on that issue
+- the existing code and living guidance (`docs/ARCHITECTURE.md`, ADRs,
+  authoring docs)
+
+Do **not** look up, cite, or follow old GitHub issues. Do **not** add
+GitHub ticket numbers, `(#N)` ticket citations, or GitHub issue URLs to
+source comments, JSDoc, test names, or guidance docs.
 
 ---
 
@@ -106,7 +121,8 @@ orphans, do not invent work.
 
 Before spawning anyone:
 
-1. Read the full issue and any linked code/specs.
+1. Read the current issue and the existing code/specs. Do not treat
+   older tickets as context.
 2. Write **acceptance criteria** (3–6 bullet checkboxes) inferred from the
    issue. If you cannot write testable criteria, comment and stop.
 3. Capture **before state** with evidence:
@@ -396,10 +412,9 @@ Final verification (orchestrator)
   fresh command output or browser observation.
 - Subagents do not commit or push — you do.
 - Stop cleanly rather than ship an uncertain or over-scoped change.
-- Scope by the **current issue's acceptance criteria only** (including criteria
-  clarified or widened by later comments on that issue). Do not treat stale
-  Out of scope notes, adjacent issues, or prior agent decisions as binding
-  when they conflict with those criteria.
+- Scope by the **current issue's** text and comments only, plus the
+  existing code. Do not look up or cite old GitHub issues. Do not add
+  ticket numbers to comments, tests, or docs.
 - Implement what the issue asks; do not redesign adjacent systems.
 - When an enhancement touches defaults or player onboarding, verify a fresh
   game / reset path, not only mid-game saves.

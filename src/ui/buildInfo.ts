@@ -1,4 +1,4 @@
-// Build identity for the in-game stamp (issue #45). Values come from
+// Build identity for the in-game stamp. Values come from
 // import.meta.env.VITE_* (see vite.config.ts): CI sets APP_VERSION /
 // APP_BUILT_AT to the CalVer release tag and UTC build instant; local/dev
 // falls back to package.json + "-dev" and "now". Repo URL is a constant so

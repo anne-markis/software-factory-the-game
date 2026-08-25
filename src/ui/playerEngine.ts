@@ -5,7 +5,7 @@ import type { GameContent, GameState } from "../engine/types";
  * Build the engine the player actually plays.
  *
  * Fresh games and post-Reset loads (no save) start paused so reading the
- * factory does not burn sim-days before the player opts in (issue #38).
+ * factory does not burn sim-days before the player opts in.
  * Restored mid-game saves keep whatever pause flag they were serialized with.
  *
  * Engine.initialState stays unpaused so unit tests that tick a bare Engine

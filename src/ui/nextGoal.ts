@@ -1,4 +1,4 @@
-// Issue #65 / US-4: always-visible next-goal lean for endless runs.
+// US-4: always-visible next-goal lean for endless runs.
 // Pure UI derivation from reputation milestones + contract progression gates
 // — no engine/save changes, no win screen.
 import { projectAvailability, type ProjectAvailability } from "../engine/projects";

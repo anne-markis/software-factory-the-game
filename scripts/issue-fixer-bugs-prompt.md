@@ -15,6 +15,19 @@ Architecture (enforce this):
 - Do not copy era catalogs; later `content/eras/<id>/` folders are deltas
   (ADR 0008). Read `docs/ARCHITECTURE.md`.
 
+## Code is the context
+
+Issues are not historical context. The working tree is complete as an
+artifact. Use only:
+
+- the **current** issue's title, body, and comments on that issue
+- the existing code and living guidance (`docs/ARCHITECTURE.md`, ADRs,
+  authoring docs)
+
+Do **not** look up, cite, or follow old GitHub issues. Do **not** add
+GitHub ticket numbers, `(#N)` ticket citations, or GitHub issue URLs to
+source comments, JSDoc, test names, or guidance docs.
+
 ---
 
 ## Kanban board (source of truth for pickup)
@@ -106,7 +119,8 @@ Prefer **Ready** column bugs. If Ready has none, optionally adopt one
 
 Before spawning anyone:
 
-1. Read the full issue and any linked code.
+1. Read the current issue and the existing code. Do not treat older
+   tickets as context.
 2. Reproduce the bug or confirm the root cause with evidence (file:line,
    test output, or browser observation).
 3. Run baseline verification from repo root:
@@ -359,10 +373,9 @@ Final verification (orchestrator)
   output.
 - Subagents do not commit or push — you do.
 - Stop cleanly rather than ship an uncertain fix.
-- Scope by the **current issue's acceptance criteria only** (including criteria
-  clarified or widened by later comments on that issue). Do not treat stale
-  Out of scope notes, adjacent issues, or prior agent decisions as binding
-  when they conflict with those criteria.
+- Scope by the **current issue's** text and comments only, plus the
+  existing code. Do not look up or cite old GitHub issues. Do not add
+  ticket numbers to comments, tests, or docs.
 - Prefer fixing root cause over patching symptoms.
 - Visual fixes require Subagent D (UX Verifier) and screenshots in the
   PR description; Non-visual fixes skip both.

@@ -57,7 +57,7 @@ describe("detectArchetypes", () => {
   it("fires shifting-the-burden once when 2+ debt-raisers are owned with no mitigation and debt past the band", () => {
     const c = content();
     const s = initialState(c);
-    // Two debt-raising instances -- since issue #89 the stacking agent card is
+    // Two debt-raising instances -- since the stacking agent card is
     // the shop's debt raiser, and each copy adds +0.1 to the multiplier. No
     // debt-lowering decision owned, techDebt past freeDebt (400).
     s.decisions.push({ instanceId: "i-agent", defId: "agent" }, { instanceId: "i-agent-2", defId: "agent" });
@@ -102,9 +102,8 @@ describe("detectArchetypes", () => {
     expect(messages).toHaveLength(0);
   });
 
-  // Studio content ships no synergies since issue #89 (the agent/harness
-  // synergy became a pair of global multipliers), so the per-instance synergy
-  // accounting from issue #14 is pinned against a fixture: "worker" raises debt,
+  // Studio content ships no synergies since (the agent/harness synergy became a pair of global multipliers), so the per-instance synergy
+  // accounting from is pinned against a fixture: "worker" raises debt,
   // and only a worker bought while "provider" was owned got the cut variant.
   // Provider itself has no debt effect of its own.
   function synergyContent(): GameContent {
@@ -120,7 +119,7 @@ describe("detectArchetypes", () => {
     return { start: parseStartConfig(startJson), decisions: [worker, provider], challenges: [], projects: [] };
   }
 
-  it("still fires shifting-the-burden when a synergy provider is owned but no instance was bought under it (issue #14)", () => {
+  it("still fires shifting-the-burden when a synergy provider is owned but no instance was bought under it", () => {
     const c = synergyContent();
     const s = initialState(c);
     s.decisions.push(
@@ -150,7 +149,7 @@ describe("detectArchetypes", () => {
     expect(messages).toHaveLength(0);
   });
 
-  it("fires shifting-the-burden through real purchases of stacked agents (issue #89)", () => {
+  it("fires shifting-the-burden through real purchases of stacked agents", () => {
     // End-to-end through applyDecision rather than hand-built instances: two
     // agents and nothing that tames them is the shape the archetype is about.
     const c = content();
@@ -166,11 +165,11 @@ describe("detectArchetypes", () => {
     expect(messages.some((m) => m.startsWith("Shifting the burden"))).toBe(true);
   });
 
-  it("suppresses shifting-the-burden once the harness is bought, whenever the agents were (issue #89)", () => {
+  it("suppresses shifting-the-burden once the harness is bought, whenever the agents were", () => {
     // The harness now cuts debt through its own effects (mul 0.7) rather than
     // through a purchase-time synergy on the agent, so it mitigates every
     // agent -- including the ones bought before it, which the old synergy
-    // shape left permanently untamed (issue #14).
+    // shape left permanently untamed.
     const c = content();
     const s = initialState(c);
     const rng = createRng(c.start.seed);
@@ -226,7 +225,7 @@ describe("detectArchetypes", () => {
     // Same shape as the test-suite case, but via the scaleStock effect instead
     // of modifyDebtMultiplier: owning it should suppress shifting-the-burden
     // even with 2+ raisers owned and debt past the band. Fixture-based since
-    // the refactor/rebuild pair left Studio with issue #89.
+    // the refactor/rebuild pair left Studio.
     const raiser: DecisionDef = {
       id: "raiser", name: "Raiser", description: "d", category: "ship-faster", cost: {}, removable: true,
       effects: [{ type: "modifyDebtMultiplier", op: "add", value: 0.1 }],
@@ -254,9 +253,9 @@ describe("detectArchetypes", () => {
     expect(messages).toHaveLength(0);
   });
 
-  it("counts an additive debt raiser (op add, value > 0) as a raiser (issue #89)", () => {
+  it("counts an additive debt raiser (op add, value > 0) as a raiser", () => {
     // The stacking agent card raises debt by adding to the multiplier rather
-    // than multiplying it. Before issue #89 raisesDebt only looked at mul ops,
+    // than multiplying it. Originally, raisesDebt only looked at mul ops,
     // which would have made the shipped Studio shop archetype-blind.
     const defs = parseDecisions(decisionsJson);
     const agent = defs.find((d) => d.id === "agent")!;
@@ -316,7 +315,7 @@ describe("detectArchetypes", () => {
     expect(messages.some((m) => m.startsWith("Shifting the burden"))).toBe(true);
   });
 
-  // Issue #89 review: the synergy comparison weighs add-op debt terms too, the
+  // review: the synergy comparison weighs add-op debt terms too, the
   // same way effectiveDebtMultiplier does (adds first, then muls, from the
   // content's base). Fixture: an additive raiser whose synergy variant adds
   // less. Both variants are add-only, so a mul-only comparison would score them

@@ -23,7 +23,7 @@ function makeContent(): GameContent {
   };
 }
 
-describe("gameFeel stat flash (issue #67)", () => {
+describe("gameFeel stat flash", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -100,7 +100,7 @@ describe("gameFeel stat flash (issue #67)", () => {
     expect(afterShip.value).toBe("290");
   });
 
-  it("includes a Users delivery stat after Reputation (Studio spine, issue #88)", () => {
+  it("includes a Users delivery stat after Reputation (Studio spine)", () => {
     const content = makeContent();
     const state = initialState(content);
     const views = deliveryStatViews(state);
@@ -132,7 +132,7 @@ describe("gameFeel stat flash (issue #67)", () => {
   });
 });
 
-describe("gameFeel gamble reveal (issue #67)", () => {
+describe("gameFeel gamble reveal", () => {
   it("renders a status line with decision name and outcome", () => {
     const html = renderGambleReveal({
       decisionName: "Hire basic developer",

@@ -12,9 +12,9 @@ describe("buildTechTree", () => {
     const tree = buildTechTree(content());
     expect(tree.chains).toHaveLength(2);
     expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent"]);
-    // Studio shop (issue #89): the hire chain lost its senior-dev/eng-manager
+    // Studio shop: the hire chain lost its senior-dev/eng-manager
     // tiers, so basic-dev is now a standalone card alongside better-tooling and
-    // the two monetization cards (issue #88).
+    // the two monetization cards.
     expect(tree.standalone.map((d) => d.id).sort()).toEqual(
       ["basic-dev", "better-tooling", "one-time-product", "subscription"].sort(),
     );
@@ -28,7 +28,7 @@ describe("buildTechTree", () => {
     expect(chain.tiers[1].map((d) => d.id)).toEqual(["ci-cd"]);
   });
 
-  // Issue #89: agent-orchestration's prerequisite is a count gate
+  // agent-orchestration's prerequisite is a count gate
   // (requiresCounts: 2x agent) rather than a plain requires, so this also pins
   // that count gates place a card in the tree the same way requires does.
   it("assigns the agent chain tiers: agent 0, harness and orchestration 1", () => {
