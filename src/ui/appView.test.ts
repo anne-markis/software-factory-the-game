@@ -689,6 +689,53 @@ describe("appView Decision-needed interrupt (issue #40 / #118)", () => {
   });
 });
 
+describe("appView slim shop disclosure (issue #140)", () => {
+  it("toggles details on name tap without purchasing", () => {
+    const h = mount();
+    const buy = h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!;
+    const node = buy.closest(".tt-node")!;
+    const name = node.querySelector<HTMLElement>(".tt-node-name")!;
+    const disclose = node.querySelector<HTMLElement>(".tt-node-disclose")!;
+    expect(node.classList.contains("tt-open")).toBe(false);
+    const ownedBefore = h.engine.getState().decisions.length;
+    name.click();
+    expect(h.engine.getState().decisions.length).toBe(ownedBefore);
+    expect(h.actions).toBe(0);
+    expect(node.classList.contains("tt-open")).toBe(true);
+    expect(disclose.getAttribute("aria-expanded")).toBe("true");
+    name.click();
+    expect(node.classList.contains("tt-open")).toBe(false);
+    expect(disclose.getAttribute("aria-expanded")).toBe("false");
+    expect(h.engine.getState().decisions.length).toBe(ownedBefore);
+  });
+
+  it("still buys when Buy is clicked after the name was tapped", () => {
+    const h = mount();
+    const buy = h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!;
+    const node = buy.closest(".tt-node")!;
+    node.querySelector<HTMLElement>(".tt-node-name")!.click();
+    expect(node.classList.contains("tt-open")).toBe(true);
+    expect(h.engine.getState().decisions.some((d) => d.defId === "test-suite")).toBe(false);
+    buy.click();
+    expect(h.engine.getState().decisions.some((d) => d.defId === "test-suite")).toBe(true);
+    expect(h.actions).toBe(1);
+  });
+
+  it("keeps an expanded shop row open across ticks that do not rewrite the card", () => {
+    const h = mount();
+    const buy = h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!;
+    const node = buy.closest(".tt-node")!;
+    node.querySelector<HTMLElement>(".tt-node-name")!.click();
+    expect(node.classList.contains("tt-open")).toBe(true);
+    for (let i = 0; i < 5; i++) {
+      h.engine.tick();
+      h.view.render();
+    }
+    expect(h.root.querySelector('[data-buy="test-suite"]')!.closest(".tt-node")).toBe(node);
+    expect(node.classList.contains("tt-open")).toBe(true);
+  });
+});
+
 describe("appView next-goal indicator is not shown", () => {
   it("does not render the Next line on a fresh game", () => {
     const h = mount();

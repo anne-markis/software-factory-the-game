@@ -80,9 +80,9 @@ export interface Synergy {
   gamble?: GambleOutcome[]; // replaces base gamble when owned
 }
 
-// Player-facing category tag on a shop card (see CATEGORY_LABELS in
-// src/ui/render.ts). Required on every decision; the shop is a flat list
-// and does not group by this field.
+// Closed enum on every decision (schema). The shop no longer paints a
+// player-facing category tag (issue #140); keep the field for authoring.
+// The shop is a flat list and does not group by this field.
 export type DecisionCategory = "ship-faster" | "earn-income" | "tame-debt" | "prevent-trouble" | "change-structure";
 
 // Additive stock-flow modifier owned by a decision (ADR 0006 / issue #85).

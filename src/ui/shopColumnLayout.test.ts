@@ -6,8 +6,9 @@ import { fileURLToPath } from "node:url";
 // Issue #139: Alter the system is one vertical column at every viewport.
 // Flatten (#138) left a wrapping grid plus leftover chain-row CSS
 // (190px nodes, overflow-x: auto, 900px stack/rotate). Stacking is now
-// the only layout — desktop and mobile share it. Slimming is a later
-// change; this file pins list-flow only.
+// the only layout — desktop and mobile share it. Issue #140 slims each
+// row (left Buy column + hover/tap disclosure); this file pins list-flow
+// and that shared Buy column.
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indexHtmlPath = path.resolve(__dirname, "../../index.html");
@@ -62,5 +63,27 @@ describe("shop single-column layout (issue #139)", () => {
     expect(mobile!).not.toMatch(/\.tt-arrow/);
     expect(mobile!).not.toMatch(/\.tt-shop-grid/);
     expect(mobile!).not.toMatch(/rotate\(90deg\)/);
+  });
+});
+
+describe("shop slim row layout (issue #140)", () => {
+  it("puts every Buy in a shared left column", () => {
+    expect(html).toMatch(/\.tt-node-row\s*\{[^}]*display:\s*grid/);
+    expect(html).toMatch(/\.tt-node-row\s*\{[^}]*grid-template-columns:\s*3\.4rem\s+1fr/);
+    expect(html).toMatch(/\.tt-buy\s*\{[^}]*min-width:\s*3\.4rem/);
+  });
+
+  it("hides description and derived effects until hover or tap", () => {
+    expect(html).toMatch(/\.tt-node-details\s*\{[^}]*display:\s*none/);
+    expect(html).toMatch(/\.tt-node\.tt-open\s+\.tt-node-details\s*\{[^}]*display:\s*block/);
+    expect(html).toMatch(
+      /@media\s*\(hover:\s*hover\)[\s\S]*\.tt-node-main:hover\s+\.tt-node-details\s*\{[^}]*display:\s*block/,
+    );
+  });
+
+  it("does not use native title tooltips as the shop disclosure", () => {
+    // Hover/tap CSS is the disclosure; a title= fallback on the name would
+    // fight that. Gamble chip title (risk hint) is unrelated chrome.
+    expect(html).not.toMatch(/\.tt-node-name[^{]*\{[^}]*title/);
   });
 });

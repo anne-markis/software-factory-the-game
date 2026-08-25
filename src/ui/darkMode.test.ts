@@ -223,7 +223,7 @@ const PAIRS: Pair[] = [
   { label: "body text on body background", fg: bodyFg, bg, category: "text" },
   { label: ".stat-label on body background", fg: tokenColor(".stat-label", "color"), bg, category: "text" },
   { label: ".panel h4 small on body background", fg: tokenColor(".panel h4 small", "color"), bg, category: "text" },
-  { label: ".tt-node-meta on body background", fg: tokenColor(".tt-node-meta", "color"), bg, category: "text" },
+  { label: ".tt-cost on body background", fg: tokenColor(".tt-cost", "color"), bg, category: "text" },
   { label: ".tt-gamble on body background", fg: tokenColor(".tt-gamble", "color"), bg, category: "text" },
   { label: ".tt-node-desc on body background", fg: tokenColor(".tt-node-desc", "color"), bg, category: "text" },
   { label: ".tt-effects on body background", fg: tokenColor(".tt-effects", "color"), bg, category: "text" },
