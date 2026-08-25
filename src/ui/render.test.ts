@@ -4,6 +4,7 @@ import {
   renderStats,
   renderDeliveryStats,
   renderDecisions,
+  renderDecisionNode,
   decisionsPanelScaffold,
   ownedPanelScaffold,
   renderOwnedList,
@@ -35,6 +36,12 @@ function content(): GameContent {
 
 function shopBuyIds(html: string): string[] {
   return [...html.matchAll(/data-buy="([^"]+)"/g)].map((m) => m[1]!);
+}
+
+function nodeParts(html: string): { chrome: string; details: string } {
+  const idx = html.indexOf('<div class="tt-node-details">');
+  expect(idx).toBeGreaterThan(-1);
+  return { chrome: html.slice(0, idx), details: html.slice(idx) };
 }
 
 describe("esc", () => {
@@ -246,7 +253,7 @@ describe("renderDecisions", () => {
     const shop = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     const owned = renderOwnedList([...e.getState().decisions], content());
     // Card node is gone: no tt-node name, no tt-owned placeholder, no Buy.
-    expect(shop).not.toContain('<div class="tt-node-name">Add test suite</div>');
+    expect(shop).not.toMatch(/tt-node-name[^>]*>Add test suite/);
     expect(shop).not.toContain("tt-owned");
     expect(shop).not.toContain('data-buy="test-suite"');
     expect(shop).not.toContain("<h3>Owned</h3>");
@@ -286,17 +293,18 @@ describe("renderDecisions", () => {
   it("renders a flat shop: no chain headers, Standalone, or arrows", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(html).toContain('<div class="tt-node-name">Add test suite</div>');
-    expect(html).toContain('<div class="tt-node-name">Add coding agent</div>');
-    expect(html).toContain('<div class="tt-node-name">Hire basic developer</div>');
+    expect(html).toMatch(/tt-node-name[^>]*>Add test suite</);
+    expect(html).toMatch(/tt-node-name[^>]*>Add coding agent</);
+    expect(html).toMatch(/tt-node-name[^>]*>Hire basic developer</);
     expect(html).not.toMatch(/<h4>/);
     expect(html).not.toContain("Standalone");
     expect(html).not.toContain("tt-arrow");
     expect(html).not.toContain("&rarr;");
     expect(html).toContain("tt-shop-grid");
-    // Category tags stay on the fat card; slimming is a later change.
-    expect(html).toContain('<span class="tt-cat">speed</span>');
-    expect(html).toContain('<span class="tt-cat">debt</span>');
+    // Category tags left with the fat card (issue #140).
+    expect(html).not.toContain("tt-cat");
+    expect(html).not.toContain(">speed<");
+    expect(html).not.toContain(">debt<");
   });
 
   it("keeps today's tree-walk order, not JSON array order", () => {
@@ -350,10 +358,13 @@ describe("renderDecisions", () => {
     expect(orchestrationDesc.length).toBeGreaterThan(110);
     expect(html).toContain(`<div class="tt-node-desc">${orchestrationDesc}</div>`);
     expect(html).not.toContain("...");
-    // The derived effects line sits beneath the description, terse and
-    // numbers-only, generated from structured effects (see effectSummary.ts)
-    // -- test-suite's is a known, stable case.
+    // Description + derived effects live in the disclosure, not on the row
+    // (issue #140). test-suite's derived line is a known, stable case.
     expect(html).toContain('<div class="tt-effects">all rates x0.5 for 5d, debt x0.5</div>');
+    const orch = html.indexOf("A planner splits work");
+    const orchDetails = html.lastIndexOf('<div class="tt-node-details">', orch);
+    expect(orchDetails).toBeGreaterThan(-1);
+    expect(orchDetails).toBeLessThan(orch);
   });
 
   it("flags gamble decisions with a chip and omits it from deterministic ones", () => {
@@ -368,6 +379,71 @@ describe("renderDecisions", () => {
     // The "(gamble)" suffix moved out of the derived line onto the chip, so a
     // gamble card shows the range alone.
     expect(html).not.toContain("(gamble)");
+  });
+
+  // Issue #140: slim shop row — Buy | name, gamble, owned, cost. Description
+  // and derived effects move into a disclosure; category tags leave the chrome.
+  it("renders a slim row with left Buy, name, optional gamble/owned, and cost (issue #140)", () => {
+    const e = new Engine(content());
+    const avail = e.availableDecisions();
+    const testSuite = avail.find((a) => a.def.id === "test-suite")!;
+    const html = renderDecisionNode(testSuite, 0);
+    const { chrome, details } = nodeParts(html);
+
+    expect(html).toMatch(/<button class="tt-buy" data-buy="test-suite"\s*>Buy<\/button>/);
+    expect(chrome.indexOf("tt-buy")).toBeLessThan(chrome.indexOf("tt-node-name"));
+    expect(chrome.indexOf("tt-node-name")).toBeLessThan(chrome.indexOf("tt-cost"));
+    expect(chrome).toMatch(/tt-node-name[^>]*>Add test suite</);
+    expect(chrome).toContain('$500 once');
+    expect(chrome).toContain("tt-node-disclose");
+    expect(chrome).toMatch(/aria-expanded="false"/);
+    expect(chrome).not.toContain("tt-gamble");
+    expect(chrome).not.toContain("owned x");
+    expect(chrome).not.toContain("tt-cat");
+    expect(chrome).not.toContain("tt-node-desc");
+    expect(chrome).not.toContain("tt-effects");
+    expect(details).toContain("tt-node-desc");
+    expect(details).toContain("Halves tech debt permanently");
+    expect(details).toContain('<div class="tt-effects">all rates x0.5 for 5d, debt x0.5</div>');
+    expect(details).not.toContain("data-buy");
+    // Native title is not the description disclosure.
+    expect(html).not.toContain(`title="${testSuite.def.description}"`);
+  });
+
+  it("keeps the gamble chip on the row, not only in the disclosure (issue #140)", () => {
+    const e = new Engine(content());
+    const basic = e.availableDecisions().find((a) => a.def.id === "basic-dev")!;
+    const { chrome, details } = nodeParts(renderDecisionNode(basic, 0));
+    expect(chrome).toContain('class="tt-gamble"');
+    expect(chrome.indexOf("tt-node-name")).toBeLessThan(chrome.indexOf("tt-gamble"));
+    expect(chrome.indexOf("tt-gamble")).toBeLessThan(chrome.indexOf("tt-cost"));
+    expect(details).not.toContain("tt-gamble");
+  });
+
+  it("shows repeatable owned xN on the row with a live Buy (issue #140)", () => {
+    const e = new Engine(content());
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    const agent = e.availableDecisions().find((a) => a.def.id === "agent")!;
+    const html = renderDecisionNode(agent, 2);
+    const { chrome } = nodeParts(html);
+    expect(chrome).toContain("owned x2");
+    expect(html).toMatch(/<button class="tt-buy" data-buy="agent"\s*>Buy<\/button>/);
+    expect(html).not.toContain("disabled");
+  });
+
+  it("keeps cannot-afford reason on the row without opening details (issue #140)", () => {
+    const c = content();
+    c.start.stocks.budget = 0;
+    const e = new Engine(c);
+    const tooling = e.availableDecisions().find((a) => a.def.id === "better-tooling")!;
+    const html = renderDecisionNode(tooling, 0);
+    const { chrome, details } = nodeParts(html);
+    expect(html).toMatch(/<button class="tt-buy" data-buy="better-tooling" disabled>Buy<\/button>/);
+    expect(chrome).toContain('class="tt-reason"');
+    expect(chrome).toContain("cannot afford");
+    expect(details).not.toContain("cannot afford");
+    expect(details).not.toContain("tt-reason");
   });
 });
 

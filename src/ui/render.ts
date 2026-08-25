@@ -1,7 +1,7 @@
 import type { Availability } from "../engine/decisions";
 import { contextSwitchTax } from "../engine/modifiers";
 import type { ProjectAvailability } from "../engine/projects";
-import type { DecisionCategory, DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
+import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
 import { buildTechTree } from "./techTree";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { SECTION_ATTR } from "./domPatch";
@@ -31,17 +31,6 @@ export function renderStats(state: Readonly<GameState>, content: GameContent): s
 export function renderDeliveryStats(state: Readonly<GameState>): string {
   return statsRowHtml(deliveryStatViews(state), "delivery-stats");
 }
-
-// Short player-facing labels for the tech-tree node categories. Every shipped
-// decision carries a required category (see DecisionDef in ../engine/types),
-// so this map is exhaustive over DecisionCategory.
-const CATEGORY_LABELS: Record<DecisionCategory, string> = {
-  "ship-faster": "speed",
-  "earn-income": "income",
-  "tame-debt": "debt",
-  "prevent-trouble": "safety",
-  "change-structure": "structure",
-};
 
 function costLine(def: DecisionDef): string {
   return (
@@ -138,26 +127,32 @@ export function renderDecisionNode(a: Availability, ownedCount: number): string 
   const ownedRepeatable = ownedCount > 0;
   const stateClass = a.code === "cannot-afford" ? "tt-cannot-afford" : "tt-buyable";
 
-  let stateLine = "";
-  if (ownedRepeatable) stateLine += `<span class="tt-tag-state">owned x${ownedCount}</span>`;
-  if (a.reason) stateLine += `${stateLine ? " " : ""}<span class="tt-reason">${esc(a.reason)}</span>`;
+  const ownedTag = ownedRepeatable ? `<span class="tt-tag-state">owned x${ownedCount}</span>` : "";
+  const reason = a.reason ? `<span class="tt-reason">${esc(a.reason)}</span>` : "";
   const disabled = a.purchasable ? "" : "disabled";
-  const button = `<button data-buy="${esc(def.id)}" ${disabled}>Buy</button>`;
+  const button = `<button class="tt-buy" data-buy="${esc(def.id)}" ${disabled}>Buy</button>`;
 
-  // Card anatomy (design doc section 4): name + category tag, cost line,
-  // authored description (benefit then catch, full text -- no truncation:
-  // descriptions were rewritten in Release 20 to be short enough to always
-  // fit), derived effects (numbers straight from `effects`, so they can't
-  // drift from a balance retune the way hand-written prose can), then
-  // state/button. The derived line is omitted entirely when there is
-  // nothing to derive (synergy targets and challenge gates).
+  // Slim row (issue #140): shared left Buy column, then name / optional
+  // gamble chip / optional owned xN / cost. Category tags are gone (sections
+  // already left). Authored description + derived effects sit in a disclosure
+  // (hover on desktop, tap on mobile). cannot-afford reason stays on the row
+  // so a disabled Buy is explained without opening details. The derived line
+  // is omitted when there is nothing to derive (synergy targets / gates).
   return `<div class="tt-node ${stateClass}">
-    <div class="tt-node-name">${esc(def.name)}</div>
-    <div class="tt-node-meta"><span>${gambleTag(def)}<span class="tt-cat">${esc(CATEGORY_LABELS[def.category])}</span></span> <span class="tt-cost">${esc(costLine(def))}</span></div>
-    <div class="tt-node-desc">${esc(def.description)}</div>
-    ${effectsLine(def)}
-    ${stateLine ? `<div class="tt-node-state">${stateLine}</div>` : ""}
-    ${button}
+    <div class="tt-node-row">
+      ${button}
+      <div class="tt-node-main">
+        <button type="button" class="tt-node-disclose" aria-expanded="false">
+          <span class="tt-node-name">${esc(def.name)}</span>
+          ${gambleTag(def)}${ownedTag}<span class="tt-cost">${esc(costLine(def))}</span>
+        </button>
+        ${reason}
+        <div class="tt-node-details">
+          <div class="tt-node-desc">${esc(def.description)}</div>
+          ${effectsLine(def)}
+        </div>
+      </div>
+    </div>
   </div>`;
 }
 

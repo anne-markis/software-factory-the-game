@@ -141,28 +141,35 @@
       /* Fixed ~7-line Events history; older lines scroll inside the box so
          Owned below it stays visible in the right rail (issue #114). */
       .log { line-height: 1.35; max-height: calc(1.35em * 7); overflow-y: auto; font-size: 0.85rem; }
-      /* Alter the system (issue #139). One vertical column of full-width
-         cards at every viewport — no wrap, no leftover 190px chain
-         columns, no overflow-x scroll. Card internals stay fat; slimming
-         is a later change. Node copy is static per card so ticking
-         numbers elsewhere never reflow this panel (R14). */
+      /* Alter the system (issue #139 / #140). One vertical column of
+         full-width slim rows at every viewport — shared left Buy column,
+         name / gamble / owned / cost on the row, description + derived
+         effects on hover (desktop) or tap (mobile). Node copy is static
+         per card so ticking numbers elsewhere never reflow this panel (R14). */
       .tt-shop-grid { display: flex; flex-direction: column; gap: 0.5rem; }
       .tt-shop-grid .tt-node { width: 100%; }
       .tt-node { border: 1px solid var(--border); padding: 0.4rem 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
+      .tt-node-row { display: grid; grid-template-columns: 3.4rem 1fr; column-gap: 0.5rem; align-items: start; }
+      .tt-buy { min-width: 3.4rem; box-sizing: border-box; }
       .tt-node-name { font-weight: bold; }
-      .tt-node-meta { color: var(--fg-dim); display: flex; justify-content: space-between; gap: 0.5rem; margin: 0.15rem 0; }
+      .tt-node-disclose { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem; width: 100%; margin: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+      .tt-cost { color: var(--fg-dim); }
       /* Gamble chip: a decision whose outcome is a lucky-or-unlucky roll at
          purchase. Reuses the existing amber warning tone (.tt-reason / .stall
-         family) as an outlined badge so it reads as "risk here" at a glance,
-         distinct from the plain dim category label beside it. */
+         family) as an outlined badge so it reads as "risk here" at a glance. */
       .tt-gamble { color: var(--accent-amber); border: 1px solid var(--accent-amber); border-radius: 3px; padding: 0 0.25rem; margin-right: 0.3rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
+      .tt-node-details { display: none; margin-top: 0.25rem; }
+      .tt-node.tt-open .tt-node-details { display: block; }
+      @media (hover: hover) and (pointer: fine) {
+        .tt-node-main:hover .tt-node-details { display: block; }
+      }
       .tt-node-desc { color: var(--desc); margin-bottom: 0.25rem; }
       /* Derived effects line (Release 20 card legibility): terse, numbers-only
          summary generated from the decision's structured effects data (see
          src/ui/effectSummary.ts), rendered beneath the authored description.
          Dimmer than .tt-node-desc so the authored benefit/catch prose reads
          first and the hard numbers read as a quieter confirmation underneath
-         -- reuses the existing #666 dim tone from .tt-node-meta rather than
+         -- reuses the existing #666 dim tone from .tt-cost rather than
          introducing a new color. */
       .tt-effects { color: var(--fg-dim); font-size: 0.8rem; margin-bottom: 0.25rem; }
       /* Issue #15: Owned list mirrors shop cost + derived-effects so upkeep
@@ -171,7 +178,6 @@
       .owned-item-head { margin-bottom: 0.15rem; }
       .owned-cost { color: var(--fg-dim); font-size: 0.85rem; }
       .owned-item .tt-effects { margin-bottom: 0; }
-      .tt-node-state { margin-bottom: 0.25rem; }
       .tt-reason { color: var(--accent-amber); }
       .tt-node.tt-locked { opacity: 0.5; }
       .tt-node.tt-owned { opacity: 0.6; }

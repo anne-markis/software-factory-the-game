@@ -264,7 +264,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     if (target.id === "pause") {
       togglePause();
       return; // togglePause already re-rendered and saved
-    } else if (target.dataset.buy) {
+    } else if (target.closest("[data-buy]")) {
       // Prefer the button itself: a nested click target would miss data-buy.
       const buyEl = target.closest<HTMLElement>("[data-buy]") ?? target;
       const defId = buyEl.dataset.buy;
@@ -287,6 +287,13 @@ export function mountAppView(deps: AppViewDeps): AppView {
       } catch (err) {
         deps.onError((err as Error).message);
       }
+      return;
+    } else if (target.closest(".tt-node") && !target.closest(".tt-node-details")) {
+      // Issue #140: first tap on the row chrome (name, not Buy) discloses
+      // description + effects. Never purchases. Buy is its own tap target.
+      const node = target.closest<HTMLElement>(".tt-node")!;
+      const open = node.classList.toggle("tt-open");
+      node.querySelector(".tt-node-disclose")?.setAttribute("aria-expanded", open ? "true" : "false");
       return;
     } else if (target.dataset.remove) {
       // Issue #16 / FR-7.1: Remove is irreversible (modifiers dropped, one-time
