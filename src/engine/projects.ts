@@ -1,7 +1,7 @@
 import type { GameContent, GameState, ProjectDef } from "./types";
 import { availability } from "./decisions";
 import { log } from "./tick";
-import { unshippedWork } from "./work";
+import { drainUnshippedWork, unshippedWork } from "./work";
 
 export interface ProjectAvailability {
   def: ProjectDef;
@@ -58,6 +58,15 @@ export function startProject(state: GameState, content: GameContent, defId: stri
     ...(def.completionStockGrants ? { completionStockGrants: def.completionStockGrants.map((g) => ({ ...g })) } : {}),
   });
   log(state, `Started project: ${def.name} (+${def.sizePoints} points, -$${def.upfrontCost})`);
+}
+
+export function abandonProject(state: GameState, defId: string): void {
+  const idx = state.projects.findIndex((p) => p.defId === defId);
+  if (idx < 0) throw new Error(`${defId} is not in flight`);
+  const p = state.projects[idx];
+  drainUnshippedWork(state, p.remaining);
+  state.projects.splice(idx, 1);
+  log(state, `Abandoned project: ${p.name} (${p.remaining} points discarded)`);
 }
 
 export function isStalled(state: GameState, content: GameContent): boolean {

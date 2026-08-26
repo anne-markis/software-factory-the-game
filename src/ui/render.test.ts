@@ -565,6 +565,8 @@ describe("renderProjectsStatus", () => {
     // Fresh engine has not ticked yet — realized Points/Day is 0 → stalled
     // (FR-3.2).
     expect(html).toContain("· stalled");
+    expect(html).toContain('data-abandon="launch-beta"');
+    expect(html).toContain(">Abandon<");
     // The Start buttons live in the sibling offers section, not here, so the
     // per-tick progress update cannot tear them down.
     expect(html).not.toContain('data-project="');

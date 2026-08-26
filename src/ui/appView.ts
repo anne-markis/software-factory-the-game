@@ -302,6 +302,19 @@ export function mountAppView(deps: AppViewDeps): AppView {
         return;
       }
       engine.removeDecision(target.dataset.remove);
+    } else if (target.closest("[data-abandon]")) {
+      const el = target.closest<HTMLElement>("[data-abandon]")!;
+      const defId = el.dataset.abandon;
+      if (!defId) return;
+      const name = engine.getState().projects.find((p) => p.defId === defId)?.name ?? "this project";
+      if (!confirm(`Abandon ${name}? Remaining work is discarded. Already shipped pay is kept.`)) {
+        return;
+      }
+      try {
+        engine.abandonProject(defId);
+      } catch (err) {
+        deps.onError((err as Error).message);
+      }
     } else if (target.dataset.choice && target.dataset.option) {
       engine.resolveChoice(target.dataset.choice, target.dataset.option);
     } else if (target.dataset.project) {
