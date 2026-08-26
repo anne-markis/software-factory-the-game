@@ -120,7 +120,7 @@ describe("tick", () => {
   // budget bonus (attributeShipped's completion branch), from
   // ActiveProject.reputationReward (seeded from initialProject.reputationReward
   // for the starting project). Shrinks the initial project to complete fast,
-  // matching the existing FIFO-completion tests' pattern (see projects.test.ts).
+  // matching the existing completion tests' pattern (see projects.test.ts).
   it("earns reputation on project completion, alongside the completion bonus", () => {
     const content = testContent();
     content.start.initialProject.sizePoints = 2;

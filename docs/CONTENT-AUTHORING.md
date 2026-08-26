@@ -86,8 +86,8 @@ match).
 ## Effects
 
 All eight types are one discriminated union (`effectSchema`). Extra keys
-fail. `add` modifiers on a rate sum first, then `mul`, then context-switch
-tax (`src/engine/modifiers.ts`).
+fail. `add` modifiers on a rate sum first, then `mul`, then debt and stock
+drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 
 | type | Notes that are easy to get wrong |
 | --- | --- |
@@ -156,9 +156,9 @@ Shape: `projectSchema`. The starting contract is `start.json`
 `initialProject.sizePoints`.
 
 - `sizePoints` — added to Ready and set as `remaining` on start.
-- `upfrontCost` / `payoutPerPoint` / `completionBonus` — FIFO: shipped
-  points hit the oldest in-flight project; bonus and removal fire when
-  `remaining` hits ~0.
+- `upfrontCost` / `payoutPerPoint` / `completionBonus` — shipped credit
+  splits equally across in-flight remainings; bonus and removal fire when
+  that contract's `remaining` hits ~0. Factory Points/Day is conserved.
 - `requiresCompleted` — count of any completed projects
   (`state.completedProjects`), not a specific id.
 - `requiresCompletedId` — that specific id must be in
@@ -176,7 +176,8 @@ Shape: `projectSchema`. The starting contract is `start.json`
 
 Availability order: in-flight → unique already-completed → count floor →
 specific id → reputation → afford (`src/engine/projects.ts`). Extra
-concurrent projects apply `contextSwitchFactor ^ (n - 1)` to all rates.
+in-flight contracts split ship credit equally (`1/n`); they do not slow
+factory rates. `contextSwitchFactor` in `start.json` is unused.
 
 ## `start.json` knobs
 

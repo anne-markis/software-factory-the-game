@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
 import { parseStartConfig, parseProjects } from "./content";
 import { projectsJson, startJson } from "./loadShippedContent";
-import { effectiveRate, contextSwitchTax } from "./modifiers";
+import { effectiveRate } from "./modifiers";
 import { applyEffects } from "./effects";
 import type { GameContent, GameState, ProjectDef } from "./types";
 
@@ -27,13 +27,15 @@ describe("projects", () => {
     expect(s.projects).toHaveLength(2);
   });
 
-  it("applies the context-switch tax with multiple projects in flight", () => {
+  it("does not change factory rates when a second project is in flight", () => {
     const e = new Engine(content());
-    expect(contextSwitchTax(e.getState())).toBe(1);
+    const pullAlone = effectiveRate(e.getState(), "pull");
+    const finishAlone = effectiveRate(e.getState(), "finish");
+    const deployAlone = effectiveRate(e.getState(), "deploy");
     e.startProject("gig-bugfix");
-    expect(contextSwitchTax(e.getState())).toBeCloseTo(0.85);
-    expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(1.7); // base pull 2 x 0.85
-    expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(0.85); // base finish 1 x 0.85
+    expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(pullAlone);
+    expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(finishAlone);
+    expect(effectiveRate(e.getState(), "deploy")).toBeCloseTo(deployAlone);
   });
 
   it("gates versions on the prior completed id and paid work on budget", () => {
@@ -52,19 +54,145 @@ describe("projects", () => {
     expect(() => poor.startProject("paid-gig")).toThrow(/afford/);
   });
 
-  it("FIFO attribution completes the oldest project first and pays its bonus", () => {
+  it("equal ship-credit completes the smaller remaining first, not start order", () => {
+    const tiny: ProjectDef = {
+      id: "tiny-credit",
+      name: "Tiny credit",
+      sizePoints: 2,
+      upfrontCost: 0,
+      payoutPerPoint: 0,
+      completionBonus: 50,
+      reputationReward: 0,
+    };
     const c = content();
-    shrinkStart(c);
+    c.projects = [tiny];
+    shrinkStart(c, 20);
     const e = new Engine(c);
-    e.startProject("gig-plugin"); // backlog now 2 + 450
-    // run until the first 2 shipped points complete the initial project
-    for (let i = 0; i < 12; i++) e.tick();
+    e.startProject("tiny-credit");
+    const s0 = e.getState() as GameState;
+    s0.stocks.backlog = 0;
+    s0.stocks.inProgress = 0;
+    s0.stocks.done = 22;
+    s0.debtMultiplierBase = 0;
+    expect(s0.projects.map((p) => p.defId)).toEqual(["launch-beta", "tiny-credit"]);
+
+    for (let i = 0; i < 8 && e.getState().completedProjects < 1; i++) e.tick();
     const s = e.getState();
     expect(s.completedProjects).toBe(1);
-    expect(s.completedProjectIds).toEqual(["launch-beta"]);
+    expect(s.completedProjectIds).toEqual(["tiny-credit"]);
     expect(s.projects).toHaveLength(1);
-    expect(s.projects[0].defId).toBe("gig-plugin");
-    expect(s.log.some((l) => l.message.includes("Project complete: Launch beta"))).toBe(true);
+    expect(s.projects[0].defId).toBe("launch-beta");
+    expect(s.log.some((l) => l.message.includes("Project complete: Tiny credit"))).toBe(true);
+  });
+
+  it("splits ship credit equally and conserves Points/Day across two equal remainings", () => {
+    const other: ProjectDef = {
+      id: "peer",
+      name: "Peer",
+      sizePoints: 10,
+      upfrontCost: 0,
+      payoutPerPoint: 0,
+      completionBonus: 0,
+      reputationReward: 0,
+    };
+    const solo = content();
+    shrinkStart(solo, 10);
+    const one = new Engine(solo);
+    const s1 = one.getState() as GameState;
+    s1.stocks.backlog = 0;
+    s1.stocks.inProgress = 0;
+    s1.stocks.done = 5;
+    s1.debtMultiplierBase = 0;
+    one.tick();
+    expect(one.getState().pointsPerDay).toBe(1);
+    expect(one.getState().projects[0].remaining).toBeCloseTo(9, 10);
+
+    const pair = content();
+    pair.projects = [other];
+    shrinkStart(pair, 10);
+    const two = new Engine(pair);
+    two.startProject("peer");
+    const s2 = two.getState() as GameState;
+    s2.stocks.backlog = 0;
+    s2.stocks.inProgress = 0;
+    s2.stocks.done = 5;
+    s2.debtMultiplierBase = 0;
+    expect(s2.projects).toHaveLength(2);
+    s2.projects[0].remaining = 10;
+    s2.projects[1].remaining = 10;
+    two.tick();
+    const after = two.getState();
+    expect(after.pointsPerDay).toBe(1);
+    expect(after.pointsPerDay).toBe(one.getState().pointsPerDay);
+    expect(after.projects).toHaveLength(2);
+    expect(after.projects[0].remaining).toBeCloseTo(9.5, 10);
+    expect(after.projects[1].remaining).toBeCloseTo(9.5, 10);
+  });
+
+  it("snaps leftover credit onto the survivor in the same tick a small remaining completes", () => {
+    const other: ProjectDef = {
+      id: "peer",
+      name: "Peer",
+      sizePoints: 10,
+      upfrontCost: 0,
+      payoutPerPoint: 0,
+      completionBonus: 25,
+      reputationReward: 0,
+    };
+    const c = content();
+    c.projects = [other];
+    shrinkStart(c, 10);
+    const e = new Engine(c);
+    e.startProject("peer");
+    const s = e.getState() as GameState;
+    s.stocks.backlog = 0;
+    s.stocks.inProgress = 0;
+    s.stocks.done = 5;
+    s.debtMultiplierBase = 0;
+    s.projects[0].remaining = 10;
+    s.projects[1].remaining = 0.2;
+    const budgetBefore = s.stocks.budget;
+    e.tick();
+    const after = e.getState();
+    expect(after.completedProjects).toBe(1);
+    expect(after.completedProjectIds).toEqual(["peer"]);
+    expect(after.projects).toHaveLength(1);
+    expect(after.projects[0].defId).toBe("launch-beta");
+    // 1 shipped: 0.2 to the small contract, leftover 0.8 onto the survivor.
+    expect(after.projects[0].remaining).toBeCloseTo(9.2, 10);
+    expect(after.stocks.budget).toBeCloseTo(budgetBefore - c.start.baseBurnPerDay + 25, 10);
+  });
+
+  it("pays mixed payoutPerPoint from both contracts before either completes", () => {
+    const other: ProjectDef = {
+      id: "paid-peer",
+      name: "Paid peer",
+      sizePoints: 10,
+      upfrontCost: 0,
+      payoutPerPoint: 18,
+      completionBonus: 0,
+      reputationReward: 0,
+    };
+    const c = content();
+    c.projects = [other];
+    shrinkStart(c, 10);
+    const e = new Engine(c);
+    e.startProject("paid-peer");
+    const s = e.getState() as GameState;
+    s.stocks.backlog = 0;
+    s.stocks.inProgress = 0;
+    s.stocks.done = 5;
+    s.debtMultiplierBase = 0;
+    s.projects[0].payoutPerPoint = 8;
+    s.projects[0].remaining = 10;
+    s.projects[1].remaining = 10;
+    const budgetBefore = s.stocks.budget;
+    e.tick();
+    const after = e.getState();
+    expect(after.projects).toHaveLength(2);
+    expect(after.completedProjects).toBe(0);
+    // 0.5 at $8 and 0.5 at $18, minus the day's burn.
+    expect(after.stocks.budget).toBeCloseTo(budgetBefore - c.start.baseBurnPerDay + 13, 10);
   });
 
   it("rejects starting a project already in flight", () => {

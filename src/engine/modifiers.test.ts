@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initialState } from "./engine";
-import { debtDragMultiplier, stockDragMultiplier, effectiveRate, contextSwitchTax } from "./modifiers";
+import { debtDragMultiplier, stockDragMultiplier, effectiveRate } from "./modifiers";
 import { parseStartConfig } from "./content";
 import { startJson } from "./loadShippedContent";
 import type { GameContent, GameState, StockDrag } from "./types";
@@ -40,17 +40,14 @@ describe("debtDragMultiplier", () => {
     expect(debtDragMultiplier(stateWithDebt(1_000_000))).toBeCloseTo(0.5, 10);
   });
 
-  it("is applied inside effectiveRate alongside the context-switch tax", () => {
+  it("is applied inside effectiveRate and does not change when a second project is in flight", () => {
     const s = stateWithDebt(300); // multiplier 0.8
-    expect(s.projects.length).toBe(1); // single project -> context switch tax is 1
-    expect(contextSwitchTax(s)).toBe(1);
+    expect(s.projects.length).toBe(1);
     // base rate 1.0 * drag 0.8 = 0.8
     expect(effectiveRate(s, "finish")).toBeCloseTo(0.8, 10);
 
-    // Add a second project so the context-switch tax also engages, and confirm
-    // both multipliers stack (0.85 tax * 0.8 drag on the base 1.0 rate).
     s.projects.push({ ...s.projects[0], defId: "second", name: "Second" });
-    expect(effectiveRate(s, "finish")).toBeCloseTo(0.85 * 0.8, 10);
+    expect(effectiveRate(s, "finish")).toBeCloseTo(0.8, 10);
   });
 
   it("does not drag at all when debt sits below the band (effectiveRate unchanged)", () => {
@@ -94,10 +91,10 @@ describe("stockDragMultiplier", () => {
     expect(stockDragMultiplier(s, "pull")).toBe(1); // untouched: not its target
   });
 
-  it("is applied inside effectiveRate above the free band, stacking with the context-switch tax", () => {
+  it("is applied inside effectiveRate above the free band, independent of in-flight count", () => {
     const s = stateWithUsers(100, [usersDrag]); // multiplier 0.7 on all rates
     expect(effectiveRate(s, "finish")).toBeCloseTo(0.7, 10); // base 1.0 * 0.7
     s.projects.push({ ...s.projects[0], defId: "second", name: "Second" });
-    expect(effectiveRate(s, "finish")).toBeCloseTo(0.85 * 0.7, 10); // stacks with the tax
+    expect(effectiveRate(s, "finish")).toBeCloseTo(0.7, 10);
   });
 });

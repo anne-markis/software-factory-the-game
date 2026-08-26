@@ -769,8 +769,8 @@ describe("simulation", () => {
     // (shipped ~11140, was ~13063) and ends far poorer (budget ~13679, was
     // ~56826): success-to-the-successful running in reverse. The early peak is
     // actually HIGHER now (~9.27, was ~8.36 pt/day) because the reputation gate
-    // keeps the big tiers from starting early, so fewer concurrent projects
-    // means less context-switch tax on the opening sprint. The two margin
+    // keeps the big tiers from starting early, so fewer concurrent remainings
+    // share the opening sprint's ship credit. The two margin
     // assertions above still hold (end ~4.26 < peak*0.5 ~4.63; peak ~9.27 > 5),
     // and the test stays invariants-only by design. Reputation invariants
     // (>= 0, finite) hold throughout via assertInvariants over every stock.
