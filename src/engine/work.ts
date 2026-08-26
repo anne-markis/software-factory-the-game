@@ -1,10 +1,12 @@
+import { hashRoll } from "./rng";
 import { PIPELINE_STOCKS, type GameState, type PipelineStock, type StockName } from "./types";
 
 // Single work ledger (ADR 0009). Pipeline stage stocks say *where* unshipped
 // work sits; ActiveProject.remaining says *which contract* that work is for.
 // Extra inflow (tech-debt refill, scope-creep, any addToStock/scaleStock on a
 // pipeline stock) must update remaining when a project is in flight, otherwise
-// anonymous bag-points get FIFO-credited as contract progress.
+// anonymous bag-points get FIFO-credited as contract progress. With several
+// contracts live, that attach hits one remaining (engine-picked), not all.
 
 export function isPipelineStock(stock: StockName): stock is PipelineStock {
   return (PIPELINE_STOCKS as readonly string[]).includes(stock);
@@ -71,14 +73,24 @@ export function surplusGrewWhileInFlight(
 }
 
 /**
- * Attach newly injected (or removed) pipeline work to the oldest in-flight
- * project. No-ops when nothing is in flight: leftover sits as unattributed
+ * Attach newly injected (or removed) pipeline work to one in-flight remaining.
+ * With several contracts live, the pick is arbitrary and deterministic: a
+ * hashRoll on (gameSeed, day, committed work, delta) — not the purchase RNG
+ * stream, so challenge fire (which must not call rng.next) stays valid. A
+ * single in-flight remaining skips the roll so solo-contract tests stay bit-
+ * identical. No-ops when nothing is in flight: leftover sits as unattributed
  * surplus and ships first without completing a later contract (see tick.ts).
  * `delta` is the actual clamped stock change, not the requested effect value.
  */
 export function attachInjectedWork(state: GameState, delta: number): void {
-  if (delta === 0 || state.projects.length === 0) return;
-  const p = state.projects[0];
+  const n = state.projects.length;
+  if (delta === 0 || n === 0) return;
+  const p =
+    n === 1
+      ? state.projects[0]!
+      : state.projects[
+          Math.floor(hashRoll(state.gameSeed, state.day, `inject:${committedWork(state)}:${delta}`) * n)
+        ]!;
   p.remaining = Math.max(0, p.remaining + delta);
 }
 

@@ -52,6 +52,28 @@ describe("rollChallenges", () => {
     expect(s.log.some((l) => l.message.includes("Scope creep"))).toBe(true);
   });
 
+  it("scope-creep with two in-flight grows exactly one remaining without drawing the shared rng", () => {
+    const c = content();
+    const s = initialState(c);
+    s.completedProjects = 1;
+    s.day = 86;
+    s.projects.push({
+      defId: "peer",
+      name: "Peer",
+      remaining: 100,
+      payoutPerPoint: 0,
+      completionBonus: 0,
+      reputationReward: 0,
+    });
+    const before = s.projects.map((p) => p.remaining);
+    expect(hashRoll(SEED, 86, "scope-creep")).toBeLessThan(0.01);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.backlog).toBe(375);
+    const grown = s.projects.map((p, i) => p.remaining - before[i]!);
+    expect(grown.filter((d) => d === 75)).toHaveLength(1);
+    expect(grown.filter((d) => d === 0)).toHaveLength(1);
+  });
+
   it("respects minCompletedProjects: scope-creep stays quiet until the first project ships", () => {
     const c = content();
     const s = initialState(c);

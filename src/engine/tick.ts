@@ -221,9 +221,10 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   // fighting the very first delivery -- while preserving the reinforcing
   // debt->rework loop for every project after it.
   //
-  // ADR 0009: refill is injected work. Attach it onto the oldest in-flight
-  // contract so rework delays delivery instead of FIFO-counting as progress.
-  // With no project in flight it stays unattributed surplus.
+  // ADR 0009: refill is injected work. Attach it onto one in-flight remaining
+  // (engine-picked when several are live) so rework delays delivery instead of
+  // FIFO-counting as progress. With no project in flight it stays unattributed
+  // surplus.
   if (state.completedProjects >= 1) {
     state.stocks.backlog += debtGain;
     attachInjectedWork(state, debtGain);

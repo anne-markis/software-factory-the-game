@@ -68,8 +68,9 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // refactor/rebuild cards used) would surface there. factor 0 wipes the
         // stock entirely; factor > 1 (a future challenge doubling backlog,
         // say) is schema-legal too. Clamped at 0 like every other stock write.
-        // ADR 0009: a pipeline-stage scale is injected/removed work, so the
-        // oldest in-flight remaining moves by the actual clamped delta.
+        // ADR 0009: a pipeline-stage scale is injected/removed work, so one
+        // in-flight remaining (engine-picked when several are live) moves by
+        // the actual clamped delta.
         const before = state.stocks[effect.stock];
         state.stocks[effect.stock] = Math.max(0, before * effect.factor);
         if (isPipelineStock(effect.stock)) attachInjectedWork(state, state.stocks[effect.stock] - before);
