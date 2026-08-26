@@ -31,7 +31,7 @@ export function contextSwitchTax(state: GameState): number {
 // throughput. Debt at or below debtDragFreeDebt costs nothing; every point of
 // excess above it slows all rates by debtDragPerPoint, and the total slowdown
 // is capped at debtDragMaxDrag. Returns a multiplier in [1 - maxDrag, 1] that
-// effectiveRate applies to every rate alongside the context-switch tax. Pure.
+// effectiveRate applies to every rate. Pure.
 export function debtDragMultiplier(state: GameState): number {
   const excess = Math.max(0, state.stocks.techDebt - state.debtDragFreeDebt);
   const drag = Math.min(state.debtDragMaxDrag, excess * state.debtDragPerPoint);
@@ -67,7 +67,6 @@ export function effectiveRate(state: GameState, rate: RateId): number {
   for (const m of state.modifiers) {
     if (m.op === "mul" && applies(m, rate)) value *= m.value;
   }
-  value *= contextSwitchTax(state);
   value *= debtDragMultiplier(state);
   value *= stockDragMultiplier(state, rate);
   return Math.max(0, value);

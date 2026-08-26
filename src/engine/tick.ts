@@ -1,4 +1,4 @@
-import type { GameContent, GameState } from "./types";
+import type { ActiveProject, GameContent, GameState } from "./types";
 import type { Rng } from "./rng";
 import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
 import { continuousDeployActive } from "./continuousDeploy";
@@ -14,46 +14,63 @@ export function log(state: GameState, message: string): void {
   if (state.log.length > 200) state.log.shift();
 }
 
-// Attribute shipped points FIFO across projects, pay revenue and bonuses.
-// Release 1 always has exactly one project; the FIFO loop already handles many.
-// Shipped points with no project in flight intentionally earn nothing (no contract, no pay).
+// Attribute shipped points equally across in-flight remainings, pay revenue
+// and bonuses. Factory throughput is conserved; each live contract gets
+// credit / n. Completing a remaining in this tick snaps its unused share onto
+// whoever is still live (same-tick leftover redistribution).
+//
+// Shipped points with no project in flight intentionally earn nothing (no
+// contract, no pay).
 //
 // Surplus (pipeline work not committed to any in-flight remaining) ships
 // first and is not credited. That leftover is rework injected while no
 // contract was running; crediting it would complete the next project early
 // (ADR 0009). Extra work injected *during* a contract is attached onto
 // remaining, so it delays that contract instead of becoming surplus.
+function completeProject(state: GameState, p: ActiveProject): void {
+  state.stocks.budget += p.completionBonus;
+  state.stocks.reputation += p.reputationReward;
+  // Pay any stock grants recorded on this project (the Launch beta grants
+  // +30 users, which is what flips the users economy on). Clamp at 0 like
+  // every other stock write. Log a users grant when non-zero so the beta
+  // launch reads clearly.
+  for (const grant of p.completionStockGrants ?? []) {
+    state.stocks[grant.stock] = Math.max(0, state.stocks[grant.stock] + grant.amount);
+    if (grant.stock === "users" && grant.amount !== 0) {
+      log(state, `${p.name}: +${grant.amount} users`);
+    }
+  }
+  state.completedProjects += 1;
+  if (!state.completedProjectIds) state.completedProjectIds = [];
+  if (!state.completedProjectIds.includes(p.defId)) state.completedProjectIds.push(p.defId);
+  log(state, `Project complete: ${p.name} (+$${p.completionBonus} bonus, +${p.reputationReward} reputation)`);
+}
+
 function attributeShipped(state: GameState, shippedFlow: number): void {
   const pipelineBefore = unshippedWork(state) + shippedFlow;
   const surplus = Math.max(0, pipelineBefore - committedWork(state));
-  let remaining = Math.max(0, shippedFlow - Math.min(shippedFlow, surplus));
-  while (remaining > 0 && state.projects.length > 0) {
-    const p = state.projects[0];
-    const applied = Math.min(remaining, p.remaining);
-    p.remaining -= applied;
-    state.stocks.budget += applied * p.payoutPerPoint;
-    remaining -= applied;
-    // Epsilon tolerance: float drift from fractional flows could otherwise
-    // strand a project at a tiny positive remainder forever.
-    if (p.remaining <= 1e-9) {
-      state.stocks.budget += p.completionBonus;
-      state.stocks.reputation += p.reputationReward;
-      // Studio spine: pay any stock grants recorded on this
-      // project (the Launch beta grants +30 users, which is what flips the
-      // users economy on). Clamp at 0 like every other stock write. Log a
-      // users grant when non-zero so the beta launch reads clearly.
-      for (const grant of p.completionStockGrants ?? []) {
-        state.stocks[grant.stock] = Math.max(0, state.stocks[grant.stock] + grant.amount);
-        if (grant.stock === "users" && grant.amount !== 0) {
-          log(state, `${p.name}: +${grant.amount} users`);
-        }
+  let credit = Math.max(0, shippedFlow - Math.min(shippedFlow, surplus));
+  while (credit > 1e-12 && state.projects.length > 0) {
+    const n = state.projects.length;
+    const share = credit / n;
+    const stillLive: ActiveProject[] = [];
+    let leftover = 0;
+    for (const p of state.projects) {
+      const applied = Math.min(share, p.remaining);
+      p.remaining -= applied;
+      state.stocks.budget += applied * p.payoutPerPoint;
+      leftover += share - applied;
+      // Epsilon tolerance: float drift from fractional flows could otherwise
+      // strand a project at a tiny positive remainder forever.
+      if (p.remaining > 1e-9) {
+        stillLive.push(p);
+      } else {
+        p.remaining = 0;
+        completeProject(state, p);
       }
-      state.completedProjects += 1;
-      if (!state.completedProjectIds) state.completedProjectIds = [];
-      if (!state.completedProjectIds.includes(p.defId)) state.completedProjectIds.push(p.defId);
-      log(state, `Project complete: ${p.name} (+$${p.completionBonus} bonus, +${p.reputationReward} reputation)`);
-      state.projects.shift();
     }
+    state.projects = stillLive;
+    credit = leftover;
   }
 }
 
@@ -178,7 +195,7 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   // so a point that finishes into done later in this same tick ships next
   // tick, not this one -- a point still takes a full tick to cross each
   // remaining stage, the same ordering guarantee the throttled case relies
-  // on. Everything downstream (FIFO project attribution, debt regen,
+  // on. Everything downstream (equal ship-credit, debt regen,
   // pointsPerDay) reads shippedFlow unchanged either way.
   const shippedFlow = continuousDeployActive(state, content)
     ? state.stocks.done

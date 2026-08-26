@@ -83,7 +83,7 @@ only and is not included in the player build.
 - One tick = one second = one game day.
 - The pipeline is stocks and flows: speeding one stage moves the bottleneck.
 - Tech debt regenerates backlog per shipped point and scales incident risk.
-- Starting concurrent projects applies a context-switch tax (0.85^(n-1)).
+- Starting concurrent projects splits ship credit equally; factory Points/Day stays the same.
 - If the pipeline is empty and nothing is affordable, the factory stalls.
 - Balance constants were retuned in release 6; the simulation tests double as balance probes (greedy bot must complete a contract and stay solvent).
 
