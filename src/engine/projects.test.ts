@@ -4,6 +4,7 @@ import { parseStartConfig, parseProjects } from "./content";
 import { projectsJson, startJson } from "./loadShippedContent";
 import { effectiveRate } from "./modifiers";
 import { applyEffects } from "./effects";
+import { unshippedWork, workLedgerIssues } from "./work";
 import type { GameContent, GameState, ProjectDef } from "./types";
 
 function content(overrides: Partial<GameContent["start"]["stocks"]> = {}): GameContent {
@@ -310,6 +311,135 @@ describe("projects", () => {
     entry = e2.availableProjects().find((p) => p.def.id === "rep-gated")!;
     expect(entry.startable).toBe(false);
     expect(entry.reason).toBe("requires 5 reputation");
+  });
+
+  it("abandonProject discards remaining, drains Ready then In Progress then Done, and pays no completion", () => {
+    const e = new Engine(content());
+    const s = e.getState() as GameState;
+    s.stocks.backlog = 10;
+    s.stocks.inProgress = 20;
+    s.stocks.done = 30;
+    s.stocks.shipped = 40;
+    s.projects[0].remaining = 50;
+    const budgetBefore = s.stocks.budget;
+    const repBefore = s.stocks.reputation;
+    e.abandonProject("launch-beta");
+    const after = e.getState();
+    expect(after.projects).toHaveLength(0);
+    expect(after.completedProjects).toBe(0);
+    expect(after.completedProjectIds).toEqual([]);
+    expect(after.stocks.users).toBe(0);
+    expect(after.stocks.shipped).toBe(40);
+    expect(after.stocks.budget).toBe(budgetBefore);
+    expect(after.stocks.reputation).toBe(repBefore);
+    expect(after.stocks.backlog).toBe(0);
+    expect(after.stocks.inProgress).toBe(0);
+    expect(after.stocks.done).toBe(10);
+    expect(unshippedWork(after)).toBe(10);
+    expect(workLedgerIssues(after)).toEqual([]);
+    expect(after.log.some((l) => l.message.includes("Abandoned project: Launch beta"))).toBe(true);
+  });
+
+  it("keeps already-paid payoutPerPoint and does not fire bonus or grants", () => {
+    const paid: ProjectDef = {
+      id: "paid-peer",
+      name: "Paid peer",
+      sizePoints: 10,
+      upfrontCost: 0,
+      payoutPerPoint: 8,
+      completionBonus: 999,
+      reputationReward: 7,
+    };
+    const c = content();
+    c.projects = [paid];
+    shrinkStart(c, 10);
+    const e = new Engine(c);
+    e.startProject("paid-peer");
+    const s = e.getState() as GameState;
+    s.stocks.backlog = 0;
+    s.stocks.inProgress = 0;
+    s.stocks.done = 20;
+    s.debtMultiplierBase = 0;
+    s.projects[0].payoutPerPoint = 0;
+    s.projects[0].remaining = 10;
+    s.projects[1].remaining = 10;
+    e.tick();
+    const afterShip = e.getState();
+    expect(afterShip.projects).toHaveLength(2);
+    const budgetAfterShip = afterShip.stocks.budget;
+    const shipped = afterShip.stocks.shipped;
+    e.abandonProject("paid-peer");
+    const after = e.getState();
+    expect(after.projects.map((p) => p.defId)).toEqual(["launch-beta"]);
+    expect(after.completedProjects).toBe(0);
+    expect(after.completedProjectIds).toEqual([]);
+    expect(after.stocks.budget).toBeCloseTo(budgetAfterShip, 10);
+    expect(after.stocks.shipped).toBe(shipped);
+    expect(after.stocks.reputation).toBe(0);
+  });
+
+  it("gives the survivor the full ship-credit slice after abandon", () => {
+    const other: ProjectDef = {
+      id: "peer",
+      name: "Peer",
+      sizePoints: 10,
+      upfrontCost: 0,
+      payoutPerPoint: 0,
+      completionBonus: 0,
+      reputationReward: 0,
+    };
+    const c = content();
+    c.projects = [other];
+    shrinkStart(c, 10);
+    const e = new Engine(c);
+    e.startProject("peer");
+    const s = e.getState() as GameState;
+    s.stocks.backlog = 0;
+    s.stocks.inProgress = 0;
+    s.stocks.done = 20;
+    s.debtMultiplierBase = 0;
+    s.projects[0].remaining = 10;
+    s.projects[1].remaining = 10;
+    e.abandonProject("peer");
+    expect(e.getState().projects).toHaveLength(1);
+    e.tick();
+    expect(e.getState().pointsPerDay).toBe(1);
+    expect(e.getState().projects[0].remaining).toBeCloseTo(9, 10);
+  });
+
+  it("lets an abandoned unique start again from zero and does not record completion", () => {
+    const c = content();
+    shrinkStart(c);
+    const v1 = c.projects.find((p) => p.id === "ship-v1")!;
+    v1.sizePoints = 10;
+    const e = new Engine(c);
+    for (let i = 0; i < 6; i++) e.tick();
+    expect(e.getState().completedProjectIds).toEqual(["launch-beta"]);
+    e.startProject("ship-v1");
+    e.abandonProject("ship-v1");
+    const after = e.getState();
+    expect(after.projects.some((p) => p.defId === "ship-v1")).toBe(false);
+    expect(after.completedProjectIds).toEqual(["launch-beta"]);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(true);
+    e.startProject("ship-v1");
+    expect(e.getState().projects.some((p) => p.defId === "ship-v1")).toBe(true);
+    expect(e.getState().projects.find((p) => p.defId === "ship-v1")!.remaining).toBe(10);
+  });
+
+  it("abandoning the last contract can stall when nothing else is startable", () => {
+    const empty = content({ budget: 10 });
+    empty.projects = [];
+    const e = new Engine(empty);
+    expect(e.isStalled()).toBe(false);
+    e.abandonProject("launch-beta");
+    expect(e.getState().projects).toHaveLength(0);
+    expect(unshippedWork(e.getState())).toBe(0);
+    expect(e.isStalled()).toBe(true);
+  });
+
+  it("throws when abandoning a project that is not in flight", () => {
+    const e = new Engine(content());
+    expect(() => e.abandonProject("gig-bugfix")).toThrow(/not in flight/);
   });
 
   it("isStalled when pipeline is empty and nothing is affordable", () => {

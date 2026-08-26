@@ -522,6 +522,30 @@ describe("appView click delegation on the stable root", () => {
     expect(h.actions).toBe(1);
   });
 
+  it("abandons an in-flight project through data-abandon after confirm", () => {
+    const h = mount();
+    const btn = h.root.querySelector<HTMLElement>('[data-abandon="launch-beta"]')!;
+    expect(btn).toBeTruthy();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    btn.click();
+    expect(confirmSpy).toHaveBeenCalledWith(
+      "Abandon Launch beta? Remaining work is discarded. Already shipped pay is kept.",
+    );
+    expect(h.engine.getState().projects).toHaveLength(0);
+    expect(h.engine.getState().completedProjects).toBe(0);
+    expect(h.actions).toBe(1);
+    confirmSpy.mockRestore();
+  });
+
+  it("leaves in-flight projects unchanged when abandon confirm is canceled", () => {
+    const h = mount();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    h.root.querySelector<HTMLElement>('[data-abandon="launch-beta"]')!.click();
+    expect(h.engine.getState().projects).toHaveLength(1);
+    expect(h.actions).toBe(0);
+    confirmSpy.mockRestore();
+  });
+
   it("removes an owned decision through data-remove after confirm", () => {
     const h = mount();
     // Buy every removable decision that is affordable until one shows Remove.

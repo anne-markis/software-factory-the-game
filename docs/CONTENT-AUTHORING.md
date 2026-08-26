@@ -173,6 +173,10 @@ Shape: `projectSchema`. The starting contract is `start.json`
   reputation hit re-locks the contract.
 - `completionStockGrants` — `{ stock, amount }` copied onto the in-flight
   project at start.
+- Abandon — player can drop any in-flight contract, including the starter.
+  Already-credited `payoutPerPoint` and `stocks.shipped` stay. Remaining is
+  discarded and pulled from Ready, then In Progress, then Done. No bonus,
+  reputation, or grants. Uniques that were not completed can start again.
 
 Availability order: in-flight → unique already-completed → count floor →
 specific id → reputation → afford (`src/engine/projects.ts`). Extra

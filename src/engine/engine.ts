@@ -3,7 +3,7 @@ import { createRng, type Rng } from "./rng";
 import { tick, type ChallengePhase, log } from "./tick";
 import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
 import { rollChallenges, resolveChoice } from "./challenges";
-import { startProject, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
+import { startProject, abandonProject, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
 import { eraCrossingIsSilent, evaluateNextEraEntry, formatEraEntryPredicate } from "./eras";
 
 export type LoadEraContent = (eraId: string) => GameContent;
@@ -190,6 +190,10 @@ export class Engine {
 
   startProject(defId: string): void {
     startProject(this.state, this.content, defId);
+  }
+
+  abandonProject(defId: string): void {
+    abandonProject(this.state, defId);
   }
 
   availableProjects(): ProjectAvailability[] {

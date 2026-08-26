@@ -81,3 +81,14 @@ export function attachInjectedWork(state: GameState, delta: number): void {
   const p = state.projects[0];
   p.remaining = Math.max(0, p.remaining + delta);
 }
+
+/** Remove `amount` from Ready, then In Progress, then Done. */
+export function drainUnshippedWork(state: GameState, amount: number): void {
+  let left = Math.max(0, amount);
+  for (const stock of PIPELINE_STOCKS) {
+    if (left <= 1e-12) break;
+    const take = Math.min(left, state.stocks[stock]);
+    state.stocks[stock] -= take;
+    left -= take;
+  }
+}
