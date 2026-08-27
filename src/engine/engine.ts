@@ -1,6 +1,6 @@
 import type { GameContent, GameState } from "./types";
 import { createRng, type Rng } from "./rng";
-import { tick, type ChallengePhase, log } from "./tick";
+import { tick, type ChallengePhase, log, isDeliveryFrozen } from "./tick";
 import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
 import { rollChallenges, resolveChoice } from "./challenges";
 import { startProject, abandonProject, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
@@ -202,5 +202,9 @@ export class Engine {
 
   isStalled(): boolean {
     return isStalled(this.state, this.content);
+  }
+
+  isDeliveryFrozen(): boolean {
+    return isDeliveryFrozen(this.state);
   }
 }

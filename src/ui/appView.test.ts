@@ -588,6 +588,15 @@ describe("appView click delegation on the stable root", () => {
     confirmSpy.mockRestore();
   });
 
+  it("shows the insolvency banner when budget is 0 and work is still in the pipeline", () => {
+    const h = mount({ richBudget: false });
+    const state = h.engine.getState() as GameState;
+    state.stocks.budget = 0;
+    h.view.render();
+    expect(h.root.querySelector(".stall")?.textContent).toMatch(/insolvent/i);
+    expect(h.root.querySelector(".stall")?.textContent).toMatch(/frozen/i);
+  });
+
   it("reports an engine error through onError instead of throwing", () => {
     const h = mount({ richBudget: false });
     const state = h.engine.getState() as GameState;

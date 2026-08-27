@@ -892,6 +892,8 @@ describe("simulation", () => {
     //    is the insolvency mechanism). That makes basic-dev always
     //    "purchasable" regardless of budget, so isStalled() can never be
     //    true while any decisions are offered.
+    //  - a tick that starts at $0 freezes pull/finish/deploy, so leftover
+    //    work never drains to empty; starting budget must cover the drain.
     // None of these are bugs; they just mean "true stall" cannot be produced
     // from unmodified full content in a short simulation. Zeroing them here
     // isolates the pipeline-drain + project-affordability logic that
@@ -901,7 +903,10 @@ describe("simulation", () => {
     c.projects = []; // $0 tiny gigs would otherwise keep a relief valve open
     c.start.debtMultiplier = 0;
     c.start.stocks.backlog = 3;
-    c.start.stocks.budget = 10;
+    // $20/day burn. The 3-point pipe needs ~5 days to drain; a tick that
+    // starts at $0 now freezes delivery, so $10 would freeze mid-pipe and
+    // stall would never fire. $100 covers the drain, then clamps to 0.
+    c.start.stocks.budget = 100;
     c.start.initialProject.sizePoints = 3;
     // Zero the payout so completing the initial project does not inject cash.
     c.start.initialProject.completionBonus = 0;

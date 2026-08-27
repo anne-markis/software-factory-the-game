@@ -405,4 +405,98 @@ describe("tick", () => {
       }
     });
   });
+
+  // Budget is clamped at 0; insolvency used to leave pull/finish/deploy
+  // running, so cockpit Backlog and in-flight remaining kept burning down
+  // while the wallet showed $0. Freeze delivery for any tick that starts
+  // already at 0. Day, income netting, and payroll failure still run.
+  // Work resumes on the next tick after budget is positive again.
+  describe("delivery freezes while budget is 0", () => {
+    it("does not pull, finish, or deploy, and does not burn down remaining", () => {
+      const e = new Engine(testContent());
+      const s = e.getState() as GameState;
+      s.stocks.budget = 0;
+      const remainingBefore = s.projects[0]!.remaining;
+      expect(e.isDeliveryFrozen()).toBe(true);
+
+      e.tick();
+      e.tick();
+      e.tick();
+
+      const after = e.getState();
+      expect(after.day).toBe(3);
+      expect(after.stocks.budget).toBe(0);
+      expect(after.stocks.backlog).toBe(300);
+      expect(after.stocks.inProgress).toBe(0);
+      expect(after.stocks.done).toBe(0);
+      expect(after.stocks.shipped).toBe(0);
+      expect(after.pointsPerDay).toBe(0);
+      expect(after.pullFlow).toBe(0);
+      expect(after.finishFlow).toBe(0);
+      expect(after.projects[0]!.remaining).toBe(remainingBefore);
+    });
+
+    it("leaves work already in In Progress and Done unmoved", () => {
+      const e = new Engine(testContent());
+      const s = e.getState() as GameState;
+      s.stocks.budget = 0;
+      s.stocks.backlog = 10;
+      s.stocks.inProgress = 8;
+      s.stocks.done = 5;
+      s.projects[0]!.remaining = 23;
+
+      e.tick();
+
+      const after = e.getState();
+      expect(after.stocks.backlog).toBe(10);
+      expect(after.stocks.inProgress).toBe(8);
+      expect(after.stocks.done).toBe(5);
+      expect(after.stocks.shipped).toBe(0);
+      expect(after.projects[0]!.remaining).toBe(23);
+    });
+
+    it("resumes pipeline flow once budget is positive again", () => {
+      const e = new Engine(testContent());
+      (e.getState() as GameState).stocks.budget = 0;
+      e.tick();
+      expect(e.getState().stocks.backlog).toBe(300);
+
+      (e.getState() as GameState).stocks.budget = 10000;
+      e.tick();
+      expect(e.getState().stocks.backlog).toBe(298);
+      expect(e.getState().stocks.inProgress).toBe(2);
+    });
+
+    it("still removes unpaid payroll while delivery is frozen", () => {
+      const c = ciCdContent();
+      c.start.stocks.budget = 0;
+      const e = new Engine(c);
+      e.applyDecision("basic-dev");
+      expect(e.getState().decisions).toHaveLength(1);
+
+      e.tick();
+
+      expect(e.getState().decisions).toHaveLength(0);
+      expect(e.getState().stocks.backlog).toBe(300);
+      expect(e.getState().log.some((l) => l.message.includes("Payroll failed"))).toBe(true);
+    });
+
+    it("does not dump Done through continuous deploy while budget is 0", () => {
+      const e = new Engine(ciCdContent());
+      const s = e.getState() as GameState;
+      s.stocks.budget = 0;
+      s.stocks.backlog = 0;
+      s.stocks.inProgress = 0;
+      s.stocks.done = 10;
+      s.projects[0]!.remaining = 10;
+      s.decisions.push({ instanceId: "inst-cicd", defId: "ci-cd" });
+
+      e.tick();
+
+      expect(e.getState().stocks.done).toBe(10);
+      expect(e.getState().stocks.shipped).toBe(0);
+      expect(e.getState().pointsPerDay).toBe(0);
+      expect(e.getState().projects[0]!.remaining).toBe(10);
+    });
+  });
 });

@@ -314,10 +314,14 @@ export function renderTimeControls(paused: boolean, speed: number, options: read
   </div>`;
 }
 
-export function renderStall(stalled: boolean): string {
-  return stalled
-    ? `<div class="stall">The factory is stalled: no work in the pipeline and nothing affordable. Income may still accrue; otherwise this factory is dead.</div>`
-    : "";
+export function renderStall(stalled: boolean, deliveryFrozen = false): string {
+  if (stalled) {
+    return `<div class="stall">The factory is stalled: no work in the pipeline and nothing affordable. Income may still accrue; otherwise this factory is dead.</div>`;
+  }
+  if (deliveryFrozen) {
+    return `<div class="stall">The factory is insolvent: delivery is frozen at $0. Payroll still fails; income may still accrue.</div>`;
+  }
+  return "";
 }
 
 // Quiet page footer: version + deploy/build time + repo link.

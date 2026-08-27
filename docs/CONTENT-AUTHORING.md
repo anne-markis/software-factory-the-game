@@ -67,6 +67,8 @@ need `"effects": []`.
 id is rejected. `unique: true` hides the card from the shop while owned.
 `removable: false` hides the Remove button; payroll still deletes a
 `cost.perDay` instance when budget cannot cover that day's charge.
+A tick that starts at `$0` also freezes `pull` / `finish` / `deploy`
+(in-flight remaining does not burn down); income netting still runs.
 Repeatable non-unique purchases stay in Owned after a temporary effect
 expires; instances do not self-prune.
 
