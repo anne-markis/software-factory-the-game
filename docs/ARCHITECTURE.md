@@ -48,7 +48,9 @@ Pipeline stocks and `ActiveProject.remaining` are two views of the same
 work (ADR 0009). Stage stocks say where unshipped points sit; remaining
 says which contract they belong to. Extra inflow (debt refill, scope
 creep, any `addToStock` / `scaleStock` on `backlog` / `inProgress` /
-`done`) must attach to remaining when a project is in flight. The
+`done`) must attach to one remaining when a project is in flight
+(engine-picked arbitrarily if several are live; not split, not player-
+chosen). The
 cockpit Backlog hero metric is unshipped work (`backlog + inProgress +
 done`), not the Ready-stage stock. The Delivery diagram labels that
 first stage Ready.

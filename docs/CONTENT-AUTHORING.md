@@ -93,7 +93,7 @@ drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 | --- | --- |
 | `modifyRate` | `target` is `pull` / `finish` / `deploy` / `all`. Omit `durationDays` for permanent. |
 | `modifyDebtMultiplier` | Same `op` / `value` / optional `durationDays`; no `target`. |
-| `addToStock` | Any stock in the enum; result clamped at 0. Pipeline writes (`backlog` / `inProgress` / `done`) attach to in-flight `remaining` (ADR 0009). |
+| `addToStock` | Any stock in the enum; result clamped at 0. Pipeline writes (`backlog` / `inProgress` / `done`) attach to one in-flight `remaining` (engine-picked when several are live; ADR 0009). |
 | `scaleStock` | Immediate multiply, `factor >= 0` (`0` wipes). No duration, no Progress-panel modifier. |
 | `sickness` | Challenge-only: needs `perHumanDev: true` so an `instanceId` exists. Schema-legal on a shop decision, but `applyDecision` never threads an instance, so it no-ops. |
 | `removeHuman` | Challenge-only roster loss; purchase-time application does not pass `content`, so it no-ops on shop cards. Choice options with this effect require `condition.minHumanDevs >= 1`. |

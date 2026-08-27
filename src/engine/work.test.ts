@@ -10,6 +10,17 @@ function testContent(): GameContent {
   return { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
 }
 
+function addPeer(s: GameState, remaining = 100): void {
+  s.projects.push({
+    defId: "peer",
+    name: "Peer",
+    remaining,
+    payoutPerPoint: 0,
+    completionBonus: 0,
+    reputationReward: 0,
+  });
+}
+
 describe("work ledger (ADR 0009)", () => {
   it("classifies unshipped pipeline stocks and not identity/resource stocks", () => {
     expect(isPipelineStock("backlog")).toBe(true);
@@ -32,7 +43,7 @@ describe("work ledger (ADR 0009)", () => {
     expect(unshippedWork(s)).toBe(35);
   });
 
-  it("attachInjectedWork grows the oldest in-flight remaining and no-ops with none", () => {
+  it("attachInjectedWork grows the only in-flight remaining and no-ops with none", () => {
     const e = new Engine(testContent());
     const s = e.getState() as GameState;
     attachInjectedWork(s, 75);
@@ -40,6 +51,51 @@ describe("work ledger (ADR 0009)", () => {
     s.projects = [];
     attachInjectedWork(s, 10);
     expect(committedWork(s)).toBe(0);
+  });
+
+  it("with two-plus in flight, +N grows exactly one remaining and leaves the others unchanged", () => {
+    const e = new Engine(testContent());
+    const s = e.getState() as GameState;
+    addPeer(s, 100);
+    const before = s.projects.map((p) => p.remaining);
+    attachInjectedWork(s, 25);
+    const grown = s.projects.map((p, i) => p.remaining - before[i]!);
+    expect(grown.filter((d) => d === 25)).toHaveLength(1);
+    expect(grown.filter((d) => d === 0)).toHaveLength(before.length - 1);
+    expect(committedWork(s)).toBe(before.reduce((a, b) => a + b, 0) + 25);
+  });
+
+  it("over many injects is not a fixed always-oldest or always-newest rule", () => {
+    const e = new Engine(testContent());
+    const s = e.getState() as GameState;
+    addPeer(s, 100);
+    const hits = new Set<string>();
+    for (let day = 0; day < 40; day++) {
+      s.day = day;
+      s.projects[0]!.remaining = 300;
+      s.projects[1]!.remaining = 100;
+      attachInjectedWork(s, 10);
+      if (s.projects[0]!.remaining === 310) hits.add(s.projects[0]!.defId);
+      else if (s.projects[1]!.remaining === 110) hits.add(s.projects[1]!.defId);
+      else throw new Error("inject did not grow exactly one remaining by 10");
+    }
+    expect(hits.has("launch-beta")).toBe(true);
+    expect(hits.has("peer")).toBe(true);
+  });
+
+  it("same seed, day, remainings, and delta pick the same contract", () => {
+    const setup = () => {
+      const e = new Engine(testContent());
+      const s = e.getState() as GameState;
+      addPeer(s, 100);
+      s.day = 12;
+      return s;
+    };
+    const a = setup();
+    const b = setup();
+    attachInjectedWork(a, 25);
+    attachInjectedWork(b, 25);
+    expect(a.projects.map((p) => p.remaining)).toEqual(b.projects.map((p) => p.remaining));
   });
 
   // The reported bug: Ready (stocks.backlog) hits 0 while ~40 contract

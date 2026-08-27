@@ -222,8 +222,9 @@ export interface ActiveProject {
   name: string;
   // Unshipped points still owed on this contract (ADR 0009). Extra pipeline
   // inflow (debt refill, scope creep, addToStock/scaleStock on a pipeline
-  // stock) attaches here while the project is in flight, so remaining tracks
-  // the work, not a parallel ship-countdown. Completes at ~0 in attributeShipped.
+  // stock) attaches to one in-flight remaining (this one if it is the only
+  // contract; otherwise engine-picked) so remaining tracks the work, not a
+  // parallel ship-countdown. Completes at ~0 in attributeShipped.
   remaining: number;
   payoutPerPoint: number;
   completionBonus: number;

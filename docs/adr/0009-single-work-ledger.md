@@ -27,7 +27,7 @@ Bags have no identity. FIFO-attributing an anonymous pipeline at the far end can
 
 - `unshippedWork` = `backlog + inProgress + done`. That is the cockpit **Backlog** (the original design’s remaining-work pile).
 - The Delivery diagram’s first box is **Ready** (`stocks.backlog`): work waiting to be pulled. Stage stocks say *where* unshipped work sits.
-- `ActiveProject.remaining` says *which contract* that work is for. Injected pipeline work attaches to the oldest in-flight remaining. With no project in flight it is unattributed surplus and **ships first without credit**, so leftover rework cannot complete the next contract early.
+- `ActiveProject.remaining` says *which contract* that work is for. Injected pipeline work attaches to one in-flight remaining (engine-picked arbitrarily when several are live; the only remaining when there is one). With no project in flight it is unattributed surplus and **ships first without credit**, so leftover rework cannot complete the next contract early.
 - `content/start.json` must set `stocks.backlog === initialProject.sizePoints`.
 
 Users still unlock when the Launch beta’s remaining hits ~0 (work has shipped, not merely left Ready). That is launch, not a bug.
