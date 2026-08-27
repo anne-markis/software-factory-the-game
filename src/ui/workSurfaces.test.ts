@@ -141,7 +141,7 @@ describe("cross-surface work counting (ADR 0009)", () => {
     expect(statValue(root, "users")).toBe("0");
     if (s.pointsPerDay > 0) {
       expect(projectLine(root, "launch-beta")).toContain(
-        `~${fmt(projectEtaDays(s.projects[0]!.remaining, s.pointsPerDay)!)}`,
+        `~${fmt(projectEtaDays(s.projects[0]!.remaining, s.pointsPerDay, s.projects.length)!)}`,
       );
     }
   });

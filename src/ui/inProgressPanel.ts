@@ -1,5 +1,5 @@
 import type { GameContent, GameState, Modifier } from "../engine/types";
-import { effectiveDebtMultiplier, contextSwitchTax, debtDragMultiplier } from "../engine/modifiers";
+import { effectiveDebtMultiplier, debtDragMultiplier } from "../engine/modifiers";
 import { continuousDeployActive } from "../engine/continuousDeploy";
 import { esc } from "./render";
 
@@ -73,10 +73,6 @@ function buildRateGroupNodes(state: Readonly<GameState>, content: GameContent, g
     const cleaned = cleanSourceLabel(m.source);
     const expiry = m.expiresDay !== undefined ? ` (${m.expiresDay - state.day}d left)` : "";
     nodes.push({ label: `${cleaned}: ${contribution(m.op, m.value, m.rampPerDay !== undefined)}${expiry}`, dim: false });
-  }
-
-  if (group === "friction" && state.projects.length > 1) {
-    nodes.push({ label: `Context switch x${contextSwitchTax(state).toFixed(2)}`, dim: false });
   }
 
   // Tech-debt drag (Release 15): once the debt stock climbs past its grace

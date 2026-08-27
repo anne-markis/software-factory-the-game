@@ -249,12 +249,12 @@ describe("inProgressPanelSvg", () => {
     expect(inFrictionGroup(svg, "Tech debt drag x0.76")).toBe(true);
   });
 
-  it("shows the context-switch tax node under Friction when more than one project is active", () => {
+  it("does not show a context-switch tax node when more than one project is active", () => {
     const e = new Engine(content());
     const s = e.getState() as MutableState;
     s.projects.push({ ...s.projects[0], defId: "second", name: "Second Project" });
     const svg = inProgressPanelSvg(s, content());
-    expect(inFrictionGroup(svg, "Context switch x0.85")).toBe(true);
+    expect(svg).not.toContain("Context switch");
   });
 
   it("keeps a fresh no-friction panel close to its content without the old six-row reserve", () => {

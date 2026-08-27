@@ -181,7 +181,10 @@ Shape: `projectSchema`. The starting contract is `start.json`
 Availability order: in-flight → unique already-completed → count floor →
 specific id → reputation → afford (`src/engine/projects.ts`). Extra
 in-flight contracts split ship credit equally (`1/n`); they do not slow
-factory rates. `contextSwitchFactor` in `start.json` is unused.
+factory rates. Project ETAs use that slice, so adding a contract lengthens
+the clock and finishing or abandoning one shortens it. The Projects header
+says WIP; offer copy has no efficiency formula. `contextSwitchFactor` in
+`start.json` is unused.
 
 ## `start.json` knobs
 
