@@ -85,6 +85,7 @@ only and is not included in the player build.
 - Tech debt regenerates backlog per shipped point and scales incident risk.
 - Starting concurrent projects splits ship credit equally; factory Points/Day stays the same.
 - If the pipeline is empty and nothing is affordable, the factory stalls.
+- At $0, delivery freezes even if work is still in the pipeline; unpaid payroll still fails.
 - Balance constants were retuned in release 6; the simulation tests double as balance probes (greedy bot must complete a contract and stay solvent).
 
 ## License

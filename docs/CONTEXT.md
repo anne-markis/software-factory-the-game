@@ -51,7 +51,11 @@ authoring instructions.
 Every named quantity the engine writes is a **stock** (`Stocks` in
 `src/engine/types.ts`). Pipeline stocks: `backlog`, `inProgress`, `done`,
 `shipped`. Resource / identity stocks: `budget`, `techDebt`, `reputation`,
-`users`. All clamp at a minimum of 0.
+`users`. All clamp at a minimum of 0. Budget at `$0` freezes `pull` /
+`finish` / `deploy` for that tick (in-flight remaining does not burn
+down). Day, income netting, and payroll failure still run; delivery
+resumes on the next tick after budget is positive again. This is
+separate from **stall** (pipeline empty and nothing affordable).
 
 **Users** is the product-growth stock (Studio spine). It stays 0 until the
 Launch beta project completes (`completionStockGrants`), then grows via

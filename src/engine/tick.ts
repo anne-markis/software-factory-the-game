@@ -147,8 +147,9 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
       }
     }
   }
-  // Clamp at 0 deliberately per the design spec: budget never goes negative;
-  // insolvency manifests as payroll failure removals, not a negative balance.
+  // Clamp at 0 deliberately per the design spec: budget never goes negative.
+  // Insolvency also freezes delivery (isDeliveryFrozen) and removes unpaid
+  // payroll; it is not a negative balance.
   state.stocks.budget = Math.max(0, state.stocks.budget - state.baseBurnPerDay + totalIncome);
   for (const inst of snapshot) {
     const def = content.decisions.find((d) => d.id === inst.defId);
@@ -163,6 +164,11 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
       log(state, `Payroll failed: ${def.name} removed permanently`);
     }
   }
+}
+
+/** True when a tick starts already at $0: pull/finish/deploy realize 0 flow. */
+export function isDeliveryFrozen(state: Pick<GameState, "stocks">): boolean {
+  return state.stocks.budget <= 0;
 }
 
 export function tick(state: GameState, rng: Rng, content: GameContent, challengePhase: ChallengePhase): void {
@@ -183,9 +189,10 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
 
   challengePhase(state, rng, content);
 
-  const deployRate = effectiveRate(state, "deploy");
-  const finishRate = effectiveRate(state, "finish");
-  const pullRate = effectiveRate(state, "pull");
+  const frozen = isDeliveryFrozen(state);
+  const deployRate = frozen ? 0 : effectiveRate(state, "deploy");
+  const finishRate = frozen ? 0 : effectiveRate(state, "finish");
+  const pullRate = frozen ? 0 : effectiveRate(state, "pull");
 
   // Downstream first so a point cannot cross the whole pipeline in one day.
   // Once continuous deploy is active (an owned decision's def carries a
@@ -197,9 +204,13 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   // remaining stage, the same ordering guarantee the throttled case relies
   // on. Everything downstream (equal ship-credit, debt regen,
   // pointsPerDay) reads shippedFlow unchanged either way.
-  const shippedFlow = continuousDeployActive(state, content)
-    ? state.stocks.done
-    : Math.min(state.stocks.done, deployRate);
+  // Insolvency ($0 at tick start) zeros all three rates and also skips the
+  // continuous-deploy dump — Done must not empty for free while frozen.
+  const shippedFlow = frozen
+    ? 0
+    : continuousDeployActive(state, content)
+      ? state.stocks.done
+      : Math.min(state.stocks.done, deployRate);
   state.stocks.done -= shippedFlow;
   state.stocks.shipped += shippedFlow;
 
