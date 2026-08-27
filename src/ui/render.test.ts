@@ -556,11 +556,12 @@ describe("renderChoiceCountdown", () => {
 });
 
 describe("renderProjectsStatus", () => {
-  it("shows the efficiency header and the in-flight lines", () => {
+  it("shows the WIP header and the in-flight lines", () => {
     const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
     const e = new Engine(c);
     const html = renderProjectsStatus([...e.getState().projects], e.getState());
-    expect(html).toContain("Projects (efficiency 100%)");
+    expect(html).toContain("<h3>Projects (WIP)</h3>");
+    expect(html).not.toContain("efficiency");
     expect(html).toContain("Launch beta: 300 points left");
     // Fresh engine has not ticked yet — realized Points/Day is 0 → stalled
     // (FR-3.2).
@@ -593,6 +594,35 @@ describe("renderProjectsStatus", () => {
     s.pointsPerDay = 0;
     expect(renderProjectsStatus([...s.projects], s)).toContain("· stalled");
   });
+
+  it("lengthens each in-flight ETA when a second contract starts, then shortens when one leaves", () => {
+    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const s = initialState(c);
+    s.pointsPerDay = 1;
+    s.projects[0]!.remaining = 100;
+    expect(renderProjectsStatus([...s.projects], s)).toContain("· ~100 days at current rate");
+    expect(s.pointsPerDay).toBe(1);
+
+    s.projects.push({
+      defId: "gig-bugfix",
+      name: "Weekend bugfix",
+      remaining: 100,
+      payoutPerPoint: 18,
+      completionBonus: 200,
+      reputationReward: 1,
+    });
+    const two = renderProjectsStatus([...s.projects], s);
+    expect(two).toContain("Launch beta: 100 points left");
+    expect(two).toContain("Weekend bugfix: 100 points left");
+    expect(two.match(/~200 days at current rate/g)).toHaveLength(2);
+    expect(s.pointsPerDay).toBe(1);
+    expect(two).not.toContain("efficiency");
+
+    s.projects = s.projects.filter((p) => p.defId !== "gig-bugfix");
+    const one = renderProjectsStatus([...s.projects], s);
+    expect(one).toContain("· ~100 days at current rate");
+    expect(one).not.toContain("~200 days");
+  });
 });
 
 describe("renderProjectOffers", () => {
@@ -606,13 +636,14 @@ describe("renderProjectOffers", () => {
   }
 
   // unmet prerequisite rows are omitted; startable gigs stay.
-  it("shows startable offers and the efficiency preview, omitting Ship v1–v5 gates", () => {
+  it("shows startable offers without efficiency copy, omitting Ship v1–v5 gates", () => {
     const c = studioProjects();
     const e = new Engine(c);
     const html = renderProjectOffers(e.availableProjects(), e.getState());
     expect(html).toContain('data-project="gig-bugfix" ');
     expect(html).toContain("Weekend bugfix");
-    expect(html).toContain("drops efficiency to 85%");
+    expect(html).not.toMatch(/efficiency/i);
+    expect(html).not.toContain("drops efficiency");
     for (const id of ["ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
       expect(html).not.toContain(`data-project="${id}"`);
     }

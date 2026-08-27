@@ -1,5 +1,4 @@
 import type { Availability } from "../engine/decisions";
-import { contextSwitchTax } from "../engine/modifiers";
 import type { ProjectAvailability } from "../engine/projects";
 import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
 import { summarizeDecisionEffects } from "./effectSummary";
@@ -256,14 +255,14 @@ export function projectsPanelScaffold(): string {
 }
 
 export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: Readonly<GameState>): string {
-  const taxNow = contextSwitchTax(state);
+  const n = inFlight.length;
   const flight = inFlight
     .map((p) => {
-      const eta = formatProjectEta(p.remaining, state.pointsPerDay);
+      const eta = formatProjectEta(p.remaining, state.pointsPerDay, n);
       return `<div data-project-status="${esc(p.defId)}">${esc(p.name)}: ${fmt(p.remaining)} points left ($${fmt(p.payoutPerPoint)}/pt, $${fmt(p.completionBonus)} on completion) · ${esc(eta)} <button type="button" data-abandon="${esc(p.defId)}">Abandon</button></div>`;
     })
     .join("");
-  return `<h3>Projects (efficiency ${(taxNow * 100).toFixed(0)}%)</h3>${flight}`;
+  return `<h3>Projects (WIP)</h3>${flight}`;
 }
 
 // omit unmet-prerequisite and already-completed rows.
@@ -274,19 +273,18 @@ function isVisibleProjectOffer(o: ProjectAvailability): boolean {
   return o.reason === "cannot afford" || o.reason === "already in flight";
 }
 
-export function renderProjectOffers(offers: ProjectAvailability[], state: Readonly<GameState>): string {
-  // Efficiency preview for starting one more project. Depends on how many are
-  // already in flight, not on per-tick progress, so this string is stable
-  // between starts and completions -- which is what lets the memo hold.
-  const taxNext = Math.pow(state.contextSwitchFactor, state.projects.length);
+export function renderProjectOffers(offers: ProjectAvailability[], _state: Readonly<GameState>): string {
+  // Offer copy is size/cost/payout only. In-flight count does not appear
+  // here (no efficiency preview, no formula) so this string stays stable
+  // between ticks — which is what lets the memo hold. The tell for extra
+  // WIP is the in-flight ETAs in the status section, which use the 1/n slice.
   return offers
     .filter(isVisibleProjectOffer)
     .map((o) => {
       const disabled = o.startable ? "" : "disabled";
       const reason = o.reason ? ` (${esc(o.reason)})` : "";
       return `<div><button data-project="${esc(o.def.id)}" ${disabled}>Start</button> <strong>${esc(o.def.name)}</strong>${reason}<br/>
-        <small>${fmt(o.def.sizePoints)} points, costs $${fmt(o.def.upfrontCost)}, pays $${fmt(o.def.payoutPerPoint)}/pt + $${fmt(o.def.completionBonus)} bonus.
-        Starting this drops efficiency to ${(taxNext * 100).toFixed(0)}%.</small></div>`;
+        <small>${fmt(o.def.sizePoints)} points, costs $${fmt(o.def.upfrontCost)}, pays $${fmt(o.def.payoutPerPoint)}/pt + $${fmt(o.def.completionBonus)} bonus.</small></div>`;
     })
     .join("");
 }
