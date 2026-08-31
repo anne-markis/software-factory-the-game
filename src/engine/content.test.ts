@@ -26,6 +26,7 @@ describe("parseStartConfig", () => {
     // the beta gets a clean burndown; users start at 0.
     expect(cfg.stocks.backlog).toBe(300);
     expect(cfg.stocks.users).toBe(0);
+    expect(cfg.stocks.ideas).toBe(100);
     expect(cfg.stocks.budget).toBe(10000);
     expect(cfg.debtMultiplier).toBe(0.5);
     // Pull headroom: pull runs at 2/day against finish and deploy at
@@ -33,7 +34,8 @@ describe("parseStartConfig", () => {
     // finish-side agent ladder has somewhere to put its capacity. With pull also
     // at 1 the ladder bought nothing: throughput is the min across the stages,
     // so a tripled finish rate could not move a single extra point.
-    expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, deploy: 1 });
+    // Discover is the Ideas faucet: 0.5/day from day 0, not a delivery stage.
+    expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, deploy: 1, discover: 0.5 });
     // Studio lean challenge pool: a 35-day global gap, down from
     // 50 -- the pool shrank to three events, so a shorter gap keeps them from
     // disappearing entirely without crowding a short era.
@@ -176,6 +178,18 @@ describe("parseStartConfig", () => {
     expect(() =>
       parseStartConfig({ ...startJson, stocks: { ...startJson.stocks, backlog: 299 } }),
     ).toThrow(/stocks\.backlog \(299\) must equal initialProject\.sizePoints \(300\)/);
+  });
+
+  it("rejects a negative ideas stock", () => {
+    expect(() =>
+      parseStartConfig({ ...startJson, stocks: { ...startJson.stocks, ideas: -1 } }),
+    ).toThrow(/content\/start\.json/);
+  });
+
+  it("rejects a negative discover rate", () => {
+    expect(() =>
+      parseStartConfig({ ...startJson, baseRates: { ...startJson.baseRates, discover: -0.1 } }),
+    ).toThrow(/content\/start\.json/);
   });
 });
 
@@ -445,6 +459,16 @@ describe("parseDecisions", () => {
       },
     ]);
     expect(defs[0].effects[0]).toEqual({ type: "rampRate", target: "finish", perDay: 0.1, cap: 2 });
+  });
+
+  it("parses a modifyRate add targeting discover (shop-card hook)", () => {
+    const defs = parseDecisions([
+      {
+        id: "x", name: "x", description: "x", category: "ship-faster", cost: {}, removable: true,
+        effects: [{ type: "modifyRate", target: "discover", op: "add", value: 1.5 }],
+      },
+    ]);
+    expect(defs[0].effects[0]).toEqual({ type: "modifyRate", target: "discover", op: "add", value: 1.5 });
   });
 
   it("rejects a rampRate effect targeting \"all\" (a ramp targets exactly one rate)", () => {

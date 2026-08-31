@@ -33,6 +33,18 @@ describe("applyEffects", () => {
     expect(effectiveRate(s, "finish")).toBe(1);
   });
 
+  it("modifyRate add on discover raises only the Ideas faucet", () => {
+    const s = freshState();
+    const pullBefore = effectiveRate(s, "pull");
+    const finishBefore = effectiveRate(s, "finish");
+    const deployBefore = effectiveRate(s, "deploy");
+    applyEffects(s, [{ type: "modifyRate", target: "discover", op: "add", value: 1.5 }], "src-1");
+    expect(effectiveRate(s, "discover")).toBeCloseTo(2.0, 10); // base 0.5 + 1.5
+    expect(effectiveRate(s, "pull")).toBe(pullBefore);
+    expect(effectiveRate(s, "finish")).toBe(finishBefore);
+    expect(effectiveRate(s, "deploy")).toBe(deployBefore);
+  });
+
   it("modifyDebtMultiplier changes effective debt multiplier", () => {
     const s = freshState();
     applyEffects(s, [{ type: "modifyDebtMultiplier", op: "mul", value: 0.5 }], "src-1");

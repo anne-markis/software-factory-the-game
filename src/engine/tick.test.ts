@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Engine } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, startJson } from "./loadShippedContent";
+import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
 import type { GameContent, GameState } from "./types";
 
@@ -497,6 +500,95 @@ describe("tick", () => {
       expect(e.getState().stocks.shipped).toBe(0);
       expect(e.getState().pointsPerDay).toBe(0);
       expect(e.getState().projects[0]!.remaining).toBe(10);
+    });
+  });
+
+  // Ideas stock + discover faucet: a pile that starts at 100 and fills
+  // from day 0 so late offers are not free. Ideas is a stock, not a
+  // pipeline stage; tech-debt regen still refills Ready.
+  describe("Ideas stock and discover faucet", () => {
+    it("seeds Ideas at 100 on day 0", () => {
+      const e = new Engine(testContent());
+      expect(e.getState().day).toBe(0);
+      expect(e.getState().stocks.ideas).toBe(100);
+      expect(e.getState().baseRates.discover).toBe(0.5);
+    });
+
+    it("after 10 days with no other modifiers, Ideas is 105", () => {
+      const e = new Engine(testContent());
+      for (let i = 0; i < 10; i++) e.tick();
+      expect(e.getState().day).toBe(10);
+      expect(e.getState().stocks.ideas).toBeCloseTo(105, 10);
+    });
+
+    it("does not scale discover with reputation, users, or shipped points", () => {
+      const boosted = new Engine(testContent());
+      const baseline = new Engine(testContent());
+      const s = boosted.getState() as GameState;
+      s.stocks.reputation = 70;
+      s.stocks.users = 500;
+      s.stocks.shipped = 10_000;
+      for (let i = 0; i < 10; i++) {
+        boosted.tick();
+        baseline.tick();
+      }
+      expect(boosted.getState().stocks.ideas).toBeCloseTo(baseline.getState().stocks.ideas, 10);
+      expect(boosted.getState().stocks.ideas).toBeCloseTo(105, 10);
+    });
+
+    it("an add-to-discover modifier raises the faucet", () => {
+      const e = new Engine(testContent());
+      applyEffects(e.getState() as GameState, [{ type: "modifyRate", target: "discover", op: "add", value: 1.5 }], "stub-card");
+      expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(2.0, 10);
+      for (let i = 0; i < 10; i++) e.tick();
+      // 100 + (0.5 + 1.5) * 10
+      expect(e.getState().stocks.ideas).toBeCloseTo(120, 10);
+    });
+
+    it("does not branch on eraId", () => {
+      const src = readFileSync(join(__dirname, "tick.ts"), "utf-8");
+      expect(src).not.toMatch(/\beraId\b/);
+
+      const studio = new Engine(testContent());
+      const otherEra = new Engine(testContent());
+      (otherEra.getState() as GameState).eraId = "company";
+      for (let i = 0; i < 10; i++) {
+        studio.tick();
+        otherEra.tick();
+      }
+      expect(otherEra.getState().stocks.ideas).toBeCloseTo(studio.getState().stocks.ideas, 10);
+      expect(otherEra.getState().stocks.ideas).toBeCloseTo(105, 10);
+    });
+
+    it("clamps Ideas at 0 like other stocks", () => {
+      const e = new Engine(testContent());
+      const s = e.getState() as GameState;
+      s.stocks.ideas = 0;
+      applyEffects(s, [{ type: "modifyRate", target: "discover", op: "add", value: -5 }], "drain");
+      e.tick();
+      expect(e.getState().stocks.ideas).toBe(0);
+    });
+
+    it("tech-debt regen still refills Ready, not Ideas", () => {
+      const e = new Engine(testContent());
+      const s = e.getState() as GameState;
+      s.completedProjects = 1;
+      s.stocks.backlog = 0;
+      s.stocks.inProgress = 0;
+      s.stocks.done = 10;
+      s.stocks.ideas = 100;
+      e.tick();
+      // Deploy 1 of the 10 Done; debt multiplier 0.5 -> 0.5 refilled into Ready.
+      expect(e.getState().stocks.backlog).toBeCloseTo(0.5, 10);
+      expect(e.getState().stocks.ideas).toBeCloseTo(100.5, 10);
+    });
+
+    it("keeps filling Ideas while delivery is frozen at $0", () => {
+      const e = new Engine(testContent());
+      (e.getState() as GameState).stocks.budget = 0;
+      e.tick();
+      expect(e.getState().stocks.backlog).toBe(300);
+      expect(e.getState().stocks.ideas).toBeCloseTo(100.5, 10);
     });
   });
 });

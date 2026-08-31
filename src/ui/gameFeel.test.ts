@@ -105,7 +105,7 @@ describe("gameFeel stat flash", () => {
     const state = initialState(content);
     const views = deliveryStatViews(state);
     const labels = views.map((v) => v.label);
-    expect(labels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users"]);
+    expect(labels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
     const users = views.find((v) => v.label === "Users")!;
     expect(users.value).toBe("0"); // starts at 0 until the beta completes
     expect(users.widthClass).toBe("v-users");
@@ -116,6 +116,21 @@ describe("gameFeel stat flash", () => {
     state.stocks.users = 30;
     syncStatRow(root, "delivery-stats", deliveryStatViews(state), flash);
     expect(root.querySelector(".v-users")!.classList.contains("stat-flash")).toBe(true);
+  });
+
+  it("includes an Ideas delivery stat after Users, seeded at 100", () => {
+    const content = makeContent();
+    const state = initialState(content);
+    const views = deliveryStatViews(state);
+    const ideas = views.find((v) => v.label === "Ideas")!;
+    expect(ideas.value).toBe("100");
+    expect(ideas.widthClass).toBe("v-ideas");
+    const root = document.createElement("div");
+    const flash = createFlashController(() => 0);
+    syncStatRow(root, "delivery-stats", deliveryStatViews(state), flash);
+    state.stocks.ideas = 105;
+    syncStatRow(root, "delivery-stats", deliveryStatViews(state), flash);
+    expect(root.querySelector(".v-ideas")!.classList.contains("stat-flash")).toBe(true);
   });
 
   it("flashes delivery-stat material changes in place", () => {

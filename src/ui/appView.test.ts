@@ -118,7 +118,7 @@ function pauseButton(root: HTMLElement): HTMLElement {
 }
 
 describe("appView delivery-column stats layout", () => {
-  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other six under Delivery loop", () => {
+  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other stocks under Delivery loop", () => {
     const h = mount();
     const top = h.root.querySelector(".stats")!;
     expect(top).toBeTruthy();
@@ -138,7 +138,7 @@ describe("appView delivery-column stats layout", () => {
     const statsHost = panels[1]!.nextElementSibling!;
     expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
-    expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users"]);
+    expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
 
     // Progress loop remains a sibling of the delivery column, not a parent of those stats.
     const loops = h.root.querySelector(".loops")!;

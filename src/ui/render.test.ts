@@ -116,7 +116,7 @@ describe("renderStats", () => {
 
 describe("renderDeliveryStats", () => {
   // flow/quality stocks under the Delivery loop, same slot pattern.
-  it("renders In Progress, Done, Shipped, Tech Debt, and Reputation with fixed-width value slots", () => {
+  it("renders In Progress, Done, Shipped, Tech Debt, Reputation, Users, and Ideas with fixed-width value slots", () => {
     const c = content();
     const e = new Engine(c);
     const html = renderDeliveryStats(e.getState());
@@ -126,6 +126,8 @@ describe("renderDeliveryStats", () => {
     expect(html).toContain('<span class="stat-label">Shipped</span> <span class="stat-value v-flow">');
     expect(html).toContain('<span class="stat-label">Tech Debt</span> <span class="stat-value v-debt">');
     expect(html).toContain('<span class="stat-label">Reputation</span> <span class="stat-value v-rep">');
+    expect(html).toContain('<span class="stat-label">Users</span> <span class="stat-value v-users">');
+    expect(html).toContain('<span class="stat-label">Ideas</span> <span class="stat-value v-ideas">100</span>');
     expect(html).not.toContain("Day");
     expect(html).not.toContain("Backlog");
     expect(html).not.toContain("Budget");

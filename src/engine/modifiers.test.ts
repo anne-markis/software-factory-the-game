@@ -97,4 +97,31 @@ describe("stockDragMultiplier", () => {
     s.projects.push({ ...s.projects[0], defId: "second", name: "Second" });
     expect(effectiveRate(s, "finish")).toBeCloseTo(0.7, 10);
   });
+
+  it("does not drag discover: Ideas fill is independent of users", () => {
+    const s = stateWithUsers(100, [usersDrag]);
+    expect(effectiveRate(s, "discover")).toBe(s.baseRates.discover);
+  });
+});
+
+describe("discover rate isolation", () => {
+  it("allRates modifiers do not change discover", () => {
+    const content: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [] };
+    const s = initialState(content);
+    s.modifiers.push({
+      id: "mod-all",
+      source: "src",
+      target: "allRates",
+      op: "mul",
+      value: 0.5,
+    });
+    expect(effectiveRate(s, "pull")).toBe(s.baseRates.pull * 0.5);
+    expect(effectiveRate(s, "discover")).toBe(s.baseRates.discover);
+  });
+
+  it("tech-debt drag does not slow discover", () => {
+    const s = stateWithDebt(1000); // max drag on delivery rates
+    expect(effectiveRate(s, "finish")).toBeCloseTo(0.5, 10);
+    expect(effectiveRate(s, "discover")).toBe(s.baseRates.discover);
+  });
 });

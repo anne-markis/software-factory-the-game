@@ -43,6 +43,11 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(def)).toBe("pull -0.5/day");
   });
 
+  it("modifyRate add on discover", () => {
+    const def = base({ effects: [{ type: "modifyRate", target: "discover", op: "add", value: 1.5 }] });
+    expect(summarizeDecisionEffects(def)).toBe("discover +1.5/day");
+  });
+
   it("modifyDebtMultiplier", () => {
     const def = base({ effects: [{ type: "modifyDebtMultiplier", op: "mul", value: 0.5 }] });
     expect(summarizeDecisionEffects(def)).toBe("debt x0.5");
