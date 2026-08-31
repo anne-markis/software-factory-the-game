@@ -93,7 +93,7 @@ drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 
 | type | Notes that are easy to get wrong |
 | --- | --- |
-| `modifyRate` | `target` is `pull` / `finish` / `deploy` / `all`. Omit `durationDays` for permanent. |
+| `modifyRate` | `target` is `pull` / `finish` / `deploy` / `discover` / `all`. `all` is the delivery line (pull/finish/deploy), not discover. Omit `durationDays` for permanent. |
 | `modifyDebtMultiplier` | Same `op` / `value` / optional `durationDays`; no `target`. |
 | `addToStock` | Any stock in the enum; result clamped at 0. Pipeline writes (`backlog` / `inProgress` / `done`) attach to one in-flight `remaining` (engine-picked when several are live; ADR 0009). |
 | `scaleStock` | Immediate multiply, `factor >= 0` (`0` wipes). No duration, no Progress-panel modifier. |

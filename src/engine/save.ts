@@ -1,6 +1,8 @@
 import type { GameState } from "./types";
 
-// Bumped to 4 for the Studio project redo: tiny gigs + v1–v5 replace the old
+// Bumped to 5 for the Ideas stock and discover faucet: a v4 save has no
+// ideas pile and no discover rate, so late-game offers would be free to
+// grab. Bumped to 4 for the Studio project redo: tiny gigs + v1–v5 replace the old
 // contract ladder in Studio, and unique versions need completedProjectIds. A
 // v3 save can have small-crm / mobile-app in flight as Studio contracts those
 // ids no longer offer. Bumped to 3 for the lean Studio shop and challenge pool.
@@ -14,7 +16,7 @@ import type { GameState } from "./types";
 // deserialize rejects mismatched versions, and the UI's loadGame swallows that
 // error and starts fresh, so old saves are wiped silently rather than resumed
 // into an inconsistent state.
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export function serialize(state: Readonly<GameState>): string {
   return JSON.stringify({ version: SAVE_VERSION, state });

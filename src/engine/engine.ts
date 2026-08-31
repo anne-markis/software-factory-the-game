@@ -106,6 +106,12 @@ export class Engine {
       if (restored.stocks.users === undefined) {
         restored.stocks.users = content.start.stocks.users;
       }
+      if (restored.stocks.ideas === undefined) {
+        restored.stocks.ideas = content.start.stocks.ideas;
+      }
+      if (restored.baseRates.discover === undefined) {
+        restored.baseRates.discover = content.start.baseRates.discover;
+      }
       if (restored.stockDrags === undefined) {
         restored.stockDrags = (content.start.stockDrags ?? []).map((d) => ({ ...d }));
       }

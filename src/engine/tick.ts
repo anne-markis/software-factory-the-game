@@ -193,6 +193,9 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   const deployRate = frozen ? 0 : effectiveRate(state, "deploy");
   const finishRate = frozen ? 0 : effectiveRate(state, "finish");
   const pullRate = frozen ? 0 : effectiveRate(state, "pull");
+  // Ideas faucet: always-on from day 0, not a pipeline stage, not frozen
+  // with delivery. Shop cards raise it via modifyRate add on discover.
+  state.stocks.ideas = Math.max(0, state.stocks.ideas + effectiveRate(state, "discover"));
 
   // Downstream first so a point cannot cross the whole pipeline in one day.
   // Once continuous deploy is active (an owned decision's def carries a

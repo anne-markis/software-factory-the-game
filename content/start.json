@@ -1,7 +1,7 @@
 {
   "seed": 20260714,
-  "stocks": { "backlog": 300, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0, "reputation": 0, "users": 0 },
-  "baseRates": { "pull": 2, "finish": 1, "deploy": 1 },
+  "stocks": { "backlog": 300, "inProgress": 0, "done": 0, "shipped": 0, "budget": 10000, "techDebt": 0, "reputation": 0, "users": 0, "ideas": 100 },
+  "baseRates": { "pull": 2, "finish": 1, "deploy": 1, "discover": 0.5 },
   "debtMultiplier": 0.5,
   "baseBurnPerDay": 20,
   "contextSwitchFactor": 0.85,

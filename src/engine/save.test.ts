@@ -51,8 +51,9 @@ describe("save/load", () => {
   // rejected rather than resumed into an inconsistent state. Same reasoning as
   // the version-2 bump to 2 (no users stock, 1500 backlog, First Contract economy).
   // Bumped to 4 for the Studio project redo (tiny gigs + unique v1–v5; the old
-  // contract ladder left Studio). The UI's loadGame swallows this error and
-  // starts fresh, so old saves of either vintage are wiped silently.
+  // contract ladder left Studio). Bumped to 5 for the Ideas stock and discover
+  // faucet (a v4 save has no ideas pile). The UI's loadGame swallows this error
+  // and starts fresh, so old saves of either vintage are wiped silently.
   it("is version 5 and rejects legacy v1/v2/v3/v4 saves so old saves start fresh", () => {
     expect(SAVE_VERSION).toBe(5);
     expect(() => deserialize(JSON.stringify({ version: 1, state: {} }))).toThrow(/version 1/);

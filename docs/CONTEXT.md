@@ -51,7 +51,7 @@ authoring instructions.
 Every named quantity the engine writes is a **stock** (`Stocks` in
 `src/engine/types.ts`). Pipeline stocks: `backlog`, `inProgress`, `done`,
 `shipped`. Resource / identity stocks: `budget`, `techDebt`, `reputation`,
-`users`. All clamp at a minimum of 0. Budget at `$0` freezes `pull` /
+`users`, `ideas`. All clamp at a minimum of 0. Budget at `$0` freezes `pull` /
 `finish` / `deploy` for that tick (in-flight remaining does not burn
 down). Day, income netting, and payroll failure still run; delivery
 resumes on the next tick after budget is positive again. This is
@@ -61,6 +61,12 @@ separate from **stall** (pipeline empty and nothing affordable).
 Launch beta project completes (`completionStockGrants`), then grows via
 always-on **stock flows** and can slow delivery via **stock drag**.
 Monetization decisions *read* users; they do not invent a second population.
+
+**Ideas** is the idea-to-value pile. It seeds at 100 and fills from day 0
+at the `discover` rate (`start.baseRates.discover`, 0.5/day). Discover is
+not a pipeline stage, is not frozen at `$0`, and does not scale with
+reputation, users, or shipped points. Shop cards raise it with
+`modifyRate` `add` targeting `discover` (`all` still means pull/finish/deploy).
 
 Pipeline stage stocks say *where* unshipped work sits. `backlog` is the
 Ready queue (waiting to pull), not the cockpit hero metric. Cockpit
