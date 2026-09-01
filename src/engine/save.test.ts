@@ -51,13 +51,15 @@ describe("save/load", () => {
   // rejected rather than resumed into an inconsistent state. Same reasoning as
   // the version-2 bump to 2 (no users stock, 1500 backlog, First Contract economy).
   // Bumped to 4 for the Studio project redo (tiny gigs + unique v1–v5; the old
-  // contract ladder left Studio). The UI's loadGame swallows this error and
-  // starts fresh, so old saves of either vintage are wiped silently.
-  it("is version 4 and rejects legacy v1/v2/v3 saves so old saves start fresh", () => {
-    expect(SAVE_VERSION).toBe(4);
+  // contract ladder left Studio). Bumped to 5 for the Ideas stock and discover
+  // faucet (a v4 save has no ideas pile). The UI's loadGame swallows this error
+  // and starts fresh, so old saves of either vintage are wiped silently.
+  it("is version 5 and rejects legacy v1/v2/v3/v4 saves so old saves start fresh", () => {
+    expect(SAVE_VERSION).toBe(5);
     expect(() => deserialize(JSON.stringify({ version: 1, state: {} }))).toThrow(/version 1/);
     expect(() => deserialize(JSON.stringify({ version: 2, state: {} }))).toThrow(/version 2/);
     expect(() => deserialize(JSON.stringify({ version: 3, state: {} }))).toThrow(/version 3/);
+    expect(() => deserialize(JSON.stringify({ version: 4, state: {} }))).toThrow(/version 4/);
   });
 
   // A fresh Studio save round-trips its users stock and always-on stockDrags.
@@ -68,6 +70,27 @@ describe("save/load", () => {
     const restored = deserialize(serialize(a.getState()));
     expect(restored.stocks.users).toBe(a.getState().stocks.users);
     expect(restored.stockDrags).toEqual(a.getState().stockDrags);
+  });
+
+  it("round-trips the ideas stock and discover rate", () => {
+    const c = content();
+    const a = new Engine(c);
+    for (let i = 0; i < 10; i++) a.tick();
+    const restored = deserialize(serialize(a.getState()));
+    expect(restored.stocks.ideas).toBe(a.getState().stocks.ideas);
+    expect(restored.baseRates.discover).toBe(a.getState().baseRates.discover);
+    expect(restored.stocks.ideas).toBeCloseTo(105, 10);
+  });
+
+  it("Engine backfills a missing stocks.ideas from content (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.stocks.ideas;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.stocks.ideas).toBeUndefined();
+    const b = new Engine(c, restored);
+    expect(b.getState().stocks.ideas).toBe(c.start.stocks.ideas);
   });
 
   // Release-7 bug fix: main.ts only autosaved every 10 days, so the paused

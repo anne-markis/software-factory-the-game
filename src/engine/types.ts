@@ -20,6 +20,10 @@ export interface Stocks {
   // band it also applies a support drag on delivery rates (start.stockDrags).
   // Clamped at 0 like every other stock.
   users: number;
+  // Ideas: the idea-to-value pile. Seeded at 100 and filled by the
+  // discover rate from day 0. Not a pipeline stage (tech-debt regen still
+  // refills Ready). Clamped at 0 like every other stock.
+  ideas: number;
 }
 
 export type StockName = keyof Stocks;
@@ -30,8 +34,13 @@ export type StockName = keyof Stocks;
 export const PIPELINE_STOCKS = ["backlog", "inProgress", "done"] as const;
 export type PipelineStock = (typeof PIPELINE_STOCKS)[number];
 
-export type RateId = "pull" | "finish" | "deploy";
-export const RATE_IDS: readonly RateId[] = ["pull", "finish", "deploy"];
+// Delivery-loop rates. RATE_IDS is the three-stage factory line; discover
+// is a separate Ideas faucet (not a pipeline stage, not in the Delivery
+// diagram). "all" / allRates modifiers and stock/debt drags apply to
+// delivery rates only.
+export type DeliveryRateId = "pull" | "finish" | "deploy";
+export const RATE_IDS: readonly DeliveryRateId[] = ["pull", "finish", "deploy"];
+export type RateId = DeliveryRateId | "discover";
 
 export type Effect =
   | { type: "modifyRate"; target: RateId | "all"; op: "add" | "mul"; value: number; durationDays?: number }
@@ -39,7 +48,7 @@ export type Effect =
   | { type: "addToStock"; stock: keyof Stocks; value: number }
   | { type: "scaleStock"; stock: keyof Stocks; factor: number }
   | { type: "sickness"; factor: number; durationDays: number }
-  | { type: "rampRate"; target: RateId; perDay: number; cap: number }
+  | { type: "rampRate"; target: DeliveryRateId; perDay: number; cap: number }
   // Marker effect: no parameters, creates no modifier (see applyEffects).
   // Activation is derived from ownership -- see continuousDeployActive in
   // continuousDeploy.ts -- so this variant exists purely to be present or

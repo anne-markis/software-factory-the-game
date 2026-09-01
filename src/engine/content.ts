@@ -21,6 +21,7 @@ const stocksSchema = z
     techDebt: z.number().min(0),
     reputation: z.number().min(0),
     users: z.number().min(0),
+    ideas: z.number().min(0),
   })
   .strict();
 
@@ -33,8 +34,9 @@ const milestoneSchema = z
   })
   .strict();
 
-const rateTarget = z.enum(["pull", "finish", "deploy", "all"]);
-const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt", "reputation", "users"]);
+const deliveryRate = z.enum(["pull", "finish", "deploy"]);
+const rateTarget = z.enum(["pull", "finish", "deploy", "discover", "all"]);
+const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas"]);
 
 // Stocks granted on project completion (Studio spine). Shared by
 // ProjectDef and StartConfig.initialProject.
@@ -47,7 +49,12 @@ const startSchema = z
     seed: z.number().int(),
     stocks: stocksSchema,
     baseRates: z
-      .object({ pull: z.number().min(0), finish: z.number().min(0), deploy: z.number().min(0) })
+      .object({
+        pull: z.number().min(0),
+        finish: z.number().min(0),
+        deploy: z.number().min(0),
+        discover: z.number().min(0),
+      })
       .strict(),
     debtMultiplier: z.number().min(0),
     baseBurnPerDay: z.number().min(0),
@@ -173,7 +180,7 @@ const effectSchema = z.discriminatedUnion("type", [
   z
     .object({
       type: z.literal("rampRate"),
-      target: z.enum(["pull", "finish", "deploy"]),
+      target: deliveryRate,
       perDay: z.number().positive(),
       cap: z.number().positive(),
     })

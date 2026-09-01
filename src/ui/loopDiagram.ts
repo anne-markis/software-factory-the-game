@@ -1,4 +1,4 @@
-import type { GameContent, GameState, RateId } from "../engine/types";
+import type { DeliveryRateId, GameContent, GameState } from "../engine/types";
 import { RATE_IDS } from "../engine/types";
 import { effectiveDebtMultiplier, effectiveRate } from "../engine/modifiers";
 import { continuousDeployActive } from "../engine/continuousDeploy";
@@ -11,7 +11,7 @@ import { continuousDeployActive } from "../engine/continuousDeploy";
 // and persists exactly this realized flow per stage (pointsPerDay is the
 // realized deploy flow; pullFlow/finishFlow mirror it for the other two
 // stages), so read those instead of recomputing/relabeling capacity here.
-function realizedFlow(state: Readonly<GameState>, rate: RateId): number {
+function realizedFlow(state: Readonly<GameState>, rate: DeliveryRateId): number {
   switch (rate) {
     case "pull":
       return state.pullFlow;

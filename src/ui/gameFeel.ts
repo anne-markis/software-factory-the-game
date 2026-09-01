@@ -74,6 +74,7 @@ export function deliveryStatViews(state: Readonly<GameState>): StatView[] {
     // Studio spine: the users stock sits after Reputation. Stays
     // 0 until the Launch beta completes, then drives monetization.
     { stat: "users", label: "Users", value: fmt(state.stocks.users), widthClass: "v-users", material: true },
+    { stat: "ideas", label: "Ideas", value: fmt(state.stocks.ideas), widthClass: "v-ideas", material: true },
   ];
 }
 
