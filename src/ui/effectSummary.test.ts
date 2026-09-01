@@ -48,6 +48,11 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(def)).toBe("discover +1.5/day");
   });
 
+  it("modifyRate add on plan", () => {
+    const def = base({ effects: [{ type: "modifyRate", target: "plan", op: "add", value: 1 }] });
+    expect(summarizeDecisionEffects(def)).toBe("plan +1/day");
+  });
+
   it("modifyDebtMultiplier", () => {
     const def = base({ effects: [{ type: "modifyDebtMultiplier", op: "mul", value: 0.5 }] });
     expect(summarizeDecisionEffects(def)).toBe("debt x0.5");

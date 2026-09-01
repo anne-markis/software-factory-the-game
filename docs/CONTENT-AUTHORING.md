@@ -93,7 +93,7 @@ drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 
 | type | Notes that are easy to get wrong |
 | --- | --- |
-| `modifyRate` | `target` is `pull` / `finish` / `deploy` / `discover` / `all`. `all` is the delivery line (pull/finish/deploy), not discover. Omit `durationDays` for permanent. |
+| `modifyRate` | `target` is `pull` / `finish` / `deploy` / `discover` / `plan` / `all`. `all` is the delivery line (pull/finish/deploy), not discover or plan. Discover cards do not raise plan. Omit `durationDays` for permanent. |
 | `modifyDebtMultiplier` | Same `op` / `value` / optional `durationDays`; no `target`. |
 | `addToStock` | Any stock in the enum; result clamped at 0. Pipeline writes (`backlog` / `inProgress` / `done`) attach to one in-flight `remaining` (engine-picked when several are live; ADR 0009). |
 | `scaleStock` | Immediate multiply, `factor >= 0` (`0` wipes). No duration, no Progress-panel modifier. |
@@ -157,10 +157,14 @@ Shape: `projectSchema`. The starting contract is `start.json`
 `initialProject`, not the era file. `stocks.backlog` **must** equal
 `initialProject.sizePoints`.
 
-- `sizePoints` — added to Ready and set as `remaining` on start.
+- `sizePoints` — added to Ready and set as `remaining` on Start. **Pursue**
+  spends this many Ideas and queues a named Plan item at 0/`sizePoints`
+  instead; Plan fills at 1/day (split across items) and auto-enters Ready
+  with the same ledger write when progress hits size.
 - `upfrontCost` / `payoutPerPoint` / `completionBonus` — shipped credit
   splits equally across in-flight remainings; bonus and removal fire when
   that contract's `remaining` hits ~0. Factory Points/Day is conserved.
+  Money `upfrontCost` comes off on Start, or on Pursue at the same moment.
 - `requiresCompleted` — count of any completed projects
   (`state.completedProjects`), not a specific id.
 - `requiresCompletedId` — that specific id must be in
@@ -179,9 +183,13 @@ Shape: `projectSchema`. The starting contract is `start.json`
   Already-credited `payoutPerPoint` and `stocks.shipped` stay. Remaining is
   discarded and pulled from Ready, then In Progress, then Done. No bonus,
   reputation, or grants. Uniques that were not completed can start again.
+- Cancel — drops a **Plan** item. That item's Plan progress is discarded,
+  not refunded to Ideas. Other Plan items and in-flight remaining are
+  untouched. Different from Abandon.
 
-Availability order: in-flight → unique already-completed → count floor →
-specific id → reputation → afford (`src/engine/projects.ts`). Extra
+Availability order: in-flight → already in plan → unique already-completed
+→ count floor → specific id → reputation → afford
+(`src/engine/projects.ts`). Extra
 in-flight contracts split ship credit equally (`1/n`); they do not slow
 factory rates. Project ETAs use that slice, so adding a contract lengthens
 the clock and finishing or abandoning one shortens it. The Projects header

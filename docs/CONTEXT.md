@@ -51,7 +51,7 @@ authoring instructions.
 Every named quantity the engine writes is a **stock** (`Stocks` in
 `src/engine/types.ts`). Pipeline stocks: `backlog`, `inProgress`, `done`,
 `shipped`. Resource / identity stocks: `budget`, `techDebt`, `reputation`,
-`users`, `ideas`. All clamp at a minimum of 0. Budget at `$0` freezes `pull` /
+`users`, `ideas`, `plan`. All clamp at a minimum of 0. Budget at `$0` freezes `pull` /
 `finish` / `deploy` for that tick (in-flight remaining does not burn
 down). Day, income netting, and payroll failure still run; delivery
 resumes on the next tick after budget is positive again. This is
@@ -67,6 +67,20 @@ at the `discover` rate (`start.baseRates.discover`, 0.5/day). Discover is
 not a pipeline stage, is not frozen at `$0`, and does not scale with
 reputation, users, or shipped points. Shop cards raise it with
 `modifyRate` `add` targeting `discover` (`all` still means pull/finish/deploy).
+
+**Plan** is named work after Pursue and before Ready. `GameState.plan` holds
+items (`id`, `name`, `progress`, `size`); `stocks.plan` is the sum of
+progress (the future diagram pile). Plan fills at `start.baseRates.plan`
+(1/day), split evenly across named items. Empty Plan still has that
+capacity, unused. Shop cards raise it with `modifyRate` `add` targeting
+`plan`. Discover cards do not raise plan. Plan is not a pipeline stage,
+is not frozen at `$0`, and is not slowed by debt or users-support drag.
+When an item’s progress hits size it **auto-enters Ready** (same ledger
+write as Start: Ready stock + `ActiveProject.remaining` = size). **Pursue**
+spends Ideas = `sizePoints` (and money `upfrontCost` if any) and cannot
+fire when Ideas < size or budget < cost. **Cancel** drops that Plan item;
+progress is not refunded to Ideas. Early **Start** still writes Ready
+immediately and does not spend Ideas.
 
 Pipeline stage stocks say *where* unshipped work sits. `backlog` is the
 Ready queue (waiting to pull), not the cockpit hero metric. Cockpit

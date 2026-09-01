@@ -40,9 +40,19 @@ describe("applyEffects", () => {
     const deployBefore = effectiveRate(s, "deploy");
     applyEffects(s, [{ type: "modifyRate", target: "discover", op: "add", value: 1.5 }], "src-1");
     expect(effectiveRate(s, "discover")).toBeCloseTo(2.0, 10); // base 0.5 + 1.5
+    expect(effectiveRate(s, "plan")).toBe(1);
     expect(effectiveRate(s, "pull")).toBe(pullBefore);
     expect(effectiveRate(s, "finish")).toBe(finishBefore);
     expect(effectiveRate(s, "deploy")).toBe(deployBefore);
+  });
+
+  it("modifyRate add on plan raises only the Plan rate", () => {
+    const s = freshState();
+    const discoverBefore = effectiveRate(s, "discover");
+    applyEffects(s, [{ type: "modifyRate", target: "plan", op: "add", value: 1 }], "src-1");
+    expect(effectiveRate(s, "plan")).toBeCloseTo(2, 10);
+    expect(effectiveRate(s, "discover")).toBe(discoverBefore);
+    expect(effectiveRate(s, "pull")).toBe(2);
   });
 
   it("modifyDebtMultiplier changes effective debt multiplier", () => {

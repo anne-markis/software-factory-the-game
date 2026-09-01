@@ -1,5 +1,8 @@
 import type { GameState } from "./types";
 
+// Bumped to 6 for named Plan items, the Plan stock, and the plan rate:
+// a v5 save has no Plan pile and no Pursue/Cancel/auto-Ready grammar, so
+// late-game offers would still write Ready on Start with no Ideas spend.
 // Bumped to 5 for the Ideas stock and discover faucet: a v4 save has no
 // ideas pile and no discover rate, so late-game offers would be free to
 // grab. Bumped to 4 for the Studio project redo: tiny gigs + v1–v5 replace the old
@@ -16,7 +19,7 @@ import type { GameState } from "./types";
 // deserialize rejects mismatched versions, and the UI's loadGame swallows that
 // error and starts fresh, so old saves are wiped silently rather than resumed
 // into an inconsistent state.
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export function serialize(state: Readonly<GameState>): string {
   return JSON.stringify({ version: SAVE_VERSION, state });
@@ -94,6 +97,11 @@ export function deserialize(json: string): GameState {
   // v3 saves; this only guards hand-built current-version states.
   if (state.completedProjectIds === undefined) {
     state.completedProjectIds = [];
+  }
+  // Named Plan items. SAVE_VERSION 6 rejects genuine v5 saves; this only
+  // guards hand-built current-version states.
+  if (state.plan === undefined) {
+    state.plan = [];
   }
   // Defensive default for the users stock. The SAVE_VERSION bumps
   // mean genuine pre-v2 saves are rejected before reaching here, so this only

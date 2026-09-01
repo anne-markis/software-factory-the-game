@@ -3,7 +3,7 @@ import { createRng, type Rng } from "./rng";
 import { tick, type ChallengePhase, log, isDeliveryFrozen } from "./tick";
 import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
 import { rollChallenges, resolveChoice } from "./challenges";
-import { startProject, abandonProject, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
+import { startProject, abandonProject, pursueProject, cancelPlan, planStock, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
 import { eraCrossingIsSilent, evaluateNextEraEntry, formatEraEntryPredicate } from "./eras";
 
 export type LoadEraContent = (eraId: string) => GameContent;
@@ -48,6 +48,7 @@ export function initialState(content: GameContent): GameState {
           : {}),
       },
     ],
+    plan: [],
     completedProjects: 0,
     completedProjectIds: [],
     pendingChoices: [],
@@ -109,8 +110,17 @@ export class Engine {
       if (restored.stocks.ideas === undefined) {
         restored.stocks.ideas = content.start.stocks.ideas;
       }
+      if (restored.plan === undefined) {
+        restored.plan = [];
+      }
+      if (restored.stocks.plan === undefined) {
+        restored.stocks.plan = planStock(restored);
+      }
       if (restored.baseRates.discover === undefined) {
         restored.baseRates.discover = content.start.baseRates.discover;
+      }
+      if (restored.baseRates.plan === undefined) {
+        restored.baseRates.plan = content.start.baseRates.plan;
       }
       if (restored.stockDrags === undefined) {
         restored.stockDrags = (content.start.stockDrags ?? []).map((d) => ({ ...d }));
@@ -196,6 +206,14 @@ export class Engine {
 
   startProject(defId: string): void {
     startProject(this.state, this.content, defId);
+  }
+
+  pursueProject(defId: string): void {
+    pursueProject(this.state, this.content, defId);
+  }
+
+  cancelPlan(defId: string): void {
+    cancelPlan(this.state, defId);
   }
 
   abandonProject(defId: string): void {

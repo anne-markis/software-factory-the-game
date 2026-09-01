@@ -19,10 +19,11 @@ function sickFactorFor(state: GameState, source: string): number {
 }
 
 function applies(m: Modifier, rate: RateId): boolean {
-  // Discover is an Ideas faucet, not a delivery stage. "all" / allRates
-  // stay the three-stage factory line so existing shop cards and
-  // challenges do not silently retune the pile.
-  if (rate === "discover") return m.target === "discover";
+  // Discover and plan are faucets before Ready, not delivery stages.
+  // "all" / allRates stay the three-stage factory line so existing shop
+  // cards and challenges do not silently retune Ideas or Plan. Discover
+  // cards do not raise plan.
+  if (rate === "discover" || rate === "plan") return m.target === rate;
   return m.target === rate || m.target === "allRates";
 }
 
@@ -71,9 +72,9 @@ export function effectiveRate(state: GameState, rate: RateId): number {
   for (const m of state.modifiers) {
     if (m.op === "mul" && applies(m, rate)) value *= m.value;
   }
-  // Debt and users-support drags slow delivery. Discover must not scale
-  // with shipped points (debt) or users.
-  if (rate !== "discover") {
+  // Debt and users-support drags slow delivery. Discover and plan must not
+  // scale with shipped points (debt) or users.
+  if (rate !== "discover" && rate !== "plan") {
     value *= debtDragMultiplier(state);
     value *= stockDragMultiplier(state, rate);
   }

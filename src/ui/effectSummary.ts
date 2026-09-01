@@ -24,7 +24,7 @@ function signed(n: number): string {
   return n >= 0 ? `+${fmtNum(n)}` : fmtNum(n);
 }
 
-function rateLabel(target: "pull" | "finish" | "deploy" | "discover" | "all"): string {
+function rateLabel(target: "pull" | "finish" | "deploy" | "discover" | "plan" | "all"): string {
   return target === "all" ? "all rates" : target;
 }
 

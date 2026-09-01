@@ -102,6 +102,11 @@ describe("stockDragMultiplier", () => {
     const s = stateWithUsers(100, [usersDrag]);
     expect(effectiveRate(s, "discover")).toBe(s.baseRates.discover);
   });
+
+  it("does not drag plan: Plan fill is independent of users", () => {
+    const s = stateWithUsers(100, [usersDrag]);
+    expect(effectiveRate(s, "plan")).toBe(s.baseRates.plan);
+  });
 });
 
 describe("discover rate isolation", () => {
@@ -123,5 +128,41 @@ describe("discover rate isolation", () => {
     const s = stateWithDebt(1000); // max drag on delivery rates
     expect(effectiveRate(s, "finish")).toBeCloseTo(0.5, 10);
     expect(effectiveRate(s, "discover")).toBe(s.baseRates.discover);
+  });
+});
+
+describe("plan rate isolation", () => {
+  it("allRates modifiers do not change plan", () => {
+    const content: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [] };
+    const s = initialState(content);
+    s.modifiers.push({
+      id: "mod-all",
+      source: "src",
+      target: "allRates",
+      op: "mul",
+      value: 0.5,
+    });
+    expect(effectiveRate(s, "pull")).toBe(s.baseRates.pull * 0.5);
+    expect(effectiveRate(s, "plan")).toBe(s.baseRates.plan);
+  });
+
+  it("tech-debt drag does not slow plan", () => {
+    const s = stateWithDebt(1000);
+    expect(effectiveRate(s, "finish")).toBeCloseTo(0.5, 10);
+    expect(effectiveRate(s, "plan")).toBe(s.baseRates.plan);
+  });
+
+  it("a discover modifier does not change plan", () => {
+    const content: GameContent = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [] };
+    const s = initialState(content);
+    s.modifiers.push({
+      id: "mod-discover",
+      source: "src",
+      target: "discover",
+      op: "add",
+      value: 1.5,
+    });
+    expect(effectiveRate(s, "discover")).toBeCloseTo(s.baseRates.discover + 1.5, 10);
+    expect(effectiveRate(s, "plan")).toBe(s.baseRates.plan);
   });
 });
