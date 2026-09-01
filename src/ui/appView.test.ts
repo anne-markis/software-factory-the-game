@@ -253,6 +253,22 @@ describe("appView game feel", () => {
     expect(cicd!.hasAttribute("disabled")).toBe(false);
     expect(h.root.querySelector('[data-buy="test-suite"]')).toBeNull();
   });
+
+  it("hides user-research until office-hours is bought, then shows it", () => {
+    const h = mount();
+    expect(h.root.querySelector('[data-buy="office-hours"]')).toBeTruthy();
+    expect(h.root.querySelector('[data-buy="user-research"]')).toBeNull();
+    expect(h.root.textContent).not.toContain("requires Hold office hours");
+    expect(h.root.querySelector('[data-buy="ci-cd"]')).toBeNull();
+    expect(h.root.querySelector('[data-buy="agent-harness"]')).toBeNull();
+    h.root.querySelector<HTMLElement>('[data-buy="office-hours"]')!.click();
+    const research = h.root.querySelector<HTMLElement>('[data-buy="user-research"]');
+    expect(research).toBeTruthy();
+    expect(research!.hasAttribute("disabled")).toBe(false);
+    expect(h.root.querySelector('[data-buy="office-hours"]')).toBeNull();
+    expect(h.root.querySelector('[data-buy="ci-cd"]')).toBeNull();
+    expect(h.root.querySelector('[data-buy="agent-harness"]')).toBeNull();
+  });
 });
 
 describe("appView node identity across renders", () => {

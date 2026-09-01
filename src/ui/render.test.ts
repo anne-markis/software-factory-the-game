@@ -342,6 +342,7 @@ describe("renderDecisions", () => {
       "basic-dev",
       "agent",
       "better-tooling",
+      "office-hours",
       "subscription",
       "one-time-product",
     ]);
@@ -360,6 +361,7 @@ describe("renderDecisions", () => {
       "basic-dev",
       "agent",
       "better-tooling",
+      "office-hours",
       "subscription",
       "one-time-product",
     ]);
@@ -377,6 +379,7 @@ describe("renderDecisions", () => {
       "agent-harness",
       "agent-orchestration",
       "better-tooling",
+      "office-hours",
       "subscription",
       "one-time-product",
     ]);
@@ -395,6 +398,7 @@ describe("renderDecisions", () => {
       "basic-dev",
       "agent",
       "better-tooling",
+      "office-hours",
       "subscription",
       "one-time-product",
     ]);

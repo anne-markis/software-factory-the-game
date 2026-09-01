@@ -8,10 +8,10 @@ function content(): GameContent {
 }
 
 describe("buildTechTree", () => {
-  it("groups the lean Studio content into two chains and four standalone decisions", () => {
+  it("groups the lean Studio content into three chains and four standalone decisions", () => {
     const tree = buildTechTree(content());
-    expect(tree.chains).toHaveLength(2);
-    expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent"]);
+    expect(tree.chains).toHaveLength(3);
+    expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent", "Hold office hours"]);
     // Studio shop: the hire chain lost its senior-dev/eng-manager
     // tiers, so basic-dev is now a standalone card alongside better-tooling and
     // the two monetization cards.
@@ -20,12 +20,12 @@ describe("buildTechTree", () => {
     );
   });
 
-  it("assigns test-suite/ci-cd tiers 0 and 1", () => {
+  it("assigns office-hours/user-research tiers 0 and 1", () => {
     const tree = buildTechTree(content());
-    const chain = tree.chains.find((c) => c.name === "Add test suite")!;
+    const chain = tree.chains.find((c) => c.name === "Hold office hours")!;
     expect(chain.tiers).toHaveLength(2);
-    expect(chain.tiers[0].map((d) => d.id)).toEqual(["test-suite"]);
-    expect(chain.tiers[1].map((d) => d.id)).toEqual(["ci-cd"]);
+    expect(chain.tiers[0].map((d) => d.id)).toEqual(["office-hours"]);
+    expect(chain.tiers[1].map((d) => d.id)).toEqual(["user-research"]);
   });
 
   // agent-orchestration's prerequisite is a count gate
@@ -43,7 +43,7 @@ describe("buildTechTree", () => {
   it("orders chains deterministically by their root's content-order position", () => {
     const tree = buildTechTree(content());
     // decisions.json order: test-suite, ci-cd, basic-dev, agent, ...
-    expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent"]);
+    expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent", "Hold office hours"]);
   });
 
   it("is stable across repeated calls (deterministic ordering, not incidental)", () => {

@@ -67,6 +67,8 @@ at the `discover` rate (`start.baseRates.discover`, 0.5/day). Discover is
 not a pipeline stage, is not frozen at `$0`, and does not scale with
 reputation, users, or shipped points. Shop cards raise it with
 `modifyRate` `add` targeting `discover` (`all` still means pull/finish/deploy).
+Studio: **Hold office hours** is the day-0 card (`+0.5` discover); **Run user
+research** requires it (`+1.5`). Names, costs, and bumps are placeholders.
 
 **Plan** is named work after Pursue and before Ready. `GameState.plan` holds
 items (`id`, `name`, `progress`, `size`); `stocks.plan` is the sum of

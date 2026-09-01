@@ -221,6 +221,8 @@ describe("parseDecisions", () => {
       "agent-harness",
       "agent-orchestration",
       "better-tooling",
+      "office-hours",
+      "user-research",
       "subscription",
       "one-time-product",
     ]);
