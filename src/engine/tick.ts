@@ -5,6 +5,7 @@ import { continuousDeployActive } from "./continuousDeploy";
 import { detectArchetypes } from "./archetypes";
 import { detectMilestones } from "./milestones";
 import { attachInjectedWork, committedWork, unshippedWork } from "./work";
+import { advancePlan } from "./projects";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -243,6 +244,11 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
     state.stocks.backlog += debtGain;
     attachInjectedWork(state, debtGain);
   }
+
+  // Plan fill + auto-Ready run after ship-credit so a newly readied
+  // contract cannot collect today's shipped points, and after pull so
+  // new Ready work waits until the next tick to enter In Progress.
+  advancePlan(state, content);
 
   // Organic stock flows (users acquisition) run after shipping/debt and read
   // this tick's completedProjects, so they turn on the same tick the beta

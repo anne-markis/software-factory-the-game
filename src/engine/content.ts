@@ -22,6 +22,7 @@ const stocksSchema = z
     reputation: z.number().min(0),
     users: z.number().min(0),
     ideas: z.number().min(0),
+    plan: z.number().min(0),
   })
   .strict();
 
@@ -35,8 +36,8 @@ const milestoneSchema = z
   .strict();
 
 const deliveryRate = z.enum(["pull", "finish", "deploy"]);
-const rateTarget = z.enum(["pull", "finish", "deploy", "discover", "all"]);
-const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas"]);
+const rateTarget = z.enum(["pull", "finish", "deploy", "discover", "plan", "all"]);
+const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas", "plan"]);
 
 // Stocks granted on project completion (Studio spine). Shared by
 // ProjectDef and StartConfig.initialProject.
@@ -54,6 +55,7 @@ const startSchema = z
         finish: z.number().min(0),
         deploy: z.number().min(0),
         discover: z.number().min(0),
+        plan: z.number().min(0),
       })
       .strict(),
     debtMultiplier: z.number().min(0),

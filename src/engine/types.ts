@@ -24,6 +24,10 @@ export interface Stocks {
   // discover rate from day 0. Not a pipeline stage (tech-debt regen still
   // refills Ready). Clamped at 0 like every other stock.
   ideas: number;
+  // Plan: sum of named Plan-item progress. Not a pipeline stage (tech-debt
+  // regen still refills Ready). Seeded at 0; filled at the plan rate while
+  // named items sit in GameState.plan. Clamped at 0 like every other stock.
+  plan: number;
 }
 
 export type StockName = keyof Stocks;
@@ -35,12 +39,13 @@ export const PIPELINE_STOCKS = ["backlog", "inProgress", "done"] as const;
 export type PipelineStock = (typeof PIPELINE_STOCKS)[number];
 
 // Delivery-loop rates. RATE_IDS is the three-stage factory line; discover
-// is a separate Ideas faucet (not a pipeline stage, not in the Delivery
-// diagram). "all" / allRates modifiers and stock/debt drags apply to
-// delivery rates only.
+// is a separate Ideas faucet and plan is a separate Plan-fill rate (neither
+// is a pipeline stage, neither is in the Delivery diagram). "all" / allRates
+// modifiers and stock/debt drags apply to delivery rates only. Discover
+// cards do not raise plan.
 export type DeliveryRateId = "pull" | "finish" | "deploy";
 export const RATE_IDS: readonly DeliveryRateId[] = ["pull", "finish", "deploy"];
-export type RateId = DeliveryRateId | "discover";
+export type RateId = DeliveryRateId | "discover" | "plan";
 
 export type Effect =
   | { type: "modifyRate"; target: RateId | "all"; op: "add" | "mul"; value: number; durationDays?: number }
@@ -226,6 +231,15 @@ export interface ProjectDef {
   completionStockGrants?: { stock: StockName; amount: number }[];
 }
 
+// Named work sitting in Plan after Pursue, before auto-Ready. progress
+// counts toward size at the plan rate split evenly across items.
+export interface PlanItem {
+  defId: string;
+  name: string;
+  progress: number;
+  size: number;
+}
+
 export interface ActiveProject {
   defId: string;
   name: string;
@@ -391,6 +405,10 @@ export interface GameState {
   modifiers: Modifier[];
   decisions: DecisionInstance[];
   projects: ActiveProject[];
+  // Named Plan items (Pursue → Plan → auto-Ready). Empty means the 1/day
+  // plan capacity is unused. Legacy saves predate the field; Engine
+  // backfills [] (and stocks.plan / baseRates.plan from content).
+  plan: PlanItem[];
   completedProjects: number;
   // Ids of projects that have ever completed this game (the start project
   // plus catalog defs). Used by requiresCompletedId and unique. Counted
