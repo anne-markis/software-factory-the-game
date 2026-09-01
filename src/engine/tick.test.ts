@@ -545,6 +545,19 @@ describe("tick", () => {
       expect(e.getState().stocks.ideas).toBeCloseTo(120, 10);
     });
 
+    it("buying the starting discover card raises Ideas inflow above 0.5/day without raising plan", () => {
+      const e = new Engine(ciCdContent());
+      expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
+      expect(effectiveRate(e.getState(), "plan")).toBe(1);
+      e.applyDecision("office-hours");
+      expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(1.0, 10);
+      expect(effectiveRate(e.getState(), "plan")).toBe(1);
+      for (let i = 0; i < 10; i++) e.tick();
+      // 100 + (0.5 + 0.5) * 10
+      expect(e.getState().stocks.ideas).toBeCloseTo(110, 10);
+      expect(effectiveRate(e.getState(), "plan")).toBe(1);
+    });
+
     it("does not branch on eraId", () => {
       const src = readFileSync(join(__dirname, "tick.ts"), "utf-8");
       expect(src).not.toMatch(/\beraId\b/);

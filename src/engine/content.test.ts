@@ -484,6 +484,40 @@ describe("parseDecisions", () => {
     expect(defs[0].effects[0]).toEqual({ type: "modifyRate", target: "discover", op: "add", value: 1.5 });
   });
 
+  it("pins Studio discover cards: one ungated starter, a requires-gated follow-up, mixed bumps, no plan", () => {
+    const defs = parseDecisions(decisionsJson);
+    const discoverAdds = (id: string) =>
+      defs
+        .find((d) => d.id === id)!
+        .effects.filter((e) => e.type === "modifyRate" && e.target === "discover" && e.op === "add")
+        .map((e) => (e.type === "modifyRate" ? e.value : 0));
+    const targetsPlan = (id: string) =>
+      defs.find((d) => d.id === id)!.effects.some((e) => e.type === "modifyRate" && e.target === "plan");
+
+    const starter = defs.find((d) => d.id === "office-hours")!;
+    expect(starter.requires).toBeUndefined();
+    expect(starter.requiresCounts).toBeUndefined();
+    expect(starter.unique).toBe(true);
+    expect(discoverAdds("office-hours")).toEqual([0.5]);
+    expect(targetsPlan("office-hours")).toBe(false);
+
+    const followUp = defs.find((d) => d.id === "user-research")!;
+    expect(followUp.requires).toEqual(["office-hours"]);
+    expect(followUp.unique).toBe(true);
+    expect(discoverAdds("user-research")).toEqual([1.5]);
+    expect(targetsPlan("user-research")).toBe(false);
+
+    // Mixed bumps, and no agent-count × discover card in the starting shop.
+    expect(discoverAdds("office-hours")[0]).not.toBe(discoverAdds("user-research")[0]);
+    const ungatedDiscover = defs.filter(
+      (d) =>
+        d.effects.some((e) => e.type === "modifyRate" && e.target === "discover") &&
+        (d.requires === undefined || d.requires.length === 0) &&
+        (d.requiresCounts === undefined || d.requiresCounts.length === 0),
+    );
+    expect(ungatedDiscover.map((d) => d.id)).toEqual(["office-hours"]);
+  });
+
   it("parses a modifyRate add targeting plan (shop-card hook)", () => {
     const defs = parseDecisions([
       {

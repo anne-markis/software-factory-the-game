@@ -111,6 +111,14 @@ describe("summarizeDecisionEffects", () => {
   // the agent ladder is the shop's headline retune, so pin what its
   // three cards claim on their own faces -- a stacking agent reads as a flat
   // per-copy delta, the two force multipliers as multipliers.
+  it("the shipped discover cards summarise mixed discover bumps and no plan", () => {
+    const decisions = parseDecisions(decisionsJson);
+    const officeHours = decisions.find((d) => d.id === "office-hours")!;
+    expect(summarizeDecisionEffects(officeHours)).toBe("discover +0.5/day");
+    const research = decisions.find((d) => d.id === "user-research")!;
+    expect(summarizeDecisionEffects(research)).toBe("discover +1.5/day");
+  });
+
   it("the shipped agent ladder summarises stacking adds and global multipliers", () => {
     const decisions = parseDecisions(decisionsJson);
     const agent = decisions.find((d) => d.id === "agent")!;

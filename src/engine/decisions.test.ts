@@ -223,6 +223,33 @@ describe("decisions", () => {
     expect(() => e.applyDecision("ci-cd")).toThrow(/requires Add test suite/);
   });
 
+  it("hides the gated discover card and CI/CD / harness until their prereqs are owned", () => {
+    const e = new Engine(content());
+    const byId = Object.fromEntries(e.availableDecisions().map((a) => [a.def.id, a]));
+
+    expect(byId["office-hours"]!.purchasable).toBe(true);
+    expect(byId["office-hours"]!.code).toBeUndefined();
+
+    expect(byId["user-research"]).toMatchObject({ purchasable: false, code: "missing-requires" });
+    expect(() => e.applyDecision("user-research")).toThrow(/requires/);
+
+    // Agent harness / CI/CD hide rules are unchanged.
+    expect(byId["ci-cd"]).toMatchObject({ purchasable: false, code: "missing-requires" });
+    expect(byId["agent-harness"]).toMatchObject({ purchasable: false, code: "missing-requires" });
+    expect(byId["agent-orchestration"]).toMatchObject({ purchasable: false, code: "missing-requires" });
+
+    e.applyDecision("office-hours");
+    expect(e.availableDecisions().find((a) => a.def.id === "user-research")!.purchasable).toBe(true);
+    expect(e.availableDecisions().find((a) => a.def.id === "ci-cd")).toMatchObject({
+      purchasable: false,
+      code: "missing-requires",
+    });
+    expect(e.availableDecisions().find((a) => a.def.id === "agent-harness")).toMatchObject({
+      purchasable: false,
+      code: "missing-requires",
+    });
+  });
+
   it("the agent ladder is not human, so payroll-loss and human gates ignore it", () => {
     const defs = parseDecisions(decisionsJson);
     // basic-dev is the only human in the Studio shop; the challenge pool's
