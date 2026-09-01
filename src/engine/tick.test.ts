@@ -545,16 +545,26 @@ describe("tick", () => {
       expect(e.getState().stocks.ideas).toBeCloseTo(120, 10);
     });
 
-    it("buying the starting discover card raises Ideas inflow above 0.5/day without raising plan", () => {
+    it("buying hack day grants 50 Ideas, slows delivery 70% for one felt day, and does not raise discover or plan", () => {
       const e = new Engine(ciCdContent());
+      expect(effectiveRate(e.getState(), "pull")).toBe(2);
       expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
       expect(effectiveRate(e.getState(), "plan")).toBe(1);
-      e.applyDecision("office-hours");
-      expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(1.0, 10);
+      e.applyDecision("hack-day");
+      expect(e.getState().stocks.ideas).toBe(150);
+      expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(0.6, 10); // 2 * 0.3
+      expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(0.3, 10);
+      expect(effectiveRate(e.getState(), "deploy")).toBeCloseTo(0.3, 10);
+      expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
       expect(effectiveRate(e.getState(), "plan")).toBe(1);
-      for (let i = 0; i < 10; i++) e.tick();
-      // 100 + (0.5 + 0.5) * 10
-      expect(e.getState().stocks.ideas).toBeCloseTo(110, 10);
+      e.tick(); // felt day: still slowed
+      expect(e.getState().day).toBe(1);
+      expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(0.6, 10);
+      expect(e.getState().stocks.ideas).toBeCloseTo(150.5, 10);
+      e.tick(); // durationDays 2 expires at the start of day 2
+      expect(e.getState().day).toBe(2);
+      expect(effectiveRate(e.getState(), "pull")).toBe(2);
+      expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
       expect(effectiveRate(e.getState(), "plan")).toBe(1);
     });
 

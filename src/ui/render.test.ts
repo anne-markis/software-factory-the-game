@@ -149,26 +149,24 @@ describe("renderDecisions", () => {
     expect(renderOwnedList([], content())).toContain("Nothing yet. You are a solo dev.");
   });
 
-  it("day-0 shop shows one discover card; the gated follow-up is omitted until office-hours is owned", () => {
+  it("day-0 shop shows hack day among starting cards; CI/CD and harness stay hidden", () => {
     const e = new Engine(content());
     const day0 = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(day0).toContain('data-buy="office-hours"');
-    expect(day0).not.toContain('data-buy="office-hours" disabled');
-    expect(day0).not.toContain('data-buy="user-research"');
-    expect(day0).not.toContain("requires Hold office hours");
+    expect(day0).toContain('data-buy="hack-day"');
+    expect(day0).not.toContain('data-buy="hack-day" disabled');
+    expect(day0).not.toContain("Hold office hours");
+    expect(day0).not.toContain("Run user research");
     // Agent harness / CI/CD hide rules are unchanged.
     expect(day0).not.toContain('data-buy="ci-cd"');
     expect(day0).not.toContain('data-buy="agent-harness"');
-    expect(shopBuyIds(day0).filter((id) => id === "office-hours" || id === "user-research")).toEqual(["office-hours"]);
 
-    e.applyDecision("office-hours");
-    const unlocked = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    expect(unlocked).not.toContain('data-buy="office-hours"');
-    expect(unlocked).toContain('data-buy="user-research"');
-    expect(unlocked).not.toContain('data-buy="user-research" disabled');
-    expect(unlocked).not.toContain("requires Hold office hours");
-    expect(unlocked).not.toContain('data-buy="ci-cd"');
-    expect(unlocked).not.toContain('data-buy="agent-harness"');
+    e.applyDecision("hack-day");
+    const after = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    // Repeatable: Buy stays live, owned count shows.
+    expect(after).toContain('data-buy="hack-day"');
+    expect(after).toContain("owned x1");
+    expect(after).not.toContain('data-buy="ci-cd"');
+    expect(after).not.toContain('data-buy="agent-harness"');
   });
 
   // scaffold lays out one patchable section per
@@ -342,7 +340,7 @@ describe("renderDecisions", () => {
       "basic-dev",
       "agent",
       "better-tooling",
-      "office-hours",
+      "hack-day",
       "subscription",
       "one-time-product",
     ]);
@@ -361,7 +359,7 @@ describe("renderDecisions", () => {
       "basic-dev",
       "agent",
       "better-tooling",
-      "office-hours",
+      "hack-day",
       "subscription",
       "one-time-product",
     ]);
@@ -379,7 +377,7 @@ describe("renderDecisions", () => {
       "agent-harness",
       "agent-orchestration",
       "better-tooling",
-      "office-hours",
+      "hack-day",
       "subscription",
       "one-time-product",
     ]);
@@ -398,7 +396,7 @@ describe("renderDecisions", () => {
       "basic-dev",
       "agent",
       "better-tooling",
-      "office-hours",
+      "hack-day",
       "subscription",
       "one-time-product",
     ]);

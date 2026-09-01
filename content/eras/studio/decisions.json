@@ -196,45 +196,28 @@
     "unique": true
   },
   {
-    "id": "office-hours",
-    "name": "Hold office hours",
-    "description": "A weekly slot to hear what people want. Ideas arrive faster than waiting for inspiration.",
-    "category": "change-structure",
-    "cost": {
-      "oneTime": 80
-    },
-    "effects": [
-      {
-        "type": "modifyRate",
-        "target": "discover",
-        "op": "add",
-        "value": 0.5
-      }
-    ],
-    "removable": false,
-    "unique": true
-  },
-  {
-    "id": "user-research",
-    "name": "Run user research",
-    "description": "Interviews and observation on top of office hours. A bigger bump to Ideas inflow.",
+    "id": "hack-day",
+    "name": "Hack day",
+    "description": "A day of tinkering instead of shipping. Delivery slows 70% for a day; fifty ideas land in the pile. Run it whenever you can spare the factory.",
     "category": "change-structure",
     "cost": {
       "oneTime": 200
     },
-    "requires": [
-      "office-hours"
-    ],
     "effects": [
       {
         "type": "modifyRate",
-        "target": "discover",
-        "op": "add",
-        "value": 1.5
+        "target": "all",
+        "op": "mul",
+        "value": 0.3,
+        "durationDays": 2
+      },
+      {
+        "type": "addToStock",
+        "stock": "ideas",
+        "value": 50
       }
     ],
-    "removable": false,
-    "unique": true
+    "removable": false
   },
   {
     "id": "subscription",

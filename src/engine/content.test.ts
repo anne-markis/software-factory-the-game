@@ -221,8 +221,7 @@ describe("parseDecisions", () => {
       "agent-harness",
       "agent-orchestration",
       "better-tooling",
-      "office-hours",
-      "user-research",
+      "hack-day",
       "subscription",
       "one-time-product",
     ]);
@@ -486,38 +485,20 @@ describe("parseDecisions", () => {
     expect(defs[0].effects[0]).toEqual({ type: "modifyRate", target: "discover", op: "add", value: 1.5 });
   });
 
-  it("pins Studio discover cards: one ungated starter, a requires-gated follow-up, mixed bumps, no plan", () => {
+  it("pins Studio hack day: repeatable, day-0, lump Ideas, one-day delivery hit, no plan", () => {
     const defs = parseDecisions(decisionsJson);
-    const discoverAdds = (id: string) =>
-      defs
-        .find((d) => d.id === id)!
-        .effects.filter((e) => e.type === "modifyRate" && e.target === "discover" && e.op === "add")
-        .map((e) => (e.type === "modifyRate" ? e.value : 0));
-    const targetsPlan = (id: string) =>
-      defs.find((d) => d.id === id)!.effects.some((e) => e.type === "modifyRate" && e.target === "plan");
-
-    const starter = defs.find((d) => d.id === "office-hours")!;
-    expect(starter.requires).toBeUndefined();
-    expect(starter.requiresCounts).toBeUndefined();
-    expect(starter.unique).toBe(true);
-    expect(discoverAdds("office-hours")).toEqual([0.5]);
-    expect(targetsPlan("office-hours")).toBe(false);
-
-    const followUp = defs.find((d) => d.id === "user-research")!;
-    expect(followUp.requires).toEqual(["office-hours"]);
-    expect(followUp.unique).toBe(true);
-    expect(discoverAdds("user-research")).toEqual([1.5]);
-    expect(targetsPlan("user-research")).toBe(false);
-
-    // Mixed bumps, and no agent-count × discover card in the starting shop.
-    expect(discoverAdds("office-hours")[0]).not.toBe(discoverAdds("user-research")[0]);
-    const ungatedDiscover = defs.filter(
-      (d) =>
-        d.effects.some((e) => e.type === "modifyRate" && e.target === "discover") &&
-        (d.requires === undefined || d.requires.length === 0) &&
-        (d.requiresCounts === undefined || d.requiresCounts.length === 0),
-    );
-    expect(ungatedDiscover.map((d) => d.id)).toEqual(["office-hours"]);
+    const hack = defs.find((d) => d.id === "hack-day")!;
+    expect(hack.requires).toBeUndefined();
+    expect(hack.requiresCounts).toBeUndefined();
+    expect(hack.unique).toBeUndefined();
+    expect(hack.removable).toBe(false);
+    expect(hack.cost).toEqual({ oneTime: 200 });
+    expect(hack.effects).toEqual([
+      { type: "modifyRate", target: "all", op: "mul", value: 0.3, durationDays: 2 },
+      { type: "addToStock", stock: "ideas", value: 50 },
+    ]);
+    expect(hack.effects.some((e) => e.type === "modifyRate" && e.target === "plan")).toBe(false);
+    expect(hack.effects.some((e) => e.type === "modifyRate" && e.target === "discover")).toBe(false);
   });
 
   it("parses a modifyRate add targeting plan (shop-card hook)", () => {

@@ -223,23 +223,22 @@ describe("decisions", () => {
     expect(() => e.applyDecision("ci-cd")).toThrow(/requires Add test suite/);
   });
 
-  it("hides the gated discover card and CI/CD / harness until their prereqs are owned", () => {
+  it("offers hack day on day 0, repeatable, without unlocking CI/CD or harness", () => {
     const e = new Engine(content());
     const byId = Object.fromEntries(e.availableDecisions().map((a) => [a.def.id, a]));
 
-    expect(byId["office-hours"]!.purchasable).toBe(true);
-    expect(byId["office-hours"]!.code).toBeUndefined();
-
-    expect(byId["user-research"]).toMatchObject({ purchasable: false, code: "missing-requires" });
-    expect(() => e.applyDecision("user-research")).toThrow(/requires/);
-
+    expect(byId["hack-day"]!.purchasable).toBe(true);
+    expect(byId["hack-day"]!.code).toBeUndefined();
     // Agent harness / CI/CD hide rules are unchanged.
     expect(byId["ci-cd"]).toMatchObject({ purchasable: false, code: "missing-requires" });
     expect(byId["agent-harness"]).toMatchObject({ purchasable: false, code: "missing-requires" });
     expect(byId["agent-orchestration"]).toMatchObject({ purchasable: false, code: "missing-requires" });
 
-    e.applyDecision("office-hours");
-    expect(e.availableDecisions().find((a) => a.def.id === "user-research")!.purchasable).toBe(true);
+    e.applyDecision("hack-day");
+    expect(e.getState().stocks.ideas).toBe(150);
+    expect(e.availableDecisions().find((a) => a.def.id === "hack-day")!.purchasable).toBe(true);
+    expect(() => e.applyDecision("hack-day")).not.toThrow();
+    expect(e.getState().stocks.ideas).toBe(200);
     expect(e.availableDecisions().find((a) => a.def.id === "ci-cd")).toMatchObject({
       purchasable: false,
       code: "missing-requires",
