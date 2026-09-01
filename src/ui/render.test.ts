@@ -694,6 +694,18 @@ describe("renderProjectOffers", () => {
     expect(unlocked).not.toContain("requires 5 reputation");
   });
 
+  it("lists Ship v1 disabled after Launch beta while Ideas are short, and omits it before", () => {
+    const c = studioProjects();
+    const s = initialState(c);
+    expect(renderProjectOffers(projectAvailability(s, c), s)).not.toContain('data-project="ship-v1"');
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.ideas = 100;
+    const html = renderProjectOffers(projectAvailability(s, c), s);
+    expect(html).toContain('data-project="ship-v1" disabled');
+    expect(html).toContain("cannot afford");
+  });
+
   it("keeps cannot-afford offers visible and disabled", () => {
     const fixture = {
       id: "pricey",

@@ -319,7 +319,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
       engine.resolveChoice(target.dataset.choice, target.dataset.option);
     } else if (target.dataset.project) {
       try {
-        engine.startProject(target.dataset.project);
+        engine.takeProject(target.dataset.project);
       } catch (err) {
         deps.onError((err as Error).message);
       }

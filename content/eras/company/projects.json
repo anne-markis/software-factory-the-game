@@ -6,7 +6,8 @@
     "upfrontCost": 2000,
     "payoutPerPoint": 21,
     "completionBonus": 1500,
-    "reputationReward": 5
+    "reputationReward": 5,
+    "pursue": true
   },
   {
     "id": "big-migration",
@@ -17,6 +18,7 @@
     "completionBonus": 8000,
     "requiresCompleted": 1,
     "requiresReputation": 5,
-    "reputationReward": 12
+    "reputationReward": 12,
+    "pursue": true
   }
 ]

@@ -174,6 +174,10 @@ Shape: `projectSchema`. The starting contract is `start.json`
   sequence.
 - `unique` — cannot start again after completion. Omit for repeatable
   gigs.
+- `pursue` — optional boolean, same style as `unique`. `true` is
+  **Pursue** (spend Ideas = `sizePoints`, enter Plan). Omit or `false`
+  is **Start** (no Ideas spend, write Ready immediately). Default Start
+  so inherited gigs do not silently Pursue.
 - `reputationReward` — required (>= 0; `0` is legal).
 - `requiresReputation` — live floor, re-checked every call. A later
   reputation hit re-locks the contract.
@@ -189,7 +193,11 @@ Shape: `projectSchema`. The starting contract is `start.json`
 
 Availability order: in-flight → already in plan → unique already-completed
 → count floor → specific id → reputation → afford
-(`src/engine/projects.ts`). Extra
+(`src/engine/projects.ts`). Afford is money `upfrontCost`, and for Pursue
+also Ideas < `sizePoints` (same `cannot afford` reason; the row stays
+visible). Unmet project prereqs are still returned for next-goal; the
+offers list omits those rows the same way the shop omits unmet
+`requires`. Extra
 in-flight contracts split ship credit equally (`1/n`); they do not slow
 factory rates. Project ETAs use that slice, so adding a contract lengthens
 the clock and finishing or abandoning one shortens it. The Projects header

@@ -53,7 +53,7 @@ describe("cheat mutators (ledger-safe)", () => {
 
   it("setStoryPoints keeps later contracts in the same stage so FIFO still adds up", () => {
     const e = new Engine(content());
-    e.startProject("gig-plugin");
+    e.startProject("gig-bugfix");
     const s = e.getState() as GameState;
     const later = s.projects[1]!.remaining;
     setStoryPoints(s, 10, "done");

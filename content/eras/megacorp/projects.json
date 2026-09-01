@@ -8,6 +8,7 @@
     "completionBonus": 25000,
     "requiresCompleted": 2,
     "requiresReputation": 15,
-    "reputationReward": 20
+    "reputationReward": 20,
+    "pursue": true
   }
 ]

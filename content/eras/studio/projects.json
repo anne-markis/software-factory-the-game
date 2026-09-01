@@ -24,7 +24,8 @@
     "upfrontCost": 0,
     "payoutPerPoint": 17,
     "completionBonus": 700,
-    "reputationReward": 2
+    "reputationReward": 2,
+    "pursue": true
   },
   {
     "id": "small-refactor",
@@ -45,6 +46,7 @@
     "completionBonus": 1000,
     "reputationReward": 2,
     "unique": true,
+    "pursue": true,
     "requiresCompletedId": "launch-beta",
     "completionStockGrants": [{ "stock": "users", "amount": 20 }]
   },
@@ -57,6 +59,7 @@
     "completionBonus": 1400,
     "reputationReward": 2,
     "unique": true,
+    "pursue": true,
     "requiresCompletedId": "ship-v1",
     "completionStockGrants": [{ "stock": "users", "amount": 25 }]
   },
@@ -69,6 +72,7 @@
     "completionBonus": 2000,
     "reputationReward": 3,
     "unique": true,
+    "pursue": true,
     "requiresCompletedId": "ship-v2",
     "completionStockGrants": [{ "stock": "users", "amount": 35 }]
   },
@@ -81,6 +85,7 @@
     "completionBonus": 2800,
     "reputationReward": 3,
     "unique": true,
+    "pursue": true,
     "requiresCompletedId": "ship-v3",
     "completionStockGrants": [{ "stock": "users", "amount": 45 }]
   },
@@ -93,6 +98,7 @@
     "completionBonus": 4000,
     "reputationReward": 4,
     "unique": true,
+    "pursue": true,
     "requiresCompletedId": "ship-v4",
     "completionStockGrants": [{ "stock": "users", "amount": 60 }]
   }

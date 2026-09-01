@@ -21,10 +21,10 @@ function shrinkStart(c: GameContent, size = 2): void {
 describe("projects", () => {
   it("startProject charges upfront cost and adds points to backlog", () => {
     const e = new Engine(content());
-    e.startProject("gig-plugin");
+    e.startProject("gig-bugfix");
     const s = e.getState();
     expect(s.stocks.budget).toBe(10000); // Studio gigs are $0 upfront
-    expect(s.stocks.backlog).toBe(750); // Studio start backlog 300 + plugin 450
+    expect(s.stocks.backlog).toBe(400); // Studio start backlog 300 + bugfix 100
     expect(s.projects).toHaveLength(2);
   });
 
@@ -248,7 +248,7 @@ describe("projects", () => {
   });
 
   it("unlocks Ship v1 after Launch beta and keeps v2 locked until v1 completes", () => {
-    const c = content();
+    const c = content({ ideas: 2000 });
     shrinkStart(c);
     const v1 = c.projects.find((p) => p.id === "ship-v1")!;
     v1.sizePoints = 2;
@@ -258,7 +258,7 @@ describe("projects", () => {
     expect(e.getState().completedProjectIds).toEqual(["launch-beta"]);
     expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(true);
     expect(e.availableProjects().find((p) => p.def.id === "ship-v2")!.startable).toBe(false);
-    e.startProject("ship-v1");
+    e.pursueProject("ship-v1");
     (e.getState() as GameState).debtMultiplierBase = 0; // isolate the ladder from debt refill
     for (let i = 0; i < 20 && e.getState().completedProjects < 2; i++) e.tick();
     expect(e.getState().completedProjectIds).toEqual(["launch-beta", "ship-v1"]);
@@ -412,6 +412,7 @@ describe("projects", () => {
     shrinkStart(c);
     const v1 = c.projects.find((p) => p.id === "ship-v1")!;
     v1.sizePoints = 10;
+    v1.pursue = undefined;
     const e = new Engine(c);
     for (let i = 0; i < 6; i++) e.tick();
     expect(e.getState().completedProjectIds).toEqual(["launch-beta"]);
@@ -449,5 +450,76 @@ describe("projects", () => {
     expect(e.isStalled()).toBe(true);
     const withGigs = new Engine(content({ backlog: 0, budget: 10 }));
     expect(withGigs.isStalled()).toBe(false); // $0 tiny gigs are the relief valve
+  });
+});
+
+describe("Start vs Pursue offers", () => {
+  it("omits Ship v1 from takeable offers before Launch beta and lists it disabled while Ideas < 400 after", () => {
+    const e = new Engine(content({ ideas: 100 }));
+    const before = e.availableProjects().find((p) => p.def.id === "ship-v1")!;
+    expect(before.def.pursue).toBe(true);
+    expect(before.startable).toBe(false);
+    expect(before.reason).toMatch(/requires completed Launch beta/);
+
+    const s = e.getState() as GameState;
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.ideas = 399;
+    const short = e.availableProjects().find((p) => p.def.id === "ship-v1")!;
+    expect(short.startable).toBe(false);
+    expect(short.reason).toBe("cannot afford");
+    expect(() => e.pursueProject("ship-v1")).toThrow(/ideas/i);
+    expect(e.getState().stocks.ideas).toBe(399);
+    expect(e.getState().plan).toEqual([]);
+
+    s.stocks.ideas = 400;
+    const ready = e.availableProjects().find((p) => p.def.id === "ship-v1")!;
+    expect(ready.startable).toBe(true);
+    expect(ready.reason).toBeUndefined();
+  });
+
+  it("Start still works on Weekend bugfix while something is in Plan", () => {
+    const e = new Engine(content({ ideas: 450 }));
+    e.pursueProject("gig-plugin");
+    expect(e.getState().plan.some((p) => p.defId === "gig-plugin")).toBe(true);
+    const ideasAfterPursue = e.getState().stocks.ideas;
+    e.startProject("gig-bugfix");
+    const s = e.getState();
+    expect(s.projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
+    expect(s.stocks.ideas).toBe(ideasAfterPursue);
+    expect(s.plan.some((p) => p.defId === "gig-plugin")).toBe(true);
+  });
+
+  it("Start refuses a Pursue offer; Pursue refuses a Start offer", () => {
+    const e = new Engine(content({ ideas: 400 }));
+    const s = e.getState() as GameState;
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    expect(() => e.startProject("ship-v1")).toThrow(/pursu/i);
+    expect(e.getState().projects.some((p) => p.defId === "ship-v1")).toBe(false);
+    expect(e.getState().plan).toEqual([]);
+    expect(e.getState().stocks.ideas).toBe(400);
+
+    expect(() => e.pursueProject("gig-bugfix")).toThrow(/start/i);
+    expect(e.getState().plan).toEqual([]);
+    expect(e.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(false);
+  });
+
+  it("omitted pursue defaults to Start so inherited gigs do not silently Pursue", () => {
+    const gig: ProjectDef = {
+      id: "plain-gig",
+      name: "Plain gig",
+      sizePoints: 10,
+      upfrontCost: 0,
+      payoutPerPoint: 1,
+      completionBonus: 0,
+      reputationReward: 0,
+    };
+    const e = new Engine({ ...content({ ideas: 10 }), projects: [gig] });
+    expect(e.availableProjects().find((p) => p.def.id === "plain-gig")!.def.pursue).toBeUndefined();
+    e.startProject("plain-gig");
+    expect(e.getState().projects.some((p) => p.defId === "plain-gig")).toBe(true);
+    expect(e.getState().stocks.ideas).toBe(10);
+    expect(e.getState().plan).toEqual([]);
   });
 });

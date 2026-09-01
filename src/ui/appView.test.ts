@@ -522,6 +522,20 @@ describe("appView click delegation on the stable root", () => {
     expect(h.actions).toBe(1);
   });
 
+  it("pursues a flagged offer through the existing project button", () => {
+    const h = mount();
+    const s = h.engine.getState() as GameState;
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.ideas = 400;
+    h.view.render();
+    h.root.querySelector<HTMLElement>('[data-project="ship-v1"]')!.click();
+    expect(h.engine.getState().plan.some((p) => p.defId === "ship-v1")).toBe(true);
+    expect(h.engine.getState().stocks.ideas).toBe(0);
+    expect(h.engine.getState().projects.some((p) => p.defId === "ship-v1")).toBe(false);
+    expect(h.actions).toBe(1);
+  });
+
   it("abandons an in-flight project through data-abandon after confirm", () => {
     const h = mount();
     const btn = h.root.querySelector<HTMLElement>('[data-abandon="launch-beta"]')!;

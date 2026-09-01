@@ -25,9 +25,9 @@ function content(projects: ProjectDef[], stockOverrides: Partial<GameContent["st
   return { start, decisions: [], challenges: [], projects };
 }
 
-const LATE_400 = sized({ id: "late-400", name: "Ship-v1-sized", sizePoints: 400 });
-const PEER_A = sized({ id: "plan-a", name: "Plan A", sizePoints: 10 });
-const PEER_B = sized({ id: "plan-b", name: "Plan B", sizePoints: 10 });
+const LATE_400 = sized({ id: "late-400", name: "Ship-v1-sized", sizePoints: 400, pursue: true });
+const PEER_A = sized({ id: "plan-a", name: "Plan A", sizePoints: 10, pursue: true });
+const PEER_B = sized({ id: "plan-b", name: "Plan B", sizePoints: 10, pursue: true });
 
 describe("Pursue, Plan, Cancel, auto-Ready", () => {
   it("Pursue Ship-v1-sized work (400) with Ideas 400: Ideas 0, named Plan item 0/400", () => {
@@ -70,7 +70,7 @@ describe("Pursue, Plan, Cancel, auto-Ready", () => {
   });
 
   it("when progress hits size, the item leaves Plan and appears as in-flight Ready work with remaining = size", () => {
-    const tiny = sized({ id: "tiny-plan", name: "Tiny plan", sizePoints: 2, completionBonus: 50, reputationReward: 1 });
+    const tiny = sized({ id: "tiny-plan", name: "Tiny plan", sizePoints: 2, completionBonus: 50, reputationReward: 1, pursue: true });
     const e = new Engine(content([tiny], { ideas: 2 }));
     const backlogBefore = e.getState().stocks.backlog;
     const ideasWallet = 17;
@@ -152,7 +152,7 @@ describe("Pursue, Plan, Cancel, auto-Ready", () => {
   });
 
   it("Pursue spends money upfrontCost at the same moment Start would, and fails without spend if budget is short", () => {
-    const paid = sized({ id: "paid-plan", name: "Paid plan", sizePoints: 10, upfrontCost: 500 });
+    const paid = sized({ id: "paid-plan", name: "Paid plan", sizePoints: 10, upfrontCost: 500, pursue: true });
     const poor = new Engine(content([paid], { ideas: 100, budget: 100 }));
     expect(() => poor.pursueProject("paid-plan")).toThrow(/afford/i);
     expect(poor.getState().stocks.ideas).toBe(100);
