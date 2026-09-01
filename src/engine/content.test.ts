@@ -662,6 +662,7 @@ describe("parseChallenges", () => {
       reputationReward: 1,
     });
     expect(bugfix.unique).toBeUndefined();
+    expect(bugfix.pursue).toBeUndefined();
     const refactor = defs.find((p) => p.id === "small-refactor")!;
     expect(refactor).toMatchObject({
       name: "Small refactor",
@@ -672,15 +673,22 @@ describe("parseChallenges", () => {
       reputationReward: 0,
     });
     expect(refactor.unique).toBeUndefined();
+    expect(refactor.pursue).toBeUndefined();
     expect(refactor.completionStockGrants).toEqual([{ stock: "techDebt", amount: -50 }]);
+    expect(defs.find((p) => p.id === "gig-landing-page")!.pursue).toBeUndefined();
+    expect(defs.find((p) => p.id === "gig-plugin")!.pursue).toBe(true);
     const v1 = defs.find((p) => p.id === "ship-v1")!;
     expect(v1).toMatchObject({
       name: "Ship v1",
       sizePoints: 400,
       payoutPerPoint: 0,
       unique: true,
+      pursue: true,
       requiresCompletedId: "launch-beta",
     });
+    for (const id of ["ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
+      expect(defs.find((p) => p.id === id)!.pursue).toBe(true);
+    }
     expect(v1.completionStockGrants).toEqual([{ stock: "users", amount: 20 }]);
     expect(defs.find((p) => p.id === "ship-v5")!.requiresCompletedId).toBe("ship-v4");
     expect(defs.some((p) => p.id === "small-crm")).toBe(false);
@@ -825,21 +833,61 @@ describe("parseProjects", () => {
     const company = loadShippedContent("company");
     const crm = company.projects.find((p) => p.id === "small-crm")!;
     expect(crm.requiresReputation).toBeUndefined();
+    expect(crm.pursue).toBe(true);
     const big = company.projects.find((p) => p.id === "big-migration")!;
     expect(big.requiresCompleted).toBe(1);
     expect(big.requiresReputation).toBe(5);
+    expect(big.pursue).toBe(true);
+    expect(company.projects.find((p) => p.id === "gig-bugfix")!.pursue).toBeUndefined();
+    expect(company.projects.find((p) => p.id === "gig-plugin")!.pursue).toBe(true);
     expect(company.projects.some((p) => p.id === "mobile-app")).toBe(false);
     const mega = loadShippedContent("megacorp");
     const ent = mega.projects.find((p) => p.id === "enterprise-replatform")!;
     expect(ent.requiresCompleted).toBe(2);
     expect(ent.requiresReputation).toBe(15);
     expect(ent.reputationReward).toBe(20);
+    expect(ent.pursue).toBe(true);
+    expect(mega.projects.find((p) => p.id === "gig-bugfix")!.pursue).toBeUndefined();
   });
 
   it("rejects a negative reputationReward", () => {
     expect(() =>
       parseProjects([
         { id: "x", name: "x", sizePoints: 1, upfrontCost: 0, payoutPerPoint: 1, completionBonus: 0, reputationReward: -1 },
+      ]),
+    ).toThrow(/content\/projects\.json/);
+  });
+
+  it("parses optional pursue and rejects a non-boolean", () => {
+    const startOnly = parseProjects([
+      { id: "x", name: "x", sizePoints: 1, upfrontCost: 0, payoutPerPoint: 1, completionBonus: 0, reputationReward: 0 },
+    ]);
+    expect(startOnly[0]!.pursue).toBeUndefined();
+    const flagged = parseProjects([
+      {
+        id: "x",
+        name: "x",
+        sizePoints: 1,
+        upfrontCost: 0,
+        payoutPerPoint: 1,
+        completionBonus: 0,
+        reputationReward: 0,
+        pursue: true,
+      },
+    ]);
+    expect(flagged[0]!.pursue).toBe(true);
+    expect(() =>
+      parseProjects([
+        {
+          id: "x",
+          name: "x",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 1,
+          completionBonus: 0,
+          reputationReward: 0,
+          pursue: "yes",
+        },
       ]),
     ).toThrow(/content\/projects\.json/);
   });
