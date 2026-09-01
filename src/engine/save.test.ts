@@ -4,7 +4,7 @@ import { Engine, initialState } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
 import { unshippedWork, workLedgerIssues } from "./work";
-import type { GameContent } from "./types";
+import type { GameContent, GameState } from "./types";
 
 function content(): GameContent {
   return { start: parseStartConfig(startJson), decisions: parseDecisions(decisionsJson), challenges: [], projects: [] };
@@ -52,14 +52,17 @@ describe("save/load", () => {
   // the version-2 bump to 2 (no users stock, 1500 backlog, First Contract economy).
   // Bumped to 4 for the Studio project redo (tiny gigs + unique v1–v5; the old
   // contract ladder left Studio). Bumped to 5 for the Ideas stock and discover
-  // faucet (a v4 save has no ideas pile). The UI's loadGame swallows this error
-  // and starts fresh, so old saves of either vintage are wiped silently.
-  it("is version 5 and rejects legacy v1/v2/v3/v4 saves so old saves start fresh", () => {
-    expect(SAVE_VERSION).toBe(5);
+  // faucet (a v4 save has no ideas pile). Bumped to 6 for named Plan items, the
+  // Plan stock, and the plan rate (a v5 save has no Plan pile). The UI's
+  // loadGame swallows this error and starts fresh, so old saves of either
+  // vintage are wiped silently.
+  it("is version 6 and rejects legacy v1/v2/v3/v4/v5 saves so old saves start fresh", () => {
+    expect(SAVE_VERSION).toBe(6);
     expect(() => deserialize(JSON.stringify({ version: 1, state: {} }))).toThrow(/version 1/);
     expect(() => deserialize(JSON.stringify({ version: 2, state: {} }))).toThrow(/version 2/);
     expect(() => deserialize(JSON.stringify({ version: 3, state: {} }))).toThrow(/version 3/);
     expect(() => deserialize(JSON.stringify({ version: 4, state: {} }))).toThrow(/version 4/);
+    expect(() => deserialize(JSON.stringify({ version: 5, state: {} }))).toThrow(/version 5/);
   });
 
   // A fresh Studio save round-trips its users stock and always-on stockDrags.
@@ -82,6 +85,33 @@ describe("save/load", () => {
     expect(restored.stocks.ideas).toBeCloseTo(105, 10);
   });
 
+  it("round-trips named Plan items, the Plan stock, and the plan rate", () => {
+    const late: GameContent["projects"][number] = {
+      id: "late-400",
+      name: "Ship-v1-sized",
+      sizePoints: 400,
+      upfrontCost: 0,
+      payoutPerPoint: 0,
+      completionBonus: 0,
+      reputationReward: 0,
+    };
+    const c: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: parseDecisions(decisionsJson),
+      challenges: [],
+      projects: [late],
+    };
+    const a = new Engine(c);
+    (a.getState() as GameState).stocks.ideas = 400;
+    a.pursueProject("late-400");
+    a.tick();
+    const restored = deserialize(serialize(a.getState()));
+    expect(restored.plan).toEqual(a.getState().plan);
+    expect(restored.stocks.plan).toBe(a.getState().stocks.plan);
+    expect(restored.baseRates.plan).toBe(a.getState().baseRates.plan);
+    expect(restored.plan[0]!.progress).toBeCloseTo(1, 10);
+  });
+
   it("Engine backfills a missing stocks.ideas from content (legacy save shape)", () => {
     const c = content();
     const a = new Engine(c);
@@ -91,6 +121,23 @@ describe("save/load", () => {
     expect(restored.stocks.ideas).toBeUndefined();
     const b = new Engine(c, restored);
     expect(b.getState().stocks.ideas).toBe(c.start.stocks.ideas);
+  });
+
+  it("Engine backfills a missing plan array, plan stock, and plan rate (legacy save shape)", () => {
+    const c = content();
+    const a = new Engine(c);
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.plan;
+    delete raw.state.stocks.plan;
+    delete raw.state.baseRates.plan;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.plan).toEqual([]);
+    expect(restored.stocks.plan).toBeUndefined();
+    expect(restored.baseRates.plan).toBeUndefined();
+    const b = new Engine(c, restored);
+    expect(b.getState().plan).toEqual([]);
+    expect(b.getState().stocks.plan).toBe(0);
+    expect(b.getState().baseRates.plan).toBe(c.start.baseRates.plan);
   });
 
   // Release-7 bug fix: main.ts only autosaved every 10 days, so the paused
