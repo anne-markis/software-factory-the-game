@@ -21,10 +21,10 @@ function shrinkStart(c: GameContent, size = 2): void {
 describe("projects", () => {
   it("startProject charges upfront cost and adds points to backlog", () => {
     const e = new Engine(content());
-    e.startProject("gig-plugin");
+    e.startProject("gig-bugfix");
     const s = e.getState();
     expect(s.stocks.budget).toBe(10000); // Studio gigs are $0 upfront
-    expect(s.stocks.backlog).toBe(750); // Studio start backlog 300 + plugin 450
+    expect(s.stocks.backlog).toBe(400); // Studio start backlog 300 + bugfix 100
     expect(s.projects).toHaveLength(2);
   });
 
@@ -248,7 +248,7 @@ describe("projects", () => {
   });
 
   it("unlocks Ship v1 after Launch beta and keeps v2 locked until v1 completes", () => {
-    const c = content();
+    const c = content({ ideas: 2000 });
     shrinkStart(c);
     const v1 = c.projects.find((p) => p.id === "ship-v1")!;
     v1.sizePoints = 2;
@@ -258,7 +258,7 @@ describe("projects", () => {
     expect(e.getState().completedProjectIds).toEqual(["launch-beta"]);
     expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(true);
     expect(e.availableProjects().find((p) => p.def.id === "ship-v2")!.startable).toBe(false);
-    e.startProject("ship-v1");
+    e.pursueProject("ship-v1");
     (e.getState() as GameState).debtMultiplierBase = 0; // isolate the ladder from debt refill
     for (let i = 0; i < 20 && e.getState().completedProjects < 2; i++) e.tick();
     expect(e.getState().completedProjectIds).toEqual(["launch-beta", "ship-v1"]);
@@ -412,6 +412,7 @@ describe("projects", () => {
     shrinkStart(c);
     const v1 = c.projects.find((p) => p.id === "ship-v1")!;
     v1.sizePoints = 10;
+    v1.pursue = undefined;
     const e = new Engine(c);
     for (let i = 0; i < 6; i++) e.tick();
     expect(e.getState().completedProjectIds).toEqual(["launch-beta"]);

@@ -94,6 +94,7 @@ describe("save/load", () => {
       payoutPerPoint: 0,
       completionBonus: 0,
       reputationReward: 0,
+      pursue: true,
     };
     const c: GameContent = {
       start: parseStartConfig(startJson),

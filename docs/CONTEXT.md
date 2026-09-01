@@ -77,10 +77,12 @@ capacity, unused. Shop cards raise it with `modifyRate` `add` targeting
 is not frozen at `$0`, and is not slowed by debt or users-support drag.
 When an item’s progress hits size it **auto-enters Ready** (same ledger
 write as Start: Ready stock + `ActiveProject.remaining` = size). **Pursue**
-spends Ideas = `sizePoints` (and money `upfrontCost` if any) and cannot
-fire when Ideas < size or budget < cost. **Cancel** drops that Plan item;
-progress is not refunded to Ideas. Early **Start** still writes Ready
-immediately and does not spend Ideas.
+(`ProjectDef.pursue: true`) spends Ideas = `sizePoints` (and money
+`upfrontCost` if any) and cannot fire when Ideas < size or budget < cost.
+**Cancel** drops that Plan item; progress is not refunded to Ideas. Early
+**Start** (flag omitted) still writes Ready immediately and does not spend
+Ideas. Later-era new contracts are Pursue because they are late/big;
+inherited Start gigs stay Start.
 
 Pipeline stage stocks say *where* unshipped work sits. `backlog` is the
 Ready queue (waiting to pull), not the cockpit hero metric. Cockpit
@@ -117,7 +119,8 @@ Progression edges live in content, not in TypeScript that knows story beats:
 - Challenges: `minHumanDevs` / `maxHumanDevs`, `minTechDebt`, `minDay`,
   `minCompletedProjects`, `requiresAnyDecision`, `lacksDecision`.
 - Projects: `requiresCompleted` (count), `requiresCompletedId` (specific
-  catalog or start-project id), `unique`, `requiresReputation`.
+  catalog or start-project id), `unique`, `pursue` (omit = Start),
+  `requiresReputation`.
 - Era entry (evaluated each tick for the **next** rung only): `entryAnyOf`
   OR of `{ minBudget, minReputation, minCompletedProjects, minUsers }` paths.
 

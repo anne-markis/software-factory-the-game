@@ -392,6 +392,8 @@ const projectSchema = z
     requiresReputation: z.number().min(0).optional(),
     requiresCompletedId: z.string().min(1).optional(),
     unique: z.boolean().optional(),
+    // Omit = Start. true = Pursue. Same optional-boolean style as unique.
+    pursue: z.boolean().optional(),
     completionStockGrants: completionStockGrantsSchema,
   })
   .strict();

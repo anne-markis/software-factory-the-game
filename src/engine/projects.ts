@@ -47,11 +47,20 @@ function blockReason(state: GameState, content: GameContent, def: ProjectDef): s
   return undefined;
 }
 
+function isPursue(def: ProjectDef): boolean {
+  return def.pursue === true;
+}
+
+function cannotAfford(state: GameState, def: ProjectDef): boolean {
+  if (state.stocks.budget < def.upfrontCost) return true;
+  return isPursue(def) && state.stocks.ideas < def.sizePoints;
+}
+
 export function projectAvailability(state: GameState, content: GameContent): ProjectAvailability[] {
   return content.projects.map((def) => {
     const blocked = blockReason(state, content, def);
     if (blocked) return { def, startable: false, reason: blocked };
-    if (state.stocks.budget < def.upfrontCost) return { def, startable: false, reason: "cannot afford" };
+    if (cannotAfford(state, def)) return { def, startable: false, reason: "cannot afford" };
     return { def, startable: true };
   });
 }
@@ -78,6 +87,7 @@ export function startProject(state: GameState, content: GameContent, defId: stri
     throw new Error(entry.reason === "cannot afford" ? `Cannot afford ${entry.def.name}` : `${entry.def.name}: ${entry.reason}`);
   }
   const def = entry.def;
+  if (isPursue(def)) throw new Error(`${def.name} is pursued, not started`);
   state.stocks.budget -= def.upfrontCost;
   enterReady(state, def);
   log(state, `Started project: ${def.name} (+${def.sizePoints} points, -$${def.upfrontCost})`);
@@ -86,6 +96,7 @@ export function startProject(state: GameState, content: GameContent, defId: stri
 export function pursueProject(state: GameState, content: GameContent, defId: string): void {
   const def = content.projects.find((p) => p.id === defId);
   if (!def) throw new Error(`Unknown project: ${defId}`);
+  if (!isPursue(def)) throw new Error(`${def.name} starts, it is not pursued`);
   const blocked = blockReason(state, content, def);
   if (blocked) throw new Error(`${def.name}: ${blocked}`);
   if (state.stocks.ideas < def.sizePoints) {
@@ -104,6 +115,13 @@ export function pursueProject(state: GameState, content: GameContent, defId: str
   });
   syncPlanStock(state);
   log(state, `Pursuing: ${def.name} (−${def.sizePoints} ideas, −$${def.upfrontCost})`);
+}
+
+export function takeProject(state: GameState, content: GameContent, defId: string): void {
+  const def = content.projects.find((p) => p.id === defId);
+  if (!def) throw new Error(`Unknown project: ${defId}`);
+  if (isPursue(def)) pursueProject(state, content, defId);
+  else startProject(state, content, defId);
 }
 
 export function cancelPlan(state: GameState, defId: string): void {

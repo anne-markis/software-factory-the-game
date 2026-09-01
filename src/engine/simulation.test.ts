@@ -23,11 +23,11 @@ const STUDIO_FOLLOW_ON = [
 
 function startNextStudioWork(e: Engine, reserve = 0): void {
   const s = e.getState();
-  if (s.projects.length > 0) return;
+  if (s.projects.length > 0 || (s.plan?.length ?? 0) > 0) return;
   for (const id of STUDIO_FOLLOW_ON) {
     const w = e.availableProjects().find((p) => p.def.id === id);
     if (w?.startable && s.stocks.budget >= w.def.upfrontCost + reserve) {
-      e.startProject(id);
+      e.takeProject(id);
       return;
     }
   }
@@ -715,7 +715,7 @@ describe("simulation", () => {
         started = false;
         for (const p of e.availableProjects()) {
           if (p.startable) {
-            e.startProject(p.def.id);
+            e.takeProject(p.def.id);
             started = true;
             break;
           }
@@ -833,13 +833,14 @@ describe("simulation", () => {
     const content = loadShippedContent("company");
     const e = new Engine(content);
     // Stage a Company build sitting on the first reputation-gated client
-    // (big-migration: 1 completion AND 5 reputation). Plenty of budget so
-    // affordability is never the binding reason.
+    // (big-migration: 1 completion AND 5 reputation). Plenty of budget and
+    // Ideas so affordability is never the binding reason.
     const s = e.getState() as GameState;
     s.completedProjects = 1;
     s.completedProjectIds = ["launch-beta"];
     s.stocks.reputation = 5;
     s.stocks.budget = 100000;
+    s.stocks.ideas = 20000;
 
     const migrationAt = () => e.availableProjects().find((p) => p.def.id === "big-migration")!;
     expect(migrationAt().startable).toBe(true);
