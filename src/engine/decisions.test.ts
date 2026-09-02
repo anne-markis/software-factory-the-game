@@ -223,6 +223,39 @@ describe("decisions", () => {
     expect(() => e.applyDecision("ci-cd")).toThrow(/requires Add test suite/);
   });
 
+  it("offers hack day and user interviews on day 0, repeatable, without unlocking CI/CD or harness", () => {
+    const e = new Engine(content());
+    const byId = Object.fromEntries(e.availableDecisions().map((a) => [a.def.id, a]));
+
+    expect(byId["hack-day"]!.purchasable).toBe(true);
+    expect(byId["hack-day"]!.code).toBeUndefined();
+    expect(byId["user-interviews"]!.purchasable).toBe(true);
+    expect(byId["user-interviews"]!.code).toBeUndefined();
+    // Agent harness / CI/CD hide rules are unchanged.
+    expect(byId["ci-cd"]).toMatchObject({ purchasable: false, code: "missing-requires" });
+    expect(byId["agent-harness"]).toMatchObject({ purchasable: false, code: "missing-requires" });
+    expect(byId["agent-orchestration"]).toMatchObject({ purchasable: false, code: "missing-requires" });
+
+    e.applyDecision("hack-day");
+    expect(e.getState().stocks.ideas).toBe(150);
+    expect(e.availableDecisions().find((a) => a.def.id === "hack-day")!.purchasable).toBe(true);
+    expect(() => e.applyDecision("hack-day")).not.toThrow();
+    expect(e.getState().stocks.ideas).toBe(200);
+    e.applyDecision("user-interviews");
+    expect(e.getState().stocks.ideas).toBe(400);
+    expect(e.availableDecisions().find((a) => a.def.id === "user-interviews")!.purchasable).toBe(true);
+    e.applyDecision("user-interviews");
+    expect(e.getState().stocks.ideas).toBe(600);
+    expect(e.availableDecisions().find((a) => a.def.id === "ci-cd")).toMatchObject({
+      purchasable: false,
+      code: "missing-requires",
+    });
+    expect(e.availableDecisions().find((a) => a.def.id === "agent-harness")).toMatchObject({
+      purchasable: false,
+      code: "missing-requires",
+    });
+  });
+
   it("the agent ladder is not human, so payroll-loss and human gates ignore it", () => {
     const defs = parseDecisions(decisionsJson);
     // basic-dev is the only human in the Studio shop; the challenge pool's

@@ -111,6 +111,14 @@ describe("summarizeDecisionEffects", () => {
   // the agent ladder is the shop's headline retune, so pin what its
   // three cards claim on their own faces -- a stacking agent reads as a flat
   // per-copy delta, the two force multipliers as multipliers.
+  it("the shipped hack day summarises a one-day delivery hit and an Ideas lump", () => {
+    const decisions = parseDecisions(decisionsJson);
+    const hack = decisions.find((d) => d.id === "hack-day")!;
+    expect(summarizeDecisionEffects(hack)).toBe("all rates x0.3 for 1d, ideas +50");
+    const interviews = decisions.find((d) => d.id === "user-interviews")!;
+    expect(summarizeDecisionEffects(interviews)).toBe("ideas +200");
+  });
+
   it("the shipped agent ladder summarises stacking adds and global multipliers", () => {
     const decisions = parseDecisions(decisionsJson);
     const agent = decisions.find((d) => d.id === "agent")!;

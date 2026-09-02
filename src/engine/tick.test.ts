@@ -545,6 +545,42 @@ describe("tick", () => {
       expect(e.getState().stocks.ideas).toBeCloseTo(120, 10);
     });
 
+    it("buying hack day grants 50 Ideas, slows delivery 70% for one felt day, and does not raise discover or plan", () => {
+      const e = new Engine(ciCdContent());
+      expect(effectiveRate(e.getState(), "pull")).toBe(2);
+      expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
+      expect(effectiveRate(e.getState(), "plan")).toBe(1);
+      e.applyDecision("hack-day");
+      expect(e.getState().stocks.ideas).toBe(150);
+      expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(0.6, 10); // 2 * 0.3
+      expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(0.3, 10);
+      expect(effectiveRate(e.getState(), "deploy")).toBeCloseTo(0.3, 10);
+      expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
+      expect(effectiveRate(e.getState(), "plan")).toBe(1);
+      e.tick(); // felt day: still slowed
+      expect(e.getState().day).toBe(1);
+      expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(0.6, 10);
+      expect(e.getState().stocks.ideas).toBeCloseTo(150.5, 10);
+      e.tick(); // durationDays 2 expires at the start of day 2
+      expect(e.getState().day).toBe(2);
+      expect(effectiveRate(e.getState(), "pull")).toBe(2);
+      expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
+      expect(effectiveRate(e.getState(), "plan")).toBe(1);
+    });
+
+    it("buying user interviews grants 200 Ideas without changing delivery, discover, or plan", () => {
+      const e = new Engine(ciCdContent());
+      const pull = effectiveRate(e.getState(), "pull");
+      const discover = effectiveRate(e.getState(), "discover");
+      const plan = effectiveRate(e.getState(), "plan");
+      e.applyDecision("user-interviews");
+      expect(e.getState().stocks.ideas).toBe(300);
+      expect(e.getState().stocks.budget).toBe(9000);
+      expect(effectiveRate(e.getState(), "pull")).toBe(pull);
+      expect(effectiveRate(e.getState(), "discover")).toBe(discover);
+      expect(effectiveRate(e.getState(), "plan")).toBe(plan);
+    });
+
     it("does not branch on eraId", () => {
       const src = readFileSync(join(__dirname, "tick.ts"), "utf-8");
       expect(src).not.toMatch(/\beraId\b/);

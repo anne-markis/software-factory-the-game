@@ -67,6 +67,10 @@ at the `discover` rate (`start.baseRates.discover`, 0.5/day). Discover is
 not a pipeline stage, is not frozen at `$0`, and does not scale with
 reputation, users, or shipped points. Shop cards raise it with
 `modifyRate` `add` targeting `discover` (`all` still means pull/finish/deploy).
+Studio: **Hack day** is a repeatable day-0 spend ($500 once): `+50` Ideas
+immediately and delivery `x0.3` for one felt day. **User interviews** is a
+repeatable day-0 spend ($1000 once) that grants `+200` Ideas and does not
+touch delivery, discover, or plan.
 
 **Plan** is named work after Pursue and before Ready. `GameState.plan` holds
 items (`id`, `name`, `progress`, `size`); `stocks.plan` is the sum of

@@ -221,6 +221,8 @@ describe("parseDecisions", () => {
       "agent-harness",
       "agent-orchestration",
       "better-tooling",
+      "hack-day",
+      "user-interviews",
       "subscription",
       "one-time-product",
     ]);
@@ -482,6 +484,33 @@ describe("parseDecisions", () => {
       },
     ]);
     expect(defs[0].effects[0]).toEqual({ type: "modifyRate", target: "discover", op: "add", value: 1.5 });
+  });
+
+  it("pins Studio hack day: repeatable, day-0, lump Ideas, one-day delivery hit, no plan", () => {
+    const defs = parseDecisions(decisionsJson);
+    const hack = defs.find((d) => d.id === "hack-day")!;
+    expect(hack.requires).toBeUndefined();
+    expect(hack.requiresCounts).toBeUndefined();
+    expect(hack.unique).toBeUndefined();
+    expect(hack.removable).toBe(false);
+    expect(hack.cost).toEqual({ oneTime: 500 });
+    expect(hack.effects).toEqual([
+      { type: "modifyRate", target: "all", op: "mul", value: 0.3, durationDays: 2 },
+      { type: "addToStock", stock: "ideas", value: 50 },
+    ]);
+    expect(hack.effects.some((e) => e.type === "modifyRate" && e.target === "plan")).toBe(false);
+    expect(hack.effects.some((e) => e.type === "modifyRate" && e.target === "discover")).toBe(false);
+  });
+
+  it("pins Studio user interviews: repeatable, day-0, lump Ideas, no rate effects", () => {
+    const defs = parseDecisions(decisionsJson);
+    const interviews = defs.find((d) => d.id === "user-interviews")!;
+    expect(interviews.requires).toBeUndefined();
+    expect(interviews.requiresCounts).toBeUndefined();
+    expect(interviews.unique).toBeUndefined();
+    expect(interviews.removable).toBe(false);
+    expect(interviews.cost).toEqual({ oneTime: 1000 });
+    expect(interviews.effects).toEqual([{ type: "addToStock", stock: "ideas", value: 200 }]);
   });
 
   it("parses a modifyRate add targeting plan (shop-card hook)", () => {

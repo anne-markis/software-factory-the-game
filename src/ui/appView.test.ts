@@ -253,6 +253,20 @@ describe("appView game feel", () => {
     expect(cicd!.hasAttribute("disabled")).toBe(false);
     expect(h.root.querySelector('[data-buy="test-suite"]')).toBeNull();
   });
+
+  it("keeps hack day in the shop after purchase; CI/CD and harness stay hidden", () => {
+    const h = mount();
+    expect(h.root.querySelector('[data-buy="hack-day"]')).toBeTruthy();
+    expect(h.root.querySelector('[data-buy="ci-cd"]')).toBeNull();
+    expect(h.root.querySelector('[data-buy="agent-harness"]')).toBeNull();
+    h.root.querySelector<HTMLElement>('[data-buy="hack-day"]')!.click();
+    const hack = h.root.querySelector<HTMLElement>('[data-buy="hack-day"]');
+    expect(hack).toBeTruthy();
+    expect(hack!.hasAttribute("disabled")).toBe(false);
+    expect(h.root.textContent).toMatch(/owned x1/);
+    expect(h.root.querySelector('[data-buy="ci-cd"]')).toBeNull();
+    expect(h.root.querySelector('[data-buy="agent-harness"]')).toBeNull();
+  });
 });
 
 describe("appView node identity across renders", () => {

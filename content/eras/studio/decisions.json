@@ -196,6 +196,47 @@
     "unique": true
   },
   {
+    "id": "hack-day",
+    "name": "Hack day",
+    "description": "A day of tinkering instead of shipping. Delivery slows 70% for a day; fifty ideas land in the pile. Run it whenever you can spare the factory.",
+    "category": "change-structure",
+    "cost": {
+      "oneTime": 500
+    },
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "all",
+        "op": "mul",
+        "value": 0.3,
+        "durationDays": 2
+      },
+      {
+        "type": "addToStock",
+        "stock": "ideas",
+        "value": 50
+      }
+    ],
+    "removable": false
+  },
+  {
+    "id": "user-interviews",
+    "name": "User interviews",
+    "description": "Sit down with people who use the product. Two hundred ideas land in the pile. Run it whenever you can spare the cash.",
+    "category": "change-structure",
+    "cost": {
+      "oneTime": 1000
+    },
+    "effects": [
+      {
+        "type": "addToStock",
+        "stock": "ideas",
+        "value": 200
+      }
+    ],
+    "removable": false
+  },
+  {
     "id": "subscription",
     "name": "Subscription plan",
     "description": "Charge your users a recurring fee. Earns $0.75 per user per day, so it scales with your user base and does nothing while you have no users.",
