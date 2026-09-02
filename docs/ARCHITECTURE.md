@@ -52,8 +52,8 @@ creep, any `addToStock` / `scaleStock` on `backlog` / `inProgress` /
 (engine-picked arbitrarily if several are live; not split, not player-
 chosen). The
 cockpit Backlog hero metric is unshipped work (`backlog + inProgress +
-done`), not the Ready-stage stock. The Delivery diagram labels that
-first stage Ready.
+done`), not the Ready-stage stock. The Delivery diagram paints Ideas and Plan left of Ready, then Ready →
+In Progress → Done → Shipped. Ready is still `stocks.backlog`.
 
 Do not seed `start.json` `stocks.backlog` independently of
 `initialProject.sizePoints` — the loader rejects a mismatch.

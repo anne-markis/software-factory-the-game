@@ -40,9 +40,10 @@ export type PipelineStock = (typeof PIPELINE_STOCKS)[number];
 
 // Delivery-loop rates. RATE_IDS is the three-stage factory line; discover
 // is a separate Ideas faucet and plan is a separate Plan-fill rate (neither
-// is a pipeline stage, neither is in the Delivery diagram). "all" / allRates
-// modifiers and stock/debt drags apply to delivery rates only. Discover
-// cards do not raise plan.
+// is a pipeline stage). The Delivery diagram paints Ideas and Plan as
+// count+capacity boxes left of Ready; pull/finish/deploy arrows stay
+// realized flow. "all" / allRates modifiers and stock/debt drags apply to
+// delivery rates only. Discover cards do not raise plan.
 export type DeliveryRateId = "pull" | "finish" | "deploy";
 export const RATE_IDS: readonly DeliveryRateId[] = ["pull", "finish", "deploy"];
 export type RateId = DeliveryRateId | "discover" | "plan";
