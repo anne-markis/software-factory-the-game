@@ -8,15 +8,15 @@ function content(): GameContent {
 }
 
 describe("buildTechTree", () => {
-  it("groups the lean Studio content into two chains and five standalone decisions", () => {
+  it("groups the lean Studio content into two chains and six standalone decisions", () => {
     const tree = buildTechTree(content());
     expect(tree.chains).toHaveLength(2);
     expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent"]);
     // Studio shop: the hire chain lost its senior-dev/eng-manager
     // tiers, so basic-dev is now a standalone card alongside better-tooling,
-    // hack-day, and the two monetization cards.
+    // hack-day, user-interviews, and the two monetization cards.
     expect(tree.standalone.map((d) => d.id).sort()).toEqual(
-      ["basic-dev", "better-tooling", "hack-day", "one-time-product", "subscription"].sort(),
+      ["basic-dev", "better-tooling", "hack-day", "one-time-product", "subscription", "user-interviews"].sort(),
     );
   });
 

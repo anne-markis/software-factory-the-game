@@ -568,6 +568,19 @@ describe("tick", () => {
       expect(effectiveRate(e.getState(), "plan")).toBe(1);
     });
 
+    it("buying user interviews grants 200 Ideas without changing delivery, discover, or plan", () => {
+      const e = new Engine(ciCdContent());
+      const pull = effectiveRate(e.getState(), "pull");
+      const discover = effectiveRate(e.getState(), "discover");
+      const plan = effectiveRate(e.getState(), "plan");
+      e.applyDecision("user-interviews");
+      expect(e.getState().stocks.ideas).toBe(300);
+      expect(e.getState().stocks.budget).toBe(9000);
+      expect(effectiveRate(e.getState(), "pull")).toBe(pull);
+      expect(effectiveRate(e.getState(), "discover")).toBe(discover);
+      expect(effectiveRate(e.getState(), "plan")).toBe(plan);
+    });
+
     it("does not branch on eraId", () => {
       const src = readFileSync(join(__dirname, "tick.ts"), "utf-8");
       expect(src).not.toMatch(/\beraId\b/);

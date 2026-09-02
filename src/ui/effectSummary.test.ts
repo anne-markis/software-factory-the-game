@@ -115,6 +115,8 @@ describe("summarizeDecisionEffects", () => {
     const decisions = parseDecisions(decisionsJson);
     const hack = decisions.find((d) => d.id === "hack-day")!;
     expect(summarizeDecisionEffects(hack)).toBe("all rates x0.3 for 1d, ideas +50");
+    const interviews = decisions.find((d) => d.id === "user-interviews")!;
+    expect(summarizeDecisionEffects(interviews)).toBe("ideas +200");
   });
 
   it("the shipped agent ladder summarises stacking adds and global multipliers", () => {

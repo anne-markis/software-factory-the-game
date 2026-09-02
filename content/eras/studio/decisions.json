@@ -201,7 +201,7 @@
     "description": "A day of tinkering instead of shipping. Delivery slows 70% for a day; fifty ideas land in the pile. Run it whenever you can spare the factory.",
     "category": "change-structure",
     "cost": {
-      "oneTime": 200
+      "oneTime": 500
     },
     "effects": [
       {
@@ -215,6 +215,23 @@
         "type": "addToStock",
         "stock": "ideas",
         "value": 50
+      }
+    ],
+    "removable": false
+  },
+  {
+    "id": "user-interviews",
+    "name": "User interviews",
+    "description": "Sit down with people who use the product. Two hundred ideas land in the pile. Run it whenever you can spare the cash.",
+    "category": "change-structure",
+    "cost": {
+      "oneTime": 1000
+    },
+    "effects": [
+      {
+        "type": "addToStock",
+        "stock": "ideas",
+        "value": 200
       }
     ],
     "removable": false

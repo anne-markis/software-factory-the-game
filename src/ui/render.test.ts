@@ -149,11 +149,13 @@ describe("renderDecisions", () => {
     expect(renderOwnedList([], content())).toContain("Nothing yet. You are a solo dev.");
   });
 
-  it("day-0 shop shows hack day among starting cards; CI/CD and harness stay hidden", () => {
+  it("day-0 shop shows hack day and user interviews among starting cards; CI/CD and harness stay hidden", () => {
     const e = new Engine(content());
     const day0 = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     expect(day0).toContain('data-buy="hack-day"');
     expect(day0).not.toContain('data-buy="hack-day" disabled');
+    expect(day0).toContain('data-buy="user-interviews"');
+    expect(day0).not.toContain('data-buy="user-interviews" disabled');
     expect(day0).not.toContain("Hold office hours");
     expect(day0).not.toContain("Run user research");
     // Agent harness / CI/CD hide rules are unchanged.
@@ -161,10 +163,11 @@ describe("renderDecisions", () => {
     expect(day0).not.toContain('data-buy="agent-harness"');
 
     e.applyDecision("hack-day");
+    e.applyDecision("user-interviews");
     const after = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // Repeatable: Buy stays live, owned count shows.
     expect(after).toContain('data-buy="hack-day"');
     expect(after).toContain("owned x1");
+    expect(after).toContain('data-buy="user-interviews"');
     expect(after).not.toContain('data-buy="ci-cd"');
     expect(after).not.toContain('data-buy="agent-harness"');
   });
@@ -341,6 +344,7 @@ describe("renderDecisions", () => {
       "agent",
       "better-tooling",
       "hack-day",
+      "user-interviews",
       "subscription",
       "one-time-product",
     ]);
@@ -360,6 +364,7 @@ describe("renderDecisions", () => {
       "agent",
       "better-tooling",
       "hack-day",
+      "user-interviews",
       "subscription",
       "one-time-product",
     ]);
@@ -378,6 +383,7 @@ describe("renderDecisions", () => {
       "agent-orchestration",
       "better-tooling",
       "hack-day",
+      "user-interviews",
       "subscription",
       "one-time-product",
     ]);
@@ -397,6 +403,7 @@ describe("renderDecisions", () => {
       "agent",
       "better-tooling",
       "hack-day",
+      "user-interviews",
       "subscription",
       "one-time-product",
     ]);
