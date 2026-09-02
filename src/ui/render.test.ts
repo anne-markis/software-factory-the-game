@@ -601,9 +601,40 @@ describe("renderProjectsStatus", () => {
     expect(html).toContain("· stalled");
     expect(html).toContain('data-abandon="launch-beta"');
     expect(html).toContain(">Abandon<");
+    expect(html).not.toContain(">Cancel<");
     // The Start buttons live in the sibling offers section, not here, so the
     // per-tick progress update cannot tear them down.
     expect(html).not.toContain('data-project="');
+  });
+
+  it("shows Planning rows with progress / size, slice ETA, and Cancel (not Abandon)", () => {
+    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const s = initialState(c);
+    s.plan = [{ defId: "ship-v1", name: "Ship v1", progress: 12, size: 400 }];
+    const html = renderProjectsStatus([...s.projects], s);
+    expect(html).toContain('data-plan-status="ship-v1"');
+    expect(html).toContain("Ship v1: 12 / 400");
+    expect(html).toContain("· ~388 days at current rate");
+    expect(html).toContain('data-cancel="ship-v1"');
+    expect(html).toContain(">Cancel<");
+    expect(html).not.toMatch(/data-abandon="ship-v1"/);
+    expect(html).toContain('data-abandon="launch-beta"');
+    expect(html).toContain(">Abandon<");
+  });
+
+  it("splits Planning ETAs across named Plan items at the plan rate", () => {
+    const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+    const s = initialState(c);
+    s.plan = [
+      { defId: "ship-v1", name: "Ship v1", progress: 0, size: 400 },
+      { defId: "gig-plugin", name: "Client plugin", progress: 0, size: 450 },
+    ];
+    const html = renderProjectsStatus([...s.projects], s);
+    expect(html).toContain("Ship v1: 0 / 400");
+    expect(html).toContain("Client plugin: 0 / 450");
+    expect(html).toContain("· ~800 days at current rate");
+    expect(html).toContain("· ~900 days at current rate");
+    expect(html.match(/data-cancel="/g)).toHaveLength(2);
   });
 
   // P0.1 FR-3: derived ~days from remaining ÷ Points/Day.
@@ -725,7 +756,7 @@ describe("renderProjectOffers", () => {
     expect(unlocked).not.toContain("requires 5 reputation");
   });
 
-  it("lists Ship v1 disabled after Launch beta while Ideas are short, and omits it before", () => {
+  it("lists Ship v1 as disabled Pursue after Launch beta while Ideas are short, and omits it before", () => {
     const c = studioProjects();
     const s = initialState(c);
     expect(renderProjectOffers(projectAvailability(s, c), s)).not.toContain('data-project="ship-v1"');
@@ -733,8 +764,23 @@ describe("renderProjectOffers", () => {
     s.completedProjectIds = ["launch-beta"];
     s.stocks.ideas = 100;
     const html = renderProjectOffers(projectAvailability(s, c), s);
-    expect(html).toContain('data-project="ship-v1" disabled');
+    expect(html).toContain('data-project="ship-v1" disabled>Pursue<');
     expect(html).toContain("cannot afford");
+    expect(html).not.toContain('data-project="ship-v1" disabled>Start<');
+  });
+
+  it("labels Start vs Pursue from the catalog flag and keeps Start live while Plan is filling", () => {
+    const c = studioProjects();
+    const s = initialState(c);
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.ideas = 400;
+    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 3, size: 450 }];
+    const html = renderProjectOffers(projectAvailability(s, c), s);
+    expect(html).toContain('data-project="gig-bugfix" >Start<');
+    expect(html).not.toContain('data-project="gig-bugfix" disabled');
+    expect(html).toContain('data-project="ship-v1" >Pursue<');
+    expect(html).not.toContain('data-project="gig-plugin"');
   });
 
   it("keeps cannot-afford offers visible and disabled", () => {
@@ -781,6 +827,16 @@ describe("renderProjectOffers", () => {
     const s = initialState(c);
     const before = renderProjectOffers(projectAvailability(s, c), s);
     s.projects[0].remaining -= 25;
+    expect(renderProjectOffers(projectAvailability(s, c), s)).toBe(before);
+  });
+
+  it("does not change as Plan progress fills, so offer buttons survive the tick", () => {
+    const c = studioProjects();
+    const s = initialState(c);
+    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 0, size: 450 }];
+    const before = renderProjectOffers(projectAvailability(s, c), s);
+    s.plan[0]!.progress = 10;
+    s.stocks.plan = 10;
     expect(renderProjectOffers(projectAvailability(s, c), s)).toBe(before);
   });
 });
