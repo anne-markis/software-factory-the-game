@@ -168,7 +168,7 @@ describe("cross-surface work counting (ADR 0009)", () => {
 
   it("paints Planning progress / size that matches the engine Plan ledger", () => {
     const { root, engine, view } = mount();
-    const s = engine.getState();
+    const s = engine.getState() as GameState;
     s.completedProjects = 1;
     s.completedProjectIds = ["launch-beta"];
     s.stocks.ideas = 850;
