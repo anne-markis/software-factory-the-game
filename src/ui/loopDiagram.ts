@@ -1,5 +1,4 @@
 import type { DeliveryRateId, GameContent, GameState } from "../engine/types";
-import { RATE_IDS } from "../engine/types";
 import { effectiveDebtMultiplier, effectiveRate } from "../engine/modifiers";
 import { continuousDeployActive } from "../engine/continuousDeploy";
 
@@ -22,9 +21,25 @@ function realizedFlow(state: Readonly<GameState>, rate: DeliveryRateId): number 
   }
 }
 
-const FULL_STAGES: { key: "backlog" | "inProgress" | "done" | "shipped"; label: string }[] = [
-  // ADR 0009: first stage is Ready (waiting to pull). Cockpit "Backlog" is
-  // unshipped work across Ready + In Progress + Done, not this box.
+type StageKey = "ideas" | "plan" | "backlog" | "inProgress" | "done" | "shipped";
+
+interface StageDef {
+  key: StageKey;
+  label: string;
+  // Ideas and Plan paint total capacity on the box (discover / plan rate),
+  // not realized flow. Ready and later stay count-only.
+  rateId?: "discover" | "plan";
+}
+
+const UPSTREAM: StageDef[] = [
+  { key: "ideas", label: "Ideas", rateId: "discover" },
+  { key: "plan", label: "Plan", rateId: "plan" },
+];
+
+const PIPELINE_FULL: StageDef[] = [
+  // ADR 0009: Ready is waiting-to-pull (`backlog`). Cockpit "Backlog" is
+  // unshipped work across Ready + In Progress + Done, not this box. Ideas
+  // and Plan sit left of Ready; they are stocks, not pipeline stages.
   { key: "backlog", label: "Ready" },
   { key: "inProgress", label: "In Progress" },
   { key: "done", label: "Done" },
@@ -33,20 +48,21 @@ const FULL_STAGES: { key: "backlog" | "inProgress" | "done" | "shipped"; label: 
 
 // Continuous-deploy layout: Done is dropped -- once ci-cd is owned it always
 // pins at 0 (tick.ts ships the whole done stock every tick), so a box for it
-// would only ever read 0 and add nothing.
-const CD_STAGES: { key: "backlog" | "inProgress" | "shipped"; label: string }[] = [
+// would only ever read 0 and add nothing. Ideas and Plan stay.
+const PIPELINE_CD: StageDef[] = [
   { key: "backlog", label: "Ready" },
   { key: "inProgress", label: "In Progress" },
   { key: "shipped", label: "Shipped" },
 ];
 
 const BOX_W = 150;
-const BOX_H = 60;
-const GAP = 60;
-const Y = 30;
-const VIEW_W = 860;
+const BOX_H = 78;
+const GAP = 48;
+const Y = 24;
+const STAGE_COUNT = 6;
+const VIEW_W = STAGE_COUNT * BOX_W + (STAGE_COUNT - 1) * GAP + 32;
 // Room below the debt-regen arc for the FR-2.1 teaching caption.
-const VIEW_H = 188;
+const VIEW_H = 200;
 
 // FR-2.1: terse Delivery-loop teaching caption, voice-matched to
 // the Progress panel footer ("The inner system's pace sets outer throughput…").
@@ -68,7 +84,8 @@ export const DELIVERY_LOOP_CAPTION =
 //   (infinite days of backlog).
 // Among candidates, pick the largest days-of-outflow pile (most visibly
 // stuck). Continuous deploy drops Done, so only In Progress can cue then.
-// A healthy balanced loop (equal rates, small stocks) never cues.
+// Ideas / Plan never cue: they are not pipeline stages. A healthy balanced
+// loop (equal rates, small stocks) never cues.
 export type BindingStage = "inProgress" | "done";
 
 export const BINDING_INFLOW_RATIO = 1.5;
@@ -117,12 +134,34 @@ export function bindingBottleneckStage(
   return candidates[0]!.stage;
 }
 
-// Font sizes bumped from 13/15 to 16/18: since release 14 this diagram
-// renders at half page width (side by side with the progress loop), so the
-// same viewBox now scales down further -- the larger source sizes keep the
-// scaled-down text legible.
-function box(x: number, label: string, value: number, binding: boolean, stageKey: string): string {
-  const text = value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+function pipelineFlowBetween(from: StageKey, to: StageKey): DeliveryRateId | null {
+  if (from === "backlog" && to === "inProgress") return "pull";
+  if (from === "inProgress" && to === "done") return "finish";
+  if (from === "done" && to === "shipped") return "deploy";
+  // Continuous deploy: finish ships straight from In Progress to Shipped.
+  if (from === "inProgress" && to === "shipped") return "finish";
+  return null;
+}
+
+function fmtStock(value: number): string {
+  return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+}
+
+function fmtRate(value: number): string {
+  return `${value.toFixed(1)}/day`;
+}
+
+// Font sizes 16/18: six boxes use a wider viewBox at full cockpit width so
+// the same source sizes stay readable without shrinking into soup.
+function box(
+  x: number,
+  label: string,
+  value: number,
+  binding: boolean,
+  stageKey: string,
+  rateLabel?: string,
+): string {
+  const text = fmtStock(value);
   // Binding cue: thicker stroke + data attribute for tests / assistive tech.
   // Caption lives under the stage box (same italic voice as continuous deploy).
   const strokeWidth = binding ? ' stroke-width="2.5"' : "";
@@ -131,11 +170,16 @@ function box(x: number, label: string, value: number, binding: boolean, stageKey
     ? `
       <text x="${x + BOX_W / 2}" y="${Y + BOX_H + 14}" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">capacity-bound</text>`
     : "";
+  const rate =
+    rateLabel !== undefined
+      ? `
+      <text x="${x + BOX_W / 2}" y="${Y + 66}" text-anchor="middle" font-size="12" fill="currentColor" data-stage-rate="true">${rateLabel}</text>`
+      : "";
   return `
       <g data-stage="${stageKey}">
       <rect x="${x}" y="${Y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"${strokeWidth}${dataAttr}/>
       <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="16" fill="currentColor">${label}</text>
-      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor" data-stage-value="true">${text}</text>${cue}
+      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor" data-stage-value="true">${text}</text>${rate}${cue}
       </g>`;
 }
 
@@ -145,9 +189,12 @@ function arrow(x1: number, x2: number, label: string, bindingOutflow = false): s
   // "stuck here" read includes the constrained arrow, not only the box.
   const strokeWidth = bindingOutflow ? ' stroke-width="2.5"' : "";
   const dataAttr = bindingOutflow ? ' data-binding-outflow="true"' : "";
+  const caption = label
+    ? `
+      <text x="${(x1 + x2) / 2}" y="${mid - 8}" text-anchor="middle" font-size="11" fill="currentColor">${label}</text>`
+    : "";
   return `
-      <line x1="${x1}" y1="${mid}" x2="${x2 - 8}" y2="${mid}" stroke="currentColor" marker-end="url(#arrow)"${strokeWidth}${dataAttr}/>
-      <text x="${(x1 + x2) / 2}" y="${mid - 8}" text-anchor="middle" font-size="11" fill="currentColor">${label}</text>`;
+      <line x1="${x1}" y1="${mid}" x2="${x2 - 8}" y2="${mid}" stroke="currentColor" marker-end="url(#arrow)"${strokeWidth}${dataAttr}/>${caption}`;
 }
 
 function debtRegenLoop(startX: number, endX: number, debt: string): string {
@@ -169,24 +216,58 @@ function teachingCaption(): string {
   return `<text x="10" y="${VIEW_H - 10}" font-size="12" fill="currentColor">${DELIVERY_LOOP_CAPTION}</text>`;
 }
 
-function fourBoxLoop(state: Readonly<GameState>, binding: BindingStage | null): string {
-  const boxes = FULL_STAGES.map((stage, i) =>
-    box(10 + i * (BOX_W + GAP), stage.label, state.stocks[stage.key], binding === stage.key, stage.key),
-  ).join("");
+function stageX(x0: number, index: number): number {
+  return x0 + index * (BOX_W + GAP);
+}
 
-  // RATE_IDS order is pull → finish → deploy; outflow of inProgress is finish
-  // (index 1), outflow of done is deploy (index 2).
-  const arrows = RATE_IDS.map((rate, i) => {
-    const x1 = 10 + BOX_W + i * (BOX_W + GAP);
-    const x2 = x1 + GAP;
-    const bindingOutflow =
-      (binding === "inProgress" && rate === "finish") || (binding === "done" && rate === "deploy");
-    return arrow(x1, x2, `${realizedFlow(state, rate).toFixed(1)}/day`, bindingOutflow);
-  }).join("");
+function deliveryLoop(
+  state: Readonly<GameState>,
+  binding: BindingStage | null,
+  stages: StageDef[],
+  continuousDeploy: boolean,
+): string {
+  // Re-center when Done drops so five boxes do not read as a truncated six.
+  const contentWidth = stages.length * BOX_W + (stages.length - 1) * GAP;
+  const x0 = (VIEW_W - contentWidth) / 2;
 
-  // tech debt regeneration: shipped back to backlog underneath
-  const startX = 10 + 3 * (BOX_W + GAP) + BOX_W / 2;
-  const endX = 10 + BOX_W / 2;
+  const boxes = stages
+    .map((stage, i) => {
+      const rateLabel = stage.rateId ? fmtRate(effectiveRate(state, stage.rateId)) : undefined;
+      return box(
+        stageX(x0, i),
+        stage.label,
+        state.stocks[stage.key],
+        binding === stage.key,
+        stage.key,
+        rateLabel,
+      );
+    })
+    .join("");
+
+  const arrows = stages
+    .slice(0, -1)
+    .map((from, i) => {
+      const to = stages[i + 1]!;
+      const x1 = stageX(x0, i) + BOX_W;
+      const x2 = x1 + GAP;
+      const flow = pipelineFlowBetween(from.key, to.key);
+      const label = flow ? fmtRate(realizedFlow(state, flow)) : "";
+      const bindingOutflow =
+        (binding === "inProgress" && flow === "finish") || (binding === "done" && flow === "deploy");
+      const cdCaption =
+        continuousDeploy && flow === "finish"
+          ? `
+      <text x="${(x1 + x2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">continuous deploy</text>`
+          : "";
+      return arrow(x1, x2, label, bindingOutflow) + cdCaption;
+    })
+    .join("");
+
+  // Tech-debt regen returns to Ready, not Ideas.
+  const readyIdx = stages.findIndex((s) => s.key === "backlog");
+  const shippedIdx = stages.findIndex((s) => s.key === "shipped");
+  const startX = stageX(x0, shippedIdx) + BOX_W / 2;
+  const endX = stageX(x0, readyIdx) + BOX_W / 2;
   const regen = debtRegenLoop(startX, endX, effectiveDebtMultiplier(state).toFixed(1));
 
   return `
@@ -197,46 +278,9 @@ function fourBoxLoop(state: Readonly<GameState>, binding: BindingStage | null): 
     </svg>`;
 }
 
-function continuousDeployLoop(state: Readonly<GameState>, binding: BindingStage | null): string {
-  // Re-centered for 3 boxes instead of left-aligned like the 4-box layout,
-  // so the diagram doesn't read as truncated with empty space on the right.
-  const contentWidth = CD_STAGES.length * BOX_W + (CD_STAGES.length - 1) * GAP;
-  const x0 = (VIEW_W - contentWidth) / 2;
-
-  const boxes = CD_STAGES.map((stage, i) =>
-    box(x0 + i * (BOX_W + GAP), stage.label, state.stocks[stage.key], binding === stage.key, stage.key),
-  ).join("");
-
-  const pullX1 = x0 + BOX_W;
-  const pullArrow = arrow(pullX1, pullX1 + GAP, `${realizedFlow(state, "pull").toFixed(1)}/day`);
-
-  const finishArrowX1 = x0 + BOX_W + GAP + BOX_W; // right edge of the inProgress box
-  const finishArrowX2 = finishArrowX1 + GAP;
-  const finishArrow = arrow(
-    finishArrowX1,
-    finishArrowX2,
-    `${realizedFlow(state, "finish").toFixed(1)}/day`,
-    binding === "inProgress",
-  );
-  const caption = `
-      <text x="${(finishArrowX1 + finishArrowX2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">continuous deploy</text>`;
-
-  // tech debt regeneration: shipped (last box) back to backlog (first box)
-  const startX = x0 + 2 * (BOX_W + GAP) + BOX_W / 2;
-  const endX = x0 + BOX_W / 2;
-  const regen = debtRegenLoop(startX, endX, effectiveDebtMultiplier(state).toFixed(1));
-
-  return `
-    <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" width="100%" role="img" aria-label="${ariaLabel(binding)}">
-      ${DEFS}
-      ${boxes}${pullArrow}${finishArrow}${caption}${regen}
-      ${teachingCaption()}
-    </svg>`;
-}
-
 export function loopDiagramSvg(state: Readonly<GameState>, content: GameContent): string {
   const binding = bindingBottleneckStage(state, content);
-  return continuousDeployActive(state, content)
-    ? continuousDeployLoop(state, binding)
-    : fourBoxLoop(state, binding);
+  const cd = continuousDeployActive(state, content);
+  const stages = cd ? [...UPSTREAM, ...PIPELINE_CD] : [...UPSTREAM, ...PIPELINE_FULL];
+  return deliveryLoop(state, binding, stages, cd);
 }

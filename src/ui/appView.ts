@@ -84,10 +84,10 @@ export interface AppView {
 // unlike before -- are not churned by the driver at all. Section containers
 // are empty until the first render patches them.
 //
-  // Delivery loop diagram, delivery-stats, and Progress loop are
-// separate sections so material stock numbers can update in place (flash)
-// without rebuilding the SVG wrappers every time a digit moves. Gamble reveal
-// is its own ephemeral section between stats and the loops.
+  // Delivery loop is full width (six boxes); User + Progress share a second
+  // row. Delivery-stats stay under Delivery so material stock numbers can
+  // update in place (flash) without rebuilding the SVG. Gamble reveal
+  // is its own ephemeral section between stats and the loops.
 // Choices live in glanceable chrome (not the scrollable side rail)
 // so a Decision-needed interrupt stays reachable while shopping at speed.
 const STATS = "stats";
@@ -123,10 +123,12 @@ function pageScaffold(): string {
     <div class="loops">
       <div class="delivery-column">
         <div class="panel"><h3>Delivery loop</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
-        <div class="panel"><h3>User loop</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
         <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>
       </div>
-      <div ${SECTION_ATTR}="${PROGRESS_LOOP}"></div>
+      <div class="loops-pair">
+        <div class="panel"><h3>User loop</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
+        <div ${SECTION_ATTR}="${PROGRESS_LOOP}"></div>
+      </div>
     </div>
     <div ${SECTION_ATTR}="${STALL}"></div>
     <div class="cols">

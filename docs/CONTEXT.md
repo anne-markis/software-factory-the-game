@@ -65,7 +65,8 @@ Monetization decisions *read* users; they do not invent a second population.
 **Ideas** is the idea-to-value pile. It seeds at 100 and fills from day 0
 at the `discover` rate (`start.baseRates.discover`, 0.5/day). Discover is
 not a pipeline stage, is not frozen at `$0`, and does not scale with
-reputation, users, or shipped points. Shop cards raise it with
+reputation, users, or shipped points. The Delivery diagram shows the pile
+and the current discover capacity from day 0. Shop cards raise it with
 `modifyRate` `add` targeting `discover` (`all` still means pull/finish/deploy).
 Studio: **Hack day** is a repeatable day-0 spend ($500 once): `+50` Ideas
 immediately and delivery `x0.3` for one felt day. **User interviews** is a
@@ -74,7 +75,7 @@ touch delivery, discover, or plan.
 
 **Plan** is named work after Pursue and before Ready. `GameState.plan` holds
 items (`id`, `name`, `progress`, `size`); `stocks.plan` is the sum of
-progress (the future diagram pile). Plan fills at `start.baseRates.plan`
+progress (the Delivery-diagram Plan pile). Plan fills at `start.baseRates.plan`
 (1/day), split evenly across named items. Empty Plan still has that
 capacity, unused. Shop cards raise it with `modifyRate` `add` targeting
 `plan`. Discover cards do not raise plan. Plan is not a pipeline stage,

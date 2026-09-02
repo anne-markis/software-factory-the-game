@@ -130,9 +130,9 @@
         margin-bottom: 0;
       }
       .choice-interrupt-item { margin-top: 0.35rem; }
-      /* relocated stocks under the Delivery loop column. Flex
-         wrap (not the 900px loops stack) so they stay inside that column
-         at any width without introducing a horizontal scrollbar. */
+      /* relocated stocks under the Delivery loop. Flex wrap (not the
+         900px loops stack) so they stay inside that column at any width
+         without introducing a horizontal scrollbar. */
       .delivery-column { min-width: 0; }
       .delivery-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; white-space: nowrap; font-size: 0.95rem; margin: -0.25rem 0 1rem; }
       .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 1rem; }
@@ -195,7 +195,10 @@
       .tc-btn { display: inline-block; min-width: 4.5rem; text-align: center; opacity: 0.6; }
       .tc-btn.tc-active { opacity: 1; font-weight: bold; }
       .stall { background: var(--stall-bg); color: var(--stall-fg); padding: 0.5rem; font-weight: bold; }
-      .loops { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+      /* Delivery is full width so six stage boxes stay readable; User and
+         Progress share a second row at the previous half-width. */
+      .loops { display: flex; flex-direction: column; gap: 1rem; }
+      .loops-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; min-width: 0; }
       .cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; align-items: start; }
       /* minmax(0, 1fr) on the track alone isn't enough: a grid item's default
          min-width is auto (its content's min-content size). min-width: 0
@@ -212,7 +215,7 @@
         ; this query no longer special-cases tech-tree
          rows or arrows. */
       @media (max-width: 900px) {
-        .loops { grid-template-columns: 1fr; }
+        .loops-pair { grid-template-columns: 1fr; }
         .cols { grid-template-columns: 1fr; }
         .side { position: static; order: -1; max-height: none; }
       }
