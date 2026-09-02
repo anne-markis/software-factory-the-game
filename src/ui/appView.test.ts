@@ -128,14 +128,15 @@ describe("appView delivery-column stats layout", () => {
     const deliveryCol = h.root.querySelector(".delivery-column")!;
     expect(deliveryCol).toBeTruthy();
     const colHeadings = Array.from(deliveryCol.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(colHeadings).toEqual(["Delivery loop", "User loop"]);
+    expect(colHeadings).toEqual(["Delivery loop"]);
     const under = deliveryCol.querySelector(".delivery-stats")!;
     expect(under).toBeTruthy();
-    // Stats sit after the Delivery + User loop panels inside the same column
-    // (wrapped in a data-section host for in-place flash sync).
+    // Stats sit after the full-width Delivery loop (wrapped in a data-section
+    // host for in-place flash sync). User loop moved beside Progress so six
+    // Delivery boxes can use the full cockpit width.
     const panels = deliveryCol.querySelectorAll(":scope > .panel");
-    expect(panels).toHaveLength(2);
-    const statsHost = panels[1]!.nextElementSibling!;
+    expect(panels).toHaveLength(1);
+    const statsHost = panels[0]!.nextElementSibling!;
     expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
@@ -143,6 +144,10 @@ describe("appView delivery-column stats layout", () => {
     // Progress loop remains a sibling of the delivery column, not a parent of those stats.
     const loops = h.root.querySelector(".loops")!;
     expect(loops.contains(deliveryCol)).toBe(true);
+    const pair = loops.querySelector(".loops-pair")!;
+    expect(pair).toBeTruthy();
+    expect(pair.contains(h.root.querySelector('[aria-label="User loop"]')!)).toBe(true);
+    expect(pair.contains(h.root.querySelector('[data-section="progress-loop"]')!)).toBe(true);
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
     expect(headings).toEqual(["Delivery loop", "User loop", "Progress loop"]);
     expect(headings).not.toContain("Delivery system");
@@ -152,9 +157,8 @@ describe("appView delivery-column stats layout", () => {
     expect(h.root.textContent).toContain("Alter the system");
     expect(under.closest(".panel")).toBeNull();
 
-    const usersLoop = deliveryCol.querySelector('[aria-label="User loop"]');
-    expect(usersLoop).not.toBeNull();
-    expect(deliveryCol.textContent).toContain(USERS_LOOP_CAPTION);
+    expect(deliveryCol.querySelector('[aria-label="User loop"]')).toBeNull();
+    expect(pair.textContent).toContain(USERS_LOOP_CAPTION);
   });
 
   it("keeps delivery-stats nodes stable across ticks that only change values", () => {
