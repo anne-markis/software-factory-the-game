@@ -1,6 +1,7 @@
 import type { Availability } from "../engine/decisions";
 import type { ProjectAvailability } from "../engine/projects";
 import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
+import { effectiveRate } from "../engine/modifiers";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { SECTION_ATTR } from "./domPatch";
 import { formatBuiltAt, type BuildInfo } from "./buildInfo";
@@ -241,8 +242,8 @@ export function renderLog(log: readonly LogEntry[]): string {
 
 // The projects panel is split into two independently-patched sections
 // The in-flight lines change on every tick that moves work, while
-// the offers below them -- which carry the Start buttons -- only change when a
-// project starts, completes, or crosses a gate. Writing the whole panel on
+// the offers below them -- which carry the Start / Pursue buttons -- only change when a
+// project starts, is pursued, completes, or crosses a gate. Writing the whole panel on
 // every tick destroyed those buttons ~10x/second; keeping the volatile status
 // block in its own container means the buttons are only rebuilt when the
 // offers themselves actually change. The panel's chrome is written once at
@@ -255,6 +256,15 @@ export function projectsPanelScaffold(): string {
 }
 
 export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: Readonly<GameState>): string {
+  const planning = state.plan ?? [];
+  const planN = planning.length;
+  const planRate = effectiveRate(state, "plan");
+  const planRows = planning
+    .map((p) => {
+      const eta = formatProjectEta(p.size - p.progress, planRate, planN);
+      return `<div data-plan-status="${esc(p.defId)}">${esc(p.name)}: ${fmt(p.progress)} / ${fmt(p.size)} · ${esc(eta)} <button type="button" data-cancel="${esc(p.defId)}">Cancel</button></div>`;
+    })
+    .join("");
   const n = inFlight.length;
   const flight = inFlight
     .map((p) => {
@@ -262,7 +272,7 @@ export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: 
       return `<div data-project-status="${esc(p.defId)}">${esc(p.name)}: ${fmt(p.remaining)} points left ($${fmt(p.payoutPerPoint)}/pt, $${fmt(p.completionBonus)} on completion) · ${esc(eta)} <button type="button" data-abandon="${esc(p.defId)}">Abandon</button></div>`;
     })
     .join("");
-  return `<h3>Projects (WIP)</h3>${flight}`;
+  return `<h3>Projects (WIP)</h3>${planRows}${flight}`;
 }
 
 // omit unmet-prerequisite and already-completed rows.
@@ -283,7 +293,8 @@ export function renderProjectOffers(offers: ProjectAvailability[], _state: Reado
     .map((o) => {
       const disabled = o.startable ? "" : "disabled";
       const reason = o.reason ? ` (${esc(o.reason)})` : "";
-      return `<div><button data-project="${esc(o.def.id)}" ${disabled}>Start</button> <strong>${esc(o.def.name)}</strong>${reason}<br/>
+      const label = o.def.pursue ? "Pursue" : "Start";
+      return `<div><button data-project="${esc(o.def.id)}" ${disabled}>${label}</button> <strong>${esc(o.def.name)}</strong>${reason}<br/>
         <small>${fmt(o.def.sizePoints)} points, costs $${fmt(o.def.upfrontCost)}, pays $${fmt(o.def.payoutPerPoint)}/pt + $${fmt(o.def.completionBonus)} bonus.</small></div>`;
     })
     .join("");

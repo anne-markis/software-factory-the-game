@@ -317,6 +317,15 @@ export function mountAppView(deps: AppViewDeps): AppView {
       } catch (err) {
         deps.onError((err as Error).message);
       }
+    } else if (target.closest("[data-cancel]")) {
+      const el = target.closest<HTMLElement>("[data-cancel]")!;
+      const defId = el.dataset.cancel;
+      if (!defId) return;
+      try {
+        engine.cancelPlan(defId);
+      } catch (err) {
+        deps.onError((err as Error).message);
+      }
     } else if (target.dataset.choice && target.dataset.option) {
       engine.resolveChoice(target.dataset.choice, target.dataset.option);
     } else if (target.dataset.project) {
