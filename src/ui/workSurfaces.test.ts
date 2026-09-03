@@ -83,6 +83,13 @@ function assertSurfacesAgree(root: HTMLElement, state: Readonly<GameState>): voi
     expect(projectLine(root, p.defId)).toContain(`${fmt(p.remaining)} points left`);
   }
 
+  for (const item of state.plan) {
+    const el = root.querySelector(`[data-plan-status="${item.defId}"]`);
+    expect(el, `missing [data-plan-status=${item.defId}]`).not.toBeNull();
+    expect(el!.textContent ?? "").toContain(`${fmt(item.progress)} / ${fmt(item.size)}`);
+    expect(el!.querySelector("[data-cancel]")?.textContent).toBe("Cancel");
+  }
+
   // The reported bug: Ready empty, remaining still in later stages. Cockpit
   // Backlog and Projects remaining must still be the same number.
   if (state.projects.length === 1 && surplusWork(state) < 0.05) {
@@ -157,6 +164,26 @@ describe("cross-surface work counting (ADR 0009)", () => {
     assertSurfacesAgree(root, s);
     expect(root.querySelector('[data-project-status="launch-beta"]')).toBeNull();
     expect(statValue(root, "users")).not.toBe("0");
+  });
+
+  it("paints Planning progress / size that matches the engine Plan ledger", () => {
+    const { root, engine, view } = mount();
+    const s = engine.getState() as GameState;
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.ideas = 850;
+    engine.pursueProject("ship-v1");
+    engine.pursueProject("gig-plugin");
+    view.render();
+    assertSurfacesAgree(root, engine.getState());
+    expect(projectLine(root, "launch-beta")).toContain("Abandon");
+    expect(root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("~800 days");
+    expect(root.querySelector('[data-plan-status="gig-plugin"]')!.textContent).toContain("~900 days");
+    engine.tick();
+    view.render();
+    assertSurfacesAgree(root, engine.getState());
+    expect(engine.getState().plan[0]!.progress).toBe(0.5);
+    expect(engine.getState().plan[1]!.progress).toBe(0.5);
   });
 
   it("agrees under continuous deploy (no Done box, delivery Done stat still 0-ish after ship)", () => {

@@ -359,6 +359,22 @@ describe("appView node identity across renders", () => {
     expect(remainingAfter).not.toBe(remainingBefore);
   });
 
+  it("keeps the same offer button nodes while Plan progress ticks", () => {
+    const h = mount();
+    const s = h.engine.getState() as GameState;
+    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 0, size: 450 }];
+    s.stocks.plan = 0;
+    h.view.render();
+    const start = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
+    const pursue = h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!;
+    s.plan[0]!.progress = 4;
+    s.stocks.plan = 4;
+    h.view.render();
+    expect(h.root.querySelector('[data-project="gig-bugfix"]')).toBe(start);
+    expect(h.root.querySelector('[data-project="gig-landing-page"]')).toBe(pursue);
+    expect(h.root.querySelector('[data-plan-status="gig-plugin"]')!.textContent).toContain("4 / 450");
+  });
+
   it("keeps the same choice option button nodes while the expiry countdown beside them ticks down", () => {
     const content = makeContent(fixtureChoiceChallenges());
     const restored = initialState(content);
@@ -547,11 +563,71 @@ describe("appView click delegation on the stable root", () => {
     s.completedProjectIds = ["launch-beta"];
     s.stocks.ideas = 400;
     h.view.render();
-    h.root.querySelector<HTMLElement>('[data-project="ship-v1"]')!.click();
+    const pursue = h.root.querySelector<HTMLElement>('[data-project="ship-v1"]')!;
+    expect(pursue.textContent).toBe("Pursue");
+    pursue.click();
     expect(h.engine.getState().plan.some((p) => p.defId === "ship-v1")).toBe(true);
     expect(h.engine.getState().stocks.ideas).toBe(0);
     expect(h.engine.getState().projects.some((p) => p.defId === "ship-v1")).toBe(false);
+    expect(h.root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("Ship v1: 0 / 400");
+    expect(h.root.querySelector('[data-cancel="ship-v1"]')!.textContent).toBe("Cancel");
+    expect(h.root.querySelector('[data-project="ship-v1"]')).toBeNull();
     expect(h.actions).toBe(1);
+  });
+
+  it("starts a Start gig while Plan is filling", () => {
+    const h = mount();
+    const s = h.engine.getState() as GameState;
+    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 10, size: 450 }];
+    s.stocks.plan = 10;
+    h.view.render();
+    const start = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
+    expect(start.textContent).toBe("Start");
+    expect(start.hasAttribute("disabled")).toBe(false);
+    start.click();
+    expect(h.engine.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
+    expect(h.engine.getState().plan).toHaveLength(1);
+    expect(h.engine.getState().plan[0]!.defId).toBe("gig-plugin");
+    expect(h.actions).toBe(1);
+  });
+
+  it("cancels a Planning row through data-cancel without touching in-flight work", () => {
+    const h = mount();
+    const s = h.engine.getState() as GameState;
+    s.plan = [
+      { defId: "ship-v1", name: "Ship v1", progress: 20, size: 400 },
+      { defId: "gig-plugin", name: "Client plugin", progress: 5, size: 450 },
+    ];
+    s.stocks.plan = 25;
+    s.stocks.ideas = 0;
+    h.view.render();
+    const inFlightBefore = h.engine.getState().projects.map((p) => p.defId);
+    h.root.querySelector<HTMLElement>('[data-cancel="ship-v1"]')!.click();
+    expect(h.engine.getState().plan.map((p) => p.defId)).toEqual(["gig-plugin"]);
+    expect(h.engine.getState().plan[0]!.progress).toBe(5);
+    expect(h.engine.getState().stocks.ideas).toBe(0);
+    expect(h.engine.getState().projects.map((p) => p.defId)).toEqual(inFlightBefore);
+    expect(h.root.querySelector('[data-plan-status="ship-v1"]')).toBeNull();
+    expect(h.root.querySelector('[data-plan-status="gig-plugin"]')).not.toBeNull();
+    expect(h.root.querySelector('[data-abandon="launch-beta"]')).not.toBeNull();
+    expect(h.actions).toBe(1);
+  });
+
+  it("abandons in-flight work without dropping Planning rows", () => {
+    const h = mount();
+    const s = h.engine.getState() as GameState;
+    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 8, size: 450 }];
+    s.stocks.plan = 8;
+    h.view.render();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    h.root.querySelector<HTMLElement>('[data-abandon="launch-beta"]')!.click();
+    expect(h.engine.getState().projects).toHaveLength(0);
+    expect(h.engine.getState().plan).toHaveLength(1);
+    expect(h.engine.getState().plan[0]!.defId).toBe("gig-plugin");
+    expect(h.root.querySelector('[data-plan-status="gig-plugin"]')).not.toBeNull();
+    expect(h.root.querySelector('[data-abandon="launch-beta"]')).toBeNull();
+    expect(h.actions).toBe(1);
+    confirmSpy.mockRestore();
   });
 
   it("abandons an in-flight project through data-abandon after confirm", () => {
