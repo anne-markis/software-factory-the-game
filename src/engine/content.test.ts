@@ -719,6 +719,11 @@ describe("parseChallenges", () => {
       expect(defs.find((p) => p.id === id)!.pursue).toBe(true);
     }
     expect(v1.completionStockGrants).toEqual([{ stock: "users", amount: 20 }]);
+    expect(v1.stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
+    for (const id of ["ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
+      const def = defs.find((p) => p.id === id)!;
+      expect(def.stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
+    }
     expect(defs.find((p) => p.id === "ship-v5")!.requiresCompletedId).toBe("ship-v4");
     expect(defs.some((p) => p.id === "small-crm")).toBe(false);
   });
@@ -916,6 +921,36 @@ describe("parseProjects", () => {
           completionBonus: 0,
           reputationReward: 0,
           pursue: "yes",
+        },
+      ]),
+    ).toThrow(/content\/projects\.json/);
+  });
+
+  it("parses optional stockFlowMods on a project and rejects an unknown key", () => {
+    const defs = parseProjects([
+      {
+        id: "x",
+        name: "x",
+        sizePoints: 1,
+        upfrontCost: 0,
+        payoutPerPoint: 1,
+        completionBonus: 0,
+        reputationReward: 0,
+        stockFlowMods: [{ stock: "users", acquirePerDayDelta: 1 }],
+      },
+    ]);
+    expect(defs[0]!.stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
+    expect(() =>
+      parseProjects([
+        {
+          id: "x",
+          name: "x",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 1,
+          completionBonus: 0,
+          reputationReward: 0,
+          stockFlowMods: [{ stock: "users", acquirePerDayDelta: 1, nope: 1 }],
         },
       ]),
     ).toThrow(/content\/projects\.json/);

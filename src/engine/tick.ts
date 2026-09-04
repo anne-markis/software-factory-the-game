@@ -1,4 +1,4 @@
-import type { ActiveProject, GameContent, GameState } from "./types";
+import type { ActiveProject, GameContent, GameState, StockFlowMod } from "./types";
 import type { Rng } from "./rng";
 import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
 import { continuousDeployActive } from "./continuousDeploy";
@@ -79,8 +79,24 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
 // shipping, once per configured flow whose condition holds. Deterministic (no
 // rng): grossGain (flat acquirePerDay plus acquirePerStock.perUnit per point
 // of another stock, e.g. reputation) minus churn (stocks[stock] *
-// churnRatePerDay), clamped at 0. stockFlowMods owned by decisions add to the
-// flow's acquirePerDay / churnRatePerDay (Studio ships none). Base churn only.
+// churnRatePerDay), clamped at 0. stockFlowMods from owned decisions and
+// from completed projects (completedProjectIds) add to the flow's
+// acquirePerDay / churnRatePerDay. Studio decisions ship none; Studio
+// versions raise user acquire. Base churn only.
+function applyStockFlowMods(
+  mods: readonly StockFlowMod[] | undefined,
+  flowStock: string,
+  acquirePerDay: number,
+  churnRate: number,
+): { acquirePerDay: number; churnRate: number } {
+  for (const mod of mods ?? []) {
+    if (mod.stock !== flowStock) continue;
+    acquirePerDay += mod.acquirePerDayDelta ?? 0;
+    churnRate += mod.churnRateDelta ?? 0;
+  }
+  return { acquirePerDay, churnRate };
+}
+
 function runStockFlows(state: GameState, content: GameContent): void {
   state.userAcquireFlow = 0;
   state.userChurnFlow = 0;
@@ -92,11 +108,11 @@ function runStockFlows(state: GameState, content: GameContent): void {
     let churnRate = flow.churnRatePerDay ?? 0;
     for (const inst of state.decisions) {
       const def = content.decisions.find((d) => d.id === inst.defId);
-      for (const mod of def?.stockFlowMods ?? []) {
-        if (mod.stock !== flow.stock) continue;
-        acquirePerDay += mod.acquirePerDayDelta ?? 0;
-        churnRate += mod.churnRateDelta ?? 0;
-      }
+      ({ acquirePerDay, churnRate } = applyStockFlowMods(def?.stockFlowMods, flow.stock, acquirePerDay, churnRate));
+    }
+    for (const id of state.completedProjectIds ?? []) {
+      const def = content.projects.find((p) => p.id === id);
+      ({ acquirePerDay, churnRate } = applyStockFlowMods(def?.stockFlowMods, flow.stock, acquirePerDay, churnRate));
     }
     const fromStock = flow.acquirePerStock ? state.stocks[flow.acquirePerStock.stock] * flow.acquirePerStock.perUnit : 0;
     const grossGain = acquirePerDay + fromStock;

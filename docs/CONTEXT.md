@@ -107,7 +107,7 @@ The engine must not special-case “subscription”, “support load”, or
 | --- | --- | --- |
 | **Stock drag** | `start.stockDrags` | Always-on rate slowdown once a stock exceeds a free band. Studio: users above 25 drag all rates (support load). |
 | **Stock flow** | `start.stockFlows` | Always-on per-tick acquire / churn on a stock. Studio: organic users after the first project completes. |
-| **Stock-flow mod** | `DecisionDef.stockFlowMods` | Owned decision nudges an existing stock flow (additive deltas). Studio ships none. |
+| **Stock-flow mod** | `DecisionDef.stockFlowMods` or `ProjectDef.stockFlowMods` | Additive nudge to an existing stock flow. Decisions apply while owned; projects apply while their id is in `completedProjectIds`. Studio decisions ship none; Studio versions raise user acquire. |
 | **Income from stock** | `DecisionDef.incomeFromStock` | Per-day income = `stocks[stock] * perUnit`. Studio: subscription reads users. |
 | **Burst from stock** | `DecisionDef.burstFromStock` | Probabilistic daily burst = `stocks[stock] * perUnit`. Studio: one-time product reads users. |
 | **Completion stock grant** | `ProjectDef.completionStockGrants` (and `start.initialProject`) | On project complete, add `amount` to `stock`. Studio: Launch beta grants +30 users. |

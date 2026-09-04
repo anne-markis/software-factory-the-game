@@ -48,7 +48,8 @@
     "unique": true,
     "pursue": true,
     "requiresCompletedId": "launch-beta",
-    "completionStockGrants": [{ "stock": "users", "amount": 20 }]
+    "completionStockGrants": [{ "stock": "users", "amount": 20 }],
+    "stockFlowMods": [{ "stock": "users", "acquirePerDayDelta": 1 }]
   },
   {
     "id": "ship-v2",
@@ -61,7 +62,8 @@
     "unique": true,
     "pursue": true,
     "requiresCompletedId": "ship-v1",
-    "completionStockGrants": [{ "stock": "users", "amount": 25 }]
+    "completionStockGrants": [{ "stock": "users", "amount": 25 }],
+    "stockFlowMods": [{ "stock": "users", "acquirePerDayDelta": 1 }]
   },
   {
     "id": "ship-v3",
@@ -74,7 +76,8 @@
     "unique": true,
     "pursue": true,
     "requiresCompletedId": "ship-v2",
-    "completionStockGrants": [{ "stock": "users", "amount": 35 }]
+    "completionStockGrants": [{ "stock": "users", "amount": 35 }],
+    "stockFlowMods": [{ "stock": "users", "acquirePerDayDelta": 1 }]
   },
   {
     "id": "ship-v4",
@@ -87,7 +90,8 @@
     "unique": true,
     "pursue": true,
     "requiresCompletedId": "ship-v3",
-    "completionStockGrants": [{ "stock": "users", "amount": 45 }]
+    "completionStockGrants": [{ "stock": "users", "amount": 45 }],
+    "stockFlowMods": [{ "stock": "users", "acquirePerDayDelta": 1 }]
   },
   {
     "id": "ship-v5",
@@ -100,6 +104,7 @@
     "unique": true,
     "pursue": true,
     "requiresCompletedId": "ship-v4",
-    "completionStockGrants": [{ "stock": "users", "amount": 60 }]
+    "completionStockGrants": [{ "stock": "users", "amount": 60 }],
+    "stockFlowMods": [{ "stock": "users", "acquirePerDayDelta": 1 }]
   }
 ]
