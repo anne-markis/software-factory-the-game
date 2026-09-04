@@ -18,8 +18,10 @@ the *schema*: field names, where they live, and what the engine evaluates.
   `probabilityPerDay`; on a hit, credit `stocks[stock] * perUnit` into the
   same income step as flat income (consumed by burn / payroll).
 - `stockFlowMods?: [{ stock, acquirePerDayDelta?, churnRateDelta? }]` —
-  additive nudges to a matching `start.stockFlows` entry. Studio may ship
-  none; the field exists for forward-compat.
+  additive nudges to a matching `start.stockFlows` entry. On a decision,
+  applied while owned. On a project, applied while the id is in
+  `completedProjectIds`. Studio decisions ship none; Studio versions use
+  the project form to raise user acquire.
 
 ### Start (always-on)
 
@@ -39,6 +41,9 @@ the *schema*: field names, where they live, and what the engine evaluates.
   `start.initialProject`. Paid on completion alongside reputation / bonus.
   Copied onto the in-flight project at start so later content edits do not
   change an already-running grant.
+- `stockFlowMods` on `ProjectDef` — see Owned above. Not copied onto the
+  in-flight project; tick looks up completed ids against current defs
+  (same as owned decision mods).
 
 ### Challenges
 

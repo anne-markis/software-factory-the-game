@@ -45,6 +45,18 @@ const completionStockGrantsSchema = z
   .array(z.object({ stock: stockName, amount: z.number() }).strict())
   .optional();
 
+const stockFlowModSchema = z
+  .array(
+    z
+      .object({
+        stock: stockName,
+        acquirePerDayDelta: z.number().optional(),
+        churnRateDelta: z.number().optional(),
+      })
+      .strict(),
+  )
+  .optional();
+
 const startSchema = z
   .object({
     seed: z.number().int(),
@@ -214,18 +226,8 @@ const decisionSchema = z
       .object({ stock: stockName, probabilityPerDay: z.number().min(0).max(1), perUnit: z.number().min(0) })
       .strict()
       .optional(),
-    // Forward-compat additive stock-flow nudges (ADR 0006). Studio ships none.
-    stockFlowMods: z
-      .array(
-        z
-          .object({
-            stock: stockName,
-            acquirePerDayDelta: z.number().optional(),
-            churnRateDelta: z.number().optional(),
-          })
-          .strict(),
-      )
-      .optional(),
+    // Additive stock-flow nudges (ADR 0006). Studio decisions ship none.
+    stockFlowMods: stockFlowModSchema,
     effects: z.array(effectSchema),
     gamble: z.array(gambleOutcomeSchema).optional(),
     requires: z.array(z.string()).optional(),
@@ -395,6 +397,9 @@ const projectSchema = z
     // Omit = Start. true = Pursue. Same optional-boolean style as unique.
     pursue: z.boolean().optional(),
     completionStockGrants: completionStockGrantsSchema,
+    // Same shape as DecisionDef.stockFlowMods. Applied while this id is in
+    // completedProjectIds (not while in-flight).
+    stockFlowMods: stockFlowModSchema,
   })
   .strict();
 

@@ -6,7 +6,7 @@ import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, startJson } from "./loadShippedContent";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
-import type { GameContent, GameState } from "./types";
+import type { GameContent, GameState, ProjectDef } from "./types";
 
 export function testContent(): GameContent {
   return { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: [] };
@@ -212,6 +212,127 @@ describe("tick", () => {
       const afterCompletion = e.getState().stocks.users;
       e.tick();
       expect(e.getState().stocks.users).toBeGreaterThan(afterCompletion);
+    });
+
+    it("in-flight version stockFlowMods do not apply; completed ones raise acquire off the churn cap", () => {
+      const content = testContent();
+      content.start.debtMultiplier = 0;
+      const v1: ProjectDef = {
+        id: "ship-v1",
+        name: "Ship v1",
+        sizePoints: 1,
+        upfrontCost: 0,
+        payoutPerPoint: 0,
+        completionBonus: 0,
+        reputationReward: 2,
+        unique: true,
+        completionStockGrants: [{ stock: "users", amount: 20 }],
+        stockFlowMods: [{ stock: "users", acquirePerDayDelta: 1 }],
+      };
+      content.projects = [v1];
+      const e = new Engine(content);
+      const s = e.getState() as GameState;
+      s.completedProjects = 1;
+      s.completedProjectIds = ["launch-beta"];
+      s.stocks.users = 160;
+      s.stocks.reputation = 1;
+      s.stocks.backlog = 0;
+      s.stocks.inProgress = 0;
+      s.stocks.done = 0;
+      s.projects = [];
+
+      e.tick();
+      expect(e.getState().userAcquireFlow).toBeCloseTo(1.6, 5);
+      expect(e.getState().userAcquireFlow - e.getState().userChurnFlow).toBeCloseTo(0, 1);
+
+      s.projects = [
+        {
+          defId: "ship-v1",
+          name: "Ship v1",
+          remaining: 10,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 2,
+          completionStockGrants: [{ stock: "users", amount: 20 }],
+        },
+      ];
+      e.tick();
+      expect(e.getState().completedProjectIds.includes("ship-v1")).toBe(false);
+      expect(e.getState().userAcquireFlow).toBeCloseTo(1.6, 5);
+
+      // Remaining must equal the Done pile so surplus does not eat ship credit.
+      s.projects[0]!.remaining = 0.5;
+      s.stocks.done = 0.5;
+      e.tick();
+      expect(e.getState().completedProjectIds).toContain("ship-v1");
+      const after = e.getState();
+      expect(after.stocks.reputation).toBe(3);
+      expect(after.userAcquireFlow).toBeCloseTo(2.8, 5);
+      expect(after.userAcquireFlow - after.userChurnFlow).toBeGreaterThan(0.5);
+
+      const usersAtV1 = after.stocks.users;
+      e.tick();
+      expect(e.getState().stocks.users).toBeGreaterThan(usersAtV1);
+    });
+
+    it("later version lumps still grant users and stack another acquire nudge", () => {
+      const content = testContent();
+      content.start.debtMultiplier = 0;
+      content.projects = [
+        {
+          id: "ship-v1",
+          name: "Ship v1",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 2,
+          unique: true,
+          completionStockGrants: [{ stock: "users", amount: 20 }],
+          stockFlowMods: [{ stock: "users", acquirePerDayDelta: 1 }],
+        },
+        {
+          id: "ship-v2",
+          name: "Ship v2",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 2,
+          unique: true,
+          requiresCompletedId: "ship-v1",
+          completionStockGrants: [{ stock: "users", amount: 25 }],
+          stockFlowMods: [{ stock: "users", acquirePerDayDelta: 1 }],
+        },
+      ];
+      const e = new Engine(content);
+      const s = e.getState() as GameState;
+      s.completedProjects = 2;
+      s.completedProjectIds = ["launch-beta", "ship-v1"];
+      s.stocks.users = 180;
+      s.stocks.reputation = 3;
+      s.stocks.backlog = 0;
+      s.stocks.inProgress = 0;
+      s.stocks.done = 0.5;
+      s.projects = [
+        {
+          defId: "ship-v2",
+          name: "Ship v2",
+          remaining: 0.5,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 2,
+          completionStockGrants: [{ stock: "users", amount: 25 }],
+        },
+      ];
+
+      const usersBeforeV2 = s.stocks.users;
+      e.tick();
+      const afterV2 = e.getState();
+      expect(afterV2.completedProjectIds).toContain("ship-v2");
+      expect(afterV2.stocks.users).toBeGreaterThan(usersBeforeV2 + 20);
+      expect(afterV2.userAcquireFlow).toBeCloseTo(4.0, 5);
+      expect(afterV2.userAcquireFlow - afterV2.userChurnFlow).toBeGreaterThan(0.5);
     });
 
     it("subscription incomeFromStock scales income with the users stock", () => {

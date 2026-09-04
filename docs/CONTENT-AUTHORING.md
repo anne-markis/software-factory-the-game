@@ -59,8 +59,8 @@ Cost may be `{}`. `incomePerDay` / `incomeFromStock` / `burstFromStock`
 credit in the same income step **before** payroll that tick. Burst rolls
 from the shared RNG; a hit is not a post-insolvency windfall.
 `stockFlowMods` add to a matching `start.stockFlows` entry (omit until a
-card should change organic acquire/churn). Monetization-only cards still
-need `"effects": []`.
+card or completed project should change organic acquire/churn).
+Monetization-only cards still need `"effects": []`.
 
 `requires` is AND of owned ids. `requiresCounts` is `{ id, count }`
 (count >= 1) and composes with `requires`. A count above 1 on a `unique`
@@ -183,6 +183,11 @@ Shape: `projectSchema`. The starting contract is `start.json`
   reputation hit re-locks the contract.
 - `completionStockGrants` — `{ stock, amount }` copied onto the in-flight
   project at start.
+- `stockFlowMods` — same shape as on decisions (`{ stock, acquirePerDayDelta?,
+  churnRateDelta? }`). Applied every tick **while this project id is in
+  `completedProjectIds`**, not while in-flight. Studio versions raise organic
+  user acquire this way so a version ship opens ceiling headroom instead of
+  filling the reputation-driven churn cap in one lump.
 - Abandon — player can drop any in-flight contract, including the starter.
   Already-credited `payoutPerPoint` and `stocks.shipped` stay. Remaining is
   discarded and pulled from Ready, then In Progress, then Done. No bonus,
@@ -215,8 +220,9 @@ lines (`state.milestonesSeen`); they never grant effects or gates.
 `freeDebt`, `dragPerPoint`, `maxDrag` in `(0, 1)`. `stockDrags` are the
 generic same-shape slowdown keyed on any stock and a rate target.
 `stockFlows` are per-tick acquire/churn after shipping; optional
-`condition.minCompletedProjects`. Owned `stockFlowMods` add to a matching
-flow. Omit either array for `[]`.
+`condition.minCompletedProjects`. Owned decision `stockFlowMods` and
+completed-project `stockFlowMods` add to a matching flow. Omit either
+array for `[]`.
 
 Numbers for these knobs live in `content/start.json`. Archetype log lines
 (`src/engine/archetypes.ts`) are engine-side; new cards are classified

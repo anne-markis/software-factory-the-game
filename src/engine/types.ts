@@ -100,11 +100,13 @@ export interface Synergy {
 // The shop is a flat list and does not group by this field.
 export type DecisionCategory = "ship-faster" | "earn-income" | "tame-debt" | "prevent-trouble" | "change-structure";
 
-// Additive stock-flow modifier owned by a decision (ADR 0006).
-// Nudges an existing start.stockFlows entry for the named stock: deltas are
-// summed across all owned decisions and added to that flow's own
-// acquirePerDay / churnRatePerDay each tick. Studio ships none (types/schema
-// exist for forward-compat; content may omit the field entirely).
+// Additive stock-flow modifier (ADR 0006). Nudges an existing
+// start.stockFlows entry for the named stock: deltas are summed each tick
+// and added to that flow's acquirePerDay / churnRatePerDay. Sources:
+// owned decisions, and completed projects (looked up from
+// completedProjectIds). Studio decisions ship none; Studio versions use
+// this so shipping a product raises acquire instead of landing on the
+// churn cap.
 export interface StockFlowMod {
   stock: StockName;
   acquirePerDayDelta?: number;
@@ -127,8 +129,8 @@ export interface DecisionDef {
   // monetization). Each day rolls probabilityPerDay; on a hit it credits
   // stocks[stock] * perUnit to budget. The one-time-product card reads users.
   burstFromStock?: { stock: StockName; probabilityPerDay: number; perUnit: number };
-  // Forward-compat additive nudges to start.stockFlows (ADR 0006). Studio
-  // ships none; the engine sums deltas from owned decisions when present.
+  // Additive nudges to start.stockFlows (ADR 0006). Studio decisions ship
+  // none; the engine sums deltas from owned decisions when present.
   stockFlowMods?: StockFlowMod[];
   effects: Effect[];
   gamble?: GambleOutcome[];
@@ -234,6 +236,11 @@ export interface ProjectDef {
   // the users economy (users stay 0 until then). Clamped at 0 like every
   // other stock write.
   completionStockGrants?: { stock: StockName; amount: number }[];
+  // Permanent acquire/churn nudges while this project id is in
+  // completedProjectIds (same shape as DecisionDef.stockFlowMods). Studio
+  // versions raise organic user acquire so a version ship opens ceiling
+  // headroom instead of filling the reputation-driven cap in one lump.
+  stockFlowMods?: StockFlowMod[];
 }
 
 // Named work sitting in Plan after Pursue, before auto-Ready. progress
