@@ -152,10 +152,14 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     // Probabilistic income burst scaled by a stock's level (one-time-product
     // card). Rolled per owned decision each day; on a hit it credits
     // stocks[stock] * perUnit. Netted into the same income step as everything
-    // else so it is consumed by burn like flat income (semantics).
+    // else so it is consumed by burn like flat income (semantics). Skip the
+    // roll when the stock is 0: a hit would credit $0 anyway, and drawing
+    // here would burn the purchase RNG stream through the isolated
+    // pre-launch burndown (users stay 0 until the first project completes).
     if (def.burstFromStock) {
-      if (rng.next() < def.burstFromStock.probabilityPerDay) {
-        const burst = state.stocks[def.burstFromStock.stock] * def.burstFromStock.perUnit;
+      const stock = state.stocks[def.burstFromStock.stock];
+      if (stock > 0 && rng.next() < def.burstFromStock.probabilityPerDay) {
+        const burst = stock * def.burstFromStock.perUnit;
         if (burst > 0) {
           totalIncome += burst;
           if (def.burstFromStock.stock === "users") state.userIncomeFlow += burst;

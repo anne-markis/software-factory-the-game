@@ -366,6 +366,26 @@ describe("tick", () => {
       expect(e.getState().stocks.budget).toBe(before - content.start.baseBurnPerDay);
     });
 
+    it("one-time-product consumes no RNG and pays nothing while users are 0", () => {
+      const content = ciCdContent();
+      content.start.stocks.backlog = 0;
+      const withOtp = new Engine(content);
+      const withoutOtp = new Engine(content);
+      withOtp.applyDecision("one-time-product");
+      expect(withOtp.getState().rngState).toBe(withoutOtp.getState().rngState);
+
+      for (let i = 0; i < 50; i++) {
+        const before = withOtp.getState().stocks.budget;
+        withOtp.tick();
+        withoutOtp.tick();
+        expect(withOtp.getState().stocks.users).toBe(0);
+        expect(withOtp.getState().userIncomeFlow).toBe(0);
+        expect(withOtp.getState().stocks.budget).toBe(before - content.start.baseBurnPerDay);
+        expect(withOtp.getState().log.some((l) => l.message.includes("product sale burst"))).toBe(false);
+        expect(withOtp.getState().rngState).toBe(withoutOtp.getState().rngState);
+      }
+    });
+
     it("one-time-product burstFromStock produces probabilistic income scaled by users", () => {
       const content = ciCdContent();
       content.start.stocks.backlog = 0;
