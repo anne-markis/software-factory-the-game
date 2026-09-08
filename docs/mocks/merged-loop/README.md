@@ -1,28 +1,21 @@
 # Mock: merge Delivery with the Progress zoom
 
-Static HTML sketches of folding the Progress inner-loop zoom into the
-idea-to-value (Delivery) spine. Open [`index.html`](index.html) in a
-browser (the game CSS is inlined; nothing here is wired to the engine).
+Static HTML sketches. Open [`index.html`](index.html) in a browser.
+Nothing here is wired to the engine; the live cockpit is unchanged.
 
-These are scoping pictures, not a committed layout. The live cockpit is
-unchanged.
+## Round 1 — three directions
 
-## The duplication
+A (inline) was the pick. B (callout) and C (strip) are parked in git
+history on this branch.
 
-The Delivery diagram already paints Ideas → Plan → Ready → **In Progress**
-→ Done → Shipped. The Progress panel then retells In Progress as its own
-loop: cycle speed, friction, an ellipse, an exit rate, and a rework leak
-that refills Ready. Finish flow, the debt/rework leak, and In Progress
-itself therefore appear twice. On a fresh game the zoom is almost empty;
-mid-game it earns its keep, but as a sibling rather than a zoom.
+## Round 2 — inline variants
 
-## Three directions (same mid-game numbers)
+Same mid-game numbers. In Progress *is* on the spine in every sketch.
+What changes is how the cycle is drawn and where the contributor stacks
+sit.
 
-| | A · Inline | B · Callout | C · Strip |
-| --- | --- | --- | --- |
-| In Progress | The ellipse *is* the stage | Box stays; zoom hangs under it | Box stays; no ellipse |
-| Nested-systems read | One diagram | Strongest “this box is that loop” | Contributors only |
-| Vertical space | One panel + User full-width | Similar to today, one figure | Smallest |
-| Duplicate leak / finish | Collapsed onto the spine | Outer leak kept; inner leak in the zoom | Collapsed onto the spine |
-
-Open the HTML for the pictures and the keep/drop/risk notes.
+| | A1 · Long hang | A2 · Cluster | A3 · Boxed cycle | A4 · Tall orbit |
+| --- | --- | --- | --- | --- |
+| In Progress | Ellipse on the line | Ellipse on the line | Same-size box with a cycle inside | Taller ellipse; other boxes on its equator |
+| Contributors | Far left / right, long connectors | Tight around the ellipse | Strip under that column only | Pockets above / below the ellipse |
+| Nested-systems | Felt | Felt, quieter | Weakest of the four | Strongest — the cycle is the protagonist |
