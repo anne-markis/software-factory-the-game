@@ -568,7 +568,7 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const h = mount({ content, restored });
     h.root.querySelector<HTMLElement>('[data-choice="fixture-choice"]')!.click();
     expect(h.root.querySelector("[data-choice]")).toBeNull();
-    expect(h.root.textContent).not.toMatch(/\(\d+d\)/);
+    expect(h.root.querySelector(".choice-interrupt")).toBeNull();
   });
 
   it("shows a new log line as soon as one is appended to state", () => {
@@ -845,7 +845,7 @@ describe("appView Decision-needed interrupt", () => {
     const h = mount({ content, restored });
     expect(h.engine.getState().paused).toBe(true);
     expect(h.root.querySelector(".choice-interrupt")).not.toBeNull();
-    expect(h.root.textContent).not.toMatch(/\(\d+d\)/);
+    expect(h.root.querySelector('[data-section="choice-countdown:fixture-choice"]')!.textContent).toBe("");
     expect(h.root.textContent).not.toContain("days left");
     expect(h.root.textContent).not.toContain("days to respond");
   });

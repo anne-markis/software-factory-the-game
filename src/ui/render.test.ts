@@ -921,21 +921,21 @@ describe("renderBuildStamp", () => {
 
 describe("renderStall", () => {
   it("renders the banner only when stalled", () => {
-    expect(renderStall(true)).toContain("stalled");
+    expect(renderStall(true)).toContain("Stalled.");
     expect(renderStall(false)).toBe("");
   });
 
   it("renders the insolvency banner when delivery is frozen and the pipeline is not stalled", () => {
     const html = renderStall(false, true);
-    expect(html).toContain("insolvent");
+    expect(html).toContain("Insolvent.");
     expect(html).not.toContain("frozen");
     expect(html).not.toContain("nothing affordable");
   });
 
   it("keeps the empty-pipeline stall copy when both flags are set", () => {
     const html = renderStall(true, true);
-    expect(html).toContain("stalled");
+    expect(html).toContain("Stalled.");
     expect(html).not.toContain("nothing affordable");
-    expect(html).not.toContain("insolvent");
+    expect(html).not.toContain("Insolvent.");
   });
 });

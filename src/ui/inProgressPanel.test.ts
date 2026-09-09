@@ -55,7 +55,7 @@ describe("renderStageZoom", () => {
     expect(svg).not.toContain("work cycling");
     expect(svg).toContain("Cycle speed");
     expect(svg).toContain("Base 1.0/day");
-    expect(svg).toContain("x0.50");
+    expect(svg).toContain("Base x0.5");
     expect(svg).not.toContain("The inner system's pace sets outer throughput");
     expect(svg).not.toContain("Rework leak");
     expect(svg).not.toContain("Context switch");
@@ -75,10 +75,9 @@ describe("renderStageZoom", () => {
     expect(inFrictionGroup(svg, "Add test suite: x0.5")).toBe(true);
     expect(inFrictionGroup(svg, "CI/CD pipeline: x0.5")).toBe(true);
 
-    // test-suite's permanent debtMultiplier x0.5 lands under Leak size, and
-    // combined with the 0.5 base it makes the effective leak arc label x0.25.
+    // test-suite's permanent debtMultiplier x0.5 lands under Leak size.
     expect(inLeakGroup(svg, "Add test suite: x0.5")).toBe(true);
-    expect(svg).toContain("x0.25");
+    expect(svg).toContain("Base x0.5");
   });
 
   it("shows only a debt-paydown card's temporary slowdown under Friction (scaleStock creates no modifier, Release 16)", () => {

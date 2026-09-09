@@ -177,8 +177,8 @@ describe("cross-surface work counting (ADR 0009)", () => {
     view.render();
     assertSurfacesAgree(root, engine.getState());
     expect(projectLine(root, "launch-beta")).toContain("Abandon");
-    expect(root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("~800 days");
-    expect(root.querySelector('[data-plan-status="gig-plugin"]')!.textContent).toContain("~900 days");
+    expect(root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("~800d");
+    expect(root.querySelector('[data-plan-status="gig-plugin"]')!.textContent).toContain("~900d");
     engine.tick();
     view.render();
     assertSurfacesAgree(root, engine.getState());
