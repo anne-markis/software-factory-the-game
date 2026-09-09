@@ -61,14 +61,7 @@ const GAP = 48;
 const Y = 24;
 const STAGE_COUNT = 6;
 const VIEW_W = STAGE_COUNT * BOX_W + (STAGE_COUNT - 1) * GAP + 32;
-// Room below the debt-regen arc for the FR-2.1 teaching caption.
-const VIEW_H = 200;
-
-// FR-2.1: terse Delivery-loop teaching caption, voice-matched to
-// the In Progress zoom footer ("The inner system's pace sets outer throughput…").
-// Binding-stage visual cue (FR-2.2) is separate; this copy always shows.
-export const DELIVERY_LOOP_CAPTION =
-  "A steady box means balanced flow; a growing box marks the bottleneck.";
+const VIEW_H = 175;
 
 // binding-stage bottleneck cue (machine-side only).
 //
@@ -222,10 +215,6 @@ function ariaLabel(binding: BindingStage | null): string {
   return "Delivery loop";
 }
 
-function teachingCaption(): string {
-  return `<text x="10" y="${VIEW_H - 10}" font-size="12" fill="currentColor">${DELIVERY_LOOP_CAPTION}</text>`;
-}
-
 function stageX(x0: number, index: number): number {
   return x0 + index * (BOX_W + GAP);
 }
@@ -284,7 +273,6 @@ function deliveryLoop(
     <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" width="100%" role="img" aria-label="${ariaLabel(binding)}">
       ${DEFS}
       ${boxes}${arrows}${regen}
-      ${teachingCaption()}
     </svg>`;
 }
 

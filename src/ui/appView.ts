@@ -119,7 +119,7 @@ function pageScaffold(): string {
     <h1 class="game-title">Software Factory</h1>
     <div class="chrome-row">
       <div ${SECTION_ATTR}="${TIME_CONTROLS}"></div>
-      <button id="reset">Reset game</button>
+      <button id="reset">Reset</button>
     </div>
     <div ${SECTION_ATTR}="${STATS}"></div>
     <div ${SECTION_ATTR}="${GAMBLE_REVEAL}"></div>
@@ -132,7 +132,6 @@ function pageScaffold(): string {
             <div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div>
             <div ${SECTION_ATTR}="${DELIVERY_CARETS}"></div>
           </div>
-          <p class="delivery-inspect-hint">Click ▾ on a stage to inspect it.</p>
           <div ${SECTION_ATTR}="${STAGE_ZOOM}"></div>
         </div>
         <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>

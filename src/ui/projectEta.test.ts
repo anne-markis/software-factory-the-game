@@ -26,14 +26,14 @@ describe("projectEtaDays", () => {
 });
 
 describe("formatProjectEta", () => {
-  it("shows ~N days at current rate", () => {
-    expect(formatProjectEta(1500, 1)).toBe("~1,500 days at current rate");
-    expect(formatProjectEta(10, 3)).toBe("~4 days at current rate");
+  it("shows ~Nd", () => {
+    expect(formatProjectEta(1500, 1)).toBe("~1,500d");
+    expect(formatProjectEta(10, 3)).toBe("~4d");
   });
 
-  it("uses singular day", () => {
-    expect(formatProjectEta(1, 1)).toBe("~1 day at current rate");
-    expect(formatProjectEta(0.5, 1)).toBe("~1 day at current rate");
+  it("uses the same unit for a single day", () => {
+    expect(formatProjectEta(1, 1)).toBe("~1d");
+    expect(formatProjectEta(0.5, 1)).toBe("~1d");
   });
 
   it("shows stalled when rate is ~0", () => {
@@ -41,7 +41,7 @@ describe("formatProjectEta", () => {
   });
 
   it("lengthens copy when in-flight count rises at the same factory rate", () => {
-    expect(formatProjectEta(100, 1, 1)).toBe("~100 days at current rate");
-    expect(formatProjectEta(100, 1, 2)).toBe("~200 days at current rate");
+    expect(formatProjectEta(100, 1, 1)).toBe("~100d");
+    expect(formatProjectEta(100, 1, 2)).toBe("~200d");
   });
 });

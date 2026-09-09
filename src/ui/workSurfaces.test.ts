@@ -80,7 +80,7 @@ function assertSurfacesAgree(root: HTMLElement, state: Readonly<GameState>): voi
   if (doneBox !== null) expect(doneBox).toBe(fmt(state.stocks.done));
 
   for (const p of state.projects) {
-    expect(projectLine(root, p.defId)).toContain(`${fmt(p.remaining)} points left`);
+    expect(projectLine(root, p.defId)).toContain(`${p.name}: ${fmt(p.remaining)} ·`);
   }
 
   for (const item of state.plan) {
@@ -108,7 +108,7 @@ describe("cross-surface work counting (ADR 0009)", () => {
     assertSurfacesAgree(root, s);
     expect(statValue(root, "backlog")).toBe("300");
     expect(stageValue(root, "backlog")).toBe("300");
-    expect(projectLine(root, "launch-beta")).toContain("Launch beta: 300 points left");
+    expect(projectLine(root, "launch-beta")).toContain("Launch beta: 300 ·");
     expect(statValue(root, "users")).toBe("0");
   });
 
@@ -125,7 +125,7 @@ describe("cross-surface work counting (ADR 0009)", () => {
     expect(stageValue(root, "backlog")).toBe("298");
     expect(stageValue(root, "inProgress")).toBe("2");
     expect(statValue(root, "inProgress")).toBe("2");
-    expect(projectLine(root, "launch-beta")).toContain("300 points left");
+    expect(projectLine(root, "launch-beta")).toContain("Launch beta: 300 ·");
   });
 
   it("at the Ready-empty WIP bubble, cockpit Backlog matches Projects remaining (not 0)", () => {
@@ -146,7 +146,7 @@ describe("cross-surface work counting (ADR 0009)", () => {
     expect(statValue(root, "backlog")).not.toBe("0");
     expect(statValue(root, "backlog")).toBe(fmt(s.projects[0]!.remaining));
     expect(stageValue(root, "backlog")).toBe(fmt(s.stocks.backlog));
-    expect(projectLine(root, "launch-beta")).toContain(`${fmt(s.projects[0]!.remaining)} points left`);
+    expect(projectLine(root, "launch-beta")).toContain(`Launch beta: ${fmt(s.projects[0]!.remaining)} ·`);
     expect(statValue(root, "users")).toBe("0");
     if (s.pointsPerDay > 0) {
       expect(projectLine(root, "launch-beta")).toContain(

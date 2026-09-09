@@ -47,7 +47,7 @@ function panel(state: import("../engine/types").GameState, c: GameContent = cont
 }
 
 describe("renderStageZoom", () => {
-  it("renders contributor columns and the leak footer on a fresh engine", () => {
+  it("renders contributor columns on a fresh engine", () => {
     const e = new Engine(content());
     const svg = panel(e.getState());
     expect(svg).not.toContain("Progress loop");
@@ -56,7 +56,8 @@ describe("renderStageZoom", () => {
     expect(svg).toContain("Cycle speed");
     expect(svg).toContain("Base 1.0/day");
     expect(svg).toContain("x0.50");
-    expect(svg).toContain("The inner system's pace sets outer throughput; its leak feeds outer backlog.");
+    expect(svg).not.toContain("The inner system's pace sets outer throughput");
+    expect(svg).not.toContain("Rework leak");
     expect(svg).not.toContain("Context switch");
     expect(svg).not.toContain("= outer loop throughput");
     expect(renderStageZoom(e.getState(), content(), null)).toBe("");
@@ -284,7 +285,8 @@ describe("renderStageZoom", () => {
     expect(html).toContain("Deploy speed");
     expect(html).toContain("Why bound");
     expect(html).toContain("Base 1.0/day");
-    expect(html).toContain("pts waiting to ship");
+    expect(html).toContain("waiting");
+    expect(html).not.toContain("pts waiting to ship");
     expect(html).not.toContain("ci-cd");
     expect(html).not.toContain("Cycle speed");
     expect(html).not.toContain("Leak size");

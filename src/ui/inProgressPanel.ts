@@ -1,5 +1,5 @@
 import type { DeliveryRateId, GameContent, GameState, Modifier } from "../engine/types";
-import { effectiveDebtMultiplier, debtDragMultiplier, effectiveRate } from "../engine/modifiers";
+import { debtDragMultiplier, effectiveRate } from "../engine/modifiers";
 import { esc } from "./render";
 import type { ZoomStage } from "./loopDiagram";
 
@@ -122,13 +122,10 @@ function renderCol(header: string, nodes: readonly ContributorNode[]): string {
   return `<div><h4>${esc(header)}</h4>${items}</div>`;
 }
 
-const IP_FOOTER = "The inner system's pace sets outer throughput; its leak feeds outer backlog.";
-
 function inProgressZoom(state: Readonly<GameState>, content: GameContent): string {
   const speedNodes = buildRateGroupNodes(state, content, "speed", "finish");
   const frictionNodes = buildRateGroupNodes(state, content, "friction", "finish");
   const leakNodes = buildLeakNodes(state, content);
-  const debtLabel = effectiveDebtMultiplier(state).toFixed(2);
   const friction = frictionNodes.length === 0 ? "" : renderCol("Friction", frictionNodes);
   return `
     <div class="stage-zoom" data-zoom-open="inProgress">
@@ -138,7 +135,6 @@ function inProgressZoom(state: Readonly<GameState>, content: GameContent): strin
         ${friction}
         ${renderCol("Leak size", leakNodes)}
       </div>
-      <p class="stage-zoom-foot">${esc(`Rework leak x${debtLabel} per shipped point joins the Shipped → Ready U. ${IP_FOOTER}`)}</p>
     </div>`;
 }
 
@@ -151,7 +147,7 @@ function doneZoom(state: Readonly<GameState>, content: GameContent): string {
   const bound: ContributorNode[] = [
     { label: `Finish ${finish.toFixed(1)}/day in`, dim: false },
     { label: `Deploy ${deploy.toFixed(1)}/day out`, dim: false },
-    { label: `${waiting} pts waiting to ship`, dim: false },
+    { label: `${waiting} waiting`, dim: false },
   ];
   const friction = frictionNodes.length === 0 ? "" : renderCol("Friction", frictionNodes);
   return `

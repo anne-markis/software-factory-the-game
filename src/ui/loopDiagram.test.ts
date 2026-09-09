@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   BINDING_INFLOW_RATIO,
   BINDING_SUSTAINED_DAYS,
-  DELIVERY_LOOP_CAPTION,
   bindingBottleneckStage,
   loopDiagramSvg,
   renderDeliveryCarets,
@@ -218,36 +217,31 @@ describe("loopDiagramSvg", () => {
     expect(svg).toMatch(/font-size="18"/);
   });
 
-  // FR-2.1: Delivery loop needs terse teaching copy (steady vs growing boxes). Voice-matched to the In Progress zoom footer.
-  describe("Delivery loop teaching caption", () => {
-    it("includes the steady-vs-growing caption on a fresh six-box Delivery loop", () => {
+  describe("Delivery loop has no teaching caption", () => {
+    it("omits the old steady-vs-growing lecture on a fresh six-box Delivery loop", () => {
       const content = emptyContent();
       const svg = loopDiagramSvg(initialState(content), content);
-      expect(svg).toContain(DELIVERY_LOOP_CAPTION);
-      expect(DELIVERY_LOOP_CAPTION).toMatch(/steady/i);
-      expect(DELIVERY_LOOP_CAPTION).toMatch(/growing/i);
-      expect(DELIVERY_LOOP_CAPTION).toMatch(/bottleneck/i);
-      // Caption text itself must set fill=currentColor.
-      expect(svg).toMatch(
-        new RegExp(`<text[^>]*fill="currentColor"[^>]*>${DELIVERY_LOOP_CAPTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
-      );
+      expect(svg).not.toMatch(/steady box/i);
+      expect(svg).not.toMatch(/growing box/i);
+      expect(svg).not.toMatch(/marks the bottleneck/i);
     });
 
-    it("keeps the caption once continuous deploy drops the Done box", () => {
+    it("stays caption-free once continuous deploy drops the Done box", () => {
       const content = fullDecisionsContent();
       const state = initialState(content);
       state.decisions.push({ instanceId: "inst-cd", defId: "ci-cd" });
-      expect(loopDiagramSvg(state, content)).toContain(DELIVERY_LOOP_CAPTION);
+      const svg = loopDiagramSvg(state, content);
+      expect(svg).not.toMatch(/steady box/i);
+      expect(svg).not.toMatch(/growing box/i);
     });
 
-    it("does not reuse the Delivery caption in the stage-zoom drawer", () => {
+    it("does not lecture in the stage-zoom drawer either", () => {
       const content = emptyContent();
       const zoom = renderStageZoom(initialState(content), content, "inProgress");
-      expect(zoom).toContain(
-        "The inner system's pace sets outer throughput; its leak feeds outer backlog.",
-      );
-      expect(zoom).toContain("Rework leak");
-      expect(zoom).not.toContain(DELIVERY_LOOP_CAPTION);
+      expect(zoom).not.toContain("The inner system's pace sets outer throughput");
+      expect(zoom).not.toContain("Rework leak");
+      expect(zoom).toContain("Cycle speed");
+      expect(zoom).toContain("Leak size");
     });
   });
 

@@ -76,7 +76,7 @@ describe("renderStats", () => {
     const e = new Engine(c);
     const html = renderStats(e.getState(), c);
     // Fresh game: $10,000 / $20/day = 500 days; healthy, no warning class.
-    expect(html).toContain('class="stat-value v-budget">$10,000 (500 days)</span>');
+    expect(html).toContain('class="stat-value v-budget">$10,000 (500d)</span>');
     expect(html).not.toContain("budget-low");
   });
 
@@ -87,16 +87,16 @@ describe("renderStats", () => {
     const state = e.getState();
     state.stocks.budget = 270; // exactly 10 days
     const html = renderStats(state, c);
-    expect(html).toContain('class="stat-value v-budget budget-low">$270 (10 days)</span>');
+    expect(html).toContain('class="stat-value v-budget budget-low">$270 (10d)</span>');
   });
 
-  it("uses singular day label and warns at 1 day of runway", () => {
+  it("appends Nd runway and warns at 1d", () => {
     const c = content();
     const e = new Engine(c);
     const state = e.getState();
     state.stocks.budget = 20; // 1 day at base burn 20
     const html = renderStats(state, c);
-    expect(html).toContain('class="stat-value v-budget budget-low">$20 (1 day)</span>');
+    expect(html).toContain('class="stat-value v-budget budget-low">$20 (1d)</span>');
   });
 
   it("omits runway and warning when net burn is not positive", () => {
@@ -110,6 +110,7 @@ describe("renderStats", () => {
     expect(html).toContain('class="stat-value v-budget">$');
     expect(html).not.toContain(" days)");
     expect(html).not.toContain(" day)");
+    expect(html).not.toMatch(/\(\d+d\)/);
     expect(html).not.toContain("budget-low");
   });
 });
@@ -146,7 +147,7 @@ describe("renderDecisions", () => {
     expect(html).not.toContain("CI/CD pipeline");
     // Empty Owned copy lives in the right-rail panel, not the shop.
     expect(html).not.toContain("Nothing yet. You are a solo dev.");
-    expect(renderOwnedList([], content())).toContain("Nothing yet. You are a solo dev.");
+    expect(renderOwnedList([], content())).toBe("");
   });
 
   it("day-0 shop shows hack day and user interviews among starting cards; CI/CD and harness stay hidden", () => {
@@ -486,6 +487,7 @@ describe("renderDecisions", () => {
     const basic = e.availableDecisions().find((a) => a.def.id === "basic-dev")!;
     const { chrome, details } = nodeParts(renderDecisionNode(basic, 0));
     expect(chrome).toContain('class="tt-gamble"');
+    expect(chrome).not.toContain("title=");
     expect(chrome.indexOf("tt-node-name")).toBeLessThan(chrome.indexOf("tt-gamble"));
     expect(chrome.indexOf("tt-gamble")).toBeLessThan(chrome.indexOf("tt-cost"));
     expect(details).not.toContain("tt-gamble");
@@ -527,8 +529,9 @@ describe("renderLog", () => {
     expect(html.indexOf("Day 39:")).toBeLessThan(html.indexOf("Day 38:"));
   });
 
-  it("renders a placeholder when empty", () => {
-    expect(renderLog([])).toContain("Quiet so far.");
+  it("renders an empty log with no placeholder copy", () => {
+    expect(renderLog([])).not.toContain("Quiet so far.");
+    expect(renderLog([])).toContain('<div class="log"></div>');
   });
 });
 
@@ -578,8 +581,8 @@ describe("renderChoicesScaffold", () => {
 
 describe("renderChoiceCountdown", () => {
   it("renders the remaining days while the clock is running", () => {
-    expect(renderChoiceCountdown({ challengeId: "fixture-choice", expiresDay: 8 }, 5)).toBe("(3 days left)");
-    expect(renderChoiceCountdown({ challengeId: "fixture-choice", expiresDay: 8 }, 6)).toBe("(2 days left)");
+    expect(renderChoiceCountdown({ challengeId: "fixture-choice", expiresDay: 8 }, 5)).toBe("(3d)");
+    expect(renderChoiceCountdown({ challengeId: "fixture-choice", expiresDay: 8 }, 6)).toBe("(2d)");
   });
 
   // manual pause freezes expiresDay, so a ticking countdown would lie.
@@ -589,13 +592,14 @@ describe("renderChoiceCountdown", () => {
 });
 
 describe("renderProjectsStatus", () => {
-  it("shows the WIP header and the in-flight lines", () => {
+  it("shows the Projects header and the in-flight lines", () => {
     const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
     const e = new Engine(c);
     const html = renderProjectsStatus([...e.getState().projects], e.getState());
-    expect(html).toContain("<h3>Projects (WIP)</h3>");
+    expect(html).toContain("<h3>Projects</h3>");
+    expect(html).not.toContain("WIP");
     expect(html).not.toContain("efficiency");
-    expect(html).toContain("Launch beta: 300 points left");
+    expect(html).toContain("Launch beta: 300 ·");
     // Fresh engine has not ticked yet — realized Points/Day is 0 → stalled
     // (FR-3.2).
     expect(html).toContain("· stalled");
@@ -614,7 +618,7 @@ describe("renderProjectsStatus", () => {
     const html = renderProjectsStatus([...s.projects], s);
     expect(html).toContain('data-plan-status="ship-v1"');
     expect(html).toContain("Ship v1: 12 / 400");
-    expect(html).toContain("· ~388 days at current rate");
+    expect(html).toContain("· ~388d");
     expect(html).toContain('data-cancel="ship-v1"');
     expect(html).toContain(">Cancel<");
     expect(html).not.toMatch(/data-abandon="ship-v1"/);
@@ -632,21 +636,21 @@ describe("renderProjectsStatus", () => {
     const html = renderProjectsStatus([...s.projects], s);
     expect(html).toContain("Ship v1: 0 / 400");
     expect(html).toContain("Client plugin: 0 / 450");
-    expect(html).toContain("· ~800 days at current rate");
-    expect(html).toContain("· ~900 days at current rate");
+    expect(html).toContain("· ~800d");
+    expect(html).toContain("· ~900d");
     expect(html.match(/data-cancel="/g)).toHaveLength(2);
   });
 
   // P0.1 FR-3: derived ~days from remaining ÷ Points/Day.
-  it("shows ~N days at current rate when Points/Day is positive", () => {
+  it("shows ~Nd when Points/Day is positive", () => {
     const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
     const s = initialState(c);
     // Pipeline fill takes several days before realized Points/Day is non-zero;
     // set the rate directly so this asserts the derived line, not tick lag.
     s.pointsPerDay = 1;
     const html = renderProjectsStatus([...s.projects], s);
-    expect(html).toContain("Launch beta: 300 points left");
-    expect(html).toContain("· ~300 days at current rate");
+    expect(html).toContain("Launch beta: 300 ·");
+    expect(html).toContain("· ~300d");
   });
 
   it("updates the estimate when Points/Day changes", () => {
@@ -654,7 +658,7 @@ describe("renderProjectsStatus", () => {
     const s = initialState(c);
     s.pointsPerDay = 10;
     s.projects[0]!.remaining = 100;
-    expect(renderProjectsStatus([...s.projects], s)).toContain("· ~10 days at current rate");
+    expect(renderProjectsStatus([...s.projects], s)).toContain("· ~10d");
     s.pointsPerDay = 0;
     expect(renderProjectsStatus([...s.projects], s)).toContain("· stalled");
   });
@@ -664,7 +668,7 @@ describe("renderProjectsStatus", () => {
     const s = initialState(c);
     s.pointsPerDay = 1;
     s.projects[0]!.remaining = 100;
-    expect(renderProjectsStatus([...s.projects], s)).toContain("· ~100 days at current rate");
+    expect(renderProjectsStatus([...s.projects], s)).toContain("· ~100d");
     expect(s.pointsPerDay).toBe(1);
 
     s.projects.push({
@@ -676,16 +680,16 @@ describe("renderProjectsStatus", () => {
       reputationReward: 1,
     });
     const two = renderProjectsStatus([...s.projects], s);
-    expect(two).toContain("Launch beta: 100 points left");
-    expect(two).toContain("Weekend bugfix: 100 points left");
-    expect(two.match(/~200 days at current rate/g)).toHaveLength(2);
+    expect(two).toContain("Launch beta: 100 ·");
+    expect(two).toContain("Weekend bugfix: 100 ·");
+    expect(two.match(/~200d/g)).toHaveLength(2);
     expect(s.pointsPerDay).toBe(1);
     expect(two).not.toContain("efficiency");
 
     s.projects = s.projects.filter((p) => p.defId !== "gig-bugfix");
     const one = renderProjectsStatus([...s.projects], s);
-    expect(one).toContain("· ~100 days at current rate");
-    expect(one).not.toContain("~200 days");
+    expect(one).toContain("· ~100d");
+    expect(one).not.toContain("~200d");
   });
 });
 
@@ -924,14 +928,14 @@ describe("renderStall", () => {
   it("renders the insolvency banner when delivery is frozen and the pipeline is not stalled", () => {
     const html = renderStall(false, true);
     expect(html).toContain("insolvent");
-    expect(html).toContain("frozen");
+    expect(html).not.toContain("frozen");
     expect(html).not.toContain("nothing affordable");
   });
 
   it("keeps the empty-pipeline stall copy when both flags are set", () => {
     const html = renderStall(true, true);
     expect(html).toContain("stalled");
-    expect(html).toContain("nothing affordable");
+    expect(html).not.toContain("nothing affordable");
     expect(html).not.toContain("insolvent");
   });
 });

@@ -43,7 +43,7 @@ function costLine(def: DecisionDef): string {
 // gets a scannable chip up top rather than relying on the "(gamble)" suffix
 // buried at the end of the derived line. Empty for deterministic decisions.
 function gambleTag(def: DecisionDef): string {
-  return def.gamble && def.gamble.length > 0 ? `<span class="tt-gamble" title="Outcome is a roll: could help or hurt">gamble</span> ` : "";
+  return def.gamble && def.gamble.length > 0 ? `<span class="tt-gamble">gamble</span> ` : "";
 }
 
 // Renders the derived-effects line, or nothing when the decision has no
@@ -215,7 +215,7 @@ export function renderOwnedList(ownedInstances: DecisionInstance[], content: Gam
     </div>`;
     })
     .join("");
-  return ownedList || "<small>Nothing yet. You are a solo dev.</small>";
+  return ownedList;
 }
 
 export function renderDecisions(avail: Availability[], ownedInstances: DecisionInstance[], content: GameContent): string {
@@ -237,7 +237,7 @@ export function renderLog(log: readonly LogEntry[]): string {
   const lines = [...log].slice(-30).reverse()
     .map((entry) => `<div>Day ${entry.day}: ${esc(entry.message)}</div>`)
     .join("");
-  return `<div class="panel"><h3>Events</h3><div class="log">${lines || "<small>Quiet so far.</small>"}</div></div>`;
+  return `<div class="panel"><h3>Events</h3><div class="log">${lines}</div></div>`;
 }
 
 // The projects panel is split into two independently-patched sections
@@ -269,10 +269,10 @@ export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: 
   const flight = inFlight
     .map((p) => {
       const eta = formatProjectEta(p.remaining, state.pointsPerDay, n);
-      return `<div data-project-status="${esc(p.defId)}">${esc(p.name)}: ${fmt(p.remaining)} points left ($${fmt(p.payoutPerPoint)}/pt, $${fmt(p.completionBonus)} on completion) · ${esc(eta)} <button type="button" data-abandon="${esc(p.defId)}">Abandon</button></div>`;
+      return `<div data-project-status="${esc(p.defId)}">${esc(p.name)}: ${fmt(p.remaining)} · $${fmt(p.payoutPerPoint)}/pt + $${fmt(p.completionBonus)} · ${esc(eta)} <button type="button" data-abandon="${esc(p.defId)}">Abandon</button></div>`;
     })
     .join("");
-  return `<h3>Projects (WIP)</h3>${planRows}${flight}`;
+  return `<h3>Projects</h3>${planRows}${flight}`;
 }
 
 // omit unmet-prerequisite and already-completed rows.
@@ -295,7 +295,7 @@ export function renderProjectOffers(offers: ProjectAvailability[], _state: Reado
       const reason = o.reason ? ` (${esc(o.reason)})` : "";
       const label = o.def.pursue ? "Pursue" : "Start";
       return `<div><button data-project="${esc(o.def.id)}" ${disabled}>${label}</button> <strong>${esc(o.def.name)}</strong>${reason}<br/>
-        <small>${fmt(o.def.sizePoints)} points, costs $${fmt(o.def.upfrontCost)}, pays $${fmt(o.def.payoutPerPoint)}/pt + $${fmt(o.def.completionBonus)} bonus.</small></div>`;
+        <small>${fmt(o.def.sizePoints)} · $${fmt(o.def.upfrontCost)} · $${fmt(o.def.payoutPerPoint)}/pt + $${fmt(o.def.completionBonus)}</small></div>`;
     })
     .join("");
 }
@@ -327,10 +327,10 @@ export function renderTimeControls(paused: boolean, speed: number, options: read
 
 export function renderStall(stalled: boolean, deliveryFrozen = false): string {
   if (stalled) {
-    return `<div class="stall">The factory is stalled: no work in the pipeline and nothing affordable. Income may still accrue; otherwise this factory is dead.</div>`;
+    return `<div class="stall">Stalled.</div>`;
   }
   if (deliveryFrozen) {
-    return `<div class="stall">The factory is insolvent: delivery is frozen at $0. Payroll still fails; income may still accrue.</div>`;
+    return `<div class="stall">Insolvent.</div>`;
   }
   return "";
 }
@@ -373,8 +373,8 @@ export function renderChoicesScaffold(pending: readonly PendingChoice[], challen
   return `<div class="panel choice-interrupt" role="alert" aria-label="Decision needed"><h3>Decision needed</h3>${blocks}</div>`;
 }
 
-/** while paused the day clock is frozen, so "N days left" is a fake countdown. */
+/** while paused the day clock is frozen, so "Nd" is a fake countdown. */
 export function renderChoiceCountdown(pc: PendingChoice, day: number, paused = false): string {
   if (paused) return "";
-  return `(${pc.expiresDay - day} days left)`;
+  return `(${pc.expiresDay - day}d)`;
 }

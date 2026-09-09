@@ -19,7 +19,6 @@ import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from
 import { startJson, decisionsJson, projectsJson, loadShippedContent } from "../engine/loadShippedContent";
 import type { GameContent, GameState } from "../engine/types";
 import type { Speed } from "./tickDriver";
-import { USERS_LOOP_CAPTION } from "./usersLoop";
 
 // challenges default to [] so ticking is free of random challenge rolls: the
 // only thing moving across ticks is the deterministic stock/flow simulation.
@@ -157,11 +156,12 @@ describe("appView delivery-column stats layout", () => {
     expect(under.closest(".panel")).toBeNull();
 
     expect(deliveryCol.querySelector('[aria-label="User loop"]')).toBeNull();
-    expect(loops.textContent).toContain(USERS_LOOP_CAPTION);
+    expect(loops.textContent).not.toMatch(/until launch/i);
     expect(h.root.querySelector('[data-zoom="inProgress"]')).not.toBeNull();
     expect(h.root.querySelector('[data-zoom="done"]')).not.toBeNull();
     expect(h.root.querySelector('[data-section="stage-zoom"]')!.innerHTML).toBe("");
-    expect(h.root.querySelector(".delivery-inspect-hint")!.textContent).toMatch(/▾/);
+    expect(h.root.querySelector(".delivery-inspect-hint")).toBeNull();
+    expect(h.root.textContent).not.toMatch(/Click . on a stage to inspect/i);
   });
 
   it("keeps delivery-stats nodes stable across ticks that only change values", () => {
@@ -405,14 +405,14 @@ describe("appView node identity across renders", () => {
     const h = mount();
     const before = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
     expect(before).toBeTruthy();
-    const remainingBefore = h.root.textContent!.match(/Launch beta: [\d,.]+ points left/)![0];
+    const remainingBefore = h.root.textContent!.match(/Launch beta: [\d,.]+ ·/)![0];
     for (let i = 0; i < 10; i++) {
       h.engine.tick();
       h.view.render();
       expect(h.root.querySelector('[data-project="gig-bugfix"]')).toBe(before);
     }
     // The volatile in-flight line beside the button did update.
-    const remainingAfter = h.root.textContent!.match(/Launch beta: [\d,.]+ points left/)![0];
+    const remainingAfter = h.root.textContent!.match(/Launch beta: [\d,.]+ ·/)![0];
     expect(remainingAfter).not.toBe(remainingBefore);
   });
 
@@ -443,7 +443,7 @@ describe("appView node identity across renders", () => {
     expect(h.engine.getState().paused).toBe(false);
     const before = h.root.querySelector<HTMLElement>('[data-choice="fixture-choice"][data-option="pay"]')!;
     expect(before).toBeTruthy();
-    expect(h.root.textContent).toContain("(3 days left)");
+    expect(h.root.textContent).toContain("(3d)");
 
     // Advance the day directly rather than ticking, so the countdown is the
     // only thing that moves in this region.
@@ -451,8 +451,8 @@ describe("appView node identity across renders", () => {
     h.view.render();
 
     expect(h.root.querySelector('[data-choice="fixture-choice"][data-option="pay"]')).toBe(before);
-    expect(h.root.textContent).toContain("(2 days left)");
-    expect(h.root.textContent).not.toContain("(3 days left)");
+    expect(h.root.textContent).toContain("(2d)");
+    expect(h.root.textContent).not.toContain("(3d)");
   });
 
   it("keeps the same Reset button node across ticks", () => {
@@ -552,9 +552,7 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const side = h.root.querySelector(".side")!;
     const headings = Array.from(side.querySelectorAll("h3")).map((el) => el.textContent);
     expect(headings).toEqual(["Events", "Owned"]);
-    expect(side.querySelector('[data-section="owned-list"]')!.textContent).toContain(
-      "Nothing yet. You are a solo dev.",
-    );
+    expect(side.querySelector('[data-section="owned-list"]')!.textContent!.trim()).toBe("");
     const main = h.root.querySelector(".main")!;
     const mainHeadings = Array.from(main.querySelectorAll("h3")).map((el) => el.textContent);
     expect(mainHeadings[0]).toBe("Alter the system");
@@ -570,12 +568,12 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const h = mount({ content, restored });
     h.root.querySelector<HTMLElement>('[data-choice="fixture-choice"]')!.click();
     expect(h.root.querySelector("[data-choice]")).toBeNull();
-    expect(h.root.textContent).not.toContain("days left");
+    expect(h.root.textContent).not.toMatch(/\(\d+d\)/);
   });
 
   it("shows a new log line as soon as one is appended to state", () => {
     const h = mount();
-    expect(h.root.querySelector(".log")!.textContent).toContain("Quiet so far.");
+    expect(h.root.querySelector(".log")!.textContent).not.toContain("Quiet so far.");
     h.state.log.push({ day: 3, message: "a thing happened" });
     h.view.render();
     expect(h.root.querySelector(".log")!.textContent).toContain("Day 3: a thing happened");
@@ -759,7 +757,7 @@ describe("appView click delegation on the stable root", () => {
     state.stocks.budget = 0;
     h.view.render();
     expect(h.root.querySelector(".stall")?.textContent).toMatch(/insolvent/i);
-    expect(h.root.querySelector(".stall")?.textContent).toMatch(/frozen/i);
+    expect(h.root.querySelector(".stall")?.textContent).not.toMatch(/frozen/i);
   });
 
   it("reports an engine error through onError instead of throwing", () => {
@@ -847,6 +845,7 @@ describe("appView Decision-needed interrupt", () => {
     const h = mount({ content, restored });
     expect(h.engine.getState().paused).toBe(true);
     expect(h.root.querySelector(".choice-interrupt")).not.toBeNull();
+    expect(h.root.textContent).not.toMatch(/\(\d+d\)/);
     expect(h.root.textContent).not.toContain("days left");
     expect(h.root.textContent).not.toContain("days to respond");
   });
@@ -859,7 +858,7 @@ describe("appView Decision-needed interrupt", () => {
     restored.pendingChoices = [{ challengeId: "fixture-choice", expiresDay: 8 }];
     const h = mount({ content, restored });
     expect(h.engine.getState().paused).toBe(false);
-    expect(h.root.textContent).toContain("days left");
+    expect(h.root.textContent).toContain("(3d)");
   });
 
   it("resolves a choice from the interrupt surface and clears it", () => {
