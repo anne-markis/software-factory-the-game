@@ -1,15 +1,12 @@
 import type { GameContent, GameState } from "../engine/types";
 import { stockDragMultiplier } from "../engine/modifiers";
 
-export const USERS_LOOP_CAPTION =
-  "Users stay 0 until launch; then they grow, pay if you monetize, and slow delivery above the free band.";
-
 const BOX_W = 150;
 const BOX_H = 60;
 const GAP = 60;
 const Y = 30;
 const VIEW_W = 860;
-const VIEW_H = 188;
+const VIEW_H = 160;
 
 const DEFS = `<defs><marker id="users-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`;
 
@@ -44,16 +41,12 @@ export function usersLoopSvg(state: Readonly<GameState>, _content: GameContent):
   const xUsers = x0 + BOX_W + GAP;
   const xPay = x0 + 2 * (BOX_W + GAP);
 
-  const acquire = `acquire ${state.userAcquireFlow.toFixed(1)}/day`;
+  const acquire = `${state.userAcquireFlow.toFixed(1)}/day`;
   const churn = `${state.userChurnFlow.toFixed(1)}/day`;
   const income = `$${state.userIncomeFlow.toFixed(1)}/day`;
 
   const drag = usersDrag(state);
-  const dragLabel = drag
-    ? drag.drag > 0
-      ? `support drag −${(drag.drag * 100).toFixed(0)}% delivery (free band ${drag.freeBand})`
-      : `support drag 0% (free band ${drag.freeBand})`
-    : "";
+  const dragLabel = drag && drag.drag > 0 ? `−${(drag.drag * 100).toFixed(0)}%` : "";
 
   // Balancing leak under the Users stock — same dashed U as Delivery's debt regen.
   const loopY = Y + BOX_H + 40;
@@ -64,7 +57,7 @@ export function usersLoopSvg(state: Readonly<GameState>, _content: GameContent):
     <text x="${xUsers + BOX_W / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11" fill="currentColor">churn ${churn}</text>`;
 
   const dragLine = dragLabel
-    ? `<text x="10" y="${VIEW_H - 28}" font-size="11" fill="currentColor">${dragLabel}</text>`
+    ? `<text x="10" y="${VIEW_H - 10}" font-size="11" fill="currentColor">${dragLabel}</text>`
     : "";
 
   return `
@@ -77,6 +70,5 @@ export function usersLoopSvg(state: Readonly<GameState>, _content: GameContent):
       ${box(xPay, "User income", income.replace("/day", ""))}
       ${churnArc}
       ${dragLine}
-      <text x="10" y="${VIEW_H - 10}" font-size="12" fill="currentColor">${USERS_LOOP_CAPTION}</text>
     </svg>`;
 }

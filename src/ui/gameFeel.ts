@@ -45,9 +45,8 @@ export interface StatView {
 export function cockpitStatViews(state: Readonly<GameState>, content: GameContent): StatView[] {
   const runway = budgetRunwayDays(state, content);
   const low = runway !== null && runway <= RUNWAY_WARN_DAYS;
-  const dayLabel = runway === 1 ? "1 day" : `${runway} days`;
   const budgetValue =
-    runway === null ? `$${fmt(state.stocks.budget)}` : `$${fmt(state.stocks.budget)} (${dayLabel})`;
+    runway === null ? `$${fmt(state.stocks.budget)}` : `$${fmt(state.stocks.budget)} (${runway}d)`;
   return [
     { stat: "day", label: "Day", value: String(state.day), widthClass: "v-day", material: false },
     // ADR 0009: cockpit Backlog is unshipped work, not the Ready-stage stock.

@@ -22,10 +22,9 @@ export function projectEtaDays(remaining: number, pointsPerDay: number, inFlight
   return Math.ceil(remaining / slice);
 }
 
-/** Player-facing ETA fragment: "~N days at current rate" or "stalled". */
+/** Player-facing ETA fragment: "~Nd" or "stalled". */
 export function formatProjectEta(remaining: number, pointsPerDay: number, inFlight = 1): string {
   const days = projectEtaDays(remaining, pointsPerDay, inFlight);
   if (days === null) return "stalled";
-  const unit = days === 1 ? "day" : "days";
-  return `~${fmt(days)} ${unit} at current rate`;
+  return `~${fmt(days)}d`;
 }
