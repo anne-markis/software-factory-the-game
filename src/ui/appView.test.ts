@@ -132,8 +132,7 @@ describe("appView delivery-column stats layout", () => {
     const under = deliveryCol.querySelector(".delivery-stats")!;
     expect(under).toBeTruthy();
     // Stats sit after the full-width Delivery loop (wrapped in a data-section
-    // host for in-place flash sync). User loop moved beside Progress so six
-    // Delivery boxes can use the full cockpit width.
+    // host for in-place flash sync). User loop sits on its own second row.
     const panels = deliveryCol.querySelectorAll(":scope > .panel");
     expect(panels).toHaveLength(1);
     const statsHost = panels[0]!.nextElementSibling!;
@@ -141,24 +140,28 @@ describe("appView delivery-column stats layout", () => {
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
 
-    // Progress loop remains a sibling of the delivery column, not a parent of those stats.
+    // User loop sits on its own second row; contributor zooms hang under Delivery.
     const loops = h.root.querySelector(".loops")!;
     expect(loops.contains(deliveryCol)).toBe(true);
-    const pair = loops.querySelector(".loops-pair")!;
-    expect(pair).toBeTruthy();
-    expect(pair.contains(h.root.querySelector('[aria-label="User loop"]')!)).toBe(true);
-    expect(pair.contains(h.root.querySelector('[data-section="progress-loop"]')!)).toBe(true);
+    expect(loops.querySelector(".loops-pair")).toBeNull();
+    expect(h.root.querySelector('[data-section="progress-loop"]')).toBeNull();
+    expect(loops.contains(h.root.querySelector('[aria-label="User loop"]')!)).toBe(true);
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toEqual(["Delivery loop", "User loop", "Progress loop"]);
+    expect(headings).toEqual(["Delivery loop", "User loop"]);
     expect(headings).not.toContain("Delivery system");
     expect(headings).not.toContain("Progress system");
+    expect(headings).not.toContain("Progress loop");
     expect(headings).not.toContain("Users system");
     expect(headings).not.toContain("User system");
     expect(h.root.textContent).toContain("Alter the system");
     expect(under.closest(".panel")).toBeNull();
 
     expect(deliveryCol.querySelector('[aria-label="User loop"]')).toBeNull();
-    expect(pair.textContent).toContain(USERS_LOOP_CAPTION);
+    expect(loops.textContent).toContain(USERS_LOOP_CAPTION);
+    expect(h.root.querySelector('[data-zoom="inProgress"]')).not.toBeNull();
+    expect(h.root.querySelector('[data-zoom="done"]')).not.toBeNull();
+    expect(h.root.querySelector('[data-section="stage-zoom"]')!.innerHTML).toBe("");
+    expect(h.root.querySelector(".delivery-inspect-hint")!.textContent).toMatch(/▾/);
   });
 
   it("keeps delivery-stats nodes stable across ticks that only change values", () => {
@@ -177,6 +180,60 @@ describe("appView delivery-column stats layout", () => {
     expect(after.querySelector(".stat-label")!.textContent).toBe("In Progress");
     expect(h.root.querySelector(".delivery-column .delivery-stats")).toBe(after);
     expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
+  });
+});
+
+describe("appView stage-zoom carets", () => {
+  it("opens the In Progress drawer from the caret, not from the stage box", () => {
+    const h = mount();
+    const ipBox = h.root.querySelector('[data-stage="inProgress"]')!;
+    ipBox.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(h.root.querySelector('[data-section="stage-zoom"]')!.innerHTML).toBe("");
+
+    const caret = h.root.querySelector<HTMLButtonElement>('[data-zoom="inProgress"]')!;
+    const actionsBefore = h.actions;
+    caret.click();
+    const zoom = h.root.querySelector('[data-section="stage-zoom"]')!;
+    expect(zoom.textContent).toContain("Cycle speed");
+    expect(zoom.textContent).toContain("Leak size");
+    expect(caret.getAttribute("aria-expanded")).toBe("true");
+    expect(h.actions).toBe(actionsBefore);
+
+    caret.click();
+    expect(h.root.querySelector('[data-section="stage-zoom"]')!.innerHTML).toBe("");
+    expect(caret.getAttribute("aria-expanded")).toBe("false");
+    expect(h.actions).toBe(actionsBefore);
+  });
+
+  it("switches to the Done drawer and keeps the caret node across ticks", () => {
+    const h = mount();
+    const ipCaret = h.root.querySelector<HTMLButtonElement>('[data-zoom="inProgress"]')!;
+    const doneCaret = h.root.querySelector<HTMLButtonElement>('[data-zoom="done"]')!;
+    ipCaret.click();
+    doneCaret.click();
+    expect(h.root.querySelector('[data-section="stage-zoom"]')!.textContent).toContain("Deploy speed");
+    expect(h.root.querySelector('[data-section="stage-zoom"]')!.textContent).toContain("Why bound");
+    expect(ipCaret.getAttribute("aria-expanded")).toBe("false");
+    expect(doneCaret.getAttribute("aria-expanded")).toBe("true");
+
+    for (let i = 0; i < 5; i++) {
+      h.engine.tick();
+      h.view.render();
+    }
+    expect(h.root.querySelector('[data-zoom="done"]')).toBe(doneCaret);
+    expect(h.root.querySelector('[data-zoom="inProgress"]')).toBe(ipCaret);
+    expect(doneCaret.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("drops the Done caret and closes that drawer once continuous deploy is owned", () => {
+    const h = mount();
+    h.root.querySelector<HTMLButtonElement>('[data-zoom="done"]')!.click();
+    expect(h.root.querySelector('[data-section="stage-zoom"]')!.textContent).toContain("Deploy speed");
+    h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="ci-cd"]')!.click();
+    expect(h.root.querySelector('[data-zoom="done"]')).toBeNull();
+    expect(h.root.querySelector('[data-zoom="inProgress"]')).not.toBeNull();
+    expect(h.root.querySelector('[data-section="stage-zoom"]')!.innerHTML).toBe("");
   });
 });
 

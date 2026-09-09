@@ -1,7 +1,9 @@
 # Mock: merge Delivery with the Progress zoom
 
-Open [`index.html`](index.html) in a browser. Nothing here is wired to
-the engine; the live cockpit is unchanged.
+Open [`index.html`](index.html) in a browser. These mocks are the design
+history. The live cockpit ships **A3 + T3**: boxed cycle on In Progress,
+caret-only full-width drawer, User loop on its own row, no sibling
+Progress panel.
 
 ## Round 1 — three directions
 
@@ -15,8 +17,9 @@ stages.
 
 ## Round 3 — A3 click-to-zoom
 
-The strip starts **collapsed**. Click a zoomable stage (caret) to open
-it. In Progress and Done both have zooms so the pattern can grow.
+**T3 (caret only)** was the pick: the stage box is for watching; only ▾
+opens a full-width drawer. Collapsed by default. One drawer at a time.
+In Progress and Done both zoom so Ready/Shipped can reuse the pattern.
 
 | | T1 · Hang | T2 · Drawer | T3 · Caret only | T4 · Peek chip |
 | --- | --- | --- | --- | --- |

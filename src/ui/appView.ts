@@ -35,9 +35,10 @@ import {
   renderBuildStamp,
 } from "./render";
 import { getBuildInfo } from "./buildInfo";
-import { loopDiagramSvg } from "./loopDiagram";
+import { loopDiagramSvg, renderDeliveryCarets, syncZoomCarets, type ZoomStage } from "./loopDiagram";
 import { usersLoopSvg } from "./usersLoop";
-import { inProgressPanelSvg } from "./inProgressPanel";
+import { renderStageZoom } from "./inProgressPanel";
+import { continuousDeployActive } from "../engine/continuousDeploy";
 import { createRegion, SECTION_ATTR } from "./domPatch";
 import { SPEED_OPTIONS, type Speed } from "./tickDriver";
 import {
@@ -84,17 +85,20 @@ export interface AppView {
 // unlike before -- are not churned by the driver at all. Section containers
 // are empty until the first render patches them.
 //
-  // Delivery loop is full width (six boxes); User + Progress share a second
-  // row. Delivery-stats stay under Delivery so material stock numbers can
+  // Delivery loop is full width (six boxes). User loop sits on a second
+  // row by itself; In Progress / Done contributor zooms hang as a drawer
+  // under Delivery (caret-only, collapsed until clicked).
+  // Delivery-stats stay under Delivery so material stock numbers can
   // update in place (flash) without rebuilding the SVG. Gamble reveal
   // is its own ephemeral section between stats and the loops.
 // Choices live in glanceable chrome (not the scrollable side rail)
 // so a Decision-needed interrupt stays reachable while shopping at speed.
 const STATS = "stats";
 const DELIVERY_LOOP = "delivery-loop";
+const DELIVERY_CARETS = "delivery-carets";
+const STAGE_ZOOM = "stage-zoom";
 const DELIVERY_STATS = "delivery-stats";
 const USERS_LOOP = "users-loop";
-const PROGRESS_LOOP = "progress-loop";
 const GAMBLE_REVEAL = "gamble-reveal";
 const STALL = "stall";
 const TIME_CONTROLS = "time-controls";
@@ -122,13 +126,18 @@ function pageScaffold(): string {
     <div ${SECTION_ATTR}="${CHOICES}"></div>
     <div class="loops">
       <div class="delivery-column">
-        <div class="panel"><h3>Delivery loop</h3><div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div></div>
+        <div class="panel">
+          <h3>Delivery loop</h3>
+          <div class="delivery-spine-wrap">
+            <div ${SECTION_ATTR}="${DELIVERY_LOOP}"></div>
+            <div ${SECTION_ATTR}="${DELIVERY_CARETS}"></div>
+          </div>
+          <p class="delivery-inspect-hint">Click ▾ on a stage to inspect it.</p>
+          <div ${SECTION_ATTR}="${STAGE_ZOOM}"></div>
+        </div>
         <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>
       </div>
-      <div class="loops-pair">
-        <div class="panel"><h3>User loop</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
-        <div ${SECTION_ATTR}="${PROGRESS_LOOP}"></div>
-      </div>
+      <div class="panel"><h3>User loop</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
     </div>
     <div ${SECTION_ATTR}="${STALL}"></div>
     <div class="cols">
@@ -152,6 +161,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
 
   const page = createRegion(root);
   page.setScaffold(pageScaffold());
+  let openZoom: ZoomStage | null = null;
   // Nested regions: one panel that holds both a volatile block and a stable,
   // button-carrying block. The panel chrome around them is itself a scaffold,
   // so the containers inside keep stable identity too.
@@ -232,8 +242,14 @@ export function mountAppView(deps: AppViewDeps): AppView {
     syncStatRow(page.section(STATS)!, "stats", cockpitStatViews(state, content), flash);
     syncStatRow(page.section(DELIVERY_STATS)!, "delivery-stats", deliveryStatViews(state), flash);
     page.patch(DELIVERY_LOOP, loopDiagramSvg(state, content));
+    page.patch(DELIVERY_CARETS, renderDeliveryCarets(state, content));
+    if (openZoom === "done" && continuousDeployActive(state, content)) {
+      openZoom = null;
+    }
+    const caretsHost = page.section(DELIVERY_CARETS);
+    if (caretsHost) syncZoomCarets(caretsHost, openZoom);
+    page.patch(STAGE_ZOOM, renderStageZoom(state, content, openZoom));
     page.patch(USERS_LOOP, usersLoopSvg(state, content));
-    page.patch(PROGRESS_LOOP, inProgressPanelSvg(state, content));
     page.patch(GAMBLE_REVEAL, renderGambleReveal(gambleReveal));
     page.patch(STALL, renderStall(engine.isStalled(), engine.isDeliveryFrozen()));
     page.patch(TIME_CONTROLS, renderTimeControls(state.paused, deps.getSpeed(), SPEED_OPTIONS));
@@ -265,6 +281,16 @@ export function mountAppView(deps: AppViewDeps): AppView {
     if (target.id === "pause") {
       togglePause();
       return; // togglePause already re-rendered and saved
+    } else if (target.closest("[data-zoom]")) {
+      // Caret-only inspect: the stage box itself is not a hit target (T3).
+      // View preference, not game state — do not save.
+      const el = target.closest<HTMLElement>("[data-zoom]")!;
+      const next = el.dataset.zoom;
+      if (next === "inProgress" || next === "done") {
+        openZoom = openZoom === next ? null : next;
+        render();
+      }
+      return;
     } else if (target.closest("[data-buy]")) {
       // Prefer the button itself: a nested click target would miss data-buy.
       const buyEl = target.closest<HTMLElement>("[data-buy]") ?? target;
