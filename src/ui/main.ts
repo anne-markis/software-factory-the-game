@@ -2,6 +2,7 @@ import { loadShippedContent } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 import { mountAppView } from "./appView";
 import { createPlayerEngine } from "./playerEngine";
+import { createResetGame } from "./resetGame";
 import { saveGame, loadGame, clearSave, saveSpeed, loadSpeed } from "./storage";
 import { advance, type Speed } from "./tickDriver";
 import { installDevConsole } from "./devConsole";
@@ -17,6 +18,23 @@ const app = document.getElementById("app")!;
 // lives in its own localStorage key and its own variable here, never in
 // GameState or content, so the engine purity test stays green.
 let speed: Speed = loadSpeed();
+
+// Confirm-then-wipe. Halt + persist-gate before clearSave so a queued driver
+// frame cannot write the live factory back over the empty slot before reload.
+const resetGame = createResetGame({
+  confirm: () => confirm("Wipe this factory and start over?"),
+  halt: () => {
+    engine.pause();
+  },
+  clearSave,
+  reload: () => {
+    location.reload();
+  },
+});
+
+function persist(): void {
+  resetGame.persist(() => saveGame(engine.getState()));
+}
 
 // The view owns the DOM: it writes the page scaffold once and then patches
 // only the regions whose html actually changed on each render, so interactive
@@ -35,13 +53,8 @@ const view = mountAppView({
   // Event-driven save: without this, paused/purchase/etc. state only reaches
   // storage on the 10-day autosave tick, so e.g. pausing then reloading before
   // the next autosave silently un-pauses the game. Save on every real action.
-  onAction: () => saveGame(engine.getState()),
-  onReset: () => {
-    if (confirm("Wipe this factory and start over?")) {
-      clearSave();
-      location.reload();
-    }
-  },
+  onAction: persist,
+  onReset: () => resetGame.onReset(),
   onError: (message) => alert(message),
 });
 
@@ -51,7 +64,7 @@ const view = mountAppView({
 const uninstallDevConsole = installDevConsole({
   engine,
   render: () => view.render(),
-  save: () => saveGame(engine.getState()),
+  save: persist,
 });
 
 // Fixed-timestep driver (design doc section 4): a 100ms wall-clock interval
@@ -84,7 +97,7 @@ const intervalId = setInterval(() => {
   // and skip a save the way checking only once per frame would.
   for (let i = 0; i < result.ticks; i++) {
     engine.tick();
-    if (engine.getState().day % 10 === 0) saveGame(engine.getState());
+    if (engine.getState().day % 10 === 0) persist();
   }
 
   if (result.ticks > 0) view.render();
