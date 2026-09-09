@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mocks — inline Delivery + Progress</title>
+    <title>Mocks — A3 click-to-zoom</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -12,7 +12,6 @@
         --fg-dim: #666;
         --border: #999;
         --accent-amber: #a60;
-        --accent-red: #c00;
         --desc: #444;
         --note-bg: #f6f6f6;
       }
@@ -23,7 +22,6 @@
           --fg-dim: #aaa;
           --border: #888;
           --accent-amber: #e0a030;
-          --accent-red: #ff6b6b;
           --desc: #c2c2c2;
           --note-bg: #242424;
         }
@@ -45,10 +43,10 @@
         display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem;
         margin: 1rem 0 1.5rem; padding: 0.5rem 0;
         border-bottom: 1px solid var(--border);
-        position: sticky; top: 0; background: var(--bg); z-index: 2;
+        position: sticky; top: 0; background: var(--bg); z-index: 3;
       }
       .toc a { color: var(--fg); }
-      .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 0.75rem; }
+      .panel { border: 1px solid var(--border); padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.75rem; }
       .stats {
         display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 0.5rem 1rem; font-size: 0.95rem; margin-bottom: 0.75rem;
@@ -65,25 +63,135 @@
       th, td { border: 1px solid var(--border); padding: 0.4rem 0.55rem; text-align: left; vertical-align: top; }
       th { color: var(--fg); }
       td { color: var(--desc); }
-      .caption { font-size: 0.85rem; color: var(--fg-dim); margin: 0 0 0.75rem; }
+      .caption { font-size: 0.85rem; color: var(--fg-dim); margin: 0 0 0.6rem; }
+      .try { color: var(--accent-amber); font-size: 0.85rem; margin: 0 0 0.5rem; }
+
+      /* Delivery grid: 6 boxes + 5 arrows */
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr;
+        column-gap: 0.15rem;
+        row-gap: 0.35rem;
+        align-items: start;
+      }
+      .stage {
+        grid-row: 1;
+        border: 1px solid var(--border);
+        min-height: 5.6rem;
+        padding: 0.45rem 0.3rem 0.4rem;
+        text-align: center;
+        background: var(--bg);
+        color: inherit;
+        font: inherit;
+        position: relative;
+      }
+      .stage-name { display: block; font-size: 1rem; }
+      .stage-value { display: block; font-size: 1.15rem; font-weight: bold; margin-top: 0.2rem; }
+      .stage-rate { display: block; font-size: 0.75rem; margin-top: 0.15rem; color: var(--fg); }
+      .stage-cue { display: block; font-size: 0.7rem; font-style: italic; margin-top: 0.2rem; }
+      .cycle {
+        display: block; margin: 0.25rem auto 0; width: 44px; height: 18px;
+      }
+      .flow {
+        grid-row: 1;
+        align-self: center;
+        text-align: center;
+        font-size: 0.7rem;
+        color: var(--fg);
+        padding-top: 0.2rem;
+      }
+      .flow .rate { display: block; margin-bottom: 0.15rem; }
+      .flow .arrow { display: block; }
+      .s-ideas { grid-column: 1; }
+      .f-1 { grid-column: 2; }
+      .s-plan { grid-column: 3; }
+      .f-2 { grid-column: 4; }
+      .s-ready { grid-column: 5; }
+      .f-3 { grid-column: 6; }
+      .s-ip { grid-column: 7; }
+      .f-4 { grid-column: 8; }
+      .s-done { grid-column: 9; }
+      .f-5 { grid-column: 10; }
+      .s-shipped { grid-column: 11; }
+      .regen {
+        grid-column: 5 / 12;
+        grid-row: 2;
+        border-top: 1px dashed var(--border);
+        text-align: center;
+        font-size: 0.75rem;
+        padding: 0.35rem 0 0.15rem;
+        color: var(--fg);
+      }
+      .zoomable { cursor: pointer; }
+      .zoomable:hover { outline: 1px dashed var(--border); }
+      .zoomable.open { border-width: 2px; }
+      .caret {
+        position: absolute; top: 0.15rem; right: 0.3rem;
+        font-size: 0.75rem; color: var(--fg-dim); line-height: 1;
+      }
+      .zoomable.open .caret { color: var(--fg); }
+      button.caret-hit {
+        position: absolute; top: 0; right: 0;
+        width: 1.6rem; height: 1.6rem;
+        border: 0; background: transparent; color: var(--fg-dim);
+        font: inherit; font-size: 0.85rem; cursor: pointer;
+      }
+      button.caret-hit:hover { color: var(--fg); }
+      .stage.open button.caret-hit { color: var(--fg); }
+      .peek {
+        display: block;
+        margin: 0.3rem auto 0;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--fg-dim);
+        font: inherit;
+        font-size: 0.7rem;
+        padding: 0.1rem 0.35rem;
+        cursor: pointer;
+      }
+      .peek:hover, .stage.open .peek { color: var(--fg); }
+      .zoom {
+        grid-row: 3;
+        border: 1px dashed var(--border);
+        padding: 0.55rem 0.7rem 0.6rem;
+        font-size: 0.8rem;
+      }
+      .zoom[hidden] { display: none !important; }
+      .zoom-ip { grid-column: 5 / 10; }
+      .zoom-done { grid-column: 7 / 12; }
+      .zoom-full { grid-column: 1 / 12; }
+      .zoom-head { font-weight: bold; margin-bottom: 0.35rem; }
+      .zoom-cols {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem 1rem;
+      }
+      .zoom-cols h4 { margin: 0 0 0.25rem; font-size: 0.8rem; }
+      .zoom-cols p { margin: 0 0 0.15rem; color: var(--fg); font-size: 0.8rem; }
+      .watch-caption { grid-column: 1 / 12; grid-row: 4; font-size: 0.8rem; color: var(--fg); margin-top: 0.25rem; }
+      @media (max-width: 900px) {
+        .grid { grid-template-columns: 1fr; }
+        .stage, .flow, .regen, .zoom, .watch-caption { grid-column: 1 / -1 !important; grid-row: auto; }
+        .flow { text-align: left; padding: 0.15rem 0; }
+      }
     </style>
   </head>
   <body>
-    <p class="mock-chrome">Software Factory · static mocks · not wired to the engine</p>
-    <h1>Inline variants — In Progress <em>is</em> the inner loop</h1>
+    <p class="mock-chrome">Software Factory · static mocks · click the diagrams · not wired to the engine</p>
+    <h1>A3 click-to-zoom — the strip stays hidden until you ask</h1>
     <p class="lede">
-      You liked A: drop the Progress panel and put the cycle on the Delivery
-      spine. These four sketches keep that rule and only change how the
-      cycle is drawn and where Cycle speed / Friction / Leak sit. Same
-      mid-game numbers. User loop stays full-width under Delivery in every
-      variant (shown once, after A1). B (callout) and C (strip) are parked.
+      A3 (boxed cycle) stays the spine: six boxes, a small cycle inside
+      In Progress, one rework leak on the Shipped → Ready U. The contributor
+      strip is no longer always on. Zoomable stages (In Progress, Done) carry
+      a caret so later Ready / Shipped zooms can use the same move. Try each
+      variant — they start collapsed.
     </p>
 
     <nav class="toc">
-      <a href="#a1">A1 · Long hang</a>
-      <a href="#a2">A2 · Cluster</a>
-      <a href="#a3">A3 · Boxed cycle</a>
-      <a href="#a4">A4 · Tall orbit</a>
+      <a href="#t1">T1 · Hang</a>
+      <a href="#t2">T2 · Drawer</a>
+      <a href="#t3">T3 · Caret only</a>
+      <a href="#t4">T4 · Peek chip</a>
       <a href="#compare">Compare</a>
     </nav>
 
@@ -94,385 +202,244 @@
       <span class="stat"><span class="stat-label">Points/Day</span> 1.0</span>
     </div>
 
-    <!-- ========== A1 ========== -->
-    <h2 id="a1">A1 · Long hang — the sketch you already saw</h2>
-    <p>Ellipse on the line. Contributor stacks sit at the far left and right with long connectors. Honest, but the lines cross Ideas / Plan / Ready that have nothing to do with cycle speed.</p>
+    <h2 id="t1">T1 · Hang — click the box, panel under that stage</h2>
+    <p>Click In Progress or Done. A dashed panel opens under that stage (wider than the box, still anchored to it). Click again to close; click the other stage to switch. Ideas / Plan / Ready / Shipped have no caret yet.</p>
+    <p class="try">Try: click In Progress, then Done, then Done again.</p>
     <div class="panel">
       <h3>Delivery</h3>
-      <svg viewBox="0 0 1232 348" width="100%" role="img" aria-label="A1 long hang">
-        <defs>
-          <marker id="arr-a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
-        </defs>
-        <g>
-          <rect x="16" y="40" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="91" y="64" text-anchor="middle" font-size="16" fill="currentColor">Ideas</text>
-          <text x="91" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">64</text>
-          <text x="91" y="102" text-anchor="middle" font-size="12" fill="currentColor">0.5/day</text>
-        </g>
-        <line x1="166" y1="75" x2="206" y2="75" stroke="currentColor" marker-end="url(#arr-a1)"/>
-        <g>
-          <rect x="214" y="40" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="289" y="64" text-anchor="middle" font-size="16" fill="currentColor">Plan</text>
-          <text x="289" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">18</text>
-          <text x="289" y="102" text-anchor="middle" font-size="12" fill="currentColor">1.0/day</text>
-        </g>
-        <line x1="364" y1="75" x2="404" y2="75" stroke="currentColor" marker-end="url(#arr-a1)"/>
-        <g>
-          <rect x="412" y="40" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="487" y="64" text-anchor="middle" font-size="16" fill="currentColor">Ready</text>
-          <text x="487" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">180</text>
-        </g>
-        <line x1="562" y1="75" x2="608" y2="75" stroke="currentColor" marker-end="url(#arr-a1)"/>
-        <text x="585" y="67" text-anchor="middle" font-size="11" fill="currentColor">2.0/day</text>
-        <ellipse cx="715" cy="75" rx="105" ry="56" fill="none" stroke="currentColor"/>
-        <line x1="642" y1="32" x2="658" y2="24" stroke="currentColor" stroke-width="2" marker-end="url(#arr-a1)"/>
-        <line x1="790" y1="52" x2="798" y2="68" stroke="currentColor" stroke-width="2" marker-end="url(#arr-a1)"/>
-        <line x1="640" y1="100" x2="624" y2="88" stroke="currentColor" stroke-width="2" marker-end="url(#arr-a1)"/>
-        <text x="715" y="64" text-anchor="middle" font-size="14" fill="currentColor">In Progress</text>
-        <text x="715" y="84" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">24</text>
-        <text x="715" y="102" text-anchor="middle" font-size="11" font-style="italic" fill="currentColor">work cycling</text>
-        <line x1="820" y1="75" x2="860" y2="75" stroke="currentColor" marker-end="url(#arr-a1)"/>
-        <text x="840" y="67" text-anchor="middle" font-size="11" fill="currentColor">3.5/day</text>
-        <g>
-          <rect x="868" y="40" width="150" height="70" fill="none" stroke="currentColor" stroke-width="2.5"/>
-          <text x="943" y="64" text-anchor="middle" font-size="16" fill="currentColor">Done</text>
-          <text x="943" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">8</text>
-          <text x="943" y="126" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">capacity-bound</text>
-        </g>
-        <line x1="1018" y1="75" x2="1058" y2="75" stroke="currentColor" stroke-width="2.5" marker-end="url(#arr-a1)"/>
-        <text x="1038" y="67" text-anchor="middle" font-size="11" fill="currentColor">1.0/day</text>
-        <g>
-          <rect x="1066" y="40" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="1141" y="64" text-anchor="middle" font-size="16" fill="currentColor">Shipped</text>
-          <text x="1141" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">96</text>
-        </g>
-        <path d="M 1141 110 V 158 H 487 V 118" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arr-a1)"/>
-        <text x="814" y="152" text-anchor="middle" font-size="11" fill="currentColor">rework leak x0.25/pt → Ready</text>
-        <text x="16" y="200" font-size="14" font-weight="bold" fill="currentColor">Cycle speed</text>
-        <text x="16" y="218" font-size="12" fill="currentColor">Base 1.0/day</text>
-        <text x="16" y="234" font-size="12" fill="currentColor">Hire basic developer [solid]: +1.5/day</text>
-        <text x="16" y="250" font-size="12" fill="currentColor">Add coding agent: x1.2</text>
-        <line x1="300" y1="226" x2="612" y2="100" stroke="currentColor"/>
-        <text x="16" y="278" font-size="14" font-weight="bold" fill="currentColor">Friction</text>
-        <text x="16" y="296" font-size="12" fill="currentColor">Tech debt drag x0.85</text>
-        <line x1="200" y1="292" x2="630" y2="120" stroke="currentColor" stroke-dasharray="3 3"/>
-        <text x="1000" y="200" font-size="14" font-weight="bold" fill="currentColor">Leak size</text>
-        <text x="1000" y="218" font-size="12" fill="currentColor">Base x0.5</text>
-        <text x="1000" y="234" font-size="12" fill="currentColor">Add test suite: x0.5</text>
-        <line x1="1000" y1="210" x2="980" y2="158" stroke="currentColor" stroke-dasharray="3 3"/>
-        <text x="16" y="334" font-size="12" fill="currentColor">A growing box is the bottleneck. In Progress is the inner cycle: its pace sets throughput; its leak refills Ready.</text>
-      </svg>
-    </div>
-    <div class="panel">
-      <h3>User loop</h3>
-      <p class="caption">Full width under Delivery in every A variant — not repeated below.</p>
-      <svg viewBox="0 0 860 100" width="100%" role="img" aria-label="User loop full width">
-        <defs><marker id="arr-u" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
-        <rect x="175" y="12" width="150" height="50" fill="none" stroke="currentColor"/>
-        <text x="250" y="32" text-anchor="middle" font-size="16" fill="currentColor">Reputation</text>
-        <text x="250" y="50" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">12</text>
-        <line x1="325" y1="37" x2="365" y2="37" stroke="currentColor" marker-end="url(#arr-u)"/>
-        <text x="345" y="30" text-anchor="middle" font-size="11" fill="currentColor">acquire 1.2/day</text>
-        <rect x="373" y="12" width="150" height="50" fill="none" stroke="currentColor"/>
-        <text x="448" y="32" text-anchor="middle" font-size="16" fill="currentColor">Users</text>
-        <text x="448" y="50" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">40</text>
-        <line x1="523" y1="37" x2="563" y2="37" stroke="currentColor" marker-end="url(#arr-u)"/>
-        <text x="543" y="30" text-anchor="middle" font-size="11" fill="currentColor">$2.0/day</text>
-        <rect x="571" y="12" width="150" height="50" fill="none" stroke="currentColor"/>
-        <text x="646" y="32" text-anchor="middle" font-size="16" fill="currentColor">User income</text>
-        <text x="646" y="50" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">$2.0</text>
-        <text x="10" y="90" font-size="12" fill="currentColor">Users stay 0 until launch; then they grow, pay if you monetize, and slow delivery above the free band.</text>
-      </svg>
+      <div class="mock" data-mock="hang"></div>
     </div>
     <div class="notes">
-      <strong>What to notice.</strong> The inner-loop read is clear, and the leak is already unified onto the Shipped → Ready U. The long connectors are the thing to fix.
+      <strong>What to notice.</strong> Collapsed, you only watch the factory line — same as today’s Delivery, plus a cycle glyph and carets. Open, the zoom is still “of this box.” A long hire list will outgrow a hang centered on one column.
     </div>
 
-    <!-- ========== A2 ========== -->
-    <h2 id="a2">A2 · Cluster — same ellipse, short hang</h2>
-    <p>Keep A1’s ellipse on the line. Move Cycle speed under Ready, Friction under the ellipse, Leak size under Done — short connectors only, nothing drawn under Ideas / Plan.</p>
+    <h2 id="t2">T2 · Drawer — click the box, full-width band</h2>
+    <p>Same click-the-stage rule, but the open panel spans the whole spine. The heading names the stage. Better room for contributors, and every future stage zoom is the same shape.</p>
+    <p class="try">Try: click In Progress, then Done — the drawer swaps content, it does not stack.</p>
     <div class="panel">
       <h3>Delivery</h3>
-      <svg viewBox="0 0 1232 318" width="100%" role="img" aria-label="A2 cluster">
-        <defs>
-          <marker id="arr-a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
-        </defs>
-        <g>
-          <rect x="16" y="40" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="91" y="64" text-anchor="middle" font-size="16" fill="currentColor">Ideas</text>
-          <text x="91" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">64</text>
-          <text x="91" y="102" text-anchor="middle" font-size="12" fill="currentColor">0.5/day</text>
-        </g>
-        <line x1="166" y1="75" x2="206" y2="75" stroke="currentColor" marker-end="url(#arr-a2)"/>
-        <g>
-          <rect x="214" y="40" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="289" y="64" text-anchor="middle" font-size="16" fill="currentColor">Plan</text>
-          <text x="289" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">18</text>
-          <text x="289" y="102" text-anchor="middle" font-size="12" fill="currentColor">1.0/day</text>
-        </g>
-        <line x1="364" y1="75" x2="404" y2="75" stroke="currentColor" marker-end="url(#arr-a2)"/>
-        <g>
-          <rect x="412" y="40" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="487" y="64" text-anchor="middle" font-size="16" fill="currentColor">Ready</text>
-          <text x="487" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">180</text>
-        </g>
-        <line x1="562" y1="75" x2="608" y2="75" stroke="currentColor" marker-end="url(#arr-a2)"/>
-        <text x="585" y="67" text-anchor="middle" font-size="11" fill="currentColor">2.0/day</text>
-        <ellipse cx="715" cy="75" rx="105" ry="56" fill="none" stroke="currentColor"/>
-        <line x1="642" y1="32" x2="658" y2="24" stroke="currentColor" stroke-width="2" marker-end="url(#arr-a2)"/>
-        <line x1="790" y1="52" x2="798" y2="68" stroke="currentColor" stroke-width="2" marker-end="url(#arr-a2)"/>
-        <line x1="640" y1="100" x2="624" y2="88" stroke="currentColor" stroke-width="2" marker-end="url(#arr-a2)"/>
-        <text x="715" y="64" text-anchor="middle" font-size="14" fill="currentColor">In Progress</text>
-        <text x="715" y="84" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">24</text>
-        <text x="715" y="102" text-anchor="middle" font-size="11" font-style="italic" fill="currentColor">work cycling</text>
-        <line x1="820" y1="75" x2="860" y2="75" stroke="currentColor" marker-end="url(#arr-a2)"/>
-        <text x="840" y="67" text-anchor="middle" font-size="11" fill="currentColor">3.5/day</text>
-        <g>
-          <rect x="868" y="40" width="150" height="70" fill="none" stroke="currentColor" stroke-width="2.5"/>
-          <text x="943" y="64" text-anchor="middle" font-size="16" fill="currentColor">Done</text>
-          <text x="943" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">8</text>
-          <text x="943" y="126" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">capacity-bound</text>
-        </g>
-        <line x1="1018" y1="75" x2="1058" y2="75" stroke="currentColor" stroke-width="2.5" marker-end="url(#arr-a2)"/>
-        <text x="1038" y="67" text-anchor="middle" font-size="11" fill="currentColor">1.0/day</text>
-        <g>
-          <rect x="1066" y="40" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="1141" y="64" text-anchor="middle" font-size="16" fill="currentColor">Shipped</text>
-          <text x="1141" y="86" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">96</text>
-        </g>
-        <path d="M 1141 110 V 150 H 487 V 118" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arr-a2)"/>
-        <text x="814" y="144" text-anchor="middle" font-size="11" fill="currentColor">rework leak x0.25/pt → Ready</text>
-        <!-- clustered stacks -->
-        <text x="400" y="186" font-size="13" font-weight="bold" fill="currentColor">Cycle speed</text>
-        <text x="400" y="204" font-size="12" fill="currentColor">Base 1.0/day</text>
-        <text x="400" y="220" font-size="12" fill="currentColor">Hire basic developer [solid]: +1.5/day</text>
-        <text x="400" y="236" font-size="12" fill="currentColor">Add coding agent: x1.2</text>
-        <line x1="560" y1="210" x2="620" y2="110" stroke="currentColor"/>
-        <text x="640" y="258" font-size="13" font-weight="bold" fill="currentColor">Friction</text>
-        <text x="640" y="276" font-size="12" fill="currentColor">Tech debt drag x0.85</text>
-        <line x1="715" y1="248" x2="715" y2="131" stroke="currentColor" stroke-dasharray="3 3"/>
-        <text x="900" y="186" font-size="13" font-weight="bold" fill="currentColor">Leak size</text>
-        <text x="900" y="204" font-size="12" fill="currentColor">Base x0.5</text>
-        <text x="900" y="220" font-size="12" fill="currentColor">Add test suite: x0.5</text>
-        <line x1="900" y1="180" x2="860" y2="150" stroke="currentColor" stroke-dasharray="3 3"/>
-        <text x="16" y="306" font-size="12" fill="currentColor">A growing box is the bottleneck. In Progress is the inner cycle: its pace sets throughput; its leak refills Ready.</text>
-      </svg>
+      <div class="mock" data-mock="drawer"></div>
     </div>
     <div class="notes">
-      <strong>What to notice.</strong> Same machine as A1, less visual noise. Mid-game hire lists grow downward under Ready, not across the whole cockpit. Ideas / Plan stay a quiet left-hand discovery/plan pair.
+      <strong>What to notice.</strong> Extensibility is free: a Ready or Shipped zoom is another drawer payload, not a new layout. Cost: the open panel is not visually “under” the box you clicked except for the thicker border and caret.
     </div>
 
-    <!-- ========== A3 ========== -->
-    <h2 id="a3">A3 · Boxed cycle — keep the factory-line grammar</h2>
-    <p>In Progress stays a rectangle like the other stages, so the spine still reads as six boxes. A small cycle lives <em>inside</em> that box. Contributors hang as a strip under that column only — inline, but quieter about nested systems.</p>
+    <h2 id="t3">T3 · Caret only — the box is for watching</h2>
+    <p>The stage box itself is not a button. Only the ▾ in the corner opens the full-width drawer. Clicking the rest of In Progress does nothing. Safer at 5x when you are staring at the loop.</p>
+    <p class="try">Try: click the In Progress numbers (nothing), then the ▾, then Done’s ▾.</p>
     <div class="panel">
       <h3>Delivery</h3>
-      <svg viewBox="0 0 1232 300" width="100%" role="img" aria-label="A3 boxed cycle">
-        <defs>
-          <marker id="arr-a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
-        </defs>
-        <g>
-          <rect x="16" y="24" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="91" y="48" text-anchor="middle" font-size="16" fill="currentColor">Ideas</text>
-          <text x="91" y="70" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">64</text>
-          <text x="91" y="86" text-anchor="middle" font-size="12" fill="currentColor">0.5/day</text>
-        </g>
-        <line x1="166" y1="59" x2="206" y2="59" stroke="currentColor" marker-end="url(#arr-a3)"/>
-        <g>
-          <rect x="214" y="24" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="289" y="48" text-anchor="middle" font-size="16" fill="currentColor">Plan</text>
-          <text x="289" y="70" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">18</text>
-          <text x="289" y="86" text-anchor="middle" font-size="12" fill="currentColor">1.0/day</text>
-        </g>
-        <line x1="364" y1="59" x2="404" y2="59" stroke="currentColor" marker-end="url(#arr-a3)"/>
-        <g>
-          <rect x="412" y="24" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="487" y="48" text-anchor="middle" font-size="16" fill="currentColor">Ready</text>
-          <text x="487" y="70" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">180</text>
-        </g>
-        <line x1="562" y1="59" x2="602" y2="59" stroke="currentColor" marker-end="url(#arr-a3)"/>
-        <text x="586" y="51" text-anchor="middle" font-size="11" fill="currentColor">2.0/day</text>
-        <!-- boxed cycle: same family as other stages, cycle marks inside -->
-        <g>
-          <rect x="610" y="12" width="150" height="94" fill="none" stroke="currentColor"/>
-          <text x="685" y="34" text-anchor="middle" font-size="16" fill="currentColor">In Progress</text>
-          <text x="685" y="56" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">24</text>
-          <ellipse cx="685" cy="78" rx="36" ry="14" fill="none" stroke="currentColor"/>
-          <line x1="658" y1="70" x2="666" y2="66" stroke="currentColor" stroke-width="1.5" marker-end="url(#arr-a3)"/>
-          <line x1="712" y1="78" x2="714" y2="86" stroke="currentColor" stroke-width="1.5" marker-end="url(#arr-a3)"/>
-        </g>
-        <line x1="760" y1="59" x2="800" y2="59" stroke="currentColor" marker-end="url(#arr-a3)"/>
-        <text x="784" y="51" text-anchor="middle" font-size="11" fill="currentColor">3.5/day</text>
-        <g>
-          <rect x="808" y="24" width="150" height="70" fill="none" stroke="currentColor" stroke-width="2.5"/>
-          <text x="883" y="48" text-anchor="middle" font-size="16" fill="currentColor">Done</text>
-          <text x="883" y="70" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">8</text>
-          <text x="883" y="110" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">capacity-bound</text>
-        </g>
-        <line x1="958" y1="59" x2="998" y2="59" stroke="currentColor" stroke-width="2.5" marker-end="url(#arr-a3)"/>
-        <text x="982" y="51" text-anchor="middle" font-size="11" fill="currentColor">1.0/day</text>
-        <g>
-          <rect x="1006" y="24" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="1081" y="48" text-anchor="middle" font-size="16" fill="currentColor">Shipped</text>
-          <text x="1081" y="70" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">96</text>
-        </g>
-        <path d="M 1081 94 V 132 H 487 V 102" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arr-a3)"/>
-        <text x="784" y="126" text-anchor="middle" font-size="11" fill="currentColor">rework leak x0.25/pt → Ready</text>
-        <line x1="685" y1="106" x2="685" y2="158" stroke="currentColor"/>
-        <rect x="380" y="158" width="610" height="100" fill="none" stroke="currentColor" stroke-dasharray="3 3"/>
-        <text x="396" y="178" font-size="13" font-weight="bold" fill="currentColor">Cycle speed</text>
-        <text x="396" y="196" font-size="12" fill="currentColor">Base 1.0/day</text>
-        <text x="396" y="212" font-size="12" fill="currentColor">Hire basic developer [solid]: +1.5/day</text>
-        <text x="396" y="228" font-size="12" fill="currentColor">Add coding agent: x1.2</text>
-        <text x="640" y="178" font-size="13" font-weight="bold" fill="currentColor">Friction</text>
-        <text x="640" y="196" font-size="12" fill="currentColor">Tech debt drag x0.85</text>
-        <text x="820" y="178" font-size="13" font-weight="bold" fill="currentColor">Leak size</text>
-        <text x="820" y="196" font-size="12" fill="currentColor">Base x0.5</text>
-        <text x="820" y="212" font-size="12" fill="currentColor">Add test suite: x0.5</text>
-        <text x="16" y="288" font-size="12" fill="currentColor">A growing box is the bottleneck. The strip is why finish and leak are those numbers.</text>
-      </svg>
+      <div class="mock" data-mock="caret"></div>
     </div>
     <div class="notes">
-      <strong>What to notice.</strong> Closest to today’s Delivery teaching line. The cycle is a glyph, not a place. If the reason you liked A was “the stage <em>is</em> a loop,” this walks that back.
+      <strong>What to notice.</strong> Matches “only visible if a user clicks on something” most literally. The caret is a small target. Pair with the caption, or this variant becomes invisible.
     </div>
 
-    <!-- ========== A4 ========== -->
-    <h2 id="a4">A4 · Tall orbit — the cycle is the protagonist</h2>
-    <p>Make the ellipse taller than the other stages and run the factory line through its equator. Cycle speed and leak sit in the pockets above; friction sits below. Contributors never leave the In Progress column.</p>
+    <h2 id="t4">T4 · Peek chip — name the zoom before it opens</h2>
+    <p>Collapsed boxes that have a zoom show a chip: “3 drivers ▾” / “why bound ▾”. The chip is the hit target; the box stays watch-only. Drawer is full-width, same as T2.</p>
+    <p class="try">Try: click “3 drivers ▾” under In Progress, then “why bound ▾” under Done.</p>
     <div class="panel">
       <h3>Delivery</h3>
-      <svg viewBox="0 0 1280 392" width="100%" role="img" aria-label="A4 tall orbit">
-        <defs>
-          <marker id="arr-a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
-        </defs>
-        <!-- pockets above the ellipse -->
-        <text x="392" y="22" font-size="13" font-weight="bold" fill="currentColor">Cycle speed</text>
-        <text x="392" y="40" font-size="12" fill="currentColor">Base 1.0/day</text>
-        <text x="392" y="56" font-size="12" fill="currentColor">Hire basic developer [solid]: +1.5/day</text>
-        <text x="392" y="72" font-size="12" fill="currentColor">Add coding agent: x1.2</text>
-        <text x="838" y="22" font-size="13" font-weight="bold" fill="currentColor">Leak size</text>
-        <text x="838" y="40" font-size="12" fill="currentColor">Base x0.5</text>
-        <text x="838" y="56" font-size="12" fill="currentColor">Add test suite: x0.5</text>
-        <!-- spine through equator -->
-        <g>
-          <rect x="8" y="128" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="83" y="152" text-anchor="middle" font-size="16" fill="currentColor">Ideas</text>
-          <text x="83" y="174" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">64</text>
-          <text x="83" y="190" text-anchor="middle" font-size="12" fill="currentColor">0.5/day</text>
-        </g>
-        <line x1="158" y1="163" x2="198" y2="163" stroke="currentColor" marker-end="url(#arr-a4)"/>
-        <g>
-          <rect x="206" y="128" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="281" y="152" text-anchor="middle" font-size="16" fill="currentColor">Plan</text>
-          <text x="281" y="174" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">18</text>
-          <text x="281" y="190" text-anchor="middle" font-size="12" fill="currentColor">1.0/day</text>
-        </g>
-        <line x1="356" y1="163" x2="396" y2="163" stroke="currentColor" marker-end="url(#arr-a4)"/>
-        <g>
-          <rect x="404" y="128" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="479" y="152" text-anchor="middle" font-size="16" fill="currentColor">Ready</text>
-          <text x="479" y="174" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">180</text>
-        </g>
-        <line x1="554" y1="163" x2="578" y2="163" stroke="currentColor" marker-end="url(#arr-a4)"/>
-        <text x="566" y="155" text-anchor="middle" font-size="11" fill="currentColor">2.0/day</text>
-        <ellipse cx="700" cy="163" rx="118" ry="92" fill="none" stroke="currentColor"/>
-        <line x1="618" y1="108" x2="632" y2="98" stroke="currentColor" stroke-width="2" marker-end="url(#arr-a4)"/>
-        <line x1="790" y1="128" x2="802" y2="148" stroke="currentColor" stroke-width="2" marker-end="url(#arr-a4)"/>
-        <line x1="612" y1="200" x2="596" y2="188" stroke="currentColor" stroke-width="2" marker-end="url(#arr-a4)"/>
-        <text x="700" y="150" text-anchor="middle" font-size="14" fill="currentColor">In Progress</text>
-        <text x="700" y="172" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">24</text>
-        <text x="700" y="190" text-anchor="middle" font-size="11" font-style="italic" fill="currentColor">work cycling</text>
-        <line x1="392" y1="80" x2="600" y2="120" stroke="currentColor"/>
-        <line x1="838" y1="70" x2="790" y2="100" stroke="currentColor" stroke-dasharray="3 3"/>
-        <line x1="818" y1="163" x2="854" y2="163" stroke="currentColor" marker-end="url(#arr-a4)"/>
-        <text x="836" y="155" text-anchor="middle" font-size="11" fill="currentColor">3.5/day</text>
-        <g>
-          <rect x="862" y="128" width="150" height="70" fill="none" stroke="currentColor" stroke-width="2.5"/>
-          <text x="937" y="152" text-anchor="middle" font-size="16" fill="currentColor">Done</text>
-          <text x="937" y="174" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">8</text>
-          <text x="937" y="214" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">capacity-bound</text>
-        </g>
-        <line x1="1012" y1="163" x2="1052" y2="163" stroke="currentColor" stroke-width="2.5" marker-end="url(#arr-a4)"/>
-        <text x="1032" y="155" text-anchor="middle" font-size="11" fill="currentColor">1.0/day</text>
-        <g>
-          <rect x="1060" y="128" width="150" height="70" fill="none" stroke="currentColor"/>
-          <text x="1135" y="152" text-anchor="middle" font-size="16" fill="currentColor">Shipped</text>
-          <text x="1135" y="174" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">96</text>
-        </g>
-        <path d="M 1135 198 V 268 H 479 V 206" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arr-a4)"/>
-        <text x="807" y="262" text-anchor="middle" font-size="11" fill="currentColor">rework leak x0.25/pt → Ready</text>
-        <text x="392" y="300" font-size="13" font-weight="bold" fill="currentColor">Friction</text>
-        <text x="392" y="318" font-size="12" fill="currentColor">Tech debt drag x0.85</text>
-        <line x1="500" y1="308" x2="620" y2="230" stroke="currentColor" stroke-dasharray="3 3"/>
-        <text x="16" y="378" font-size="12" fill="currentColor">A growing box is the bottleneck. The factory line runs through the inner cycle; its leak refills Ready.</text>
-      </svg>
+      <div class="mock" data-mock="peek"></div>
     </div>
     <div class="notes">
-      <strong>What to notice.</strong> Strongest nested-systems picture of the four — watching the machine means watching the cycle. Ideas / Plan / Ready / Done / Shipped become satellites. Height is the cost; a long hire list still fits in the Cycle speed pocket without crossing the spine.
+      <strong>What to notice.</strong> Best discoverability of the four, and it scales: a later Ready zoom can say “pull drivers ▾” without teaching a new control. Cost: extra chrome on the spine even when collapsed — two chips, still much quieter than today’s always-on Progress panel.
     </div>
 
-    <!-- ========== COMPARE ========== -->
-    <h2 id="compare">Compare A variants</h2>
+    <h2 id="compare">Compare</h2>
     <table>
       <thead>
         <tr>
           <th></th>
-          <th>A1 · Long hang</th>
-          <th>A2 · Cluster</th>
-          <th>A3 · Boxed cycle</th>
-          <th>A4 · Tall orbit</th>
+          <th>T1 · Hang</th>
+          <th>T2 · Drawer</th>
+          <th>T3 · Caret only</th>
+          <th>T4 · Peek chip</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <th>What you liked in A</th>
-          <td>This is that sketch</td>
-          <td>Same ellipse; quieter connectors</td>
-          <td>Keeps “one diagram,” loses “the stage is a loop”</td>
-          <td>The cycle is bigger than the other stages</td>
+          <th>Collapsed watch</th>
+          <td>Six boxes + carets</td>
+          <td>Six boxes + carets</td>
+          <td>Six boxes + carets</td>
+          <td>Six boxes + two chips</td>
         </tr>
         <tr>
-          <th>Factory-line read</th>
-          <td>Broken on purpose (ellipse ≠ box)</td>
-          <td>Same as A1</td>
-          <td>Preserved (six boxes)</td>
-          <td>Line runs through a larger cycle</td>
+          <th>Click what</th>
+          <td>The stage box</td>
+          <td>The stage box</td>
+          <td>The ▾ only</td>
+          <td>The chip only</td>
         </tr>
         <tr>
-          <th>Connector noise</th>
-          <td>High — lines cross Ideas / Plan</td>
-          <td>Low — short hangs around IP</td>
-          <td>None — a strip under the column</td>
-          <td>Low — pockets above / below IP</td>
+          <th>Open panel</th>
+          <td>Under that stage</td>
+          <td>Full-width drawer</td>
+          <td>Full-width drawer</td>
+          <td>Full-width drawer</td>
         </tr>
         <tr>
-          <th>Room for more hires</th>
-          <td>Grows across the cockpit</td>
-          <td>Grows down under Ready</td>
-          <td>Wraps inside the strip</td>
-          <td>Grows in the Cycle speed pocket</td>
+          <th>Other stages</th>
+          <td>Hang recenters; width fights long lists</td>
+          <td>Same drawer, new heading</td>
+          <td>Same as T2</td>
+          <td>New chip copy + same drawer</td>
         </tr>
         <tr>
-          <th>Height</th>
-          <td>Medium</td>
-          <td>Medium</td>
-          <td>Lowest of the four</td>
-          <td>Tallest</td>
+          <th>Misclick while watching</th>
+          <td>Easy (whole box)</td>
+          <td>Easy (whole box)</td>
+          <td>Hard</td>
+          <td>Hard</td>
         </tr>
         <tr>
           <th>Lean</th>
-          <td>Baseline</td>
-          <td>If A1’s only problem was the long lines</td>
-          <td>If the six-box teaching line should survive</td>
-          <td>If the inner loop should dominate the watch</td>
+          <td>If the zoom must stay “of this box”</td>
+          <td>If every stage zoom should be one layout</td>
+          <td>If the spine is for watching, not clicking</td>
+          <td>If collapsed should still advertise the zoom</td>
         </tr>
       </tbody>
     </table>
     <p class="lede">
-      Still not implemented. If A2 or A4 is the one, the live cut is: merge
-      <code>loopDiagram.ts</code> and <code>inProgressPanel.ts</code> into one SVG,
-      drop the Progress section in <code>appView.ts</code>, give User loop the
-      full second row.
+      Still not implemented. A reasonable live cut: A3 spine, collapsed by
+      default, T2 or T4 for the open state (one drawer, one stage at a time),
+      T3’s caret-only hit if whole-box click feels too hot. In Progress and
+      Done ship first; Ready / Shipped reuse the same drawer later.
     </p>
+
+    <script>
+      const CYCLE = `<svg class="cycle" viewBox="0 0 44 18" aria-hidden="true"><ellipse cx="22" cy="9" rx="16" ry="7" fill="none" stroke="currentColor"/><path d="M8 7 L12 5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M36 9 L37 13" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+
+      const ZOOMS = {
+        inProgress: {
+          title: "In Progress zoom",
+          cols: [
+            ["Cycle speed", ["Base 1.0/day", "Hire basic developer [solid]: +1.5/day", "Add coding agent: x1.2"]],
+            ["Friction", ["Tech debt drag x0.85"]],
+            ["Leak size", ["Base x0.5", "Add test suite: x0.5", "Joins the Shipped → Ready U"]],
+          ],
+        },
+        done: {
+          title: "Done zoom",
+          cols: [
+            ["Deploy speed", ["Base 1.0/day"]],
+            ["Why bound", ["Finish 3.5/day in", "Deploy 1.0/day out", "8 pts waiting to ship"]],
+            ["Next lever", ["CI/CD drops this box", "and lets finish ship"]],
+          ],
+        },
+      };
+
+      function zoomHtml(id, spanClass) {
+        const z = ZOOMS[id];
+        const cols = z.cols.map(([h, lines]) =>
+          `<div><h4>${h}</h4>${lines.map((l) => `<p>${l}</p>`).join("")}</div>`
+        ).join("");
+        return `<div class="zoom ${spanClass}" data-for="${id}" hidden><div class="zoom-head">${z.title}</div><div class="zoom-cols">${cols}</div></div>`;
+      }
+
+      function stage(col, id, name, value, extra, zoomable, kind) {
+        const boxHit = zoomable && kind !== "peek" && kind !== "caret";
+        const cls = `stage ${col}${boxHit ? " zoomable" : ""}`;
+        const caret = boxHit ? `<span class="caret" aria-hidden="true">▾</span>` : "";
+        const caretBtn = zoomable && kind === "caret"
+          ? `<button class="caret-hit" type="button" data-zoom="${id}" aria-label="Inspect ${name}">▾</button>` : "";
+        const peek = zoomable && kind === "peek"
+          ? `<button class="peek" type="button" data-zoom="${id}">${id === "inProgress" ? "3 drivers ▾" : "why bound ▾"}</button>` : "";
+        const tag = boxHit ? "button" : "div";
+        const attrs = boxHit
+          ? ` type="button" data-zoom="${id}" aria-expanded="false"`
+          : "";
+        return `<${tag} class="${cls}"${attrs}>${caret}${caretBtn}<span class="stage-name">${name}</span><span class="stage-value">${value}</span>${extra}${peek}</${tag}>`;
+      }
+
+      function flow(col, rate) {
+        return `<div class="flow ${col}"><span class="rate">${rate}</span><span class="arrow">→</span></div>`;
+      }
+
+      function spine(kind) {
+        const ipExtra = `${CYCLE}`;
+        const doneExtra = `<span class="stage-cue">capacity-bound</span>`;
+        const ideasExtra = `<span class="stage-rate">0.5/day</span>`;
+        const planExtra = `<span class="stage-rate">1.0/day</span>`;
+        const spanIp = kind === "hang" ? "zoom-ip" : "zoom-full";
+        const spanDone = kind === "hang" ? "zoom-done" : "zoom-full";
+        const caption = kind === "caret"
+          ? "Click ▾ on a stage to inspect it. A growing box is the bottleneck."
+          : kind === "peek"
+            ? "A growing box is the bottleneck. Chips mark stages with a zoom."
+            : "Click a stage with ▾ to inspect it. A growing box is the bottleneck.";
+        return `
+          <div class="grid" data-kind="${kind}">
+            ${stage("s-ideas", "ideas", "Ideas", "64", ideasExtra, false, kind)}
+            ${flow("f-1", "")}
+            ${stage("s-plan", "plan", "Plan", "18", planExtra, false, kind)}
+            ${flow("f-2", "")}
+            ${stage("s-ready", "ready", "Ready", "180", "", false, kind)}
+            ${flow("f-3", "2.0/day")}
+            ${stage("s-ip", "inProgress", "In Progress", "24", ipExtra, true, kind)}
+            ${flow("f-4", "3.5/day")}
+            ${stage("s-done", "done", "Done", "8", doneExtra, true, kind)}
+            ${flow("f-5", "1.0/day")}
+            ${stage("s-shipped", "shipped", "Shipped", "96", "", false, kind)}
+            <div class="regen">rework leak x0.25/pt → Ready</div>
+            ${zoomHtml("inProgress", spanIp)}
+            ${zoomHtml("done", spanDone)}
+            <p class="watch-caption">${caption}</p>
+          </div>`;
+      }
+
+      function closeAll(grid) {
+        grid.querySelectorAll(".zoom").forEach((z) => { z.hidden = true; });
+        grid.querySelectorAll(".stage").forEach((s) => {
+          s.classList.remove("open");
+          if (s.matches("button")) s.setAttribute("aria-expanded", "false");
+        });
+        grid.querySelectorAll(".caret, .caret-hit").forEach((c) => { c.textContent = "▾"; });
+        grid.querySelectorAll(".peek").forEach((p) => {
+          p.textContent = p.dataset.zoom === "inProgress" ? "3 drivers ▾" : "why bound ▾";
+        });
+      }
+
+      function openStage(grid, id) {
+        const already = grid.querySelector(`.zoom[data-for="${id}"]`);
+        const wasOpen = already && !already.hidden;
+        closeAll(grid);
+        if (wasOpen) return;
+        const panel = grid.querySelector(`.zoom[data-for="${id}"]`);
+        if (panel) panel.hidden = false;
+        const box = grid.querySelector(`.stage.s-${id === "inProgress" ? "ip" : id}`);
+        if (box) {
+          box.classList.add("open");
+          if (box.matches("button")) box.setAttribute("aria-expanded", "true");
+          const caret = box.querySelector(".caret, .caret-hit");
+          if (caret) caret.textContent = "▴";
+          const peek = box.querySelector(".peek");
+          if (peek) peek.textContent = id === "inProgress" ? "3 drivers ▴" : "why bound ▴";
+        }
+      }
+
+      function bind(grid, kind) {
+        if (kind === "caret" || kind === "peek") {
+          grid.querySelectorAll("[data-zoom]").forEach((el) => {
+            el.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              openStage(grid, el.dataset.zoom);
+            });
+          });
+          return;
+        }
+        grid.querySelectorAll("button.zoomable").forEach((el) => {
+          el.addEventListener("click", () => openStage(grid, el.dataset.zoom));
+        });
+      }
+
+      document.querySelectorAll(".mock").forEach((host) => {
+        const kind = host.dataset.mock;
+        host.innerHTML = spine(kind);
+        bind(host.querySelector(".grid"), kind);
+      });
+    </script>
   </body>
 </html>
