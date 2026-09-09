@@ -5,8 +5,10 @@ import {
   DELIVERY_LOOP_CAPTION,
   bindingBottleneckStage,
   loopDiagramSvg,
+  renderDeliveryCarets,
+  zoomableStages,
 } from "./loopDiagram";
-import { inProgressPanelSvg } from "./inProgressPanel";
+import { renderStageZoom } from "./inProgressPanel";
 import { Engine, initialState } from "../engine/engine";
 import { tick } from "../engine/tick";
 import { createRng } from "../engine/rng";
@@ -88,7 +90,8 @@ describe("loopDiagramSvg", () => {
     expect(stageRate(svg, "ideas")).toBe("0.5/day");
     expect(stageRate(svg, "plan")).toBe("1.0/day");
     expect(stageRate(svg, "backlog")).toBeNull();
-    expect(stageRate(svg, "inProgress")).toBeNull();
+    expect(stageGroup(svg, "inProgress")).toContain("data-stage-cycle");
+    expect(stageGroup(svg, "ideas")).not.toContain("data-stage-cycle");
     expect(stageRate(svg, "done")).toBeNull();
     expect(stageRate(svg, "shipped")).toBeNull();
 
@@ -215,7 +218,7 @@ describe("loopDiagramSvg", () => {
     expect(svg).toMatch(/font-size="18"/);
   });
 
-  // FR-2.1: Delivery loop needs terse teaching copy (steady vs growing boxes). Voice-matched to the Progress panel footer.
+  // FR-2.1: Delivery loop needs terse teaching copy (steady vs growing boxes). Voice-matched to the In Progress zoom footer.
   describe("Delivery loop teaching caption", () => {
     it("includes the steady-vs-growing caption on a fresh six-box Delivery loop", () => {
       const content = emptyContent();
@@ -237,15 +240,14 @@ describe("loopDiagramSvg", () => {
       expect(loopDiagramSvg(state, content)).toContain(DELIVERY_LOOP_CAPTION);
     });
 
-    it("does not change Progress-panel captions", () => {
+    it("does not reuse the Delivery caption in the stage-zoom drawer", () => {
       const content = emptyContent();
-      const progress = inProgressPanelSvg(initialState(content), content);
-      expect(progress).toContain(
+      const zoom = renderStageZoom(initialState(content), content, "inProgress");
+      expect(zoom).toContain(
         "The inner system's pace sets outer throughput; its leak feeds outer backlog.",
       );
-      expect(progress).toContain("refills the outer system's Backlog");
-      expect(progress).toContain("rework leak");
-      expect(progress).not.toContain(DELIVERY_LOOP_CAPTION);
+      expect(zoom).toContain("Rework leak");
+      expect(zoom).not.toContain(DELIVERY_LOOP_CAPTION);
     });
   });
 
@@ -374,5 +376,24 @@ describe("loopDiagramSvg", () => {
       state.stocks.inProgress = 1; // < 3 days of finish capacity
       expect(bindingBottleneckStage(state, content)).toBeNull();
     });
+  });
+});
+
+describe("delivery zoom carets", () => {
+  it("places In Progress and Done carets collapsed, and drops Done under continuous deploy", () => {
+    const content = emptyContent();
+    expect(zoomableStages(initialState(content), content)).toEqual(["inProgress", "done"]);
+    const html = renderDeliveryCarets(initialState(content), content);
+    expect(html).toContain('data-zoom="inProgress"');
+    expect(html).toContain('data-zoom="done"');
+    expect(html).toContain('aria-expanded="false"');
+
+    const contentCd = fullDecisionsContent();
+    const stateCd = initialState(contentCd);
+    stateCd.decisions.push({ instanceId: "inst-cd", defId: "ci-cd" });
+    expect(zoomableStages(stateCd, contentCd)).toEqual(["inProgress"]);
+    const htmlCd = renderDeliveryCarets(stateCd, contentCd);
+    expect(htmlCd).toContain('data-zoom="inProgress"');
+    expect(htmlCd).not.toContain('data-zoom="done"');
   });
 });

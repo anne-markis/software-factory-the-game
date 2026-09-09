@@ -65,7 +65,7 @@ const VIEW_W = STAGE_COUNT * BOX_W + (STAGE_COUNT - 1) * GAP + 32;
 const VIEW_H = 200;
 
 // FR-2.1: terse Delivery-loop teaching caption, voice-matched to
-// the Progress panel footer ("The inner system's pace sets outer throughput…").
+// the In Progress zoom footer ("The inner system's pace sets outer throughput…").
 // Binding-stage visual cue (FR-2.2) is separate; this copy always shows.
 export const DELIVERY_LOOP_CAPTION =
   "A steady box means balanced flow; a growing box marks the bottleneck.";
@@ -153,6 +153,15 @@ function fmtRate(value: number): string {
 
 // Font sizes 16/18: six boxes use a wider viewBox at full cockpit width so
 // the same source sizes stay readable without shrinking into soup.
+function cycleGlyph(x: number): string {
+  const cx = x + BOX_W / 2;
+  const cy = Y + 64;
+  return `
+      <ellipse cx="${cx}" cy="${cy}" rx="20" ry="7" fill="none" stroke="currentColor" data-stage-cycle="true"/>
+      <path d="M ${cx - 16} ${cy - 4} L ${cx - 11} ${cy - 7}" fill="none" stroke="currentColor"/>
+      <path d="M ${cx + 16} ${cy} L ${cx + 18} ${cy + 4}" fill="none" stroke="currentColor"/>`;
+}
+
 function box(
   x: number,
   label: string,
@@ -175,11 +184,12 @@ function box(
       ? `
       <text x="${x + BOX_W / 2}" y="${Y + 66}" text-anchor="middle" font-size="12" fill="currentColor" data-stage-rate="true">${rateLabel}</text>`
       : "";
+  const cycle = stageKey === "inProgress" ? cycleGlyph(x) : "";
   return `
       <g data-stage="${stageKey}">
       <rect x="${x}" y="${Y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"${strokeWidth}${dataAttr}/>
       <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="16" fill="currentColor">${label}</text>
-      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor" data-stage-value="true">${text}</text>${rate}${cue}
+      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor" data-stage-value="true">${text}</text>${rate}${cycle}${cue}
       </g>`;
 }
 
@@ -278,9 +288,65 @@ function deliveryLoop(
     </svg>`;
 }
 
+export type ZoomStage = "inProgress" | "done";
+
+function stageList(continuousDeploy: boolean): StageDef[] {
+  return continuousDeploy ? [...UPSTREAM, ...PIPELINE_CD] : [...UPSTREAM, ...PIPELINE_FULL];
+}
+
+export function zoomableStages(state: Readonly<GameState>, content: GameContent): ZoomStage[] {
+  const keys = new Set(stageList(continuousDeployActive(state, content)).map((s) => s.key));
+  const out: ZoomStage[] = [];
+  if (keys.has("inProgress")) out.push("inProgress");
+  if (keys.has("done")) out.push("done");
+  return out;
+}
+
+export interface CaretBox {
+  key: ZoomStage;
+  label: string;
+  leftPct: number;
+  topPct: number;
+}
+
+export function deliveryCaretBoxes(state: Readonly<GameState>, content: GameContent): CaretBox[] {
+  const stages = stageList(continuousDeployActive(state, content));
+  const contentWidth = stages.length * BOX_W + (stages.length - 1) * GAP;
+  const x0 = (VIEW_W - contentWidth) / 2;
+  const labels: Record<ZoomStage, string> = { inProgress: "In Progress", done: "Done" };
+  return zoomableStages(state, content).map((key) => {
+    const i = stages.findIndex((s) => s.key === key);
+    const x = stageX(x0, i);
+    return {
+      key,
+      label: labels[key],
+      leftPct: ((x + BOX_W - 22) / VIEW_W) * 100,
+      topPct: ((Y + 2) / VIEW_H) * 100,
+    };
+  });
+}
+
+export function renderDeliveryCarets(state: Readonly<GameState>, content: GameContent): string {
+  const buttons = deliveryCaretBoxes(state, content)
+    .map(
+      (b) =>
+        `<button type="button" class="zoom-caret" data-zoom="${b.key}" aria-label="Inspect ${b.label}" aria-expanded="false" style="left:${b.leftPct}%;top:${b.topPct}%">▾</button>`,
+    )
+    .join("");
+  return `<div class="delivery-carets">${buttons}</div>`;
+}
+
+export function syncZoomCarets(host: HTMLElement, open: ZoomStage | null): void {
+  for (const btn of Array.from(host.querySelectorAll<HTMLButtonElement>("[data-zoom]"))) {
+    const on = btn.dataset.zoom === open;
+    btn.setAttribute("aria-expanded", on ? "true" : "false");
+    btn.classList.toggle("open", on);
+  }
+}
+
 export function loopDiagramSvg(state: Readonly<GameState>, content: GameContent): string {
   const binding = bindingBottleneckStage(state, content);
   const cd = continuousDeployActive(state, content);
-  const stages = cd ? [...UPSTREAM, ...PIPELINE_CD] : [...UPSTREAM, ...PIPELINE_FULL];
+  const stages = stageList(cd);
   return deliveryLoop(state, binding, stages, cd);
 }

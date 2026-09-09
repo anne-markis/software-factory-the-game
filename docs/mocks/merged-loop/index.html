@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mocks — A3 click-to-zoom</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fff;
+        --fg: #000;
+        --fg-dim: #666;
+        --border: #999;
+        --accent-amber: #a60;
+        --desc: #444;
+        --note-bg: #f6f6f6;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #181818;
+          --fg: #e8e8e8;
+          --fg-dim: #aaa;
+          --border: #888;
+          --accent-amber: #e0a030;
+          --desc: #c2c2c2;
+          --note-bg: #242424;
+        }
+      }
+      body {
+        font-family: ui-monospace, monospace;
+        max-width: 1280px;
+        margin: 1rem auto;
+        padding: 0 1rem 3rem;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      h1 { font-size: 1.6rem; margin: 0 0 0.5rem; }
+      h2 { font-size: 1.2rem; margin: 2rem 0 0.5rem; }
+      h3 { margin: 0 0 0.35rem; font-size: 1rem; }
+      p, li { line-height: 1.45; color: var(--desc); }
+      .lede { color: var(--fg); max-width: 78ch; }
+      .toc {
+        display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem;
+        margin: 1rem 0 1.5rem; padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; background: var(--bg); z-index: 3;
+      }
+      .toc a { color: var(--fg); }
+      .panel { border: 1px solid var(--border); padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.75rem; }
+      .stats {
+        display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.5rem 1rem; font-size: 0.95rem; margin-bottom: 0.75rem;
+      }
+      .stat { display: inline-flex; gap: 0.5rem; }
+      .stat-label { color: var(--fg-dim); }
+      .mock-chrome { margin-bottom: 0.25rem; color: var(--fg-dim); font-size: 0.85rem; }
+      .notes {
+        background: var(--note-bg); border: 1px solid var(--border);
+        padding: 0.6rem 0.9rem; margin: 0.5rem 0 1.5rem; font-size: 0.9rem;
+      }
+      .notes strong { color: var(--fg); }
+      table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin: 0.75rem 0 1.5rem; }
+      th, td { border: 1px solid var(--border); padding: 0.4rem 0.55rem; text-align: left; vertical-align: top; }
+      th { color: var(--fg); }
+      td { color: var(--desc); }
+      .caption { font-size: 0.85rem; color: var(--fg-dim); margin: 0 0 0.6rem; }
+      .try { color: var(--accent-amber); font-size: 0.85rem; margin: 0 0 0.5rem; }
+
+      /* Delivery grid: 6 boxes + 5 arrows */
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr;
+        column-gap: 0.15rem;
+        row-gap: 0.35rem;
+        align-items: start;
+      }
+      .stage {
+        grid-row: 1;
+        border: 1px solid var(--border);
+        min-height: 5.6rem;
+        padding: 0.45rem 0.3rem 0.4rem;
+        text-align: center;
+        background: var(--bg);
+        color: inherit;
+        font: inherit;
+        position: relative;
+      }
+      .stage-name { display: block; font-size: 1rem; }
+      .stage-value { display: block; font-size: 1.15rem; font-weight: bold; margin-top: 0.2rem; }
+      .stage-rate { display: block; font-size: 0.75rem; margin-top: 0.15rem; color: var(--fg); }
+      .stage-cue { display: block; font-size: 0.7rem; font-style: italic; margin-top: 0.2rem; }
+      .cycle {
+        display: block; margin: 0.25rem auto 0; width: 44px; height: 18px;
+      }
+      .flow {
+        grid-row: 1;
+        align-self: center;
+        text-align: center;
+        font-size: 0.7rem;
+        color: var(--fg);
+        padding-top: 0.2rem;
+      }
+      .flow .rate { display: block; margin-bottom: 0.15rem; }
+      .flow .arrow { display: block; }
+      .s-ideas { grid-column: 1; }
+      .f-1 { grid-column: 2; }
+      .s-plan { grid-column: 3; }
+      .f-2 { grid-column: 4; }
+      .s-ready { grid-column: 5; }
+      .f-3 { grid-column: 6; }
+      .s-ip { grid-column: 7; }
+      .f-4 { grid-column: 8; }
+      .s-done { grid-column: 9; }
+      .f-5 { grid-column: 10; }
+      .s-shipped { grid-column: 11; }
+      .regen {
+        grid-column: 5 / 12;
+        grid-row: 2;
+        border-top: 1px dashed var(--border);
+        text-align: center;
+        font-size: 0.75rem;
+        padding: 0.35rem 0 0.15rem;
+        color: var(--fg);
+      }
+      .zoomable { cursor: pointer; }
+      .zoomable:hover { outline: 1px dashed var(--border); }
+      .zoomable.open { border-width: 2px; }
+      .caret {
+        position: absolute; top: 0.15rem; right: 0.3rem;
+        font-size: 0.75rem; color: var(--fg-dim); line-height: 1;
+      }
+      .zoomable.open .caret { color: var(--fg); }
+      button.caret-hit {
+        position: absolute; top: 0; right: 0;
+        width: 1.6rem; height: 1.6rem;
+        border: 0; background: transparent; color: var(--fg-dim);
+        font: inherit; font-size: 0.85rem; cursor: pointer;
+      }
+      button.caret-hit:hover { color: var(--fg); }
+      .stage.open button.caret-hit { color: var(--fg); }
+      .peek {
+        display: block;
+        margin: 0.3rem auto 0;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--fg-dim);
+        font: inherit;
+        font-size: 0.7rem;
+        padding: 0.1rem 0.35rem;
+        cursor: pointer;
+      }
+      .peek:hover, .stage.open .peek { color: var(--fg); }
+      .zoom {
+        grid-row: 3;
+        border: 1px dashed var(--border);
+        padding: 0.55rem 0.7rem 0.6rem;
+        font-size: 0.8rem;
+      }
+      .zoom[hidden] { display: none !important; }
+      .zoom-ip { grid-column: 5 / 10; }
+      .zoom-done { grid-column: 7 / 12; }
+      .zoom-full { grid-column: 1 / 12; }
+      .zoom-head { font-weight: bold; margin-bottom: 0.35rem; }
+      .zoom-cols {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem 1rem;
+      }
+      .zoom-cols h4 { margin: 0 0 0.25rem; font-size: 0.8rem; }
+      .zoom-cols p { margin: 0 0 0.15rem; color: var(--fg); font-size: 0.8rem; }
+      .watch-caption { grid-column: 1 / 12; grid-row: 4; font-size: 0.8rem; color: var(--fg); margin-top: 0.25rem; }
+      @media (max-width: 900px) {
+        .grid { grid-template-columns: 1fr; }
+        .stage, .flow, .regen, .zoom, .watch-caption { grid-column: 1 / -1 !important; grid-row: auto; }
+        .flow { text-align: left; padding: 0.15rem 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <p class="mock-chrome">Software Factory · static mocks · click the diagrams · not wired to the engine</p>
+    <h1>A3 click-to-zoom — the strip stays hidden until you ask</h1>
+    <p class="lede">
+      A3 (boxed cycle) stays the spine: six boxes, a small cycle inside
+      In Progress, one rework leak on the Shipped → Ready U. The contributor
+      strip is no longer always on. Zoomable stages (In Progress, Done) carry
+      a caret so later Ready / Shipped zooms can use the same move. Try each
+      variant — they start collapsed.
+    </p>
+
+    <nav class="toc">
+      <a href="#t1">T1 · Hang</a>
+      <a href="#t2">T2 · Drawer</a>
+      <a href="#t3">T3 · Caret only</a>
+      <a href="#t4">T4 · Peek chip</a>
+      <a href="#compare">Compare</a>
+    </nav>
+
+    <div class="stats">
+      <span class="stat"><span class="stat-label">Day</span> 42</span>
+      <span class="stat"><span class="stat-label">Backlog</span> 212</span>
+      <span class="stat"><span class="stat-label">Budget</span> $8,420 (120 days)</span>
+      <span class="stat"><span class="stat-label">Points/Day</span> 1.0</span>
+    </div>
+
+    <h2 id="t1">T1 · Hang — click the box, panel under that stage</h2>
+    <p>Click In Progress or Done. A dashed panel opens under that stage (wider than the box, still anchored to it). Click again to close; click the other stage to switch. Ideas / Plan / Ready / Shipped have no caret yet.</p>
+    <p class="try">Try: click In Progress, then Done, then Done again.</p>
+    <div class="panel">
+      <h3>Delivery</h3>
+      <div class="mock" data-mock="hang"></div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> Collapsed, you only watch the factory line — same as today’s Delivery, plus a cycle glyph and carets. Open, the zoom is still “of this box.” A long hire list will outgrow a hang centered on one column.
+    </div>
+
+    <h2 id="t2">T2 · Drawer — click the box, full-width band</h2>
+    <p>Same click-the-stage rule, but the open panel spans the whole spine. The heading names the stage. Better room for contributors, and every future stage zoom is the same shape.</p>
+    <p class="try">Try: click In Progress, then Done — the drawer swaps content, it does not stack.</p>
+    <div class="panel">
+      <h3>Delivery</h3>
+      <div class="mock" data-mock="drawer"></div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> Extensibility is free: a Ready or Shipped zoom is another drawer payload, not a new layout. Cost: the open panel is not visually “under” the box you clicked except for the thicker border and caret.
+    </div>
+
+    <h2 id="t3">T3 · Caret only — the box is for watching</h2>
+    <p>The stage box itself is not a button. Only the ▾ in the corner opens the full-width drawer. Clicking the rest of In Progress does nothing. Safer at 5x when you are staring at the loop.</p>
+    <p class="try">Try: click the In Progress numbers (nothing), then the ▾, then Done’s ▾.</p>
+    <div class="panel">
+      <h3>Delivery</h3>
+      <div class="mock" data-mock="caret"></div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> Matches “only visible if a user clicks on something” most literally. The caret is a small target. Pair with the caption, or this variant becomes invisible.
+    </div>
+
+    <h2 id="t4">T4 · Peek chip — name the zoom before it opens</h2>
+    <p>Collapsed boxes that have a zoom show a chip: “3 drivers ▾” / “why bound ▾”. The chip is the hit target; the box stays watch-only. Drawer is full-width, same as T2.</p>
+    <p class="try">Try: click “3 drivers ▾” under In Progress, then “why bound ▾” under Done.</p>
+    <div class="panel">
+      <h3>Delivery</h3>
+      <div class="mock" data-mock="peek"></div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> Best discoverability of the four, and it scales: a later Ready zoom can say “pull drivers ▾” without teaching a new control. Cost: extra chrome on the spine even when collapsed — two chips, still much quieter than today’s always-on Progress panel.
+    </div>
+
+    <h2 id="compare">Compare</h2>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>T1 · Hang</th>
+          <th>T2 · Drawer</th>
+          <th>T3 · Caret only</th>
+          <th>T4 · Peek chip</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Collapsed watch</th>
+          <td>Six boxes + carets</td>
+          <td>Six boxes + carets</td>
+          <td>Six boxes + carets</td>
+          <td>Six boxes + two chips</td>
+        </tr>
+        <tr>
+          <th>Click what</th>
+          <td>The stage box</td>
+          <td>The stage box</td>
+          <td>The ▾ only</td>
+          <td>The chip only</td>
+        </tr>
+        <tr>
+          <th>Open panel</th>
+          <td>Under that stage</td>
+          <td>Full-width drawer</td>
+          <td>Full-width drawer</td>
+          <td>Full-width drawer</td>
+        </tr>
+        <tr>
+          <th>Other stages</th>
+          <td>Hang recenters; width fights long lists</td>
+          <td>Same drawer, new heading</td>
+          <td>Same as T2</td>
+          <td>New chip copy + same drawer</td>
+        </tr>
+        <tr>
+          <th>Misclick while watching</th>
+          <td>Easy (whole box)</td>
+          <td>Easy (whole box)</td>
+          <td>Hard</td>
+          <td>Hard</td>
+        </tr>
+        <tr>
+          <th>Lean</th>
+          <td>If the zoom must stay “of this box”</td>
+          <td>If every stage zoom should be one layout</td>
+          <td>If the spine is for watching, not clicking</td>
+          <td>If collapsed should still advertise the zoom</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="lede">
+      Still not implemented. A reasonable live cut: A3 spine, collapsed by
+      default, T2 or T4 for the open state (one drawer, one stage at a time),
+      T3’s caret-only hit if whole-box click feels too hot. In Progress and
+      Done ship first; Ready / Shipped reuse the same drawer later.
+    </p>
+
+    <script>
+      const CYCLE = `<svg class="cycle" viewBox="0 0 44 18" aria-hidden="true"><ellipse cx="22" cy="9" rx="16" ry="7" fill="none" stroke="currentColor"/><path d="M8 7 L12 5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M36 9 L37 13" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+
+      const ZOOMS = {
+        inProgress: {
+          title: "In Progress zoom",
+          cols: [
+            ["Cycle speed", ["Base 1.0/day", "Hire basic developer [solid]: +1.5/day", "Add coding agent: x1.2"]],
+            ["Friction", ["Tech debt drag x0.85"]],
+            ["Leak size", ["Base x0.5", "Add test suite: x0.5", "Joins the Shipped → Ready U"]],
+          ],
+        },
+        done: {
+          title: "Done zoom",
+          cols: [
+            ["Deploy speed", ["Base 1.0/day"]],
+            ["Why bound", ["Finish 3.5/day in", "Deploy 1.0/day out", "8 pts waiting to ship"]],
+            ["Next lever", ["CI/CD drops this box", "and lets finish ship"]],
+          ],
+        },
+      };
+
+      function zoomHtml(id, spanClass) {
+        const z = ZOOMS[id];
+        const cols = z.cols.map(([h, lines]) =>
+          `<div><h4>${h}</h4>${lines.map((l) => `<p>${l}</p>`).join("")}</div>`
+        ).join("");
+        return `<div class="zoom ${spanClass}" data-for="${id}" hidden><div class="zoom-head">${z.title}</div><div class="zoom-cols">${cols}</div></div>`;
+      }
+
+      function stage(col, id, name, value, extra, zoomable, kind) {
+        const boxHit = zoomable && kind !== "peek" && kind !== "caret";
+        const cls = `stage ${col}${boxHit ? " zoomable" : ""}`;
+        const caret = boxHit ? `<span class="caret" aria-hidden="true">▾</span>` : "";
+        const caretBtn = zoomable && kind === "caret"
+          ? `<button class="caret-hit" type="button" data-zoom="${id}" aria-label="Inspect ${name}">▾</button>` : "";
+        const peek = zoomable && kind === "peek"
+          ? `<button class="peek" type="button" data-zoom="${id}">${id === "inProgress" ? "3 drivers ▾" : "why bound ▾"}</button>` : "";
+        const tag = boxHit ? "button" : "div";
+        const attrs = boxHit
+          ? ` type="button" data-zoom="${id}" aria-expanded="false"`
+          : "";
+        return `<${tag} class="${cls}"${attrs}>${caret}${caretBtn}<span class="stage-name">${name}</span><span class="stage-value">${value}</span>${extra}${peek}</${tag}>`;
+      }
+
+      function flow(col, rate) {
+        return `<div class="flow ${col}"><span class="rate">${rate}</span><span class="arrow">→</span></div>`;
+      }
+
+      function spine(kind) {
+        const ipExtra = `${CYCLE}`;
+        const doneExtra = `<span class="stage-cue">capacity-bound</span>`;
+        const ideasExtra = `<span class="stage-rate">0.5/day</span>`;
+        const planExtra = `<span class="stage-rate">1.0/day</span>`;
+        const spanIp = kind === "hang" ? "zoom-ip" : "zoom-full";
+        const spanDone = kind === "hang" ? "zoom-done" : "zoom-full";
+        const caption = kind === "caret"
+          ? "Click ▾ on a stage to inspect it. A growing box is the bottleneck."
+          : kind === "peek"
+            ? "A growing box is the bottleneck. Chips mark stages with a zoom."
+            : "Click a stage with ▾ to inspect it. A growing box is the bottleneck.";
+        return `
+          <div class="grid" data-kind="${kind}">
+            ${stage("s-ideas", "ideas", "Ideas", "64", ideasExtra, false, kind)}
+            ${flow("f-1", "")}
+            ${stage("s-plan", "plan", "Plan", "18", planExtra, false, kind)}
+            ${flow("f-2", "")}
+            ${stage("s-ready", "ready", "Ready", "180", "", false, kind)}
+            ${flow("f-3", "2.0/day")}
+            ${stage("s-ip", "inProgress", "In Progress", "24", ipExtra, true, kind)}
+            ${flow("f-4", "3.5/day")}
+            ${stage("s-done", "done", "Done", "8", doneExtra, true, kind)}
+            ${flow("f-5", "1.0/day")}
+            ${stage("s-shipped", "shipped", "Shipped", "96", "", false, kind)}
+            <div class="regen">rework leak x0.25/pt → Ready</div>
+            ${zoomHtml("inProgress", spanIp)}
+            ${zoomHtml("done", spanDone)}
+            <p class="watch-caption">${caption}</p>
+          </div>`;
+      }
+
+      function closeAll(grid) {
+        grid.querySelectorAll(".zoom").forEach((z) => { z.hidden = true; });
+        grid.querySelectorAll(".stage").forEach((s) => {
+          s.classList.remove("open");
+          if (s.matches("button")) s.setAttribute("aria-expanded", "false");
+        });
+        grid.querySelectorAll(".caret, .caret-hit").forEach((c) => { c.textContent = "▾"; });
+        grid.querySelectorAll(".peek").forEach((p) => {
+          p.textContent = p.dataset.zoom === "inProgress" ? "3 drivers ▾" : "why bound ▾";
+        });
+      }
+
+      function openStage(grid, id) {
+        const already = grid.querySelector(`.zoom[data-for="${id}"]`);
+        const wasOpen = already && !already.hidden;
+        closeAll(grid);
+        if (wasOpen) return;
+        const panel = grid.querySelector(`.zoom[data-for="${id}"]`);
+        if (panel) panel.hidden = false;
+        const box = grid.querySelector(`.stage.s-${id === "inProgress" ? "ip" : id}`);
+        if (box) {
+          box.classList.add("open");
+          if (box.matches("button")) box.setAttribute("aria-expanded", "true");
+          const caret = box.querySelector(".caret, .caret-hit");
+          if (caret) caret.textContent = "▴";
+          const peek = box.querySelector(".peek");
+          if (peek) peek.textContent = id === "inProgress" ? "3 drivers ▴" : "why bound ▴";
+        }
+      }
+
+      function bind(grid, kind) {
+        if (kind === "caret" || kind === "peek") {
+          grid.querySelectorAll("[data-zoom]").forEach((el) => {
+            el.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              openStage(grid, el.dataset.zoom);
+            });
+          });
+          return;
+        }
+        grid.querySelectorAll("button.zoomable").forEach((el) => {
+          el.addEventListener("click", () => openStage(grid, el.dataset.zoom));
+        });
+      }
+
+      document.querySelectorAll(".mock").forEach((host) => {
+        const kind = host.dataset.mock;
+        host.innerHTML = spine(kind);
+        bind(host.querySelector(".grid"), kind);
+      });
+    </script>
+  </body>
+</html>

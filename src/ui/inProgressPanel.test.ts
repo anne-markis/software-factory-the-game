@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { inProgressPanelSvg } from "./inProgressPanel";
+import { renderStageZoom } from "./inProgressPanel";
 import { Engine } from "../engine/engine";
 import { parseStartConfig, parseDecisions } from "../engine/content";
 import { decisionsJson, startJson } from "../engine/loadShippedContent";
@@ -42,66 +42,32 @@ function inLeakGroup(svg: string, needle: string): boolean {
   return indexBetween(svg, needle, "Leak size");
 }
 
-// Locates the exit box's own bold value text, distinct from the "Cycle
-// speed" stack's "Base X.X/day" contributor line, which also matches a bare
-// "X.X/day" substring search.
-function exitBoxValue(svg: string): string | undefined {
-  return svg.match(/font-weight="bold"[^>]*>(-?\d+\.\d)\/day</)?.[1];
+function panel(state: import("../engine/types").GameState, c: GameContent = content(), stage: "inProgress" | "done" = "inProgress"): string {
+  return renderStageZoom(state, c, stage);
 }
 
-function viewBoxHeight(svg: string): number {
-  const height = svg.match(/viewBox="0 0 \d+ (\d+(?:\.\d+)?)"/)?.[1];
-  expect(height).toBeDefined();
-  return Number(height);
-}
-
-describe("inProgressPanelSvg", () => {
-  it("renders the loop, exit flow, leak arc, and footer on a fresh engine", () => {
+describe("renderStageZoom", () => {
+  it("renders contributor columns and the leak footer on a fresh engine", () => {
     const e = new Engine(content());
-    const svg = inProgressPanelSvg(e.getState(), content());
-    expect(svg).toContain("Progress loop");
+    const svg = panel(e.getState());
+    expect(svg).not.toContain("Progress loop");
     expect(svg).not.toContain("Progress system");
-    expect(svg).toContain("work cycling");
+    expect(svg).not.toContain("work cycling");
     expect(svg).toContain("Cycle speed");
     expect(svg).toContain("Base 1.0/day");
-    expect(svg).toContain("escapes to Done");
-    // no tick has run yet on this fresh engine, so inProgress is
-    // still 0 -- nothing was there for "finish" to actually move this tick,
-    // even though its base capacity is 1.0/day. The exit box must show the
-    // realized (zero) flow, not the stage's uncapped capacity.
-    expect(exitBoxValue(svg)).toBe("0.0");
-    expect(svg).toContain("x0.50"); // effectiveDebtMultiplier on the leak arc label
+    expect(svg).toContain("x0.50");
     expect(svg).toContain("The inner system's pace sets outer throughput; its leak feeds outer backlog.");
     expect(svg).not.toContain("Context switch");
-    // The old caption asserted the exit box's number equals outer-loop
-    // throughput unconditionally; that's false whenever Done piles up
-    // between the finish and deploy stages (see tick.test.ts's deploy-
-    // bottleneck cases), so it must not appear regardless of this number.
     expect(svg).not.toContain("= outer loop throughput");
+    expect(renderStageZoom(e.getState(), content(), null)).toBe("");
   });
 
-  it("exit box tracks realized finish flow across ticks, not raw finish-stage capacity", () => {
-    const e = new Engine(content());
-    e.tick(); // day 1: inProgress still 0 pre-tick (pull hasn't landed anything into it yet)
-    expect(exitBoxValue(inProgressPanelSvg(e.getState(), content()))).toBe("0.0");
-    for (let i = 0; i < 5; i++) e.tick(); // let the pipeline warm up so inProgress is nonzero
-    const s = e.getState();
-    expect(s.stocks.inProgress).toBeGreaterThan(0);
-    // Once the pipeline has warmed up, base rate (1) is fully saturated (there
-    // is always at least 1 point sitting in inProgress to finish), so realized
-    // flow now matches capacity -- this is the expected, non-bottlenecked case.
-    expect(exitBoxValue(inProgressPanelSvg(s, content()))).toBe("1.0");
-  });
-
-  it("switches the exit caption to Shipped, and shows setup slowdowns and leak once test-suite + ci-cd are owned", () => {
+  it("shows setup slowdowns and leak once test-suite + ci-cd are owned", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
     e.applyDecision("ci-cd");
     const s = e.getState();
-    const svg = inProgressPanelSvg(s, content());
-
-    expect(svg).toContain("escapes to Shipped");
-    expect(svg).not.toContain("escapes to Done");
+    const svg = panel(s);
 
     // Both purchases carry a temporary all-rates x0.5 slowdown, still active
     // on day 0 -- these are drag (mul < 1) so they land under Friction.
@@ -136,7 +102,7 @@ describe("inProgressPanelSvg", () => {
     const e = new Engine(c);
     e.applyDecision("refactoring-sprint");
     const s = e.getState();
-    const svg = inProgressPanelSvg(s, c);
+    const svg = panel(s, c);
     // The paired modifyRate all-mul-0.6 effect is drag (mul < 1), so it lands
     // under Friction as an instance-sourced contributor.
     expect(inFrictionGroup(svg, "Refactoring sprint: x0.6")).toBe(true);
@@ -158,14 +124,14 @@ describe("inProgressPanelSvg", () => {
     const mod = s.modifiers.find((m) => m.source === inst.instanceId && m.target === "finish")!;
     expect(mod.value).toBeGreaterThan(0); // this seed rolls a positive hire
 
-    const svgPositive = inProgressPanelSvg(s, content());
+    const svgPositive = panel(s, content());
     expect(svgPositive).toContain(inst.gambleLabel!);
     expect(inSpeedGroup(svgPositive, `Hire basic developer [${inst.gambleLabel}]: +${mod.value}/day`)).toBe(true);
 
     // Force a net-negative outcome shape via the mutable escape hatch and
     // confirm the same instance now renders under Friction instead.
     mod.value = -0.5;
-    const svgNegative = inProgressPanelSvg(s, content());
+    const svgNegative = panel(s, content());
     expect(inFrictionGroup(svgNegative, "Hire basic developer")).toBe(true);
     expect(inSpeedGroup(svgNegative, "Hire basic developer")).toBe(false);
   });
@@ -178,7 +144,7 @@ describe("inProgressPanelSvg", () => {
       { id: "mod-agent-1", source: "inst-agent", target: "finish", op: "mul", value: 1.2 },
       { id: "mod-agent-2", source: "inst-agent", target: "debtMultiplier", op: "mul", value: 1.2 },
     );
-    const svg = inProgressPanelSvg(s, content());
+    const svg = panel(s, content());
     expect(inSpeedGroup(svg, "Add coding agent: x1.2")).toBe(true);
     expect(inLeakGroup(svg, "Add coding agent: x1.2")).toBe(true);
   });
@@ -192,10 +158,10 @@ describe("inProgressPanelSvg", () => {
     mod.value = Math.abs(mod.value) || 1; // guarantee a positive (speed-group) contribution
     inst.sickUntilDay = s.day + 3;
     inst.sickFactor = 0.5;
-    const svg = inProgressPanelSvg(s, content());
+    const svg = panel(s, content());
     expect(svg).toContain("(sick)");
     expect(inSpeedGroup(svg, "(sick)")).toBe(true);
-    expect(svg).toContain('opacity="0.5"');
+    expect(svg).toContain('class="stage-zoom-dim"');
   });
 
   it("labels a ramping add-op modifier under Cycle speed with its rounded value and a (ramping) suffix", () => {
@@ -216,7 +182,7 @@ describe("inProgressPanelSvg", () => {
       rampPerDay: 0.02,
       rampCap: 2.0,
     });
-    const svg = inProgressPanelSvg(s, content());
+    const svg = panel(s, content());
     expect(inSpeedGroup(svg, "Add coding agent: +0.4/day (ramping)")).toBe(true);
     expect(svg).not.toContain("0.39999");
     expect(svg).not.toContain("0.4/day (ramping)/day"); // no double suffix/unit
@@ -233,7 +199,7 @@ describe("inProgressPanelSvg", () => {
       value: 0.8,
       expiresDay: s.day + 2,
     });
-    const svg = inProgressPanelSvg(s, content());
+    const svg = panel(s, content());
     expect(inFrictionGroup(svg, "prod-incident: x0.8 (2d left)")).toBe(true);
   });
 
@@ -242,10 +208,10 @@ describe("inProgressPanelSvg", () => {
     const s = e.getState() as MutableState;
     // Below the grace band (freeDebt 400 in shipped start.json): no drag node.
     s.stocks.techDebt = 100;
-    expect(inProgressPanelSvg(s, content())).not.toContain("Tech debt drag");
+    expect(panel(s, content())).not.toContain("Tech debt drag");
     // Past the band: excess 1600 * 0.00015 = 0.24 drag -> multiplier 0.76.
     s.stocks.techDebt = 2000;
-    const svg = inProgressPanelSvg(s, content());
+    const svg = panel(s, content());
     expect(inFrictionGroup(svg, "Tech debt drag x0.76")).toBe(true);
   });
 
@@ -253,23 +219,17 @@ describe("inProgressPanelSvg", () => {
     const e = new Engine(content());
     const s = e.getState() as MutableState;
     s.projects.push({ ...s.projects[0], defId: "second", name: "Second Project" });
-    const svg = inProgressPanelSvg(s, content());
+    const svg = panel(s, content());
     expect(svg).not.toContain("Context switch");
   });
 
-  it("keeps a fresh no-friction panel close to its content without the old six-row reserve", () => {
+  it("omits the Friction header when there is no drag", () => {
     const e0 = new Engine(content());
-    const svg0 = inProgressPanelSvg(e0.getState(), content());
-    expect(svg0).not.toContain("Friction"); // fresh engine has no drag, group omitted
-    const height0 = viewBoxHeight(svg0);
-    expect(height0).toBeLessThan(450);
-    expect(height0).not.toBe(484); // old worst-case reserve for six rows in every group
+    const svg0 = panel(e0.getState(), content());
+    expect(svg0).not.toContain("Friction");
   });
 
-  it("lets the viewBox grow when contributor stacks are large", () => {
-    const fresh = new Engine(content());
-    const freshHeight = viewBoxHeight(inProgressPanelSvg(fresh.getState(), content()));
-
+  it("lists every injected contributor when stacks are large", () => {
     const e = new Engine(content());
     const s = e.getState() as MutableState;
     for (let i = 0; i < 8; i++) {
@@ -298,9 +258,11 @@ describe("inProgressPanelSvg", () => {
       );
     }
 
-    const crowdedHeight = viewBoxHeight(inProgressPanelSvg(s, content()));
-    expect(crowdedHeight).toBeGreaterThan(freshHeight);
-    expect(crowdedHeight).toBeGreaterThan(484);
+    const crowded = panel(s, content());
+    expect(crowded).toContain("test-speed-0");
+    expect(crowded).toContain("test-speed-7");
+    expect(crowded).toContain("test-leak-7");
+    expect(crowded).toContain("test-friction-7");
   });
 
   it("renders negative contributions with a bare minus, not +-", () => {
@@ -311,32 +273,21 @@ describe("inProgressPanelSvg", () => {
     // hires now split into pull + finish add modifiers).
     const mod = s.modifiers.find((m) => m.source === s.decisions[0].instanceId && m.target === "finish")!;
     mod.value = -0.5;
-    const svg = inProgressPanelSvg(s, content());
+    const svg = panel(s, content());
     expect(svg).toContain("-0.5/day");
     expect(svg).not.toContain("+-0.5");
   });
 
-  // follow-up: <rect>/<line>/<ellipse>/<path> shapes use
-  // stroke="currentColor" and correctly inherit dark-mode text color, but
-  // SVG's fill defaults to black independent of the surrounding CSS cascade
-  // -- a <text> element without an explicit fill renders unreadable
-  // black-on-black in dark mode even though every other shape in the same
-  // diagram adapts correctly. This test inspects the actual generated SVG
-  // markup (not index.html's static stylesheet, which darkMode.test.ts
-  // already covers and which never sees this dynamically-built markup at
-  // all) so a future <text> element added without fill="currentColor" fails
-  // immediately instead of shipping invisible.
-  it("every <text> element sets fill=currentColor so it adapts to dark mode", () => {
+  it("Done zoom shows deploy capacity vs finish inflow, not a card-id next lever", () => {
     const e = new Engine(content());
-    e.applyDecision("basic-dev");
-    e.applyDecision("test-suite");
-    e.applyDecision("ci-cd");
-    const svg = inProgressPanelSvg(e.getState(), content());
-    const textTags = svg.match(/<text\b[^>]*>/g) ?? [];
-    expect(textTags.length).toBeGreaterThan(0);
-    for (const tag of textTags) {
-      expect(tag).toContain('fill="currentColor"');
-    }
+    const html = panel(e.getState(), content(), "done");
+    expect(html).toContain("Deploy speed");
+    expect(html).toContain("Why bound");
+    expect(html).toContain("Base 1.0/day");
+    expect(html).toContain("pts waiting to ship");
+    expect(html).not.toContain("ci-cd");
+    expect(html).not.toContain("Cycle speed");
+    expect(html).not.toContain("Leak size");
   });
 });
 
