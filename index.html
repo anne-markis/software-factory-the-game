@@ -196,9 +196,12 @@
       .tc-btn.tc-active { opacity: 1; font-weight: bold; }
       .stall { background: var(--stall-bg); color: var(--stall-fg); padding: 0.5rem; font-weight: bold; }
       /* Delivery is full width so six stage boxes stay readable; User loop
-         sits on its own second row. Stage zooms (caret-only) open a drawer
-         under Delivery instead of a sibling Progress panel. */
+         sits on its own second row, collapsed until the heading is opened.
+         Stage zooms (caret-only) open a drawer under Delivery instead of a
+         sibling Progress panel. */
       .loops { display: flex; flex-direction: column; gap: 1rem; }
+      .users-loop-details > summary { cursor: pointer; }
+      .users-loop-details > summary h3 { display: inline; margin: 0; }
       .delivery-spine-wrap { position: relative; }
       .delivery-carets { position: absolute; inset: 0; pointer-events: none; }
       .zoom-caret {
