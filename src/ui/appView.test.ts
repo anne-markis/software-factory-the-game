@@ -140,11 +140,16 @@ describe("appView delivery-column stats layout", () => {
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
 
-    // User loop sits on its own second row; contributor zooms hang under Delivery.
+    // User loop sits on its own second row, collapsed until opened;
+    // contributor zooms hang under Delivery.
     const loops = h.root.querySelector(".loops")!;
     expect(loops.contains(deliveryCol)).toBe(true);
     expect(loops.querySelector(".loops-pair")).toBeNull();
     expect(h.root.querySelector('[data-section="progress-loop"]')).toBeNull();
+    const usersDetails = loops.querySelector<HTMLDetailsElement>(".users-loop-details")!;
+    expect(usersDetails).toBeTruthy();
+    expect(usersDetails.open).toBe(false);
+    expect(usersDetails.tagName).toBe("DETAILS");
     expect(loops.contains(h.root.querySelector('[aria-label="User loop"]')!)).toBe(true);
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
     expect(headings).toEqual(["Delivery loop", "User loop"]);
@@ -180,6 +185,39 @@ describe("appView delivery-column stats layout", () => {
     expect(after.querySelector(".stat-label")!.textContent).toBe("In Progress");
     expect(h.root.querySelector(".delivery-column .delivery-stats")).toBe(after);
     expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
+  });
+});
+
+describe("appView user loop disclosure", () => {
+  it("starts collapsed and expands from the heading without saving", () => {
+    const h = mount();
+    const details = h.root.querySelector<HTMLDetailsElement>(".users-loop-details")!;
+    const summary = details.querySelector("summary")!;
+    expect(details.open).toBe(false);
+    expect(details.querySelector('[aria-label="User loop"]')).not.toBeNull();
+
+    const actionsBefore = h.actions;
+    summary.click();
+    expect(details.open).toBe(true);
+    expect(h.actions).toBe(actionsBefore);
+
+    summary.click();
+    expect(details.open).toBe(false);
+    expect(h.actions).toBe(actionsBefore);
+  });
+
+  it("keeps the details node and open state across ticks", () => {
+    const h = mount();
+    const details = h.root.querySelector<HTMLDetailsElement>(".users-loop-details")!;
+    details.querySelector("summary")!.click();
+    expect(details.open).toBe(true);
+    for (let i = 0; i < 5; i++) {
+      h.engine.tick();
+      h.view.render();
+    }
+    expect(h.root.querySelector(".users-loop-details")).toBe(details);
+    expect(details.open).toBe(true);
+    expect(details.querySelector('[aria-label="User loop"]')).not.toBeNull();
   });
 });
 

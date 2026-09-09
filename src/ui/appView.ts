@@ -86,8 +86,9 @@ export interface AppView {
 // are empty until the first render patches them.
 //
   // Delivery loop is full width (six boxes). User loop sits on a second
-  // row by itself; In Progress / Done contributor zooms hang as a drawer
-  // under Delivery (caret-only, collapsed until clicked).
+  // row as a collapsed <details> (expand to see Reputation → Users → income).
+  // In Progress / Done contributor zooms hang as a drawer under Delivery
+  // (caret-only, collapsed until clicked).
   // Delivery-stats stay under Delivery so material stock numbers can
   // update in place (flash) without rebuilding the SVG. Gamble reveal
   // is its own ephemeral section between stats and the loops.
@@ -137,7 +138,10 @@ function pageScaffold(): string {
         </div>
         <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>
       </div>
-      <div class="panel"><h3>User loop</h3><div ${SECTION_ATTR}="${USERS_LOOP}"></div></div>
+      <details class="panel users-loop-details">
+        <summary><h3>User loop</h3></summary>
+        <div ${SECTION_ATTR}="${USERS_LOOP}"></div>
+      </details>
     </div>
     <div ${SECTION_ATTR}="${STALL}"></div>
     <div class="cols">
@@ -281,6 +285,14 @@ export function mountAppView(deps: AppViewDeps): AppView {
     if (target.id === "pause") {
       togglePause();
       return; // togglePause already re-rendered and saved
+    } else if (target.closest(".users-loop-details > summary")) {
+      // View preference, not game state — do not save. preventDefault so
+      // jsdom and browsers share one toggle path (native summary click
+      // would otherwise double-toggle after we set .open).
+      ev.preventDefault();
+      const details = target.closest<HTMLDetailsElement>(".users-loop-details")!;
+      details.open = !details.open;
+      return;
     } else if (target.closest("[data-zoom]")) {
       // Caret-only inspect: the stage box itself is not a hit target (T3).
       // View preference, not game state — do not save.
