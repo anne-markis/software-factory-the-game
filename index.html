@@ -23,6 +23,7 @@
         --desc: #444;
         --stall-bg: #fdd;
         --stall-fg: #000;
+        --chip-users: #246;
       }
       @media (prefers-color-scheme: dark) {
         :root {
@@ -35,6 +36,7 @@
           --desc: #c2c2c2;
           --stall-bg: #4a1f1f;
           --stall-fg: #ffd6d6;
+          --chip-users: #8ab4e8;
         }
       }
       body { font-family: ui-monospace, monospace; max-width: 1280px; margin: 1rem auto; padding: 0 1rem; color: var(--fg); background: var(--bg); }
@@ -136,6 +138,76 @@
       .delivery-column { min-width: 0; }
       .delivery-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; white-space: nowrap; font-size: 0.95rem; margin: -0.25rem 0 1rem; }
       .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 1rem; }
+      /* Projects catalog: two stacked tables (in-flight status + available
+         offers) share colgroup widths so they read as one grid. The split
+         keeps Start/Pursue out of the per-tick remaining patch. */
+      .proj-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.8rem; }
+      .proj-table-offers { margin-top: 0; }
+      .proj-col-btn { width: 5.2rem; }
+      .proj-col-size { width: 6.4rem; }
+      .proj-col-ideas { width: 4.4rem; }
+      .proj-col-rate { width: 4.4rem; }
+      .proj-col-done { width: 5.4rem; }
+      .proj-table th {
+        text-align: left;
+        color: var(--fg-dim);
+        font-weight: normal;
+        border-bottom: 1px solid var(--border);
+        padding: 0.2rem 0.45rem 0.3rem 0;
+        white-space: nowrap;
+      }
+      .proj-table td {
+        padding: 0.4rem 0.45rem 0.4rem 0;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+      }
+      .proj-table td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .proj-table td.proj-btn { white-space: nowrap; }
+      .proj-group td {
+        padding: 0.55rem 0 0.25rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--fg-dim);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .proj-group-now td { color: var(--accent-amber); font-weight: bold; }
+      .proj-now td { background: color-mix(in srgb, var(--accent-amber) 14%, var(--bg)); }
+      .proj-now td:first-child { box-shadow: inset 3px 0 0 var(--accent-amber); }
+      .proj-name { font-size: 0.95rem; }
+      .proj-left { font-weight: bold; }
+      .proj-sub { color: var(--fg-dim); font-size: 0.75rem; margin-top: 0.1rem; }
+      .proj-empty { color: var(--fg-dim); }
+      .proj-warn { color: var(--accent-amber); }
+      .proj-chip {
+        display: inline-block;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 0 0.28rem;
+        margin: 0 0.18rem 0.12rem 0;
+        font-size: 0.72rem;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        color: var(--fg-dim);
+      }
+      .proj-chip-now {
+        color: var(--accent-amber);
+        border-color: var(--accent-amber);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 0.68rem;
+      }
+      .proj-chip-stall {
+        color: var(--accent-red);
+        border-color: var(--accent-red);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 0.68rem;
+      }
+      .proj-chip-rep { color: var(--accent-amber); border-color: var(--accent-amber); }
+      .proj-chip-debt { color: var(--accent-red); border-color: var(--accent-red); }
+      .proj-chip-users { color: var(--chip-users); border-color: var(--chip-users); }
+      .proj-chip-stock { color: var(--fg); border-color: var(--border); }
       .panel h4 { margin: 0.75rem 0 0.25rem; font-size: 0.95rem; }
       .panel h4:first-of-type { margin-top: 0.25rem; }
       .panel h4 small { font-weight: normal; color: var(--fg-dim); }

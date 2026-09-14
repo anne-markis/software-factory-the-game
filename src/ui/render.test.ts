@@ -592,17 +592,27 @@ describe("renderChoiceCountdown", () => {
 });
 
 describe("renderProjectsStatus", () => {
-  it("shows the Projects header and the in-flight lines", () => {
+  it("shows the Projects header, In flight group, remaining, and effect chips", () => {
     const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
     const e = new Engine(c);
-    const html = renderProjectsStatus([...e.getState().projects], e.getState());
+    const html = renderProjectsStatus([...e.getState().projects], e.getState(), c);
     expect(html).toContain("<h3>Projects</h3>");
+    expect(html).toContain("<th>Project</th>");
+    expect(html).toContain("<th>Size</th>");
+    expect(html).toContain("<th>Ideas</th>");
+    expect(html).toContain("<th>$/pt</th>");
+    expect(html).toContain("<th>Done $</th>");
+    expect(html).toContain("<th>Effects</th>");
+    expect(html).toContain("In flight");
     expect(html).not.toContain("WIP");
     expect(html).not.toContain("efficiency");
-    expect(html).toContain("Launch beta: 300 ·");
+    expect(html).toContain("Launch beta");
+    expect(html).toContain("300 left");
+    expect(html).toContain("+1 rep");
+    expect(html).toContain("+30 users");
     // Fresh engine has not ticked yet — realized Points/Day is 0 → stalled
     // (FR-3.2).
-    expect(html).toContain("· stalled");
+    expect(html).toContain(">stalled<");
     expect(html).toContain('data-abandon="launch-beta"');
     expect(html).toContain(">Abandon<");
     expect(html).not.toContain(">Cancel<");
@@ -615,10 +625,11 @@ describe("renderProjectsStatus", () => {
     const c = { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
     const s = initialState(c);
     s.plan = [{ defId: "ship-v1", name: "Ship v1", progress: 12, size: 400 }];
-    const html = renderProjectsStatus([...s.projects], s);
+    const html = renderProjectsStatus([...s.projects], s, c);
+    expect(html).toContain("In plan");
     expect(html).toContain('data-plan-status="ship-v1"');
-    expect(html).toContain("Ship v1: 12 / 400");
-    expect(html).toContain("· ~388d");
+    expect(html).toContain("12 / 400");
+    expect(html).toContain("~388d");
     expect(html).toContain('data-cancel="ship-v1"');
     expect(html).toContain(">Cancel<");
     expect(html).not.toMatch(/data-abandon="ship-v1"/);
@@ -633,11 +644,11 @@ describe("renderProjectsStatus", () => {
       { defId: "ship-v1", name: "Ship v1", progress: 0, size: 400 },
       { defId: "gig-plugin", name: "Client plugin", progress: 0, size: 450 },
     ];
-    const html = renderProjectsStatus([...s.projects], s);
-    expect(html).toContain("Ship v1: 0 / 400");
-    expect(html).toContain("Client plugin: 0 / 450");
-    expect(html).toContain("· ~800d");
-    expect(html).toContain("· ~900d");
+    const html = renderProjectsStatus([...s.projects], s, c);
+    expect(html).toContain("0 / 400");
+    expect(html).toContain("0 / 450");
+    expect(html).toContain("~800d");
+    expect(html).toContain("~900d");
     expect(html.match(/data-cancel="/g)).toHaveLength(2);
   });
 
@@ -648,9 +659,10 @@ describe("renderProjectsStatus", () => {
     // Pipeline fill takes several days before realized Points/Day is non-zero;
     // set the rate directly so this asserts the derived line, not tick lag.
     s.pointsPerDay = 1;
-    const html = renderProjectsStatus([...s.projects], s);
-    expect(html).toContain("Launch beta: 300 ·");
-    expect(html).toContain("· ~300d");
+    const html = renderProjectsStatus([...s.projects], s, c);
+    expect(html).toContain("300 left");
+    expect(html).toContain("~300d");
+    expect(html).not.toContain(">stalled<");
   });
 
   it("updates the estimate when Points/Day changes", () => {
@@ -658,9 +670,9 @@ describe("renderProjectsStatus", () => {
     const s = initialState(c);
     s.pointsPerDay = 10;
     s.projects[0]!.remaining = 100;
-    expect(renderProjectsStatus([...s.projects], s)).toContain("· ~10d");
+    expect(renderProjectsStatus([...s.projects], s, c)).toContain("~10d");
     s.pointsPerDay = 0;
-    expect(renderProjectsStatus([...s.projects], s)).toContain("· stalled");
+    expect(renderProjectsStatus([...s.projects], s, c)).toContain(">stalled<");
   });
 
   it("lengthens each in-flight ETA when a second contract starts, then shortens when one leaves", () => {
@@ -668,7 +680,7 @@ describe("renderProjectsStatus", () => {
     const s = initialState(c);
     s.pointsPerDay = 1;
     s.projects[0]!.remaining = 100;
-    expect(renderProjectsStatus([...s.projects], s)).toContain("· ~100d");
+    expect(renderProjectsStatus([...s.projects], s, c)).toContain("~100d");
     expect(s.pointsPerDay).toBe(1);
 
     s.projects.push({
@@ -679,16 +691,17 @@ describe("renderProjectsStatus", () => {
       completionBonus: 200,
       reputationReward: 1,
     });
-    const two = renderProjectsStatus([...s.projects], s);
-    expect(two).toContain("Launch beta: 100 ·");
-    expect(two).toContain("Weekend bugfix: 100 ·");
+    const two = renderProjectsStatus([...s.projects], s, c);
+    expect(two).toContain("Launch beta");
+    expect(two).toContain("Weekend bugfix");
+    expect(two.match(/100 left/g)).toHaveLength(2);
     expect(two.match(/~200d/g)).toHaveLength(2);
     expect(s.pointsPerDay).toBe(1);
     expect(two).not.toContain("efficiency");
 
     s.projects = s.projects.filter((p) => p.defId !== "gig-bugfix");
-    const one = renderProjectsStatus([...s.projects], s);
-    expect(one).toContain("· ~100d");
+    const one = renderProjectsStatus([...s.projects], s, c);
+    expect(one).toContain("~100d");
     expect(one).not.toContain("~200d");
   });
 });
@@ -710,6 +723,11 @@ describe("renderProjectOffers", () => {
     const html = renderProjectOffers(e.availableProjects(), e.getState());
     expect(html).toContain('data-project="gig-bugfix" ');
     expect(html).toContain("Weekend bugfix");
+    expect(html).toContain("100 pts");
+    expect(html).toContain("$18");
+    expect(html).toContain("$200");
+    expect(html).toContain("+1 rep");
+    expect(html).not.toMatch(/100 · \$0 ·/);
     expect(html).not.toMatch(/efficiency/i);
     expect(html).not.toContain("drops efficiency");
     for (const id of ["ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
@@ -769,7 +787,8 @@ describe("renderProjectOffers", () => {
     s.stocks.ideas = 100;
     const html = renderProjectOffers(projectAvailability(s, c), s);
     expect(html).toContain('data-project="ship-v1" disabled>Pursue<');
-    expect(html).toContain("cannot afford");
+    expect(html).toContain('class="num proj-warn">400<');
+    expect(html).not.toContain("cannot afford");
     expect(html).not.toContain('data-project="ship-v1" disabled>Start<');
   });
 
@@ -826,6 +845,38 @@ describe("renderProjectOffers", () => {
     expect(projectAvailability(s, c).find((p) => p.def.id === "gig-bugfix")!.startable).toBe(true);
   });
 
+  it("labels Ideas on Pursue, omits $0 money, and chips debt / users effects", () => {
+    const c = studioProjects();
+    const s = initialState(c);
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.ideas = 400;
+    const html = renderProjectOffers(projectAvailability(s, c), s);
+    expect(html).toContain("Available");
+    expect(html).toContain("debt −50");
+    expect(html).toContain("+20 users");
+    expect(html).toContain("+1 users/day");
+    expect(html).toContain("400 pts");
+    expect(html).toContain("$1,000");
+    expect(html).not.toContain("$0/pt");
+  });
+
+  it("omits an already-in-flight catalog row from Available (it lives in In flight)", () => {
+    const c = studioProjects();
+    const s = initialState(c);
+    s.projects.push({
+      defId: "gig-bugfix",
+      name: "Weekend bugfix",
+      remaining: 100,
+      payoutPerPoint: 18,
+      completionBonus: 200,
+      reputationReward: 1,
+    });
+    const html = renderProjectOffers(projectAvailability(s, c), s);
+    expect(html).not.toContain('data-project="gig-bugfix"');
+    expect(html).toContain('data-project="gig-landing-page"');
+  });
+
   it("does not change as in-flight work progresses, so the Start buttons survive the tick", () => {
     const c = studioProjects();
     const s = initialState(c);
@@ -851,7 +902,8 @@ describe("projectsPanelScaffold", () => {
     expect(html).toContain(`data-section="${PROJECTS_STATUS_SECTION}"`);
     expect(html).toContain(`data-section="${PROJECTS_OFFERS_SECTION}"`);
     expect(html).toContain('<div class="panel">');
-    expect(html).toContain("<hr/>");
+    expect(html).not.toContain("<hr/>");
+    expect(html).not.toContain("<hr>");
   });
 });
 

@@ -3,6 +3,7 @@ import type { ProjectAvailability } from "../engine/projects";
 import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
 import { effectiveRate } from "../engine/modifiers";
 import { summarizeDecisionEffects } from "./effectSummary";
+import { projectEffectChips, type ProjectChip, type ProjectEffectSource } from "./projectEffects";
 import { SECTION_ATTR } from "./domPatch";
 import { formatBuiltAt, type BuildInfo } from "./buildInfo";
 import { cockpitStatViews, deliveryStatViews, statsRowHtml } from "./gameFeel";
@@ -252,52 +253,171 @@ export const PROJECTS_STATUS_SECTION = "projects-status";
 export const PROJECTS_OFFERS_SECTION = "projects-offers";
 
 export function projectsPanelScaffold(): string {
-  return `<div class="panel"><div ${SECTION_ATTR}="${PROJECTS_STATUS_SECTION}"></div><hr/><div ${SECTION_ATTR}="${PROJECTS_OFFERS_SECTION}"></div></div>`;
+  // No <hr/>: status (thead + in-flight / in-plan) and offers (Available)
+  // are two tables with matching colgroups so they read as one grid. The
+  // split keeps Start/Pursue nodes out of the per-tick remaining patch.
+  return `<div class="panel"><div ${SECTION_ATTR}="${PROJECTS_STATUS_SECTION}"></div><div ${SECTION_ATTR}="${PROJECTS_OFFERS_SECTION}"></div></div>`;
 }
 
-export function renderProjectsStatus(inFlight: readonly ActiveProject[], state: Readonly<GameState>): string {
+const PROJ_EMPTY = `<span class="proj-empty">—</span>`;
+
+function projectColgroup(): string {
+  return `<colgroup>
+    <col class="proj-col-btn" />
+    <col class="proj-col-name" />
+    <col class="proj-col-size" />
+    <col class="proj-col-ideas" />
+    <col class="proj-col-rate" />
+    <col class="proj-col-done" />
+    <col class="proj-col-fx" />
+  </colgroup>`;
+}
+
+function projectThead(): string {
+  return `<thead><tr>
+    <th></th>
+    <th>Project</th>
+    <th>Size</th>
+    <th>Ideas</th>
+    <th>$/pt</th>
+    <th>Done $</th>
+    <th>Effects</th>
+  </tr></thead>`;
+}
+
+function groupRow(label: string, now = false): string {
+  return `<tr class="proj-group${now ? " proj-group-now" : ""}"><td colspan="7">${esc(label)}</td></tr>`;
+}
+
+function moneyCell(n: number): string {
+  return n === 0 ? PROJ_EMPTY : `$${fmt(n)}`;
+}
+
+function chipsHtml(chips: ProjectChip[]): string {
+  return chips
+    .map((c) => `<span class="proj-chip proj-chip-${c.tone}">${esc(c.text)}</span>`)
+    .join("");
+}
+
+function extrasForActive(p: ActiveProject, content: GameContent): ProjectEffectSource {
+  const catalog = content.projects.find((d) => d.id === p.defId);
+  const initial = content.start.initialProject.id === p.defId ? content.start.initialProject : undefined;
+  return {
+    reputationReward: p.reputationReward,
+    completionStockGrants: p.completionStockGrants ?? catalog?.completionStockGrants ?? initial?.completionStockGrants,
+    stockFlowMods: catalog?.stockFlowMods,
+  };
+}
+
+function etaSub(eta: string): string {
+  return eta === "stalled" ? "" : `<div class="proj-sub">${esc(eta)}</div>`;
+}
+
+function stallChip(eta: string): string {
+  return eta === "stalled" ? `<span class="proj-chip proj-chip-stall">stalled</span>` : "";
+}
+
+export function renderProjectsStatus(
+  inFlight: readonly ActiveProject[],
+  state: Readonly<GameState>,
+  content: GameContent,
+): string {
   const planning = state.plan ?? [];
   const planN = planning.length;
   const planRate = effectiveRate(state, "plan");
   const planRows = planning
-    .map((p) => {
-      const eta = formatProjectEta(p.size - p.progress, planRate, planN);
-      return `<div data-plan-status="${esc(p.defId)}">${esc(p.name)}: ${fmt(p.progress)} / ${fmt(p.size)} · ${esc(eta)} <button type="button" data-cancel="${esc(p.defId)}">Cancel</button></div>`;
+    .map((item) => {
+      const def = content.projects.find((d) => d.id === item.defId);
+      const eta = formatProjectEta(item.size - item.progress, planRate, planN);
+      const chips = def ? chipsHtml(projectEffectChips(def)) : "";
+      return `<tr data-plan-status="${esc(item.defId)}">
+        <td class="proj-btn"><button type="button" data-cancel="${esc(item.defId)}">Cancel</button></td>
+        <td><div class="proj-name"><strong>${esc(item.name)}</strong></div>${etaSub(eta)}</td>
+        <td class="num">${fmt(item.progress)} / ${fmt(item.size)}</td>
+        <td class="num">${PROJ_EMPTY}</td>
+        <td class="num">${def ? moneyCell(def.payoutPerPoint) : PROJ_EMPTY}</td>
+        <td class="num">${def ? moneyCell(def.completionBonus) : PROJ_EMPTY}</td>
+        <td class="proj-fx">${chips}</td>
+      </tr>`;
     })
     .join("");
   const n = inFlight.length;
-  const flight = inFlight
+  const flightRows = inFlight
     .map((p) => {
       const eta = formatProjectEta(p.remaining, state.pointsPerDay, n);
-      return `<div data-project-status="${esc(p.defId)}">${esc(p.name)}: ${fmt(p.remaining)} · $${fmt(p.payoutPerPoint)}/pt + $${fmt(p.completionBonus)} · ${esc(eta)} <button type="button" data-abandon="${esc(p.defId)}">Abandon</button></div>`;
+      const chips = chipsHtml(projectEffectChips(extrasForActive(p, content)));
+      return `<tr class="proj-now" data-project-status="${esc(p.defId)}">
+        <td class="proj-btn"><button type="button" data-abandon="${esc(p.defId)}">Abandon</button></td>
+        <td>
+          <span class="proj-chip proj-chip-now">in flight</span>${stallChip(eta)}
+          <div class="proj-name"><strong>${esc(p.name)}</strong></div>${etaSub(eta)}
+        </td>
+        <td class="num"><span class="proj-left">${fmt(p.remaining)} left</span></td>
+        <td class="num">${PROJ_EMPTY}</td>
+        <td class="num">${moneyCell(p.payoutPerPoint)}</td>
+        <td class="num">${moneyCell(p.completionBonus)}</td>
+        <td class="proj-fx">${chips}</td>
+      </tr>`;
     })
     .join("");
-  return `<h3>Projects</h3>${planRows}${flight}`;
+
+  const body =
+    (n > 0 ? groupRow("In flight", true) + flightRows : "") +
+    (planN > 0 ? groupRow("In plan") + planRows : "");
+
+  return `<h3>Projects</h3>
+    <table class="proj-table">
+      ${projectColgroup()}
+      ${projectThead()}
+      <tbody>${body}</tbody>
+    </table>`;
 }
 
-// omit unmet-prerequisite and already-completed rows.
-// Keep startable offers plus cannot-afford / already-in-flight (exact strings
-// from projectAvailability).
+// Omit unmet-prerequisite, already-completed, already-in-plan, and
+// already-in-flight rows. In-flight lives in the status group's top rows so
+// it is not repeated as a disabled offer. Keep cannot-afford visible.
 function isVisibleProjectOffer(o: ProjectAvailability): boolean {
   if (o.startable) return true;
-  return o.reason === "cannot afford" || o.reason === "already in flight";
+  return o.reason === "cannot afford";
 }
 
-export function renderProjectOffers(offers: ProjectAvailability[], _state: Readonly<GameState>): string {
-  // Offer copy is size/cost/payout only. In-flight count does not appear
-  // here (no efficiency preview, no formula) so this string stays stable
-  // between ticks — which is what lets the memo hold. The tell for extra
-  // WIP is the in-flight ETAs in the status section, which use the 1/n slice.
-  return offers
+export function renderProjectOffers(offers: ProjectAvailability[], state: Readonly<GameState>): string {
+  // Offer copy is size / Ideas / payout / effects only. In-flight remaining
+  // and ETAs do not appear here, so this string stays stable between ticks
+  // and Start/Pursue nodes survive the 10Hz patch. Extra WIP is told by the
+  // in-flight rows above, which use the 1/n slice.
+  const rows = offers
     .filter(isVisibleProjectOffer)
     .map((o) => {
+      const def = o.def;
       const disabled = o.startable ? "" : "disabled";
-      const reason = o.reason ? ` (${esc(o.reason)})` : "";
-      const label = o.def.pursue ? "Pursue" : "Start";
-      return `<div><button data-project="${esc(o.def.id)}" ${disabled}>${label}</button> <strong>${esc(o.def.name)}</strong>${reason}<br/>
-        <small>${fmt(o.def.sizePoints)} · $${fmt(o.def.upfrontCost)} · $${fmt(o.def.payoutPerPoint)}/pt + $${fmt(o.def.completionBonus)}</small></div>`;
+      const label = def.pursue ? "Pursue" : "Start";
+      const ideasShort = !!def.pursue && state.stocks.ideas < def.sizePoints;
+      const cashShort = state.stocks.budget < def.upfrontCost;
+      const cashNote = cashShort ? `<div class="proj-sub proj-warn">cannot afford</div>` : "";
+      const upfront = def.upfrontCost > 0 ? `<div class="proj-sub">$${fmt(def.upfrontCost)} start</div>` : "";
+      const ideas = def.pursue ? fmt(def.sizePoints) : PROJ_EMPTY;
+      const ideasClass = ideasShort ? "num proj-warn" : "num";
+      const chips = chipsHtml(projectEffectChips(def));
+      return `<tr>
+        <td class="proj-btn"><button data-project="${esc(def.id)}" ${disabled}>${label}</button></td>
+        <td><div class="proj-name"><strong>${esc(def.name)}</strong></div>${upfront}${cashNote}</td>
+        <td class="num">${fmt(def.sizePoints)} pts</td>
+        <td class="${ideasClass}">${ideas}</td>
+        <td class="num">${moneyCell(def.payoutPerPoint)}</td>
+        <td class="num">${moneyCell(def.completionBonus)}</td>
+        <td class="proj-fx">${chips}</td>
+      </tr>`;
     })
     .join("");
+  if (!rows) return "";
+  return `<table class="proj-table proj-table-offers">
+    ${projectColgroup()}
+    <tbody>
+      ${groupRow("Available")}
+      ${rows}
+    </tbody>
+  </table>`;
 }
 
 // The time-control group (design doc section 8): Start/Pause plus one
