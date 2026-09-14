@@ -1,7 +1,8 @@
 import type { DecisionDef, DecisionInstance, GameContent, GameState, GambleOutcome } from "./types";
 import type { Rng } from "./rng";
+import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { applyEffects } from "./effects";
-import { log } from "./tick";
+import { isDeliveryFrozen, log } from "./tick";
 
 export type AvailabilityCode = "missing-requires" | "cannot-afford" | "already-owned";
 
@@ -59,6 +60,12 @@ function rollGamble(table: GambleOutcome[], rng: Rng): GambleOutcome {
   return table[table.length - 1];
 }
 
+/** Fill empty seats from Ready, or spill extra back, without finishing work. */
+function rebalanceSeats(state: GameState, content: GameContent): void {
+  if (isDeliveryFrozen(state)) return;
+  applySeatCapacity(state, effectiveCapacity(state, content), 0);
+}
+
 export function applyDecision(state: GameState, content: GameContent, defId: string, rng: Rng): void {
   const entry = availability(state, content).find((a) => a.def.id === defId);
   if (!entry) throw new Error(`Unknown decision: ${defId}`);
@@ -92,6 +99,7 @@ export function applyDecision(state: GameState, content: GameContent, defId: str
     log(state, `Purchased: ${def.name}`);
   }
   state.decisions.push(instance);
+  rebalanceSeats(state, content);
   state.rngState = rng.getState();
 }
 
@@ -102,5 +110,6 @@ export function removeDecision(state: GameState, content: GameContent, instanceI
   if (def && !def.removable) throw new Error(`${def.name} cannot be removed`);
   state.decisions = state.decisions.filter((d) => d.instanceId !== instanceId);
   state.modifiers = state.modifiers.filter((m) => m.source !== instanceId);
+  rebalanceSeats(state, content);
   if (def) log(state, `Removed: ${def.name}`);
 }

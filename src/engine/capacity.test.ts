@@ -136,4 +136,47 @@ describe("tick seats", () => {
     e.tick();
     expect(e.getState().stocks.inProgress).toBe(2);
   });
+
+  it("a hire fills the extra seat from Ready immediately, without finishing", () => {
+    const e = new Engine(shippedContent());
+    e.tick();
+    const before = e.getState();
+    const ready = before.stocks.backlog;
+    const done = before.stocks.done;
+    e.applyDecision("basic-dev");
+    const s = e.getState();
+    expect(s.stocks.inProgress).toBe(2);
+    expect(s.stocks.backlog).toBe(ready - 1);
+    expect(s.stocks.done).toBe(done);
+  });
+
+  it("an agent does not fill extra seats on purchase", () => {
+    const e = new Engine(shippedContent());
+    e.tick();
+    e.applyDecision("agent");
+    expect(e.getState().stocks.inProgress).toBe(1);
+  });
+
+  it("removing a hire spills the extra seat back to Ready immediately", () => {
+    const e = new Engine(shippedContent());
+    e.tick();
+    e.applyDecision("basic-dev");
+    expect(e.getState().stocks.inProgress).toBe(2);
+    const ready = e.getState().stocks.backlog;
+    const done = e.getState().stocks.done;
+    e.removeDecision(e.getState().decisions[0]!.instanceId);
+    const s = e.getState();
+    expect(s.stocks.inProgress).toBe(1);
+    expect(s.stocks.backlog).toBe(ready + 1);
+    expect(s.stocks.done).toBe(done);
+  });
+
+  it("does not fill seats on hire while delivery is frozen", () => {
+    const content = shippedContent();
+    content.start.stocks.budget = 0;
+    const e = new Engine(content);
+    e.applyDecision("basic-dev");
+    expect(e.getState().stocks.inProgress).toBe(0);
+    expect(e.getState().stocks.backlog).toBe(300);
+  });
 });
