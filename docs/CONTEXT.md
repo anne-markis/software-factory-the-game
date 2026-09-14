@@ -90,12 +90,14 @@ Ideas. Later-era new contracts are Pursue because they are late/big;
 inherited Start gigs stay Start.
 
 Pipeline stage stocks say *where* unshipped work sits. `backlog` is the
-Ready queue (waiting to pull), not the cockpit hero metric. Cockpit
-**Backlog** is `backlog + inProgress + done` (ADR 0009). In-flight
-`ActiveProject.remaining` is the same work attributed to a contract;
-injected pipeline work (debt, scope creep) attaches to remaining so it
-delays delivery instead of counting as free progress. Users still grant
-when remaining hits ~0 (the work has shipped).
+Ready queue (waiting for an In Progress seat), not the cockpit hero
+metric. `inProgress` is capacity: founder `baseCapacity` plus owned
+cards' `capacity` (Studio hires +1; agents omit it and only add finish
+speed). Cockpit **Backlog** is `backlog + inProgress + done` (ADR 0009).
+In-flight `ActiveProject.remaining` is the same work attributed to a
+contract; injected pipeline work (debt, scope creep) attaches to remaining
+so it delays delivery instead of counting as free progress. Users still
+grant when remaining hits ~0 (the work has shipped).
 
 ## Stock-linked content (generic, not named after fiction)
 

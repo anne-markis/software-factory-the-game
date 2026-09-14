@@ -30,11 +30,7 @@ describe("parseStartConfig", () => {
     expect(cfg.stocks.plan).toBe(0);
     expect(cfg.stocks.budget).toBe(10000);
     expect(cfg.debtMultiplier).toBe(0.5);
-    // Pull headroom: pull runs at 2/day against finish and deploy at
-    // 1/day, so the slowest stage is downstream of pull and the shop's
-    // finish-side agent ladder has somewhere to put its capacity. With pull also
-    // at 1 the ladder bought nothing: throughput is the min across the stages,
-    // so a tripled finish rate could not move a single extra point.
+    expect(cfg.baseCapacity).toBe(1);
     // Discover is the Ideas faucet: 0.5/day from day 0, not a delivery stage.
     expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, deploy: 1, discover: 0.5, plan: 1 });
     // Studio lean challenge pool: a 35-day global gap, down from
@@ -317,30 +313,25 @@ describe("parseDecisions", () => {
 
   it("keeps the Release 15 deploy-bottleneck split on the hire, and \"all\" on tooling", () => {
     const defs = parseDecisions(decisionsJson);
-    // A hire's every rate-boosting outcome targets pull and finish with the
-    // same value (human capacity does not speed deploy). No "all" modifyRate
-    // survives on it; deploy is left to ci-cd's structural change.
+    // A hire adds an In Progress seat (capacity: 1) and gambles finish speed.
+    // Deploy stays with ci-cd. Agents are finish-only and add no seats.
     const splitTargets = (effects: { type: string; target?: string }[]) =>
       effects.filter((e) => e.type === "modifyRate").map((e) => e.target).sort();
 
     const dev = defs.find((d) => d.id === "basic-dev")!;
-    // base Strong hire: pull +1 and finish +1
+    expect(dev.capacity).toBe(1);
     expect(dev.gamble![0].effects).toEqual([
-      { type: "modifyRate", target: "pull", op: "add", value: 1.0 },
       { type: "modifyRate", target: "finish", op: "add", value: 1.0 },
     ]);
-    for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "pull"]);
-    // The eng-manager odds synergy left Studio with the manager itself.
+    for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish"]);
     expect(dev.synergies).toBeUndefined();
 
-    // The agent ladder is finish-only for the same reason: agents write code,
-    // they do not run the release.
     for (const id of ["agent", "agent-harness", "agent-orchestration"]) {
-      expect(splitTargets(defs.find((d) => d.id === id)!.effects)).toEqual(["finish"]);
+      const card = defs.find((d) => d.id === id)!;
+      expect(card.capacity).toBeUndefined();
+      expect(splitTargets(card.effects)).toEqual(["finish"]);
     }
 
-    // better-tooling deliberately KEEPS "all" (tooling plausibly speeds
-    // releases too).
     expect(defs.find((d) => d.id === "better-tooling")!.effects).toEqual([
       { type: "modifyRate", target: "all", op: "add", value: 0.1 },
     ]);

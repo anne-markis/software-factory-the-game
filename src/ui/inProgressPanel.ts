@@ -22,11 +22,11 @@ function cleanSourceLabel(source: string): string {
 // increments (e.g. 0.02/day), so their raw value drifts like 0.39999999999999997.
 // Round those to one decimal for display and flag them as still-growing;
 // non-ramp contributions are shown at full precision as before.
-function contribution(op: "add" | "mul", value: number, ramping = false): string {
+function contribution(op: "add" | "mul", value: number, ramping = false, unit = "/day"): string {
   if (op === "add") {
     const display = ramping ? value.toFixed(1) : `${value}`;
     const suffix = ramping ? " (ramping)" : "";
-    return `${value >= 0 ? "+" : ""}${display}/day${suffix}`; // negatives carry their own sign
+    return `${value >= 0 ? "+" : ""}${display}${unit}${suffix}`; // negatives carry their own sign
   }
   return `x${value}`;
 }
@@ -122,7 +122,59 @@ function renderCol(header: string, nodes: readonly ContributorNode[]): string {
   return `<div><h4>${esc(header)}</h4>${items}</div>`;
 }
 
+function buildCapacityNodes(state: Readonly<GameState>, content: GameContent): ContributorNode[] {
+  const nodes: ContributorNode[] = [{ label: `Base ${state.baseCapacity}`, dim: false }];
+  const seenFromOwned = new Set<string>();
+  const instanceIds = new Set(state.decisions.map((d) => d.instanceId));
+
+  for (const inst of state.decisions) {
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (!def) continue;
+    const sick = inst.sickUntilDay !== undefined && inst.sickUntilDay > state.day;
+    const gamble = inst.gambleLabel ? ` [${inst.gambleLabel}]` : "";
+    const sickSuffix = sick ? " (sick)" : "";
+    if (def.capacity && def.capacity !== 0) {
+      nodes.push({
+        label: `${def.name}${gamble}: +${def.capacity}${sickSuffix}`,
+        dim: sick,
+      });
+    }
+    const capMods = state.modifiers.filter((m) => m.target === "capacity" && m.source === inst.instanceId);
+    if (capMods.length > 0 && def) {
+      const contributions = capMods.map((m) => contribution(m.op, m.value, m.rampPerDay !== undefined, "")).join(", ");
+      nodes.push({
+        label: `${def.name}${gamble}: ${contributions}${sickSuffix}`,
+        dim: sick,
+      });
+    }
+    if (def.capacityFromOwned && !seenFromOwned.has(def.id)) {
+      seenFromOwned.add(def.id);
+      for (const grant of def.capacityFromOwned) {
+        const n = state.decisions.filter((d) => d.defId === grant.id).length;
+        const add = n * grant.per;
+        if (add === 0) continue;
+        const source = content.decisions.find((d) => d.id === grant.id);
+        nodes.push({ label: `${source?.name ?? grant.id}: +${add}`, dim: false });
+      }
+    }
+  }
+
+  for (const m of state.modifiers) {
+    if (m.target !== "capacity") continue;
+    if (instanceIds.has(m.source)) continue;
+    const cleaned = cleanSourceLabel(m.source);
+    const expiry = m.expiresDay !== undefined ? ` (${m.expiresDay - state.day}d left)` : "";
+    nodes.push({
+      label: `${cleaned}: ${contribution(m.op, m.value, m.rampPerDay !== undefined, "")}${expiry}`,
+      dim: false,
+    });
+  }
+
+  return nodes;
+}
+
 function inProgressZoom(state: Readonly<GameState>, content: GameContent): string {
+  const capacityNodes = buildCapacityNodes(state, content);
   const speedNodes = buildRateGroupNodes(state, content, "speed", "finish");
   const frictionNodes = buildRateGroupNodes(state, content, "friction", "finish");
   const leakNodes = buildLeakNodes(state, content);
@@ -131,6 +183,7 @@ function inProgressZoom(state: Readonly<GameState>, content: GameContent): strin
     <div class="stage-zoom" data-zoom-open="inProgress">
       <div class="stage-zoom-head">In Progress</div>
       <div class="stage-zoom-cols">
+        ${renderCol("Capacity", capacityNodes)}
         ${renderCol("Cycle speed", speedNodes)}
         ${friction}
         ${renderCol("Leak size", leakNodes)}

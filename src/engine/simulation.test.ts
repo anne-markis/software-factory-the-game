@@ -127,14 +127,14 @@ describe("simulation", () => {
         usersAfterCompletion = s.stocks.users;
       }
       if (firstZeroDay === 0 && s.stocks.budget === 0) firstZeroDay = day;
-      if (day === 301) { repBeforeCompletion = s.stocks.reputation; usersBeforeCompletion = s.stocks.users; }
+      if (day === 300) { repBeforeCompletion = s.stocks.reputation; usersBeforeCompletion = s.stocks.users; }
       if ([50, 100, 200, 300, 302, 540].includes(day)) at[day] = s.stocks.budget;
     }
     // Users and reputation stay at 0 through the whole beta, then step up the
     // moment it completes -- nothing invents users offstage before launch.
     expect(usersBeforeCompletion).toBe(0);
     expect(repBeforeCompletion).toBe(0);
-    expect(completionDay).toBe(302);
+    expect(completionDay).toBe(301);
     expect(repAfterCompletion).toBe(c.start.initialProject.reputationReward); // 1
     expect(usersAfterCompletion).toBeCloseTo(31.3, 1); // 30 grant + first organic day (1.6 - 0.3 churn)
     // Phase 1: exactly linear -$20/day, no payout during the $0/pt beta.
@@ -142,8 +142,8 @@ describe("simulation", () => {
     expect(at[100]).toBe(8000);
     expect(at[200]).toBe(6000);
     expect(at[300]).toBe(4000); // solvency rule: beta finishes with budget to spare
-    // Completion bump: +$800 bonus lands on day 302.
-    expect(at[302]).toBe(4760); // (10000 - 20*302) + 800
+    // Completion bump: +$800 bonus lands on day 301; day 302 is one burn later.
+    expect(at[302]).toBe(4760); // (10000 - 20*301) + 800 - 20
     // Phase 2: clean -$20/day tail to zero. 4760 / 20 = 238 -> day 540.
     expect(firstZeroDay).toBe(540);
     expect(at[540]).toBe(0);
@@ -195,7 +195,7 @@ describe("simulation", () => {
       if (s.stocks.users > 0) sawUsers = true;
       if (day === 300) budgetAt300 = s.stocks.budget;
     }
-    expect(completionDay).toBe(302); // the beta completes on schedule
+    expect(completionDay).toBe(301);
     expect(sawUsers).toBe(true); // the users economy did switch on at launch
     expect(budgetAt300).toBeLessThan(4200); // pre-completion glide, well off 10,000 (observed 4000: no cash event reaches an idle Studio)
     expect(budgetAt300).toBeGreaterThan(0); // no instant death
@@ -567,21 +567,21 @@ describe("simulation", () => {
     const i = idle.getState();
     const l = ladder.getState();
     expect(l.stocks.shipped).toBe(i.stocks.shipped); // observed: 118 both -- deploy-bound
-    expect(l.stocks.budget).toBeLessThan(i.stocks.budget); // 2950 vs 7600: the upkeep is real
-    // The teaching: the pile the player is staring at moves downstream.
-    expect(i.stocks.inProgress).toBeGreaterThan(100); // 121: finish cannot keep up with pull
-    expect(i.stocks.done).toBeLessThan(2); // 1: deploy clears everything finish hands it
-    expect(l.stocks.inProgress).toBeLessThan(3); // 2: the agents absorb all of pull
-    expect(l.stocks.done).toBeGreaterThan(100); // 120: finished work waiting on a deploy
+    expect(l.stocks.budget).toBeLessThan(i.stocks.budget);
+    expect(i.stocks.inProgress).toBe(1);
+    expect(i.stocks.done).toBeLessThan(2);
+    // Agents add speed, not seats. They empty Ready into Done; the pile is Done.
+    expect(l.stocks.inProgress).toBe(0);
+    expect(l.stocks.backlog).toBe(0);
+    expect(l.stocks.done).toBeGreaterThan(100);
     // And the debt half of the ladder lands regardless of the bottleneck.
     expect(l.stocks.techDebt).toBeLessThan(i.stocks.techDebt); // 41 vs 59
   });
 
   // Half two: with continuous deploy bought, the Done stage is gone and
-  // throughput is min(pull, finish) -- so the ladder finally spends its finish
-  // capacity, up to pull's 2.0/day ceiling. Roughly double an idle factory's
-  // output over the same window: the ladder is not a trap, it is the second half
-  // of a two-part purchase.
+  // finish speed is the ceiling. The ladder spends that speed against Ready
+  // (agents add no seats). Over 120 days it empties the 300-point beta;
+  // idle is still finishing at 1/day.
   it("with ci-cd owned, the full agent ladder ships about twice what an idle factory does", () => {
     const idle = ladderBuild({ ladder: false, continuousDeploy: true });
     const ladder = ladderBuild({ ladder: true, continuousDeploy: true });
@@ -591,14 +591,10 @@ describe("simulation", () => {
     }
     const i = idle.getState();
     const l = ladder.getState();
-    expect(l.stocks.shipped).toBeGreaterThan(i.stocks.shipped * 1.9); // observed 230.5 vs 116
-    expect(l.pointsPerDay).toBeCloseTo(2, 5); // pull's ceiling, not finish's 3.26
-    expect(i.pointsPerDay).toBeCloseTo(1, 5); // finish's, unimproved
-    // Debt cuts both ways once the capacity is real: the ladder's multiplier is
-    // far lower per point (0.35 vs 0.5), but it ships twice the points, so the
-    // stock still grows faster in absolute terms -- the Limits to Growth loop
-    // arrives sooner for the fast factory, which is the intended lesson.
-    expect(l.stocks.techDebt).toBeGreaterThan(i.stocks.techDebt); // 40 vs 29
+    expect(l.stocks.shipped).toBeGreaterThan(i.stocks.shipped * 1.9);
+    expect(i.pointsPerDay).toBeCloseTo(1, 5);
+    expect(l.stocks.backlog + l.stocks.inProgress).toBeCloseTo(0, 5);
+    expect(l.stocks.techDebt).toBeGreaterThan(i.stocks.techDebt);
   });
 
   // acceptance: a SHORT Studio session on the lean shop has to hold
@@ -660,13 +656,13 @@ describe("simulation", () => {
     expect(buys).toEqual([
       "d1:subscription",
       "d2:one-time-product",
+      "d301:agent",
       "d302:agent",
-      "d303:agent",
-      "d304:agent-harness",
-      "d305:agent-orchestration",
+      "d303:agent-harness",
+      "d304:agent-orchestration",
     ]);
     expect(orchestrationOfferedWithOneAgent).toBe(false);
-    expect(completedDay).toBe(302); // the Studio beta spine is untouched by the shop retune
+    expect(completedDay).toBe(301);
     const s = e.getState();
     expect(s.decisions.filter((d) => d.defId === "agent")).toHaveLength(2); // stackable, and both survived payroll
     expect(minBudgetAfterLaunch).toBeGreaterThan(1000); // never near the zero clamp (observed ~3129)

@@ -19,6 +19,7 @@ export function initialState(content: GameContent): GameState {
     eraId: content.eraId ?? content.eras?.startingEraId ?? "_fixture",
     stocks: { ...s.stocks },
     baseRates: { ...s.baseRates },
+    baseCapacity: s.baseCapacity,
     debtMultiplierBase: s.debtMultiplier,
     baseBurnPerDay: s.baseBurnPerDay,
     contextSwitchFactor: s.contextSwitchFactor,
@@ -121,6 +122,9 @@ export class Engine {
       }
       if (restored.baseRates.plan === undefined) {
         restored.baseRates.plan = content.start.baseRates.plan;
+      }
+      if (restored.baseCapacity === undefined) {
+        restored.baseCapacity = content.start.baseCapacity;
       }
       if (restored.stockDrags === undefined) {
         restored.stockDrags = (content.start.stockDrags ?? []).map((d) => ({ ...d }));

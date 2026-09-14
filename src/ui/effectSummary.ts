@@ -80,6 +80,10 @@ function describeEffect(effect: Effect): string | null {
       // instanceId through, so this never actually does anything when it
       // lives here. Nothing to summarize; filtered out by the caller.
       return null;
+    case "modifyCapacity": {
+      const body = effect.op === "mul" ? `capacity x${fmtNum(effect.value)}` : `capacity ${signed(effect.value)}`;
+      return withFeltDuration(body, effect.durationDays);
+    }
     case "removeHuman":
       // Challenge-only roster loss; not used on shop decision cards today.
       return "loses a developer";
@@ -158,6 +162,7 @@ function summarizeGamble(gamble: GambleOutcome[]): string {
 // line at all rather than a blank one.
 export function summarizeDecisionEffects(def: DecisionDef): string {
   const parts: string[] = [];
+  if (def.capacity) parts.push(`capacity +${fmtNum(def.capacity)}`);
   for (const effect of def.effects) {
     const s = describeEffect(effect);
     if (s) parts.push(s);

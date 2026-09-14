@@ -228,6 +228,7 @@ describe("summarizeDecisionEffects", () => {
       expect(decisions.length).toBeGreaterThan(0);
       for (const def of decisions) {
         const renderable =
+          def.capacity !== undefined && def.capacity !== 0 ||
           def.effects.some((e) => e.type !== "sickness") ||
           (def.gamble?.length ?? 0) > 0 ||
           def.incomePerDay !== undefined;

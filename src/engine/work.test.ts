@@ -249,10 +249,10 @@ describe("work ledger conservation across every mutation path", () => {
 
   it("pull/finish move work between stages without changing unshipped or remaining", () => {
     const e = new Engine(testContent());
-    e.tick(); // pull 2, no ship yet
+    e.tick(); // finish 1, seat 1
     const s = e.getState();
     expect(s.stocks.backlog).toBe(298);
-    expect(s.stocks.inProgress).toBe(2);
+    expect(s.stocks.inProgress).toBe(1);
     expect(unshippedWork(s)).toBe(300);
     expect(s.projects[0]!.remaining).toBe(300);
     expect(workLedgerIssues(s)).toEqual([]);

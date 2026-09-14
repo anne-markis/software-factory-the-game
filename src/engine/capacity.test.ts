@@ -1,0 +1,139 @@
+import { describe, it, expect } from "vitest";
+import { applySeatCapacity, effectiveCapacity } from "./capacity";
+import { Engine, initialState } from "./engine";
+import { applyEffects } from "./effects";
+import { parseStartConfig, parseDecisions } from "./content";
+import { decisionsJson, startJson } from "./loadShippedContent";
+import { unshippedWork } from "./work";
+import type { DecisionDef, GameContent, GameState } from "./types";
+
+function shippedContent(): GameContent {
+  return {
+    start: parseStartConfig(startJson),
+    decisions: parseDecisions(decisionsJson),
+    challenges: [],
+    projects: [],
+  };
+}
+
+function def(partial: Partial<DecisionDef> & { id: string }): DecisionDef {
+  return {
+    name: partial.id,
+    description: "x",
+    category: "ship-faster",
+    cost: {},
+    effects: [],
+    removable: true,
+    ...partial,
+  };
+}
+
+describe("effectiveCapacity", () => {
+  it("is the founder base with no owned cards", () => {
+    const content = shippedContent();
+    expect(effectiveCapacity(initialState(content), content)).toBe(1);
+  });
+
+  it("adds DecisionDef.capacity per owned hire and ignores agents", () => {
+    const content = shippedContent();
+    const e = new Engine(content);
+    const s = e.getState() as GameState;
+    s.decisions.push({ instanceId: "h1", defId: "basic-dev" }, { instanceId: "a1", defId: "agent" });
+    expect(effectiveCapacity(s, content)).toBe(2);
+    s.decisions.push({ instanceId: "h2", defId: "basic-dev" });
+    expect(effectiveCapacity(s, content)).toBe(3);
+  });
+
+  it("does not key off the human flag: a non-human card with capacity still adds a seat", () => {
+    const content: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: [def({ id: "bot", capacity: 4 })],
+      challenges: [],
+      projects: [],
+    };
+    const s = initialState(content);
+    s.decisions.push({ instanceId: "i1", defId: "bot" });
+    expect(effectiveCapacity(s, content)).toBe(5);
+  });
+
+  it("capacityFromOwned on one unique card counts other owned instances once", () => {
+    const content: GameContent = {
+      start: parseStartConfig(startJson),
+      decisions: [
+        def({ id: "agent" }),
+        def({ id: "fleet", unique: true, capacityFromOwned: [{ id: "agent", per: 1 }] }),
+      ],
+      challenges: [],
+      projects: [],
+    };
+    const s = initialState(content);
+    s.decisions.push(
+      { instanceId: "a1", defId: "agent" },
+      { instanceId: "a2", defId: "agent" },
+      { instanceId: "f", defId: "fleet" },
+    );
+    expect(effectiveCapacity(s, content)).toBe(3);
+  });
+
+  it("applySeatCapacity finishes at speed then fills seats from Ready", () => {
+    const s = initialState(shippedContent());
+    const { finishFlow, pullFlow } = applySeatCapacity(s, 1, 1);
+    expect(finishFlow).toBe(1);
+    expect(s.stocks.inProgress).toBe(1);
+    expect(s.stocks.backlog).toBe(298);
+    expect(s.stocks.done).toBe(1);
+    expect(pullFlow).toBe(2);
+    expect(unshippedWork(s)).toBe(300);
+  });
+
+  it("lets finish outrun seat count: speed moves the pool, seats only split leftover", () => {
+    const s = initialState(shippedContent());
+    applySeatCapacity(s, 1, 3);
+    expect(s.stocks.inProgress).toBe(1);
+    expect(s.stocks.done).toBe(3);
+    expect(s.stocks.backlog).toBe(296);
+  });
+
+  it("spills extra In Progress back to Ready when capacity drops", () => {
+    const s = initialState(shippedContent());
+    s.stocks.inProgress = 5;
+    s.stocks.backlog = 10;
+    applySeatCapacity(s, 1, 0);
+    expect(s.stocks.inProgress).toBe(1);
+    expect(s.stocks.backlog).toBe(14);
+  });
+
+  it("modifyCapacity add/mul stack after owned-def capacity", () => {
+    const content = shippedContent();
+    const s = initialState(content);
+    s.decisions.push({ instanceId: "h1", defId: "basic-dev" });
+    applyEffects(s, [{ type: "modifyCapacity", op: "add", value: 2 }], "card");
+    expect(effectiveCapacity(s, content)).toBe(4);
+    applyEffects(s, [{ type: "modifyCapacity", op: "mul", value: 2 }], "mul");
+    expect(effectiveCapacity(s, content)).toBe(8);
+  });
+});
+
+describe("tick seats", () => {
+  it("keeps In Progress at founder capacity while Ready waits", () => {
+    const e = new Engine(shippedContent());
+    e.tick();
+    const s = e.getState();
+    expect(s.stocks.inProgress).toBe(1);
+    expect(s.stocks.backlog).toBe(298);
+    expect(s.stocks.done).toBe(1);
+    e.tick();
+    const s2 = e.getState();
+    expect(s2.stocks.inProgress).toBe(1);
+    expect(s2.stocks.backlog).toBe(297);
+  });
+
+  it("a hire raises In Progress; agents do not", () => {
+    const e = new Engine(shippedContent());
+    const s = e.getState() as GameState;
+    s.decisions.push({ instanceId: "h1", defId: "basic-dev" }, { instanceId: "a1", defId: "agent" });
+    s.modifiers.push({ id: "m", source: "a1", target: "finish", op: "add", value: 0.2 });
+    e.tick();
+    expect(e.getState().stocks.inProgress).toBe(2);
+  });
+});

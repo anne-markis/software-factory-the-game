@@ -70,6 +70,8 @@ const startSchema = z
         plan: z.number().min(0),
       })
       .strict(),
+    // Founder In Progress seats. Separate from baseRates: speed is not capacity.
+    baseCapacity: z.number().min(0),
     debtMultiplier: z.number().min(0),
     baseBurnPerDay: z.number().min(0),
     contextSwitchFactor: z.number().gt(0).lte(1),
@@ -203,6 +205,14 @@ const effectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("continuousDeploy") }).strict(),
   // No parameters: strips one human developer instance at apply time.
   z.object({ type: z.literal("removeHuman") }).strict(),
+  z
+    .object({
+      type: z.literal("modifyCapacity"),
+      op: z.enum(["add", "mul"]),
+      value: z.number(),
+      durationDays: z.number().positive().optional(),
+    })
+    .strict(),
 ]);
 
 const gambleOutcomeSchema = z
@@ -218,6 +228,10 @@ const decisionSchema = z
     description: z.string(),
     category: decisionCategory,
     human: z.boolean().optional(),
+    capacity: z.number().min(0).optional(),
+    capacityFromOwned: z
+      .array(z.object({ id: z.string(), per: z.number() }).strict())
+      .optional(),
     cost: z.object({ oneTime: z.number().min(0).optional(), perDay: z.number().min(0).optional() }).strict(),
     incomePerDay: z.number().min(0).optional(),
     // Studio monetization: income scaled by a stock's level.
@@ -304,6 +318,11 @@ export function parseDecisions(
     }
     for (const syn of def.synergies ?? []) {
       if (!resolvedIds.has(syn.ifOwned)) throw new Error(`Invalid content in ${source}: "${def.id}" synergy references unknown id "${syn.ifOwned}"`);
+    }
+    for (const grant of def.capacityFromOwned ?? []) {
+      if (!resolvedIds.has(grant.id)) {
+        throw new Error(`Invalid content in ${source}: "${def.id}" capacityFromOwned references unknown id "${grant.id}"`);
+      }
     }
   }
   return defs;
