@@ -238,6 +238,10 @@ const PAIRS: Pair[] = [
   { label: ".stat-value.budget-low on body background", fg: tokenColor(".stat-value.budget-low", "color"), bg, category: "text" },
   // hire/gamble reveal outcome reuses --accent-amber.
   { label: ".gamble-reveal-outcome on body background", fg: tokenColor(".gamble-reveal-outcome", "color"), bg, category: "text" },
+  { label: ".proj-chip-rep on body background", fg: tokenColor(".proj-chip-rep", "color"), bg, category: "text" },
+  { label: ".proj-chip-debt on body background", fg: tokenColor(".proj-chip-debt", "color"), bg, category: "text" },
+  { label: ".proj-chip-users on body background", fg: tokenColor(".proj-chip-users", "color"), bg, category: "text" },
+  { label: ".proj-chip-stall on body background", fg: tokenColor(".proj-chip-stall", "color"), bg, category: "text" },
 ];
 
 // .stall has its own background and (pre-fix) an inherited foreground.

@@ -443,14 +443,14 @@ describe("appView node identity across renders", () => {
     const h = mount();
     const before = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
     expect(before).toBeTruthy();
-    const remainingBefore = h.root.textContent!.match(/Launch beta: [\d,.]+ ·/)![0];
+    const remainingBefore = h.root.querySelector('[data-project-status="launch-beta"]')!.textContent!;
     for (let i = 0; i < 10; i++) {
       h.engine.tick();
       h.view.render();
       expect(h.root.querySelector('[data-project="gig-bugfix"]')).toBe(before);
     }
-    // The volatile in-flight line beside the button did update.
-    const remainingAfter = h.root.textContent!.match(/Launch beta: [\d,.]+ ·/)![0];
+    // The volatile in-flight row beside the button did update.
+    const remainingAfter = h.root.querySelector('[data-project-status="launch-beta"]')!.textContent!;
     expect(remainingAfter).not.toBe(remainingBefore);
   });
 
@@ -662,7 +662,8 @@ describe("appView click delegation on the stable root", () => {
     expect(h.engine.getState().plan.some((p) => p.defId === "ship-v1")).toBe(true);
     expect(h.engine.getState().stocks.ideas).toBe(0);
     expect(h.engine.getState().projects.some((p) => p.defId === "ship-v1")).toBe(false);
-    expect(h.root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("Ship v1: 0 / 400");
+    expect(h.root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("Ship v1");
+    expect(h.root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("0 / 400");
     expect(h.root.querySelector('[data-cancel="ship-v1"]')!.textContent).toBe("Cancel");
     expect(h.root.querySelector('[data-project="ship-v1"]')).toBeNull();
     expect(h.actions).toBe(1);

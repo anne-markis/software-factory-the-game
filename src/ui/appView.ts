@@ -257,7 +257,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     page.patch(STALL, renderStall(engine.isStalled(), engine.isDeliveryFrozen()));
     page.patch(TIME_CONTROLS, renderTimeControls(state.paused, deps.getSpeed(), SPEED_OPTIONS));
     renderDecisionsRegion();
-    projects.patch(PROJECTS_STATUS_SECTION, renderProjectsStatus([...state.projects], state));
+    projects.patch(PROJECTS_STATUS_SECTION, renderProjectsStatus([...state.projects], state, content));
     projects.patch(PROJECTS_OFFERS_SECTION, renderProjectOffers(engine.availableProjects(), state));
     renderChoicesRegion([...state.pendingChoices], state.day, state.paused);
     page.patch(LOG, renderLog(state.log));
