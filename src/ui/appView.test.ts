@@ -138,14 +138,9 @@ describe("appView delivery-column stats layout", () => {
     expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
-
-    const debtLine = deliveryCol.querySelector(".debt-consequences")!;
-    expect(debtLine).toBeTruthy();
-    expect(debtLine.getAttribute("data-debt-tone")).toBe("ok");
-    expect(debtLine.textContent).toContain("High tech debt");
-    expect(debtLine.textContent).toContain("slows delivery after 400");
-    expect(debtLine.textContent).toContain("adds rework after first ship");
-    expect(deliveryCol.querySelector('[data-section="debt-consequences"]')).toBe(debtLine.parentElement);
+    expect(deliveryCol.querySelector(".debt-consequences")).toBeNull();
+    expect(h.root.textContent).not.toContain("High tech debt");
+    expect(h.root.textContent).not.toContain("no slowdown until 400");
 
     // User loop sits on its own second row, collapsed until opened;
     // contributor zooms hang under Delivery.
@@ -195,16 +190,19 @@ describe("appView delivery-column stats layout", () => {
     expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
   });
 
-  it("updates the debt consequences line when tech debt crosses the free band", () => {
+  it("paints Tech Debt slowdown on the existing stat once past the free band", () => {
     const h = mount();
-    const line = h.root.querySelector(".debt-consequences")!;
-    expect(line.textContent).toContain("slows delivery after 400");
-    expect(line.getAttribute("data-debt-tone")).toBe("ok");
+    const debt = h.root.querySelector('[data-stat="techDebt"] .stat-value')!;
+    expect(debt.textContent).toBe("0");
+    expect(debt.classList.contains("debt-warn")).toBe(false);
+    expect(h.root.querySelector(".debt-consequences")).toBeNull();
     h.state.stocks.techDebt = 1400;
     h.view.render();
-    const after = h.root.querySelector(".debt-consequences")!;
-    expect(after.textContent).toContain("15% slower");
-    expect(after.getAttribute("data-debt-tone")).toBe("warn");
+    const after = h.root.querySelector('[data-stat="techDebt"] .stat-value')!;
+    expect(after.textContent).toBe("1,400 (15% slower)");
+    expect(after.classList.contains("debt-warn")).toBe(true);
+    expect(h.root.querySelector('[data-debt-hot="1"]')).not.toBeNull();
+    expect(h.root.textContent).toContain("debt +0.5/pt · 15% slower");
   });
 });
 

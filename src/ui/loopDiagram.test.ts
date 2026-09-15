@@ -99,6 +99,8 @@ describe("loopDiagramSvg", () => {
     // 1.0/day is capacity on the box, not an arrow.
     expect(svg.match(/0\.0\/day/g)).toHaveLength(3);
     expect(svg).toContain("debt +0.5/pt");
+    expect(svg).not.toContain("slower");
+    expect(svg).not.toContain('data-debt-hot="1"');
     expect(svg.match(/<line /g)).toHaveLength(5);
   });
 
@@ -189,6 +191,15 @@ describe("loopDiagramSvg", () => {
     expect(debtCd.startX).toBeCloseTo(boxCenterX(svgCd, "shipped"), 5);
     expect(debtCd.endX).toBeCloseTo(boxCenterX(svgCd, "backlog"), 5);
     expect(debtCd.endX).not.toBeCloseTo(boxCenterX(svgCd, "ideas"), 5);
+  });
+
+  it("turns the dashed debt path amber and names the slowdown once drag is live", () => {
+    const content = emptyContent();
+    const state = initialState(content);
+    state.stocks.techDebt = 1400;
+    const svg = loopDiagramSvg(state, content);
+    expect(svg).toContain('data-debt-hot="1"');
+    expect(svg).toContain("debt +0.5/pt · 15% slower");
   });
 
   it("keeps six boxes from overlapping or running off the viewBox", () => {

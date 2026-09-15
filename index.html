@@ -73,6 +73,9 @@
          so payroll cliff reads before Events fill with removals. */
       .stat-value.budget-low { color: var(--accent-red); font-weight: bold; }
       .stat-value.v-debt { min-width: 7ch; } /* Tech Debt */
+      /* Same risk tones as budget-low: only painted when debt is dragging. */
+      .stat-value.debt-warn { color: var(--accent-amber); }
+      .stat-value.debt-high { color: var(--accent-red); font-weight: bold; }
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-users { min-width: 8ch; } /* Users */
       .stat-value.v-ideas { min-width: 8ch; } /* Ideas pile */
@@ -136,21 +139,10 @@
          900px loops stack) so they stay inside that column at any width
          without introducing a horizontal scrollbar. */
       .delivery-column { min-width: 0; }
-      .delivery-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; white-space: nowrap; font-size: 0.95rem; margin: -0.25rem 0 0.2rem; }
-      /* Legend of what the Tech Debt stock does, even at 0. Amber wash so it
-         does not read as dim helper chrome under the stats row. */
-      .debt-consequences {
-        font-size: 0.9rem;
-        color: var(--fg);
-        background: color-mix(in srgb, var(--accent-amber) 14%, var(--bg));
-        border: 1px solid var(--accent-amber);
-        padding: 0.4rem 0.65rem;
-        margin: 0 0 1rem;
-        line-height: 1.35;
-      }
-      .debt-consequences-label { font-weight: bold; margin-right: 0.4rem; }
-      .debt-consequences.debt-warn { color: var(--accent-amber); }
-      .debt-consequences.debt-high { color: var(--accent-red); font-weight: bold; border-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 14%, var(--bg)); }
+      .delivery-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; white-space: nowrap; font-size: 0.95rem; margin: -0.25rem 0 1rem; }
+      /* When excess debt is dragging throughput, the existing Shipped→Ready
+         leak path on the Delivery loop turns amber instead of adding a banner. */
+      .debt-regen[data-debt-hot="1"] { color: var(--accent-amber); }
       .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 1rem; }
       /* Projects catalog: two stacked tables (in-flight status + available
          offers) share colgroup widths so they read as one grid. The split

@@ -109,6 +109,9 @@ describe("gameFeel stat flash", () => {
     const users = views.find((v) => v.label === "Users")!;
     expect(users.value).toBe("0"); // starts at 0 until the beta completes
     expect(users.widthClass).toBe("v-users");
+    const debt = views.find((v) => v.label === "Tech Debt")!;
+    expect(debt.value).toBe("0");
+    expect(debt.valueClass).toBeUndefined();
     // A material change to users flashes in place like the other stats.
     const root = document.createElement("div");
     const flash = createFlashController(() => 0);

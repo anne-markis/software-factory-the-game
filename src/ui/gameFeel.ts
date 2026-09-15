@@ -6,6 +6,7 @@
 import type { GameContent, GameState } from "../engine/types";
 import { budgetRunwayDays, RUNWAY_WARN_DAYS } from "./runway";
 import { unshippedWork } from "../engine/work";
+import { debtConsequenceTone, formatDebtStatValue } from "./debtConsequences";
 
 // Local copies — avoid a render.ts ↔ gameFeel.ts import cycle (render
 // delegates row HTML here for the shared flash path).
@@ -64,11 +65,19 @@ export function cockpitStatViews(state: Readonly<GameState>, content: GameConten
 }
 
 export function deliveryStatViews(state: Readonly<GameState>): StatView[] {
+  const debtTone = debtConsequenceTone(state);
   return [
     { stat: "inProgress", label: "In Progress", value: fmt(state.stocks.inProgress), widthClass: "v-count", material: true },
     { stat: "done", label: "Done", value: fmt(state.stocks.done), widthClass: "v-count", material: true },
     { stat: "shipped", label: "Shipped", value: fmt(state.stocks.shipped), widthClass: "v-flow", material: true },
-    { stat: "techDebt", label: "Tech Debt", value: fmt(state.stocks.techDebt), widthClass: "v-debt", material: true },
+    {
+      stat: "techDebt",
+      label: "Tech Debt",
+      value: formatDebtStatValue(state),
+      widthClass: "v-debt",
+      valueClass: debtTone === "ok" ? undefined : debtTone === "high" ? "debt-high" : "debt-warn",
+      material: true,
+    },
     { stat: "reputation", label: "Reputation", value: fmt(state.stocks.reputation), widthClass: "v-rep", material: true },
     // Studio spine: the users stock sits after Reputation. Stays
     // 0 until the Launch beta completes, then drives monetization.

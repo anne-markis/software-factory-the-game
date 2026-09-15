@@ -1,6 +1,7 @@
 import type { DeliveryRateId, GameContent, GameState } from "../engine/types";
 import { effectiveDebtMultiplier, effectiveRate } from "../engine/modifiers";
 import { continuousDeployActive } from "../engine/continuousDeploy";
+import { debtConsequenceTone, debtRegenCaption } from "./debtConsequences";
 
 // The arrows must show what actually flowed through each stage
 // this tick, not the stage's uncapped rate (effectiveRate) -- those only
@@ -199,11 +200,14 @@ function arrow(x1: number, x2: number, label: string, bindingOutflow = false): s
       <line x1="${x1}" y1="${mid}" x2="${x2 - 8}" y2="${mid}" stroke="currentColor" marker-end="url(#arrow)"${strokeWidth}${dataAttr}/>${caption}`;
 }
 
-function debtRegenLoop(startX: number, endX: number, debt: string): string {
+function debtRegenLoop(startX: number, endX: number, caption: string, hot: boolean): string {
   const loopY = Y + BOX_H + 40;
+  const hotAttr = hot ? ' data-debt-hot="1"' : "";
   return `
+    <g class="debt-regen"${hotAttr}>
     <path d="M ${startX} ${Y + BOX_H} V ${loopY} H ${endX} V ${Y + BOX_H + 8}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
-    <text x="${(startX + endX) / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11" fill="currentColor">debt +${debt}/pt</text>`;
+    <text x="${(startX + endX) / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11" fill="currentColor">${caption}</text>
+    </g>`;
 }
 
 const DEFS = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`;
@@ -266,7 +270,13 @@ function deliveryLoop(
   const shippedIdx = stages.findIndex((s) => s.key === "shipped");
   const startX = stageX(x0, shippedIdx) + BOX_W / 2;
   const endX = stageX(x0, readyIdx) + BOX_W / 2;
-  const regen = debtRegenLoop(startX, endX, effectiveDebtMultiplier(state).toFixed(1));
+  const leak = effectiveDebtMultiplier(state).toFixed(1);
+  const regen = debtRegenLoop(
+    startX,
+    endX,
+    debtRegenCaption(state, leak),
+    debtConsequenceTone(state) !== "ok",
+  );
 
   return `
     <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" width="100%" role="img" aria-label="${ariaLabel(binding)}">

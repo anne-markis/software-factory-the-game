@@ -41,7 +41,6 @@ import { renderStageZoom } from "./inProgressPanel";
 import { continuousDeployActive } from "../engine/continuousDeploy";
 import { createRegion, SECTION_ATTR } from "./domPatch";
 import { SPEED_OPTIONS, type Speed } from "./tickDriver";
-import { renderDebtConsequences } from "./debtConsequences";
 import {
   cockpitStatViews,
   createFlashController,
@@ -100,7 +99,6 @@ const DELIVERY_LOOP = "delivery-loop";
 const DELIVERY_CARETS = "delivery-carets";
 const STAGE_ZOOM = "stage-zoom";
 const DELIVERY_STATS = "delivery-stats";
-const DEBT_CONSEQUENCES = "debt-consequences";
 const USERS_LOOP = "users-loop";
 const GAMBLE_REVEAL = "gamble-reveal";
 const STALL = "stall";
@@ -138,7 +136,6 @@ function pageScaffold(): string {
           <div ${SECTION_ATTR}="${STAGE_ZOOM}"></div>
         </div>
         <div ${SECTION_ATTR}="${DELIVERY_STATS}"></div>
-        <div ${SECTION_ATTR}="${DEBT_CONSEQUENCES}"></div>
       </div>
       <details class="panel users-loop-details">
         <summary><h3>User loop</h3></summary>
@@ -247,7 +244,6 @@ export function mountAppView(deps: AppViewDeps): AppView {
     // finish without the string-memo path tearing the nodes down each tick.
     syncStatRow(page.section(STATS)!, "stats", cockpitStatViews(state, content), flash);
     syncStatRow(page.section(DELIVERY_STATS)!, "delivery-stats", deliveryStatViews(state), flash);
-    page.patch(DEBT_CONSEQUENCES, renderDebtConsequences(state, content));
     page.patch(DELIVERY_LOOP, loopDiagramSvg(state, content));
     page.patch(DELIVERY_CARETS, renderDeliveryCarets(state, content));
     if (openZoom === "done" && continuousDeployActive(state, content)) {
