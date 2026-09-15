@@ -69,13 +69,16 @@ schema gotchas (effect timing, synergies, predicates) and
 [`docs/CONTEXT.md`](docs/CONTEXT.md) for the glossary. Field types live in
 `src/engine/content.ts`; shipped cards live in `content/`.
 
-### Content graph viewer
+### Content studio
 
-Run `make graph` to open the local authoring graph at
+Run `make graph` to open the local authoring studio at
 `http://127.0.0.1:5174/`. It parses the shipped era bundles through the same
-engine loader and Zod schemas as the game, then shows **native** decisions
-per era (inherited cards stay in the earlier column), plus requirements,
-count gates, synergies, costs, and era-entry paths. The viewer is local tooling
+engine loader and Zod schemas as the game, then shows **native** decisions as
+a tree (always-available roots, gated cards nested under the card they
+require), type chips (always available vs gated, unique vs repeatable,
+category, human), challenges (ambient vs wired to owned cards), plus a
+side inspector. Inherited cards stay in the earlier column; empty later
+eras say so instead of copying Studio JSON. The studio is local tooling
 only and is not included in the player build.
 
 ## Design notes
