@@ -15,7 +15,7 @@ function choiceNeedsHumanTarget(def: ChallengeDef): boolean {
   return def.choice?.options.some((o) => o.effects.some((e) => e.type === "removeHuman")) ?? false;
 }
 
-function conditionMet(def: ChallengeDef, state: GameState, content: GameContent): boolean {
+export function challengeConditionMet(def: ChallengeDef, state: GameState, content: GameContent): boolean {
   const cond = def.condition;
   if (!cond) return true;
   const humans = humanDevInstances(state, content).length;
@@ -34,12 +34,27 @@ function conditionMet(def: ChallengeDef, state: GameState, content: GameContent)
   return true;
 }
 
-function probability(def: ChallengeDef, state: GameState): number {
+export function challengeProbability(def: ChallengeDef, state: GameState): number {
   let p = def.probabilityPerDay;
   if (def.probScaling) {
     p += Math.floor(state.stocks.techDebt / def.probScaling.per) * def.probScaling.add;
   }
   return Math.min(1, p);
+}
+
+/** Challenges whose odds scale with techDebt and whose conditions currently hold. Ignores cooldown and global spacing so the cockpit can show debt-driven risk, not whether an event may roll this tick. */
+export function debtScaledChallengeRisks(
+  state: GameState,
+  content: GameContent,
+): { id: string; name: string; probability: number }[] {
+  return content.challenges
+    .filter((def) => def.probScaling?.stat === "techDebt")
+    .filter((def) => challengeConditionMet(def, state, content))
+    .map((def) => ({
+      id: def.id,
+      name: def.name,
+      probability: challengeProbability(def, state),
+    }));
 }
 
 // Returns whether the challenge actually fired (effects applied or a new
@@ -129,14 +144,14 @@ export function rollChallenges(state: GameState, _rng: Rng, content: GameContent
   if (spacingActive) return;
 
   outer: for (const def of content.challenges) {
-    if (!conditionMet(def, state, content)) continue;
+    if (!challengeConditionMet(def, state, content)) continue;
     if (cooldownActive(def, state)) continue;
     if (def.perHumanDev) {
       // Per-human rolls are keyed by instanceId as well as def id: independent
       // per instance, and stable across content edits (instance ids are stable
       // within a game).
       for (const inst of humanDevInstances(state, content)) {
-        if (hashRoll(state.gameSeed, state.day, `${def.id}:${inst.instanceId}`) < probability(def, state)) {
+        if (hashRoll(state.gameSeed, state.day, `${def.id}:${inst.instanceId}`) < challengeProbability(def, state)) {
           if (fire(def, state, content, inst.instanceId)) {
             state.lastChallengeDay = state.day;
             // One event at a time: stop rolling further challenges this tick.
@@ -147,7 +162,7 @@ export function rollChallenges(state: GameState, _rng: Rng, content: GameContent
         }
       }
     } else {
-      if (hashRoll(state.gameSeed, state.day, def.id) < probability(def, state)) {
+      if (hashRoll(state.gameSeed, state.day, def.id) < challengeProbability(def, state)) {
         if (fire(def, state, content)) {
           state.lastChallengeDay = state.day;
           if (spacingDays > 0) break outer;
