@@ -55,6 +55,13 @@ cockpit Backlog hero metric is unshipped work (`backlog + inProgress +
 done`), not the Ready-stage stock. The Delivery diagram paints Ideas and Plan left of Ready, then Ready →
 In Progress → Done → Shipped. Ready is still `stocks.backlog`.
 
+**In Progress is capacity**, not a waiting queue. Seats are
+`effectiveCapacity`: `baseCapacity` (founder) plus each owned card's
+`capacity` field, plus optional `capacityFromOwned` / `modifyCapacity`.
+Studio hires are `capacity: 1`; agents omit it (speed only). Ready holds
+work that does not have a seat. Finish speed is how much leaves the
+Ready + In Progress pool into Done. A point is in one stage at a time.
+
 Do not seed `start.json` `stocks.backlog` independently of
 `initialProject.sizePoints` — the loader rejects a mismatch.
 

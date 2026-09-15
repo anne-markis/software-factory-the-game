@@ -6,6 +6,7 @@ import { detectArchetypes } from "./archetypes";
 import { detectMilestones } from "./milestones";
 import { attachInjectedWork, committedWork, unshippedWork } from "./work";
 import { advancePlan } from "./projects";
+import { applySeatCapacity, effectiveCapacity } from "./capacity";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -213,23 +214,16 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   const frozen = isDeliveryFrozen(state);
   const deployRate = frozen ? 0 : effectiveRate(state, "deploy");
   const finishRate = frozen ? 0 : effectiveRate(state, "finish");
-  const pullRate = frozen ? 0 : effectiveRate(state, "pull");
+  const capacity = effectiveCapacity(state, content);
   // Ideas faucet: always-on from day 0, not a pipeline stage, not frozen
   // with delivery. Shop cards raise it via modifyRate add on discover.
   state.stocks.ideas = Math.max(0, state.stocks.ideas + effectiveRate(state, "discover"));
 
-  // Downstream first so a point cannot cross the whole pipeline in one day.
-  // Once continuous deploy is active (an owned decision's def carries a
-  // continuousDeploy effect -- see continuousDeployActive), the Done stage
-  // no longer queues: the entire done stock ships this tick, ignoring
-  // deployRate entirely. This still runs BEFORE finish refills done below,
-  // so a point that finishes into done later in this same tick ships next
-  // tick, not this one -- a point still takes a full tick to cross each
-  // remaining stage, the same ordering guarantee the throttled case relies
-  // on. Everything downstream (equal ship-credit, debt regen,
-  // pointsPerDay) reads shippedFlow unchanged either way.
-  // Insolvency ($0 at tick start) zeros all three rates and also skips the
-  // continuous-deploy dump — Done must not empty for free while frozen.
+  // Deploy first, then finish+seats. Speed (finishRate) is how much leaves
+  // the Ready+In Progress pool into Done; a point is in one stage at a time.
+  // In Progress is capacity, filled from Ready — not a third "pull faster
+  // than you finish" rate. Continuous deploy still dumps Done before this
+  // tick's finish lands, so a point that finishes today ships next tick.
   const shippedFlow = frozen
     ? 0
     : continuousDeployActive(state, content)
@@ -238,13 +232,11 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   state.stocks.done -= shippedFlow;
   state.stocks.shipped += shippedFlow;
 
-  const finishFlow = Math.min(state.stocks.inProgress, finishRate);
-  state.stocks.inProgress -= finishFlow;
-  state.stocks.done += finishFlow;
-
-  const pullFlow = Math.min(state.stocks.backlog, pullRate);
-  state.stocks.backlog -= pullFlow;
-  state.stocks.inProgress += pullFlow;
+  let finishFlow = 0;
+  let pullFlow = 0;
+  if (!frozen) {
+    ({ finishFlow, pullFlow } = applySeatCapacity(state, capacity, finishRate));
+  }
 
   attributeShipped(state, shippedFlow);
 
@@ -266,8 +258,8 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   }
 
   // Plan fill + auto-Ready run after ship-credit so a newly readied
-  // contract cannot collect today's shipped points, and after pull so
-  // new Ready work waits until the next tick to enter In Progress.
+  // contract cannot collect today's shipped points, and after seats so
+  // new Ready work waits until the next tick to take an In Progress seat.
   advancePlan(state, content);
 
   // Organic stock flows (users acquisition) run after shipping/debt and read

@@ -53,6 +53,7 @@ describe("renderStageZoom", () => {
     expect(svg).not.toContain("Progress loop");
     expect(svg).not.toContain("Progress system");
     expect(svg).not.toContain("work cycling");
+    expect(svg).toContain("Capacity");
     expect(svg).toContain("Cycle speed");
     expect(svg).toContain("Base 1.0/day");
     expect(svg).toContain("Base x0.5");
@@ -119,13 +120,13 @@ describe("renderStageZoom", () => {
     e.applyDecision("basic-dev");
     const s = e.getState() as MutableState;
     const inst = s.decisions[0];
-    // A hire now contributes two add modifiers (pull and finish, Release 15);
-    // the panel only surfaces the finish/allRates one, so target that.
+    // A hire writes one finish modifier (the seat is DecisionDef.capacity).
     const mod = s.modifiers.find((m) => m.source === inst.instanceId && m.target === "finish")!;
     expect(mod.value).toBeGreaterThan(0); // this seed rolls a positive hire
 
     const svgPositive = panel(s, content());
     expect(svgPositive).toContain(inst.gambleLabel!);
+    expect(indexBetween(svgPositive, `Hire basic developer [${inst.gambleLabel}]: +1`, "Capacity", "Cycle speed")).toBe(true);
     expect(inSpeedGroup(svgPositive, `Hire basic developer [${inst.gambleLabel}]: +${mod.value}/day`)).toBe(true);
 
     // Force a net-negative outcome shape via the mutable escape hatch and

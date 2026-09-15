@@ -105,15 +105,11 @@ describe("loopDiagramSvg", () => {
   it("on a fresh game's first tick, pull/finish/deploy arrows show realized flow, not raw capacity", () => {
     const content = emptyContent();
     const state = initialState(content);
-    // First tick: the backlog is plentiful so pull saturates its 2.0/day
-    // capacity, but inProgress and done both start at 0, so nothing was
-    // actually there yet for finish/deploy to move -- their realized flow is
-    // genuinely 0 this tick even though their base capacity is 1.0/day.
     tick(state, createRng(content.start.seed), content, () => {});
     const svg = loopDiagramSvg(state, content);
-    expect(svg).toContain("2.0/day"); // pull: realized flow == capacity here, backlog wasn't the constraint
-    expect(svg.match(/0\.0\/day/g)).toHaveLength(2); // finish AND deploy: realized flow, not capacity
-    // Ideas/Plan still paint capacity, not a realized Ideas→Plan flow.
+    expect(svg).toContain("2.0/day"); // Ready drain: 1 finished + 1 seated
+    expect(svg).toContain("1.0/day"); // finish realized
+    expect(svg.match(/0\.0\/day/g)).toHaveLength(1); // deploy: nothing in Done yet
     expect(stageRate(svg, "ideas")).toBe("0.5/day");
     expect(stageRate(svg, "plan")).toBe("1.0/day");
   });
@@ -332,22 +328,16 @@ describe("loopDiagramSvg", () => {
       expect(loopDiagramSvg(e.getState(), content)).not.toContain("capacity-bound");
     });
 
-    it("cues In Progress when pull outruns finish and WIP has piled up", () => {
+    it("does not cue In Progress when seats are full and Ready is waiting", () => {
       const content = emptyContent();
       const state = initialState(content);
-      // Manufacture a clear inProgress bind without shopping: pull 3, finish 1,
-      // stock already past the sustained window.
-      state.baseRates.pull = 3;
-      state.baseRates.finish = 1;
-      state.stocks.inProgress = BINDING_SUSTAINED_DAYS * 1 + 1;
+      state.stocks.inProgress = 1;
+      state.stocks.backlog = 200;
       state.stocks.done = 0;
-      expect(bindingBottleneckStage(state, content)).toBe("inProgress");
+      expect(bindingBottleneckStage(state, content)).toBeNull();
       const svg = loopDiagramSvg(state, content);
-      expect(svg).toContain("capacity-bound");
-      expect(svg).toContain('aria-label="Delivery loop, In Progress capacity-bound"');
-      expect(stageGroup(svg, "inProgress")).toContain("capacity-bound");
-      expect(stageGroup(svg, "ideas")).not.toContain("capacity-bound");
-      expect(stageGroup(svg, "plan")).not.toContain("capacity-bound");
+      expect(svg).not.toContain("capacity-bound");
+      expect(stageGroup(svg, "inProgress")).not.toContain("capacity-bound");
     });
 
     it("does not cue Ideas or Plan even when those piles are large", () => {

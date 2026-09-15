@@ -167,14 +167,12 @@ describe("save/load", () => {
   it("defaults missing id counters from existing ids (legacy save shape)", () => {
     const c = content();
     const a = new Engine(c);
-    a.applyDecision("basic-dev"); // creates inst-1 and mod-1 + mod-2 (pull, finish)
+    a.applyDecision("basic-dev"); // creates inst-1 and one finish modifier
     const raw = JSON.parse(serialize(a.getState()));
     delete raw.state.nextModifierId;
     delete raw.state.nextInstanceId;
     const restored = deserialize(JSON.stringify(raw));
-    // basic-dev's hire outcome is two add modifiers (pull and finish) since
-    // Release 15's deploy-bottleneck rework, so the highest mod suffix is 2.
-    expect(restored.nextModifierId).toBe(3);
+    expect(restored.nextModifierId).toBe(2);
     expect(restored.nextInstanceId).toBe(2);
   });
 

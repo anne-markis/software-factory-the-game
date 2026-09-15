@@ -19,49 +19,37 @@ function ciCdContent(): GameContent {
 }
 
 describe("tick", () => {
-  // Base rates are pull 2, finish 1, deploy 1 (gave pull headroom so the finish-side agent ladder has a stage to feed), so the stages do NOT move
-  // in lockstep: pull runs at twice the pace the rest of the line can absorb and
-  // In Progress grows, which is the loop diagram's "growing box marks the
-  // bottleneck" telling the player where to spend.
-  it("moves points downstream at base rates, with pull outrunning finish", () => {
+  it("moves work at finish speed and keeps In Progress at founder capacity", () => {
     const e = new Engine(testContent());
-    e.tick(); // day 1: pull moves 2 points into inProgress
+    e.tick(); // day 1: finish 1 into Done, seat 1 from Ready
     let s = e.getState();
-    expect(s.stocks.backlog).toBe(298); // Studio start backlog 300
-    expect(s.stocks.inProgress).toBe(2);
+    expect(s.stocks.backlog).toBe(298);
+    expect(s.stocks.inProgress).toBe(1);
+    expect(s.stocks.done).toBe(1);
     expect(s.stocks.shipped).toBe(0);
 
-    e.tick(); // day 2: finish moves its first point to done
-    e.tick(); // day 3: first point ships (downstream-first prevents same-day pass-through)
+    e.tick(); // day 2: first point ships
     s = e.getState();
     expect(s.stocks.shipped).toBe(1);
-    expect(s.pointsPerDay).toBe(1); // throughput is the slowest stage, not pull
-    // Pull has put 6 points in; finish has only pulled 2 of them through, so the
-    // surplus sits in In Progress.
-    expect(s.stocks.backlog).toBe(294);
-    expect(s.stocks.inProgress).toBe(4);
+    expect(s.pointsPerDay).toBe(1);
+    expect(s.stocks.backlog).toBe(297);
+    expect(s.stocks.inProgress).toBe(1);
     expect(s.stocks.done).toBe(1);
   });
 
-  // pullFlow/finishFlow mirror pointsPerDay's realized-flow
-  // semantics (capped by the stock actually available that tick, not the
-  // stage's uncapped rate) for the other two stages, so the loop diagram and
-  // in-progress panel can show what actually moved instead of raw capacity.
-  it("persists realized pull/finish flow, capped by the stock actually available that tick", () => {
+  it("persists realized pull/finish flow from the Ready+In Progress pool", () => {
     const e = new Engine(testContent());
-    e.tick(); // day 1: the backlog is plentiful, so pull saturates its 2.0/day
-    // capacity; but inProgress/done both started at 0, so finish and deploy
-    // had nothing to move yet -- their realized flow is genuinely 0.
+    e.tick();
     let s = e.getState();
     expect(s.pullFlow).toBe(2);
-    expect(s.finishFlow).toBe(0);
+    expect(s.finishFlow).toBe(1);
     expect(s.pointsPerDay).toBe(0);
 
-    e.tick(); // day 2: the points pulled on day 1 are now in inProgress, so finish
-    // has something to move -- capped at its own 1.0/day, not the 2 waiting.
+    e.tick();
     s = e.getState();
-    expect(s.pullFlow).toBe(2);
+    expect(s.pullFlow).toBe(1);
     expect(s.finishFlow).toBe(1);
+    expect(s.pointsPerDay).toBe(1);
   });
 
   // Studio spine (AC2): tech debt STILL accrues before the first
@@ -73,11 +61,11 @@ describe("tick", () => {
     const e = new Engine(testContent());
     e.tick();
     e.tick();
-    e.tick(); // 1 point shipped, debt multiplier 0.5
+    e.tick(); // two points shipped (first ship is day 2), debt multiplier 0.5
     const s = e.getState();
-    expect(s.stocks.techDebt).toBe(0.5); // debt accrues pre-launch
-    expect(s.completedProjects).toBe(0); // the 300-pt beta is nowhere near done
-    expect(s.stocks.backlog).toBe(294); // 300 - 6 pulled; NO debt refill yet (the gate)
+    expect(s.stocks.techDebt).toBe(1);
+    expect(s.completedProjects).toBe(0);
+    expect(s.stocks.backlog).toBe(296);
   });
 
   // Once the first project has completed the debt->backlog refill turns on, so
@@ -436,7 +424,10 @@ describe("tick", () => {
         // set still holds a modifier expiring on this very day. Nothing else
         // moves the rate here -- debt stays far below freeDebt and there are no
         // projects, so no drag is in play.
-        const expectedFinishFlow = Math.min(inProgressBefore, effectiveRate(after, "finish"));
+        const expectedFinishFlow = Math.min(
+          inProgressBefore + before.stocks.backlog,
+          effectiveRate(after, "finish"),
+        );
         expect(after.stocks.shipped, `day ${day}`).toBeCloseTo(shippedBefore + doneBefore, 10);
         expect(after.stocks.done, `day ${day}`).toBeCloseTo(expectedFinishFlow, 10);
       }
@@ -608,7 +599,7 @@ describe("tick", () => {
       (e.getState() as GameState).stocks.budget = 10000;
       e.tick();
       expect(e.getState().stocks.backlog).toBe(298);
-      expect(e.getState().stocks.inProgress).toBe(2);
+      expect(e.getState().stocks.inProgress).toBe(1);
     });
 
     it("still removes unpaid payroll while delivery is frozen", () => {

@@ -120,13 +120,13 @@ describe("cross-surface work counting (ADR 0009)", () => {
     view.render();
     const s = engine.getState();
     expect(s.stocks.backlog).toBe(298);
-    expect(s.stocks.inProgress).toBe(2);
+    expect(s.stocks.inProgress).toBe(1);
     expect(s.projects[0]!.remaining).toBe(300);
     assertSurfacesAgree(root, s);
     expect(statValue(root, "backlog")).toBe("300");
     expect(stageValue(root, "backlog")).toBe("298");
-    expect(stageValue(root, "inProgress")).toBe("2");
-    expect(statValue(root, "inProgress")).toBe("2");
+    expect(stageValue(root, "inProgress")).toBe("1");
+    expect(statValue(root, "inProgress")).toBe("1");
     expect(projectLine(root, "launch-beta")).toContain("Launch beta");
     expect(projectLine(root, "launch-beta")).toContain("300 left");
   });

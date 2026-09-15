@@ -33,8 +33,9 @@ export interface Stocks {
 export type StockName = keyof Stocks;
 
 // Unshipped delivery stages. `backlog` here is the Ready queue (work waiting
-// to be pulled), not the cockpit "Backlog" hero metric — that reads the sum
-// of these three (ADR 0009). Shipped is excluded: it already left the factory.
+// for a seat), not the cockpit "Backlog" hero metric — that reads the sum
+// of these three (ADR 0009). `inProgress` is capacity (seats filled from
+// Ready), not an unbounded queue. Shipped is excluded: it already left.
 export const PIPELINE_STOCKS = ["backlog", "inProgress", "done"] as const;
 export type PipelineStock = (typeof PIPELINE_STOCKS)[number];
 
@@ -65,9 +66,12 @@ export type Effect =
   // instance is still a living human; otherwise the first human in roster
   // order. For challenge choice options: no Studio challenge uses it today.
   // Requires EffectContext.content; silently no-ops without content or humans.
-  | { type: "removeHuman" };
+  | { type: "removeHuman" }
+  // In Progress capacity (seats). Same add-then-mul shape as rates. Not
+  // scaled by sickness: a sick hire still occupies a seat.
+  | { type: "modifyCapacity"; op: "add" | "mul"; value: number; durationDays?: number };
 
-export type ModifierTarget = RateId | "allRates" | "debtMultiplier";
+export type ModifierTarget = RateId | "allRates" | "debtMultiplier" | "capacity";
 
 export interface Modifier {
   id: string;
@@ -119,6 +123,14 @@ export interface DecisionDef {
   description: string;
   category: DecisionCategory;
   human?: boolean;
+  // In Progress seats this instance adds while owned. Omitted is 0. Not
+  // keyed off `human`: a later card may grant capacity from other owned
+  // ids (see capacityFromOwned) without those ids being people.
+  capacity?: number;
+  // While this card is owned, add `per` capacity for each owned instance of
+  // `id`. Evaluated once per owning def, not per copy. Studio ships none;
+  // kept so a later card can make agents add seats without renaming `agent`.
+  capacityFromOwned?: { id: string; per: number }[];
   cost: { oneTime?: number; perDay?: number };
   incomePerDay?: number;
   // Per-day income scaled by a stock's current level (Studio monetization). Stacks additively on top of the flat incomePerDay in
@@ -317,6 +329,9 @@ export interface StartConfig {
   seed: number;
   stocks: Stocks;
   baseRates: Record<RateId, number>;
+  // Founder In Progress seats. Hires add more via DecisionDef.capacity;
+  // agents do not (they only change finish speed). See effectiveCapacity.
+  baseCapacity: number;
   debtMultiplier: number;
   baseBurnPerDay: number;
   contextSwitchFactor: number;
@@ -399,6 +414,7 @@ export interface GameState {
   eraId: string;
   stocks: Stocks;
   baseRates: Record<RateId, number>;
+  baseCapacity: number;
   debtMultiplierBase: number;
   baseBurnPerDay: number;
   contextSwitchFactor: number;
@@ -430,15 +446,10 @@ export interface GameState {
   pendingChoices: PendingChoice[];
   log: LogEntry[];
   pointsPerDay: number;
-  // Realized flow for the pull and finish stages, mirroring pointsPerDay
-  // (which is the realized deploy-stage flow: shippedFlow, capped by
-  // whatever was actually sitting in Done that tick -- see tick.ts). Each is
-  // capped by the stock actually available that tick (backlog for pull,
-  // inProgress for finish), NOT the stage's uncapped rate. The Delivery
-  // loop diagram's arrows used to print raw stage capacity (effectiveRate) and claim it
-  // equaled throughput, which is only true when the relevant stock fully
-  // saturates that stage every tick -- these fields let the UI show what
-  // actually moved instead.
+  // Realized flow this tick. pointsPerDay is shippedFlow (Done → Shipped).
+  // finishFlow is how much left the Ready+In Progress pool into Done (speed).
+  // pullFlow is how much left Ready (seats filling plus work that finished
+  // from Ready the same day). In Progress itself is capacity, not a queue.
   pullFlow: number;
   finishFlow: number;
   // Realized users-loop flows this tick (mirrors pullFlow for the product

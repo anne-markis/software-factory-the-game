@@ -37,9 +37,10 @@ const UPSTREAM: StageDef[] = [
 ];
 
 const PIPELINE_FULL: StageDef[] = [
-  // ADR 0009: Ready is waiting-to-pull (`backlog`). Cockpit "Backlog" is
-  // unshipped work across Ready + In Progress + Done, not this box. Ideas
-  // and Plan sit left of Ready; they are stocks, not pipeline stages.
+  // ADR 0009: Ready is waiting-for-a-seat (`backlog`). Cockpit "Backlog" is
+  // unshipped work across Ready + In Progress + Done, not this box. In
+  // Progress is capacity, filled from Ready. Ideas and Plan sit left of
+  // Ready; they are stocks, not pipeline stages.
   { key: "backlog", label: "Ready" },
   { key: "inProgress", label: "In Progress" },
   { key: "done", label: "Done" },
@@ -63,22 +64,26 @@ const STAGE_COUNT = 6;
 const VIEW_W = STAGE_COUNT * BOX_W + (STAGE_COUNT - 1) * GAP + 32;
 const VIEW_H = 175;
 
-// binding-stage bottleneck cue (machine-side only).
-//
-// Threshold (documented for the PR / DoD):
-// - Inflow capacity must be clearly ahead of outflow: inflowRate >=
-//   INFLOW_RATIO × outflowRate (1.5×). Uses effectiveRate (decision-facing
-//   capacity), not realized flow — a starved upstream can make realized
-//   inflow look low even when the stage is the structural bottleneck.
-// - The pile itself proves a sustained stretch: stock >= SUSTAINED_DAYS
-//   days of outflow capacity (3 days). No streak counter in engine/UI
-//   state — a transient blip never reaches a 3-day pile.
-// - Zero outflow with a non-empty stock and positive inflow also counts
-//   (infinite days of backlog).
-// Among candidates, pick the largest days-of-outflow pile (most visibly
-// stuck). Continuous deploy drops Done, so only In Progress can cue then.
-// Ideas / Plan never cue: they are not pipeline stages. A healthy balanced
-// loop (equal rates, small stocks) never cues.
+  // In Progress is capacity (seats), not a queue that grows. The box stays
+  // at seat count; Ready holds waiting work. Cue Done when finish outruns
+  // deploy and Done has piled up. Do not cue In Progress for a full team —
+  // that is the healthy seated state, not a jam.
+  //
+  // Threshold (documented for the PR / DoD):
+  // - Inflow capacity must be clearly ahead of outflow: inflowRate >=
+  //   INFLOW_RATIO × outflowRate (1.5×). Uses effectiveRate (decision-facing
+  //   capacity), not realized flow — a starved upstream can make realized
+  //   inflow look low even when the stage is the structural bottleneck.
+  // - The pile itself proves a sustained stretch: stock >= SUSTAINED_DAYS
+  //   days of outflow capacity (3 days). No streak counter in engine/UI
+  //   state — a transient blip never reaches a 3-day pile.
+  // - Zero outflow with a non-empty stock and positive inflow also counts
+  //   (infinite days of backlog).
+  // Among candidates, pick the largest days-of-outflow pile (most visibly
+  // stuck). Continuous deploy drops Done, so nothing cues then unless a
+  // later stage is added. Ideas / Plan never cue: they are not pipeline
+  // stages. A healthy seated loop (In Progress = seats, Ready waiting) never
+  // cues.
 export type BindingStage = "inProgress" | "done";
 
 export const BINDING_INFLOW_RATIO = 1.5;
@@ -107,14 +112,8 @@ export function bindingBottleneckStage(
 ): BindingStage | null {
   const candidates: BindingCandidate[] = [];
 
-  const pull = effectiveRate(state, "pull");
-  const finish = effectiveRate(state, "finish");
-  const inProgressDays = candidateDays(state.stocks.inProgress, pull, finish);
-  if (inProgressDays !== null) {
-    candidates.push({ stage: "inProgress", daysOfOutflow: inProgressDays });
-  }
-
   if (!continuousDeployActive(state, content)) {
+    const finish = effectiveRate(state, "finish");
     const deploy = effectiveRate(state, "deploy");
     const doneDays = candidateDays(state.stocks.done, finish, deploy);
     if (doneDays !== null) {

@@ -120,6 +120,9 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         if (def) log(state, `Lost: ${def.name}`);
         break;
       }
+      case "modifyCapacity":
+        pushModifier(state, source, "capacity", effect.op, effect.value, effect.durationDays);
+        break;
     }
   }
 }
