@@ -31,6 +31,7 @@ function conditionMet(def: ChallengeDef, state: GameState, content: GameContent)
   if (cond.lacksDecision !== undefined) {
     if (state.decisions.some((inst) => inst.defId === cond.lacksDecision)) return false;
   }
+  if (cond.requiresInFlightProject && state.projects.length === 0) return false;
   return true;
 }
 

@@ -127,9 +127,11 @@ That is a 5-day felt slowdown if applied at purchase.
 ## Challenges
 
 Shape: `challengeSchema`. `condition` fields are AND. Eligibility uses
-stocks, human headcount, and live ownership (`requiresAnyDecision`,
-`lacksDecision`) — not tags. Unknown decision ids in those fields fail
-`validateContentGraph` after the era catalog is assembled.
+stocks, human headcount, live ownership (`requiresAnyDecision`,
+`lacksDecision`), and optional `requiresInFlightProject` (true only while
+`state.projects` is non-empty; Plan items do not count) — not tags.
+Unknown decision ids in those fields fail `validateContentGraph` after
+the era catalog is assembled.
 
 `probScaling` today is only `{ stat: "techDebt", per, add }`, added to
 `probabilityPerDay` and capped at 1. Generic `minStock` / `maxStock` are

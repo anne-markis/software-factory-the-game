@@ -601,7 +601,7 @@ describe("parseChallenges", () => {
       name: "Production incident",
       probabilityPerDay: 0.01,
       cooldownDays: 60,
-      condition: { minCompletedProjects: 1 },
+      condition: { minCompletedProjects: 1, requiresInFlightProject: true },
       probScaling: { stat: "techDebt", per: 500, add: 0.01 },
     });
     expect(incident!.effects).toEqual([
@@ -798,6 +798,16 @@ describe("parseChallenges", () => {
         { id: "x", name: "x2", description: "x2", probabilityPerDay: 0.1, effects: [] },
       ]),
     ).toThrow(/duplicate/i);
+  });
+
+  it("parses a requiresInFlightProject condition", () => {
+    const defs = parseChallenges([
+      {
+        id: "x", name: "x", description: "x", probabilityPerDay: 0.1, effects: [],
+        condition: { minCompletedProjects: 1, requiresInFlightProject: true },
+      },
+    ]);
+    expect(defs[0].condition).toEqual({ minCompletedProjects: 1, requiresInFlightProject: true });
   });
 
   it("parses a lacksDecision condition", () => {
