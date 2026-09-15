@@ -132,7 +132,7 @@ decision tags (ADR 0002).
 | Change how a tick or effect works | `src/engine/` + engine tests |
 | Change what the player sees | `src/ui/` |
 | Lock a structural choice | a new ADR |
-| Author the decision graph | `make graph` (same loader as the game) |
+| Author the decision graph | `make graph` content studio (same loader as the game) |
 
 ## Code is the context
 

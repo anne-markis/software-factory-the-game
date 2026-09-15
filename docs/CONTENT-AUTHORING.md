@@ -34,7 +34,8 @@ in `content/eras.json`, not here.
 
 Schemas are `.strict()`: unknown keys fail the file, naming the era path
 and entry id. `npm run test` loads every bundle. `make graph` opens the
-local DAG (ADR 0003). Bump `SAVE_VERSION` in `src/engine/save.ts` when you
+local content studio (decision tree, type chips, challenges). Bump
+`SAVE_VERSION` in `src/engine/save.ts` when you
 retire ids a previous save might still own (ADR 0004).
 
 ## Decisions
@@ -236,4 +237,5 @@ from their effects automatically.
 `npm run test` parses every era bundle and runs the balance probes in
 `src/engine/simulation.test.ts`. Tune JSON against those probes.
 `npm run build` type-checks. `make graph` is the
-visual check for requires / counts / synergies / era-entry paths.
+visual check for the decision tree, type flags, challenges, requires /
+counts / synergies, and era-entry paths.

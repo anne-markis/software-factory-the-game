@@ -155,6 +155,6 @@ brainstorm spec.
 
 ## Authoring tools
 
-`make graph` serves a local DAG of decisions, requires / count gates,
-synergies, costs, and era-entry paths. It is not part of the player UI
-(ADR 0003).
+`make graph` serves a local content studio: a decision tree (not a flat
+DAG), type chips, challenges, and an inspector. It is not part of the
+player UI (ADR 0003).
