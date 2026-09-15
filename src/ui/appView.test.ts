@@ -142,7 +142,9 @@ describe("appView delivery-column stats layout", () => {
     const debtLine = deliveryCol.querySelector(".debt-consequences")!;
     expect(debtLine).toBeTruthy();
     expect(debtLine.getAttribute("data-debt-tone")).toBe("ok");
-    expect(debtLine.textContent).toContain("no slowdown until 400");
+    expect(debtLine.textContent).toContain("High tech debt");
+    expect(debtLine.textContent).toContain("slows delivery after 400");
+    expect(debtLine.textContent).toContain("adds rework after first ship");
     expect(deliveryCol.querySelector('[data-section="debt-consequences"]')).toBe(debtLine.parentElement);
 
     // User loop sits on its own second row, collapsed until opened;
@@ -196,7 +198,7 @@ describe("appView delivery-column stats layout", () => {
   it("updates the debt consequences line when tech debt crosses the free band", () => {
     const h = mount();
     const line = h.root.querySelector(".debt-consequences")!;
-    expect(line.textContent).toContain("no slowdown until 400");
+    expect(line.textContent).toContain("slows delivery after 400");
     expect(line.getAttribute("data-debt-tone")).toBe("ok");
     h.state.stocks.techDebt = 1400;
     h.view.render();

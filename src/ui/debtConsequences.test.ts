@@ -14,14 +14,20 @@ function studio(): GameContent {
 }
 
 describe("debtConsequenceParts", () => {
-  it("teaches the free band at the start of a Studio game", () => {
+  it("names slowdown and rework on a fresh Studio game, before any debt exists", () => {
     const content = studio();
     const state = initialState(content);
     expect(debtConsequenceTone(state)).toBe("ok");
-    expect(debtConsequenceParts(state, content)).toEqual(["no slowdown until 400"]);
-    expect(renderDebtConsequences(state, content)).toContain("no slowdown until 400");
-    expect(renderDebtConsequences(state, content)).not.toContain("Production incident");
-    expect(renderDebtConsequences(state, content)).not.toContain("rework");
+    expect(debtConsequenceParts(state, content)).toEqual([
+      "slows delivery after 400 (up to 40%)",
+      "adds rework after first ship",
+    ]);
+    const html = renderDebtConsequences(state, content);
+    expect(html).toContain("High tech debt");
+    expect(html).toContain("slows delivery after 400 (up to 40%)");
+    expect(html).toContain("adds rework after first ship");
+    expect(html).not.toContain("Production incident");
+    expect(html).not.toContain("no slowdown");
   });
 
   it("names delivery drag once debt passes the free band", () => {
@@ -30,7 +36,7 @@ describe("debtConsequenceParts", () => {
     // excess 1000 * 0.00015 = 0.15 -> 15% slower
     state.stocks.techDebt = 1400;
     expect(debtConsequenceTone(state)).toBe("warn");
-    expect(debtConsequenceParts(state, content)).toContain("15% slower");
+    expect(debtConsequenceParts(state, content)).toContain("15% slower (up to 40%)");
     expect(renderDebtConsequences(state, content)).toContain("data-debt-tone=\"warn\"");
     expect(renderDebtConsequences(state, content)).toContain("debt-warn");
   });
@@ -44,20 +50,20 @@ describe("debtConsequenceParts", () => {
     expect(renderDebtConsequences(state, content)).toContain("debt-high");
   });
 
-  it("adds rework once the first project has shipped", () => {
+  it("switches rework to a live per-ship amount once the first project has shipped", () => {
     const content = studio();
     const state = initialState(content);
     state.completedProjects = 1;
     expect(debtConsequenceParts(state, content)).toEqual([
-      "no slowdown until 400",
+      "slows delivery after 400 (up to 40%)",
       "rework +0.5 per ship",
     ]);
   });
 
-  it("includes Company incident odds only when that challenge is live", () => {
+  it("names Company incidents even before they can fire, then shows live odds", () => {
     const content = loadShippedContent("company");
     const gated = initialState(content);
-    expect(debtConsequenceParts(gated, content).some((p) => p.includes("Production incident"))).toBe(false);
+    expect(debtConsequenceParts(gated, content)).toContain("Production incident more likely as debt rises");
 
     const live = initialState(content);
     live.completedProjects = 1;

@@ -137,13 +137,20 @@
          without introducing a horizontal scrollbar. */
       .delivery-column { min-width: 0; }
       .delivery-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; white-space: nowrap; font-size: 0.95rem; margin: -0.25rem 0 0.2rem; }
-      /* Live readout of what the Tech Debt stock is doing: drag, rework,
-         debt-scaled incident odds. Sits under delivery-stats so the number
-         stays tabular while the consequences stay on screen. */
-      .debt-consequences { font-size: 0.85rem; color: var(--fg-dim); margin: 0 0 1rem; line-height: 1.35; }
-      .debt-consequences-label { margin-right: 0.35rem; }
+      /* Legend of what the Tech Debt stock does, even at 0. Amber wash so it
+         does not read as dim helper chrome under the stats row. */
+      .debt-consequences {
+        font-size: 0.9rem;
+        color: var(--fg);
+        background: color-mix(in srgb, var(--accent-amber) 14%, var(--bg));
+        border: 1px solid var(--accent-amber);
+        padding: 0.4rem 0.65rem;
+        margin: 0 0 1rem;
+        line-height: 1.35;
+      }
+      .debt-consequences-label { font-weight: bold; margin-right: 0.4rem; }
       .debt-consequences.debt-warn { color: var(--accent-amber); }
-      .debt-consequences.debt-high { color: var(--accent-red); font-weight: bold; }
+      .debt-consequences.debt-high { color: var(--accent-red); font-weight: bold; border-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 14%, var(--bg)); }
       .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 1rem; }
       /* Projects catalog: two stacked tables (in-flight status + available
          offers) share colgroup widths so they read as one grid. The split

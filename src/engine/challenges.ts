@@ -15,7 +15,11 @@ function choiceNeedsHumanTarget(def: ChallengeDef): boolean {
   return def.choice?.options.some((o) => o.effects.some((e) => e.type === "removeHuman")) ?? false;
 }
 
-export function challengeConditionMet(def: ChallengeDef, state: GameState, content: GameContent): boolean {
+export function challengeConditionMet(
+  def: ChallengeDef,
+  state: Readonly<GameState>,
+  content: GameContent,
+): boolean {
   const cond = def.condition;
   if (!cond) return true;
   const humans = humanDevInstances(state, content).length;
@@ -34,7 +38,7 @@ export function challengeConditionMet(def: ChallengeDef, state: GameState, conte
   return true;
 }
 
-export function challengeProbability(def: ChallengeDef, state: GameState): number {
+export function challengeProbability(def: ChallengeDef, state: Readonly<GameState>): number {
   let p = def.probabilityPerDay;
   if (def.probScaling) {
     p += Math.floor(state.stocks.techDebt / def.probScaling.per) * def.probScaling.add;
@@ -42,13 +46,17 @@ export function challengeProbability(def: ChallengeDef, state: GameState): numbe
   return Math.min(1, p);
 }
 
-/** Challenges whose odds scale with techDebt and whose conditions currently hold. Ignores cooldown and global spacing so the cockpit can show debt-driven risk, not whether an event may roll this tick. */
+/** Challenges whose daily odds scale with the techDebt stock. Catalog presence only — gates, cooldown, and spacing are the caller's problem. */
+export function debtScalingChallenges(content: GameContent): ChallengeDef[] {
+  return content.challenges.filter((def) => def.probScaling?.stat === "techDebt");
+}
+
+/** Live odds for debt-scaling challenges whose conditions currently hold. Ignores cooldown and global spacing so the cockpit can show debt-driven risk, not whether an event may roll this tick. */
 export function debtScaledChallengeRisks(
-  state: GameState,
+  state: Readonly<GameState>,
   content: GameContent,
 ): { id: string; name: string; probability: number }[] {
-  return content.challenges
-    .filter((def) => def.probScaling?.stat === "techDebt")
+  return debtScalingChallenges(content)
     .filter((def) => challengeConditionMet(def, state, content))
     .map((def) => ({
       id: def.id,
