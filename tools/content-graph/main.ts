@@ -362,7 +362,7 @@ function renderEraColumn(
     const existing = section.querySelector(".empty-era");
     if (existing) {
       existing.textContent =
-        "Inherits prior rungs. No native decisions or challenges shipped in this era yet.";
+        "No native decisions or challenges yet. Inherits prior rungs.";
     }
   }
 
@@ -491,7 +491,7 @@ function render(model: ContentGraph, root: HTMLElement, state: StudioState): voi
   const viewport = element("div", "graph-viewport");
   const canvas = element("div", "graph-canvas");
   const columns = visibleColumns(model, state.filters);
-  canvas.style.gridTemplateColumns = `repeat(${Math.max(columns.length, 1)}, minmax(22rem, 1fr))`;
+  canvas.style.gridTemplateColumns = `repeat(${Math.max(columns.length, 1)}, 24rem)`;
   const onSelect = (id: string): void => {
     state.selectedId = state.selectedId === id ? null : id;
     render(model, root, state);
