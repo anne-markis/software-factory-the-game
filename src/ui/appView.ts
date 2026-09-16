@@ -145,8 +145,8 @@ function pageScaffold(): string {
     <div ${SECTION_ATTR}="${STALL}"></div>
     <div class="cols">
       <div class="main">
-        <div ${SECTION_ATTR}="${DECISIONS}"></div>
         <div ${SECTION_ATTR}="${PROJECTS}"></div>
+        <div ${SECTION_ATTR}="${DECISIONS}"></div>
       </div>
       <div class="side">
         <div ${SECTION_ATTR}="${LOG}"></div>
