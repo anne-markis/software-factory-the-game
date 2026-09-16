@@ -606,8 +606,7 @@ describe("parseChallenges", () => {
     });
     expect(incident!.effects).toEqual([
       { type: "addToStock", stock: "budget", value: -8000 },
-      { type: "addToStock", stock: "reputation", value: -2 },
-      { type: "addToStock", stock: "users", value: -15 },
+      { type: "scaleStock", stock: "users", factor: 0.95 },
       { type: "modifyRate", target: "all", op: "mul", value: 0.8, durationDays: 3 },
     ]);
     expect(company.challenges.filter((c) => c.id === "prod-incident")).toHaveLength(1);

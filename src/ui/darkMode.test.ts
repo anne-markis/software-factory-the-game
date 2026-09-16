@@ -236,6 +236,8 @@ const PAIRS: Pair[] = [
   },
   // low-runway Budget warning reuses --accent-red.
   { label: ".stat-value.budget-low on body background", fg: tokenColor(".stat-value.budget-low", "color"), bg, category: "text" },
+  { label: ".stat-value.debt-warn on body background", fg: tokenColor(".stat-value.debt-warn", "color"), bg, category: "text" },
+  { label: ".stat-value.debt-high on body background", fg: tokenColor(".stat-value.debt-high", "color"), bg, category: "text" },
   // hire/gamble reveal outcome reuses --accent-amber.
   { label: ".gamble-reveal-outcome on body background", fg: tokenColor(".gamble-reveal-outcome", "color"), bg, category: "text" },
   { label: ".proj-chip-rep on body background", fg: tokenColor(".proj-chip-rep", "color"), bg, category: "text" },

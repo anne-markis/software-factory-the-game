@@ -138,6 +138,9 @@ describe("appView delivery-column stats layout", () => {
     expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
     expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
+    expect(deliveryCol.querySelector(".debt-consequences")).toBeNull();
+    expect(h.root.textContent).not.toContain("High tech debt");
+    expect(h.root.textContent).not.toContain("no slowdown until 400");
 
     // User loop sits on its own second row, collapsed until opened;
     // contributor zooms hang under Delivery.
@@ -185,6 +188,33 @@ describe("appView delivery-column stats layout", () => {
     expect(after.querySelector(".stat-label")!.textContent).toBe("In Progress");
     expect(h.root.querySelector(".delivery-column .delivery-stats")).toBe(after);
     expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
+  });
+
+  it("puts live drag on Points/Day and delivery arrows, not on the leak or a banner", () => {
+    const h = mount();
+    const debt = h.root.querySelector('[data-stat="techDebt"] .stat-value')!;
+    const rate = h.root.querySelector('[data-stat="pointsPerDay"] .stat-value')!;
+    expect(debt.textContent).toBe("0");
+    expect(debt.classList.contains("debt-warn")).toBe(false);
+    expect(rate.textContent).toBe("0");
+    expect(rate.classList.contains("debt-warn")).toBe(false);
+    expect(h.root.querySelector(".debt-consequences")).toBeNull();
+    expect(h.root.querySelector("[data-debt-drag]")).toBeNull();
+    h.state.stocks.techDebt = 1400;
+    h.state.pointsPerDay = 1.7;
+    h.view.render();
+    const afterDebt = h.root.querySelector('[data-stat="techDebt"] .stat-value')!;
+    const afterRate = h.root.querySelector('[data-stat="pointsPerDay"] .stat-value')!;
+    expect(afterDebt.textContent).toBe("1,400");
+    expect(afterDebt.classList.contains("debt-warn")).toBe(true);
+    expect(afterRate.textContent).toBe("1.7 (-15%)");
+    expect(afterRate.classList.contains("debt-warn")).toBe(true);
+    expect(h.root.querySelectorAll('[data-debt-drag="warn"]')).toHaveLength(3);
+    expect(h.root.querySelector("[data-debt-hot]")).toBeNull();
+    expect(h.root.textContent).toContain("debt +0.5/pt");
+    expect(h.root.textContent).not.toContain("slower");
+    expect(h.root.querySelector(".debt-consequences")).toBeNull();
+    expect(h.root.textContent).not.toContain("High tech debt");
   });
 });
 

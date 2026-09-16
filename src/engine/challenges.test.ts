@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rollChallenges, resolveChoice } from "./challenges";
+import { rollChallenges, resolveChoice, debtScaledChallengeRisks } from "./challenges";
 import { initialState } from "./engine";
 import { applyDecision, removeDecision } from "./decisions";
 import { parseStartConfig, parseChallenges, parseDecisions } from "./content";
@@ -123,10 +123,30 @@ describe("rollChallenges", () => {
     expect(hashRoll(SEED, 26, "prod-incident")).toBeLessThan(0.01);
     rollChallenges(s, noRng, c);
     expect(s.stocks.budget).toBe(992_000);
-    expect(s.stocks.reputation).toBe(3);
-    expect(s.stocks.users).toBe(25);
+    expect(s.stocks.reputation).toBe(5); // incidents no longer spend reputation
+    expect(s.stocks.users).toBe(38); // 5% of 40
     expect(s.modifiers.some((m) => m.target === "allRates" && m.value === 0.8)).toBe(true);
     expect(s.log.some((l) => l.message.includes("Production incident"))).toBe(true);
+  });
+
+  it("churns 5% of current users on a Production incident, including a no-op at 0", () => {
+    const c = loadShippedContent("company");
+    const empty = initialState(c);
+    empty.completedProjects = 1;
+    empty.stocks.budget = 1_000_000;
+    empty.stocks.users = 0;
+    empty.day = 26;
+    rollChallenges(empty, noRng, c);
+    expect(empty.stocks.users).toBe(0);
+
+    const crowded = initialState(c);
+    crowded.completedProjects = 1;
+    crowded.stocks.budget = 1_000_000;
+    crowded.stocks.users = 200;
+    crowded.day = 26;
+    rollChallenges(crowded, noRng, c);
+    expect(crowded.stocks.users).toBe(190);
+    expect(crowded.stocks.reputation).toBe(0);
   });
 
   it("holds Production incident until a project has shipped, even in Company", () => {
@@ -194,6 +214,22 @@ describe("rollChallenges", () => {
     high.stocks.techDebt = 1000;
     rollChallenges(high, noRng, c);
     expect(high.stocks.budget).toBe(9900); // p 1.0: always
+  });
+
+  it("reports debt-scaled challenge odds only when conditions hold", () => {
+    const c = loadShippedContent("company");
+    const gated = initialState(c);
+    expect(debtScaledChallengeRisks(gated, c)).toEqual([]);
+
+    const live = initialState(c);
+    live.completedProjects = 1;
+    live.stocks.techDebt = 0;
+    expect(debtScaledChallengeRisks(live, c)).toEqual([
+      { id: "prod-incident", name: "Production incident", probability: 0.01 },
+    ]);
+
+    live.stocks.techDebt = 500;
+    expect(debtScaledChallengeRisks(live, c)[0]!.probability).toBe(0.02);
   });
 
   it("queues a pending choice instead of applying effects, and expiry applies the default", () => {
