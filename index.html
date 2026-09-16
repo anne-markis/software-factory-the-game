@@ -79,7 +79,9 @@
       .stat-value.v-rep { min-width: 7ch; } /* Reputation */
       .stat-value.v-users { min-width: 8ch; } /* Users */
       .stat-value.v-ideas { min-width: 8ch; } /* Ideas pile */
-      .stat-value.v-rate { min-width: 5ch; } /* Points/Day */
+      /* Points/Day may append " (-N%)" once debt is dragging. min-width is
+         a floor for the bare number; the suffix grows the slot. */
+      .stat-value.v-rate { min-width: 5ch; text-align: left; }
       /* brief pulse when a material cockpit/delivery number
          changes. Amber underline + opacity (existing risk tone), single
          shot — presence without a new effect language. prefers-reduced-motion
@@ -140,9 +142,10 @@
          without introducing a horizontal scrollbar. */
       .delivery-column { min-width: 0; }
       .delivery-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; white-space: nowrap; font-size: 0.95rem; margin: -0.25rem 0 1rem; }
-      /* When excess debt is dragging throughput, the existing Shipped→Ready
-         leak path on the Delivery loop turns amber instead of adding a banner. */
-      .debt-regen[data-debt-hot="1"] { color: var(--accent-amber); }
+      /* Pull / finish / deploy arrows tint when debt is dragging those rates.
+         The Shipped→Ready leak stays dim — that path is generation, not drag. */
+      [data-debt-drag="warn"] { color: var(--accent-amber); }
+      [data-debt-drag="high"] { color: var(--accent-red); }
       .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 1rem; }
       /* Projects catalog: two stacked tables (in-flight status + available
          offers) share colgroup widths so they read as one grid. The split

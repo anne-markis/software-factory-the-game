@@ -1,7 +1,7 @@
 import type { DeliveryRateId, GameContent, GameState } from "../engine/types";
 import { effectiveDebtMultiplier, effectiveRate } from "../engine/modifiers";
 import { continuousDeployActive } from "../engine/continuousDeploy";
-import { debtConsequenceTone, debtRegenCaption } from "./debtConsequences";
+import { debtConsequenceTone, type DebtConsequenceTone } from "./debtConsequences";
 
 // The arrows must show what actually flowed through each stage
 // this tick, not the stage's uncapped rate (effectiveRate) -- those only
@@ -186,7 +186,13 @@ function box(
       </g>`;
 }
 
-function arrow(x1: number, x2: number, label: string, bindingOutflow = false): string {
+function arrow(
+  x1: number,
+  x2: number,
+  label: string,
+  bindingOutflow = false,
+  dragTone: DebtConsequenceTone = "ok",
+): string {
   const mid = Y + BOX_H / 2;
   // Outflow of the binding stage gets a matching thicker stroke so the
   // "stuck here" read includes the constrained arrow, not only the box.
@@ -196,15 +202,21 @@ function arrow(x1: number, x2: number, label: string, bindingOutflow = false): s
     ? `
       <text x="${(x1 + x2) / 2}" y="${mid - 8}" text-anchor="middle" font-size="11" fill="currentColor">${label}</text>`
     : "";
-  return `
+  // Pull / finish / deploy are the rates debt actually slows. Ideas and Plan
+  // stay un-tinted. The leak path is generation, not drag, so it stays dim.
+  const dragWrap = dragTone !== "ok" ? ` data-debt-drag="${dragTone}"` : "";
+  const markup = `
       <line x1="${x1}" y1="${mid}" x2="${x2 - 8}" y2="${mid}" stroke="currentColor" marker-end="url(#arrow)"${strokeWidth}${dataAttr}/>${caption}`;
+  if (!dragWrap) return markup;
+  return `
+      <g${dragWrap}>${markup}
+      </g>`;
 }
 
-function debtRegenLoop(startX: number, endX: number, caption: string, hot: boolean): string {
+function debtRegenLoop(startX: number, endX: number, caption: string): string {
   const loopY = Y + BOX_H + 40;
-  const hotAttr = hot ? ' data-debt-hot="1"' : "";
   return `
-    <g class="debt-regen"${hotAttr}>
+    <g class="debt-regen">
     <path d="M ${startX} ${Y + BOX_H} V ${loopY} H ${endX} V ${Y + BOX_H + 8}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
     <text x="${(startX + endX) / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11" fill="currentColor">${caption}</text>
     </g>`;
@@ -231,6 +243,7 @@ function deliveryLoop(
   // Re-center when Done drops so five boxes do not read as a truncated six.
   const contentWidth = stages.length * BOX_W + (stages.length - 1) * GAP;
   const x0 = (VIEW_W - contentWidth) / 2;
+  const dragTone = debtConsequenceTone(state);
 
   const boxes = stages
     .map((stage, i) => {
@@ -256,12 +269,13 @@ function deliveryLoop(
       const label = flow ? fmtRate(realizedFlow(state, flow)) : "";
       const bindingOutflow =
         (binding === "inProgress" && flow === "finish") || (binding === "done" && flow === "deploy");
+      const flowDrag = flow ? dragTone : "ok";
       const cdCaption =
         continuousDeploy && flow === "finish"
           ? `
       <text x="${(x1 + x2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">continuous deploy</text>`
           : "";
-      return arrow(x1, x2, label, bindingOutflow) + cdCaption;
+      return arrow(x1, x2, label, bindingOutflow, flowDrag) + cdCaption;
     })
     .join("");
 
@@ -271,12 +285,7 @@ function deliveryLoop(
   const startX = stageX(x0, shippedIdx) + BOX_W / 2;
   const endX = stageX(x0, readyIdx) + BOX_W / 2;
   const leak = effectiveDebtMultiplier(state).toFixed(1);
-  const regen = debtRegenLoop(
-    startX,
-    endX,
-    debtRegenCaption(state, leak),
-    debtConsequenceTone(state) !== "ok",
-  );
+  const regen = debtRegenLoop(startX, endX, `debt +${leak}/pt`);
 
   return `
     <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" width="100%" role="img" aria-label="${ariaLabel(binding)}">

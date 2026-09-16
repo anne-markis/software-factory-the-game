@@ -14,23 +14,27 @@ export function debtConsequenceTone(state: Readonly<GameState>): DebtConsequence
   return "ok";
 }
 
-/** Live slowdown from excess debt, or null while the free band still covers it. */
+/** Amber/red class for a live drag; undefined while the free band still covers it. */
+export function debtToneClass(tone: DebtConsequenceTone): "debt-warn" | "debt-high" | undefined {
+  if (tone === "ok") return undefined;
+  return tone === "high" ? "debt-high" : "debt-warn";
+}
+
+/**
+ * Compact slowdown for the throughput number (Points/Day), or null while
+ * the free band still covers it. Lives on the rate that actually slows,
+ * not on the Tech Debt counter.
+ */
 export function debtDragLabel(state: Readonly<GameState>): string | null {
   const drag = 1 - debtDragMultiplier(state);
   if (drag <= 0) return null;
   const dragPct = Math.round(drag * 100);
-  if (drag >= state.debtDragMaxDrag - 1e-12) return `${dragPct}% slower (max)`;
-  if (dragPct === 0) return "<1% slower";
-  return `${dragPct}% slower`;
+  if (dragPct === 0) return "-<1%";
+  return `-${dragPct}%`;
 }
 
-export function formatDebtStatValue(state: Readonly<GameState>): string {
-  const n = fmt(state.stocks.techDebt);
+export function formatThroughputValue(state: Readonly<GameState>): string {
+  const n = fmt(state.pointsPerDay);
   const drag = debtDragLabel(state);
   return drag ? `${n} (${drag})` : n;
-}
-
-export function debtRegenCaption(state: Readonly<GameState>, leakPerPoint: string): string {
-  const drag = debtDragLabel(state);
-  return drag ? `debt +${leakPerPoint}/pt · ${drag}` : `debt +${leakPerPoint}/pt`;
 }

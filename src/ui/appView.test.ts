@@ -190,19 +190,31 @@ describe("appView delivery-column stats layout", () => {
     expect(h.root.querySelector(".stats .stat-label")!.textContent).toBe("Day");
   });
 
-  it("paints Tech Debt slowdown on the existing stat once past the free band", () => {
+  it("puts live drag on Points/Day and delivery arrows, not on the leak or a banner", () => {
     const h = mount();
     const debt = h.root.querySelector('[data-stat="techDebt"] .stat-value')!;
+    const rate = h.root.querySelector('[data-stat="pointsPerDay"] .stat-value')!;
     expect(debt.textContent).toBe("0");
     expect(debt.classList.contains("debt-warn")).toBe(false);
+    expect(rate.textContent).toBe("0");
+    expect(rate.classList.contains("debt-warn")).toBe(false);
     expect(h.root.querySelector(".debt-consequences")).toBeNull();
+    expect(h.root.querySelector("[data-debt-drag]")).toBeNull();
     h.state.stocks.techDebt = 1400;
+    h.state.pointsPerDay = 1.7;
     h.view.render();
-    const after = h.root.querySelector('[data-stat="techDebt"] .stat-value')!;
-    expect(after.textContent).toBe("1,400 (15% slower)");
-    expect(after.classList.contains("debt-warn")).toBe(true);
-    expect(h.root.querySelector('[data-debt-hot="1"]')).not.toBeNull();
-    expect(h.root.textContent).toContain("debt +0.5/pt · 15% slower");
+    const afterDebt = h.root.querySelector('[data-stat="techDebt"] .stat-value')!;
+    const afterRate = h.root.querySelector('[data-stat="pointsPerDay"] .stat-value')!;
+    expect(afterDebt.textContent).toBe("1,400");
+    expect(afterDebt.classList.contains("debt-warn")).toBe(true);
+    expect(afterRate.textContent).toBe("1.7 (-15%)");
+    expect(afterRate.classList.contains("debt-warn")).toBe(true);
+    expect(h.root.querySelectorAll('[data-debt-drag="warn"]')).toHaveLength(3);
+    expect(h.root.querySelector("[data-debt-hot]")).toBeNull();
+    expect(h.root.textContent).toContain("debt +0.5/pt");
+    expect(h.root.textContent).not.toContain("slower");
+    expect(h.root.querySelector(".debt-consequences")).toBeNull();
+    expect(h.root.textContent).not.toContain("High tech debt");
   });
 });
 

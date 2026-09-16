@@ -5,8 +5,8 @@ import type { GameContent } from "../engine/types";
 import {
   debtConsequenceTone,
   debtDragLabel,
-  debtRegenCaption,
-  formatDebtStatValue,
+  debtToneClass,
+  formatThroughputValue,
 } from "./debtConsequences";
 
 function studio(): GameContent {
@@ -14,29 +14,32 @@ function studio(): GameContent {
 }
 
 describe("debt drag status", () => {
-  it("is silent on a fresh game: just the number, no lecture", () => {
+  it("is silent on a fresh game: no suffix, no tone", () => {
     const state = initialState(studio());
     expect(debtConsequenceTone(state)).toBe("ok");
+    expect(debtToneClass("ok")).toBeUndefined();
     expect(debtDragLabel(state)).toBeNull();
-    expect(formatDebtStatValue(state)).toBe("0");
-    expect(debtRegenCaption(state, "0.5")).toBe("debt +0.5/pt");
+    expect(formatThroughputValue(state)).toBe("0");
   });
 
-  it("names the slowdown on the Tech Debt stat once past the free band", () => {
+  it("names the slowdown on throughput once past the free band", () => {
     const state = initialState(studio());
-    // excess 1000 * 0.00015 = 0.15 -> 15% slower
+    // excess 1000 * 0.00015 = 0.15 -> 15%
     state.stocks.techDebt = 1400;
+    state.pointsPerDay = 1.7;
     expect(debtConsequenceTone(state)).toBe("warn");
-    expect(debtDragLabel(state)).toBe("15% slower");
-    expect(formatDebtStatValue(state)).toBe("1,400 (15% slower)");
-    expect(debtRegenCaption(state, "0.5")).toBe("debt +0.5/pt · 15% slower");
+    expect(debtToneClass("warn")).toBe("debt-warn");
+    expect(debtDragLabel(state)).toBe("-15%");
+    expect(formatThroughputValue(state)).toBe("1.7 (-15%)");
   });
 
   it("caps the slowdown readout at maxDrag", () => {
     const state = initialState(studio());
     state.stocks.techDebt = 10_000;
+    state.pointsPerDay = 0.6;
     expect(debtConsequenceTone(state)).toBe("high");
-    expect(debtDragLabel(state)).toBe("40% slower (max)");
-    expect(formatDebtStatValue(state)).toContain("40% slower (max)");
+    expect(debtToneClass("high")).toBe("debt-high");
+    expect(debtDragLabel(state)).toBe("-40%");
+    expect(formatThroughputValue(state)).toBe("0.6 (-40%)");
   });
 });

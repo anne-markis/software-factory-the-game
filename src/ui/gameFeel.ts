@@ -6,7 +6,7 @@
 import type { GameContent, GameState } from "../engine/types";
 import { budgetRunwayDays, RUNWAY_WARN_DAYS } from "./runway";
 import { unshippedWork } from "../engine/work";
-import { debtConsequenceTone, formatDebtStatValue } from "./debtConsequences";
+import { debtConsequenceTone, debtToneClass, formatThroughputValue } from "./debtConsequences";
 
 // Local copies — avoid a render.ts ↔ gameFeel.ts import cycle (render
 // delegates row HTML here for the shared flash path).
@@ -60,7 +60,14 @@ export function cockpitStatViews(state: Readonly<GameState>, content: GameConten
       valueClass: low ? "budget-low" : undefined,
       material: true,
     },
-    { stat: "pointsPerDay", label: "Points/Day", value: fmt(state.pointsPerDay), widthClass: "v-rate", material: true },
+    {
+      stat: "pointsPerDay",
+      label: "Points/Day",
+      value: formatThroughputValue(state),
+      widthClass: "v-rate",
+      valueClass: debtToneClass(debtConsequenceTone(state)),
+      material: true,
+    },
   ];
 }
 
@@ -73,9 +80,9 @@ export function deliveryStatViews(state: Readonly<GameState>): StatView[] {
     {
       stat: "techDebt",
       label: "Tech Debt",
-      value: formatDebtStatValue(state),
+      value: fmt(state.stocks.techDebt),
       widthClass: "v-debt",
-      valueClass: debtTone === "ok" ? undefined : debtTone === "high" ? "debt-high" : "debt-warn",
+      valueClass: debtToneClass(debtTone),
       material: true,
     },
     { stat: "reputation", label: "Reputation", value: fmt(state.stocks.reputation), widthClass: "v-rep", material: true },
