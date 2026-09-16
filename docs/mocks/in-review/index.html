@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mock — In Review</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fff;
+        --fg: #000;
+        --fg-dim: #666;
+        --border: #999;
+        --accent-amber: #a60;
+        --desc: #444;
+        --note-bg: #f6f6f6;
+        --slot: #e8e8e8;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #181818;
+          --fg: #e8e8e8;
+          --fg-dim: #aaa;
+          --border: #888;
+          --accent-amber: #e0a030;
+          --desc: #c2c2c2;
+          --note-bg: #242424;
+          --slot: #2a2a2a;
+        }
+      }
+      body {
+        font-family: ui-monospace, monospace;
+        max-width: 1280px;
+        margin: 1rem auto;
+        padding: 0 1rem 3rem;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      h1 { font-size: 1.6rem; margin: 0 0 0.5rem; }
+      h2 { font-size: 1.2rem; margin: 2rem 0 0.5rem; }
+      h3 { margin: 0 0 0.35rem; font-size: 1rem; }
+      p, li { line-height: 1.45; color: var(--desc); }
+      .lede { color: var(--fg); max-width: 82ch; }
+      .toc {
+        display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem;
+        margin: 1rem 0 1.5rem; padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; background: var(--bg); z-index: 3;
+      }
+      .toc a { color: var(--fg); }
+      .panel { border: 1px solid var(--border); padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.75rem; }
+      .stats {
+        display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.5rem 1rem; font-size: 0.95rem; margin-bottom: 0.75rem;
+      }
+      .stat { display: inline-flex; gap: 0.5rem; }
+      .stat-label { color: var(--fg-dim); }
+      .mock-chrome { margin-bottom: 0.25rem; color: var(--fg-dim); font-size: 0.85rem; }
+      .notes {
+        background: var(--note-bg); border: 1px solid var(--border);
+        padding: 0.6rem 0.9rem; margin: 0.5rem 0 1.5rem; font-size: 0.9rem;
+      }
+      .notes strong { color: var(--fg); }
+      table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin: 0.75rem 0 1.5rem; }
+      th, td { border: 1px solid var(--border); padding: 0.4rem 0.55rem; text-align: left; vertical-align: top; }
+      th { color: var(--fg); }
+      td { color: var(--desc); }
+      .try { color: var(--accent-amber); font-size: 0.85rem; margin: 0 0 0.5rem; }
+      pre.flow {
+        background: var(--note-bg); border: 1px solid var(--border);
+        padding: 0.7rem 0.9rem; font-size: 0.82rem; overflow-x: auto;
+        color: var(--fg); line-height: 1.4;
+      }
+
+      /* 7 boxes + 6 arrows */
+      .grid-7 {
+        display: grid;
+        grid-template-columns: 1fr 2.2rem 1fr 2.2rem 1fr 2.2rem 1fr 2.2rem 1fr 2.2rem 1fr 2.2rem 1fr;
+        column-gap: 0.1rem;
+        row-gap: 0.35rem;
+        align-items: start;
+      }
+      /* 6 boxes + 5 arrows (CI/CD: Done dropped) */
+      .grid-6 {
+        display: grid;
+        grid-template-columns: 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr;
+        column-gap: 0.15rem;
+        row-gap: 0.35rem;
+        align-items: start;
+      }
+      .stage {
+        grid-row: 1;
+        border: 1px solid var(--border);
+        min-height: 5.6rem;
+        padding: 0.45rem 0.25rem 0.4rem;
+        text-align: center;
+        background: var(--bg);
+        color: inherit;
+        font: inherit;
+        position: relative;
+      }
+      .stage-name { display: block; font-size: 0.92rem; }
+      .stage-value { display: block; font-size: 1.1rem; font-weight: bold; margin-top: 0.2rem; }
+      .stage-rate { display: block; font-size: 0.72rem; margin-top: 0.15rem; color: var(--fg); }
+      .stage-cue { display: block; font-size: 0.68rem; font-style: italic; margin-top: 0.2rem; }
+      .cycle { display: block; margin: 0.25rem auto 0; width: 44px; height: 18px; }
+      .flow {
+        grid-row: 1;
+        align-self: center;
+        text-align: center;
+        font-size: 0.65rem;
+        color: var(--fg);
+        padding-top: 0.2rem;
+      }
+      .flow .rate { display: block; margin-bottom: 0.15rem; }
+      .flow .arrow { display: block; }
+      .s-ideas { grid-column: 1; }
+      .f-1 { grid-column: 2; }
+      .s-plan { grid-column: 3; }
+      .f-2 { grid-column: 4; }
+      .s-ready { grid-column: 5; }
+      .f-3 { grid-column: 6; }
+      .s-ip { grid-column: 7; }
+      .f-4 { grid-column: 8; }
+      .s-review { grid-column: 9; }
+      .f-5 { grid-column: 10; }
+      .s-done { grid-column: 11; }
+      .f-6 { grid-column: 12; }
+      .s-shipped { grid-column: 13; }
+      .grid-6 .s-shipped { grid-column: 11; }
+      .grid-6 .f-5 { grid-column: 10; }
+      .regen-7 {
+        grid-column: 5 / 14;
+        grid-row: 2;
+        border-top: 1px dashed var(--border);
+        text-align: center;
+        font-size: 0.75rem;
+        padding: 0.35rem 0 0.15rem;
+        color: var(--fg);
+      }
+      .regen-6 {
+        grid-column: 5 / 12;
+        grid-row: 2;
+        border-top: 1px dashed var(--border);
+        text-align: center;
+        font-size: 0.75rem;
+        padding: 0.35rem 0 0.15rem;
+        color: var(--fg);
+      }
+      button.caret-hit {
+        position: absolute; top: 0; right: 0;
+        width: 1.6rem; height: 1.6rem;
+        border: 0; background: transparent; color: var(--fg-dim);
+        font: inherit; font-size: 0.85rem; cursor: pointer;
+      }
+      button.caret-hit:hover { color: var(--fg); }
+      .stage.open { border-width: 2px; }
+      .stage.open button.caret-hit { color: var(--fg); }
+      .zoom {
+        grid-row: 3;
+        grid-column: 1 / -1;
+        border: 1px dashed var(--border);
+        padding: 0.55rem 0.7rem 0.6rem;
+        font-size: 0.8rem;
+      }
+      .zoom[hidden] { display: none !important; }
+      .zoom-head { font-weight: bold; margin-bottom: 0.35rem; }
+      .zoom-cols {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem 1rem;
+      }
+      .zoom-cols h4 { margin: 0 0 0.25rem; font-size: 0.8rem; }
+      .zoom-cols p { margin: 0 0 0.15rem; color: var(--fg); font-size: 0.8rem; }
+      .offer {
+        border: 1px dashed var(--border);
+        background: var(--slot);
+        padding: 0.35rem 0.45rem;
+        margin-top: 0.25rem;
+      }
+      .offer strong { color: var(--fg); display: block; margin-bottom: 0.15rem; }
+      .watch-caption { grid-column: 1 / -1; grid-row: 4; font-size: 0.8rem; color: var(--fg); margin-top: 0.25rem; }
+      @media (max-width: 900px) {
+        .grid-7, .grid-6 { grid-template-columns: 1fr; }
+        .stage, .flow, .regen-7, .regen-6, .zoom, .watch-caption { grid-column: 1 / -1 !important; grid-row: auto; }
+        .flow { text-align: left; padding: 0.15rem 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <p class="mock-chrome">Software Factory · static mock · click ▾ · not wired to the engine</p>
+    <h1>R1 — In Review as a permanent queue</h1>
+    <p class="lede">
+      One insertion: a new stock <code>inReview</code> and a new delivery rate
+      <code>review</code>, sitting between In Progress and Done. The stage is
+      always on the spine. CI/CD still removes <strong>Done only</strong>.
+      The zoom is the T3 caret already in the live cockpit — empty card slot
+      for later humans / agents on PRs.
+    </p>
+
+    <nav class="toc">
+      <a href="#model">Model</a>
+      <a href="#no-cd">Without CI/CD</a>
+      <a href="#cd">With CI/CD</a>
+      <a href="#later">Later: reviewers</a>
+      <a href="#tradeoffs">Pros / cons / side effects</a>
+    </nav>
+
+    <div class="stats">
+      <span class="stat"><span class="stat-label">Day</span> 42</span>
+      <span class="stat"><span class="stat-label">Backlog</span> 204</span>
+      <span class="stat"><span class="stat-label">Budget</span> $8,420 (120 days)</span>
+      <span class="stat"><span class="stat-label">Points/Day</span> 1.0</span>
+    </div>
+    <p class="notes">
+      Cockpit <strong>Backlog</strong> is still unshipped work (ADR 0009):
+      Ready + In Progress + <strong>In Review</strong> + Done
+      (180 + 2 + 14 + 8 = 204 in the no-CI/CD sketch). Ideas and Plan stay
+      off that sum.
+    </p>
+
+    <h2 id="model">Model</h2>
+    <pre class="flow">without CI/CD:  Ready --pull--> In Progress --finish--> In Review --review--> Done --deploy--> Shipped
+with CI/CD:     Ready --pull--> In Progress --finish--> In Review --review--> Shipped
+                (Done dumped every tick; box omitted; In Review stays)
+
+finish still drains the Ready+IP seat pool.
+review is a Done-shaped rate (not seats yet).
+founder baseRates.review = 1/day; hires do not boost it.</pre>
+    <div class="notes">
+      <strong>What this is not.</strong> In Review is not In Progress capacity.
+      Seats stay on coding. Reviewer seats (human vs agent) are a later
+      inner loop on this same box — see <a href="#later">Later</a>.
+    </div>
+
+    <h2 id="no-cd">Without CI/CD — seven boxes, In Review is the new jam</h2>
+    <p>
+      Coding (finish 3.5) has outrun review (1.0) and deploy (1.0). In Review
+      and Done both pile. CI/CD would still only clear Done.
+    </p>
+    <p class="try">Try: click ▾ on In Review, then on Done. One drawer at a time.</p>
+    <div class="panel">
+      <h3>Delivery · no CI/CD</h3>
+      <div class="mock" data-mock="nocd"></div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> Finish no longer lands in Done. The
+      binding cue can sit on In Review (PR backup) even while Done is also
+      slow. Hiring more developers makes this worse until a review card
+      exists — same Release 15 lesson, one stage earlier.
+    </div>
+
+    <h2 id="cd">With CI/CD — Done gone, In Review remains</h2>
+    <p>
+      Continuous deploy still means “no Done box.” Review is required before
+      ship. The post-CI/CD spine is six boxes again.
+    </p>
+    <p class="try">Try: click ▾ on In Review. There is no Done caret.</p>
+    <div class="panel">
+      <h3>Delivery · CI/CD owned</h3>
+      <div class="mock" data-mock="cd"></div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> Today’s CI/CD makes the factory look
+      like finish ships. After this mock, CI/CD makes reviewed work ship.
+      The new scaling unlock for the middle jam is a card on this zoom, not
+      another continuousDeploy marker.
+    </div>
+
+    <h2 id="later">Later — agents and humans on this box</h2>
+    <p class="lede">
+      Not in the first engine cut. Same drawer grows a reviewers strip the
+      way In Progress grew a cycle + contributors. Overflow waiting for a
+      review seat can stay counted in this stock (or split Ready-style later).
+    </p>
+    <div class="panel">
+      <h3>In Review zoom · future payload (static)</h3>
+      <div class="zoom" style="display:block;margin:0.4rem 0 0.6rem">
+        <div class="zoom-head">In Review zoom · later</div>
+        <div class="zoom-cols">
+          <div>
+            <h4>Reviewers (seats)</h4>
+            <p>Founder: 1 seat</p>
+            <p>Staff engineer: +1 seat</p>
+            <p>Review agent: +2 seats, no human</p>
+          </div>
+          <div>
+            <h4>Backup</h4>
+            <p>Finish 3.5/day in</p>
+            <p>Review seats cover 2.0/day</p>
+            <p>14 pts waiting on PRs</p>
+          </div>
+          <div>
+            <h4>Offer a card</h4>
+            <div class="offer">
+              <strong>Staff the review queue</strong>
+              Human reviewer hire, or agent that only reviews.
+              Shown here when this stage is the bind.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="tradeoffs">Pros / cons / side effects</h2>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>R1 · queue + review rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Pros</th>
+          <td>
+            Matches “always there, CD or not” without teaching CI/CD a second skip.
+            Reuses Done’s jam grammar and T3 zoom. Reviewer seats can land later
+            on the same stock.
+          </td>
+        </tr>
+        <tr>
+          <th>Cons</th>
+          <td>
+            Seven boxes before CI/CD. Founder implicit 1/day review. Launch beta
+            gains a second queue — probe retune. <code>all</code> rates pick up
+            review (setup slowdowns and meeting-creep hit PRs too).
+          </td>
+        </tr>
+        <tr>
+          <th>Side effects</th>
+          <td>
+            Engine: <code>inReview</code> stock, <code>review</code> rate,
+            ledger + SAVE_VERSION bump, finish writes In Review, binding cue.
+            UI: spine + zoom; CD layout keeps this box. Content: start.json
+            seed; hires still skip review. No new card in the first cut.
+            Will not: seats, agent/human split, merge challenges, changing CD.
+            Player: coding-scale jams here even after CI/CD; old saves wipe.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="lede">
+      Still not implemented. If this is the cut: engine stock + rate first,
+      T3 zoom with the empty offer slot, no reviewer card until the pile
+      reads as PR backup in play.
+    </p>
+
+    <script>
+      const CYCLE = `<svg class="cycle" viewBox="0 0 44 18" aria-hidden="true"><ellipse cx="22" cy="9" rx="16" ry="7" fill="none" stroke="currentColor"/><path d="M8 7 L12 5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M36 9 L37 13" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+
+      const OFFER = `<div class="offer"><strong>Offer slot</strong>Empty until a review card exists. Later: hire or agent that only reviews, shown when this box is the bind.</div>`;
+
+      function zoomReview(cd) {
+        const out = cd
+          ? ["Finish 3.5/day in", "Review 1.0/day out", "14 pts waiting on PRs", "CI/CD ships after review"]
+          : ["Finish 3.5/day in", "Review 1.0/day out", "14 pts waiting on PRs", "Done still waits to deploy"];
+        const cols = [
+          ["Review speed", ["Base 1.0/day", "No hire boost (Release 15 pattern)"]],
+          ["Why bound", out],
+          ["Next lever", [OFFER]],
+        ];
+        const html = cols.map(([h, lines]) =>
+          `<div><h4>${h}</h4>${lines.map((l) => l.startsWith("<") ? l : `<p>${l}</p>`).join("")}</div>`
+        ).join("");
+        return `<div class="zoom" data-for="inReview" hidden><div class="zoom-head">In Review zoom</div><div class="zoom-cols">${html}</div></div>`;
+      }
+
+      function zoomDone() {
+        const cols = [
+          ["Deploy speed", ["Base 1.0/day"]],
+          ["Why bound", ["Review 1.0/day in", "Deploy 1.0/day out", "8 pts waiting to ship"]],
+          ["Next lever", ["CI/CD drops this box", "In Review still sits upstream"]],
+        ];
+        const html = cols.map(([h, lines]) =>
+          `<div><h4>${h}</h4>${lines.map((l) => `<p>${l}</p>`).join("")}</div>`
+        ).join("");
+        return `<div class="zoom" data-for="done" hidden><div class="zoom-head">Done zoom</div><div class="zoom-cols">${html}</div></div>`;
+      }
+
+      function stage(col, id, name, value, extra, zoomable) {
+        const caret = zoomable
+          ? `<button class="caret-hit" type="button" data-zoom="${id}" aria-label="Inspect ${name}">▾</button>`
+          : "";
+        return `<div class="stage ${col}">${caret}<span class="stage-name">${name}</span><span class="stage-value">${value}</span>${extra}</div>`;
+      }
+
+      function flow(col, rate) {
+        return `<div class="flow ${col}"><span class="rate">${rate}</span><span class="arrow">→</span></div>`;
+      }
+
+      function spine(kind) {
+        const ipExtra = `${CYCLE}`;
+        const reviewExtra = `<span class="stage-cue">PR backup</span>`;
+        const doneExtra = `<span class="stage-cue">capacity-bound</span>`;
+        const ideasExtra = `<span class="stage-rate">0.5/day</span>`;
+        const planExtra = `<span class="stage-rate">1.0/day</span>`;
+        if (kind === "cd") {
+          return `
+            <div class="grid-6" data-kind="cd">
+              ${stage("s-ideas", "ideas", "Ideas", "64", ideasExtra, false)}
+              ${flow("f-1", "")}
+              ${stage("s-plan", "plan", "Plan", "18", planExtra, false)}
+              ${flow("f-2", "")}
+              ${stage("s-ready", "ready", "Ready", "180", "", false)}
+              ${flow("f-3", "2.0/day")}
+              ${stage("s-ip", "inProgress", "In Progress", "2", ipExtra, false)}
+              ${flow("f-4", "3.5/day")}
+              ${stage("s-review", "inReview", "In Review", "14", reviewExtra, true)}
+              ${flow("f-5", "1.0/day")}
+              ${stage("s-shipped", "shipped", "Shipped", "96", "", false)}
+              <div class="regen-6">rework leak x0.25/pt → Ready</div>
+              ${zoomReview(true)}
+              <p class="watch-caption">Click ▾ on In Review. CI/CD removed Done; this box stayed.</p>
+            </div>`;
+        }
+        return `
+          <div class="grid-7" data-kind="nocd">
+            ${stage("s-ideas", "ideas", "Ideas", "64", ideasExtra, false)}
+            ${flow("f-1", "")}
+            ${stage("s-plan", "plan", "Plan", "18", planExtra, false)}
+            ${flow("f-2", "")}
+            ${stage("s-ready", "ready", "Ready", "180", "", false)}
+            ${flow("f-3", "2.0/day")}
+            ${stage("s-ip", "inProgress", "In Progress", "2", ipExtra, false)}
+            ${flow("f-4", "3.5/day")}
+            ${stage("s-review", "inReview", "In Review", "14", reviewExtra, true)}
+            ${flow("f-5", "1.0/day")}
+            ${stage("s-done", "done", "Done", "8", doneExtra, true)}
+            ${flow("f-6", "1.0/day")}
+            ${stage("s-shipped", "shipped", "Shipped", "96", "", false)}
+            <div class="regen-7">rework leak x0.25/pt → Ready</div>
+            ${zoomReview(false)}
+            ${zoomDone()}
+            <p class="watch-caption">Click ▾ on In Review or Done. A growing box is the bottleneck.</p>
+          </div>`;
+      }
+
+      function closeAll(grid) {
+        grid.querySelectorAll(".zoom").forEach((z) => { z.hidden = true; });
+        grid.querySelectorAll(".stage").forEach((s) => s.classList.remove("open"));
+        grid.querySelectorAll(".caret-hit").forEach((c) => { c.textContent = "▾"; });
+      }
+
+      function openStage(grid, id) {
+        const already = grid.querySelector(`.zoom[data-for="${id}"]`);
+        const wasOpen = already && !already.hidden;
+        closeAll(grid);
+        if (wasOpen) return;
+        const panel = grid.querySelector(`.zoom[data-for="${id}"]`);
+        if (panel) panel.hidden = false;
+        const box = grid.querySelector(`.stage.s-${id === "inReview" ? "review" : id}`);
+        if (box) {
+          box.classList.add("open");
+          const caret = box.querySelector(".caret-hit");
+          if (caret) caret.textContent = "▴";
+        }
+      }
+
+      document.querySelectorAll(".mock").forEach((host) => {
+        const kind = host.dataset.mock;
+        host.innerHTML = spine(kind);
+        const grid = host.querySelector("[data-kind]");
+        grid.querySelectorAll("[data-zoom]").forEach((el) => {
+          el.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            openStage(grid, el.dataset.zoom);
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
