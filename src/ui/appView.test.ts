@@ -609,7 +609,7 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(ownedHeading).toBeTruthy();
     const ownedPanel = ownedHeading!.closest(".panel")!;
     expect(ownedPanel.textContent).toContain(name);
-    // Left column no longer hosts Owned between shop and Projects.
+    // Left column no longer hosts Owned between Projects and shop.
     const main = h.root.querySelector(".main")!;
     expect(Array.from(main.querySelectorAll("h3")).map((el) => el.textContent)).not.toContain("Owned");
     expect(h.actions).toBe(1);
@@ -623,8 +623,10 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(side.querySelector('[data-section="owned-list"]')!.textContent!.trim()).toBe("");
     const main = h.root.querySelector(".main")!;
     const mainHeadings = Array.from(main.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(mainHeadings[0]).toBe("Alter the system");
-    expect(mainHeadings.some((t) => t?.startsWith("Projects"))).toBe(true);
+    const projectsIndex = mainHeadings.findIndex((t) => t?.startsWith("Projects"));
+    const shopIndex = mainHeadings.indexOf("Alter the system");
+    expect(projectsIndex).toBe(0);
+    expect(shopIndex).toBeGreaterThan(projectsIndex);
     expect(mainHeadings).not.toContain("Owned");
   });
 
