@@ -17,10 +17,13 @@ function box(x: number, label: string, value: string): string {
       <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">${value}</text>`;
 }
 
-function arrow(x1: number, x2: number, label: string): string {
+function arrow(x1: number, x2: number, label: string, coupling = false): string {
   const mid = Y + BOX_H / 2;
+  // Dashed: a level that sets a rate (reputation → acquire), not a conserved
+  // transfer out of the left-hand stock. Solid arrows still mean realized flow.
+  const dash = coupling ? ' stroke-dasharray="4 3" data-coupling="true"' : "";
   return `
-      <line x1="${x1}" y1="${mid}" x2="${x2 - 8}" y2="${mid}" stroke="currentColor" marker-end="url(#users-arrow)"/>
+      <line x1="${x1}" y1="${mid}" x2="${x2 - 8}" y2="${mid}" stroke="currentColor" marker-end="url(#users-arrow)"${dash}/>
       <text x="${(x1 + x2) / 2}" y="${mid - 8}" text-anchor="middle" font-size="11" fill="currentColor">${label}</text>`;
 }
 
@@ -64,7 +67,7 @@ export function usersLoopSvg(state: Readonly<GameState>, _content: GameContent):
     <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" width="100%" role="img" aria-label="User loop">
       ${DEFS}
       ${box(xRep, "Reputation", fmt(state.stocks.reputation))}
-      ${arrow(xRep + BOX_W, xUsers, acquire)}
+      ${arrow(xRep + BOX_W, xUsers, acquire, true)}
       ${box(xUsers, "Users", fmt(state.stocks.users))}
       ${arrow(xUsers + BOX_W, xPay, income)}
       ${box(xPay, "User income", income.replace("/day", ""))}

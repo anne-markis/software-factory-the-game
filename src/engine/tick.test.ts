@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Engine } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
-import { decisionsJson, startJson } from "./loadShippedContent";
+import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
 import type { GameContent, GameState, ProjectDef } from "./types";
@@ -321,6 +321,43 @@ describe("tick", () => {
       expect(afterV2.stocks.users).toBeGreaterThan(usersBeforeV2 + 20);
       expect(afterV2.userAcquireFlow).toBeCloseTo(4.0, 5);
       expect(afterV2.userAcquireFlow - afterV2.userChurnFlow).toBeGreaterThan(0.5);
+    });
+
+    it("organic user acquire reads reputation but does not spend it", () => {
+      const content = testContent();
+      const e = new Engine(content);
+      const s = e.getState() as GameState;
+      s.completedProjects = 1;
+      s.projects = [];
+      s.stocks.backlog = 0;
+      s.stocks.inProgress = 0;
+      s.stocks.done = 0;
+      s.stocks.reputation = 50;
+      s.stocks.users = 100;
+      e.tick();
+      expect(e.getState().stocks.reputation).toBe(50);
+      expect(e.getState().userAcquireFlow).toBeCloseTo(6.5, 5); // 1.5 + 50 × 0.1
+    });
+
+    it("completed v1–v5 at 0 reputation acquire at 6.5/day", () => {
+      // Screenshot pin: Company idle after the product line, reputation 0,
+      // organic 1.5 plus five version acquire nudges, no reputation term.
+      const content = loadShippedContent("company");
+      content.challenges = [];
+      const e = new Engine(content);
+      const s = e.getState() as GameState;
+      s.completedProjects = 6;
+      s.completedProjectIds = ["launch-beta", "ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"];
+      s.projects = [];
+      s.plan = [];
+      s.stocks.backlog = 0;
+      s.stocks.inProgress = 0;
+      s.stocks.done = 0;
+      s.stocks.reputation = 0;
+      s.stocks.users = 625.1;
+      e.tick();
+      expect(e.getState().stocks.reputation).toBe(0);
+      expect(e.getState().userAcquireFlow).toBeCloseTo(6.5, 5);
     });
 
     it("subscription incomeFromStock scales income with the users stock", () => {

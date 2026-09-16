@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { rollChallenges, resolveChoice, debtScaledChallengeRisks } from "./challenges";
-import { initialState } from "./engine";
+import { Engine, initialState } from "./engine";
 import { applyDecision, removeDecision } from "./decisions";
 import { parseStartConfig, parseChallenges, parseDecisions } from "./content";
 import { challengesJson, decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
 import { createRng, hashRoll, type Rng } from "./rng";
-import type { GameContent } from "./types";
+import type { GameContent, GameState } from "./types";
 
 // The challenge phase no longer draws from the shared rng stream: each
 // challenge rolls a stateless hashRoll keyed by its own id. This rng turns
@@ -127,6 +127,58 @@ describe("rollChallenges", () => {
     expect(s.stocks.users).toBe(38); // 5% of 40
     expect(s.modifiers.some((m) => m.target === "allRates" && m.value === 0.8)).toBe(true);
     expect(s.log.some((l) => l.message.includes("Production incident"))).toBe(true);
+  });
+
+  it("fires Production incident on delivered work with no contract in flight", () => {
+    // Same pinned day 26 as the fire above, between contracts: empty projects,
+    // empty pipeline, a Plan item only. Incidents can still hit shipped work.
+    const c = loadShippedContent("company");
+    const s = initialState(c);
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.projects = [];
+    s.plan = [{ defId: "small-crm", name: "Small CRM build", progress: 113, size: 5000 }];
+    s.stocks.backlog = 0;
+    s.stocks.inProgress = 0;
+    s.stocks.done = 0;
+    s.stocks.plan = 113;
+    s.stocks.budget = 1_000_000;
+    s.stocks.reputation = 15;
+    s.stocks.users = 40;
+    s.day = 26;
+    expect(hashRoll(SEED, 26, "prod-incident")).toBeLessThan(0.01);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.reputation).toBe(15);
+    expect(s.stocks.budget).toBe(992_000);
+    expect(s.stocks.users).toBe(38);
+    expect(s.log.some((l) => l.message.includes("Production incident"))).toBe(true);
+  });
+
+  it("idle Company factory between contracts does not bleed reputation", () => {
+    // Screenshot repro: versions shipped, pipeline empty, a Plan item only,
+    // high tech debt, Company catalog. Incidents may still fire on delivered
+    // work; they no longer spend reputation.
+    const e = new Engine(loadShippedContent("company"));
+    const s = e.getState() as GameState;
+    s.completedProjects = 6;
+    s.completedProjectIds = ["launch-beta", "ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"];
+    s.projects = [];
+    s.plan = [{ defId: "small-crm", name: "Small CRM build", progress: 113, size: 5000 }];
+    s.stocks.backlog = 0;
+    s.stocks.inProgress = 0;
+    s.stocks.done = 0;
+    s.stocks.plan = 113;
+    s.stocks.reputation = 15;
+    s.stocks.users = 625.1;
+    s.stocks.techDebt = 2504.1;
+    s.stocks.budget = 4_937_730;
+    s.stocks.shipped = 13506.6;
+    s.stocks.ideas = 4205;
+    e.tick();
+    expect(e.getState().userAcquireFlow).toBeCloseTo(8.0, 5); // 1.5 + 5 versions + 15 × 0.1
+    for (let i = 0; i < 800; i++) e.tick();
+    expect(e.getState().stocks.reputation).toBe(15);
+    expect(e.getState().projects).toHaveLength(0);
   });
 
   it("churns 5% of current users on a Production incident, including a no-op at 0", () => {

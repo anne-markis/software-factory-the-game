@@ -22,6 +22,7 @@ describe("usersLoopSvg", () => {
     expect(svg).not.toMatch(/until launch/i);
     expect(svg).not.toMatch(/monetize/i);
     expect(svg).not.toContain("acquire");
+    expect(svg).toContain('data-coupling="true"');
   });
 
   it("shows rates, churn, and subscription income after launch", () => {
