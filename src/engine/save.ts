@@ -1,6 +1,8 @@
 import type { GameState } from "./types";
 
-// Bumped to 6 for named Plan items, the Plan stock, and the plan rate:
+// Bumped to 7 for In Review: a v6 save has no inReview stock and no review
+// rate, so finish would still land in Done and the Delivery spine would
+// skip the permanent PR queue. Bumped to 6 for named Plan items, the Plan stock, and the plan rate:
 // a v5 save has no Plan pile and no Pursue/Cancel/auto-Ready grammar, so
 // late-game offers would still write Ready on Start with no Ideas spend.
 // Bumped to 5 for the Ideas stock and discover faucet: a v4 save has no
@@ -19,7 +21,7 @@ import type { GameState } from "./types";
 // deserialize rejects mismatched versions, and the UI's loadGame swallows that
 // error and starts fresh, so old saves are wiped silently rather than resumed
 // into an inconsistent state.
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export function serialize(state: Readonly<GameState>): string {
   return JSON.stringify({ version: SAVE_VERSION, state });
@@ -75,6 +77,9 @@ export function deserialize(json: string): GameState {
   }
   if (state.finishFlow === undefined) {
     state.finishFlow = 0;
+  }
+  if (state.reviewFlow === undefined) {
+    state.reviewFlow = 0;
   }
   // defensive default for saves written before pointsPerDay (same realized-
   // throughput family as pullFlow/finishFlow). Legacy saves predate the

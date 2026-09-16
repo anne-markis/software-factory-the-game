@@ -75,6 +75,7 @@ export function deliveryStatViews(state: Readonly<GameState>): StatView[] {
   const debtTone = debtConsequenceTone(state);
   return [
     { stat: "inProgress", label: "In Progress", value: fmt(state.stocks.inProgress), widthClass: "v-count", material: true },
+    { stat: "inReview", label: "In Review", value: fmt(state.stocks.inReview), widthClass: "v-count", material: true },
     { stat: "done", label: "Done", value: fmt(state.stocks.done), widthClass: "v-count", material: true },
     { stat: "shipped", label: "Shipped", value: fmt(state.stocks.shipped), widthClass: "v-flow", material: true },
     {

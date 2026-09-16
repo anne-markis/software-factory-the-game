@@ -81,7 +81,8 @@ describe("effectiveCapacity", () => {
     expect(finishFlow).toBe(1);
     expect(s.stocks.inProgress).toBe(1);
     expect(s.stocks.backlog).toBe(298);
-    expect(s.stocks.done).toBe(1);
+    expect(s.stocks.inReview).toBe(1);
+    expect(s.stocks.done).toBe(0);
     expect(pullFlow).toBe(2);
     expect(unshippedWork(s)).toBe(300);
   });
@@ -90,7 +91,8 @@ describe("effectiveCapacity", () => {
     const s = initialState(shippedContent());
     applySeatCapacity(s, 1, 3);
     expect(s.stocks.inProgress).toBe(1);
-    expect(s.stocks.done).toBe(3);
+    expect(s.stocks.inReview).toBe(3);
+    expect(s.stocks.done).toBe(0);
     expect(s.stocks.backlog).toBe(296);
   });
 
@@ -121,11 +123,14 @@ describe("tick seats", () => {
     const s = e.getState();
     expect(s.stocks.inProgress).toBe(1);
     expect(s.stocks.backlog).toBe(298);
-    expect(s.stocks.done).toBe(1);
+    expect(s.stocks.inReview).toBe(1);
+    expect(s.stocks.done).toBe(0);
     e.tick();
     const s2 = e.getState();
     expect(s2.stocks.inProgress).toBe(1);
     expect(s2.stocks.backlog).toBe(297);
+    expect(s2.stocks.inReview).toBe(1);
+    expect(s2.stocks.done).toBe(1);
   });
 
   it("a hire raises In Progress; agents do not", () => {

@@ -37,7 +37,10 @@ function classifyRateModifier(m: Modifier): RateGroup {
 }
 
 function targetsFor(rate: DeliveryRateId): ReadonlyArray<Modifier["target"]> {
-  return rate === "finish" ? ["finish", "allRates"] : rate === "deploy" ? ["deploy", "allRates"] : ["pull", "allRates"];
+  if (rate === "finish") return ["finish", "allRates"];
+  if (rate === "review") return ["review", "allRates"];
+  if (rate === "deploy") return ["deploy", "allRates"];
+  return ["pull", "allRates"];
 }
 
 function matchesRate(m: Modifier, rate: DeliveryRateId): boolean {
@@ -194,11 +197,11 @@ function inProgressZoom(state: Readonly<GameState>, content: GameContent): strin
 function doneZoom(state: Readonly<GameState>, content: GameContent): string {
   const speedNodes = buildRateGroupNodes(state, content, "speed", "deploy");
   const frictionNodes = buildRateGroupNodes(state, content, "friction", "deploy");
-  const finish = effectiveRate(state, "finish");
+  const review = effectiveRate(state, "review");
   const deploy = effectiveRate(state, "deploy");
   const waiting = state.stocks.done.toLocaleString("en-US", { maximumFractionDigits: 1 });
   const bound: ContributorNode[] = [
-    { label: `Finish ${finish.toFixed(1)}/day in`, dim: false },
+    { label: `Review ${review.toFixed(1)}/day in`, dim: false },
     { label: `Deploy ${deploy.toFixed(1)}/day out`, dim: false },
     { label: `${waiting} waiting`, dim: false },
   ];
@@ -214,12 +217,40 @@ function doneZoom(state: Readonly<GameState>, content: GameContent): string {
     </div>`;
 }
 
+function inReviewZoom(state: Readonly<GameState>, content: GameContent): string {
+  const speedNodes = buildRateGroupNodes(state, content, "speed", "review");
+  const frictionNodes = buildRateGroupNodes(state, content, "friction", "review");
+  const finish = effectiveRate(state, "finish");
+  const review = effectiveRate(state, "review");
+  const waiting = state.stocks.inReview.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  const bound: ContributorNode[] = [
+    { label: `Finish ${finish.toFixed(1)}/day in`, dim: false },
+    { label: `Review ${review.toFixed(1)}/day out`, dim: false },
+    { label: `${waiting} waiting on PRs`, dim: false },
+  ];
+  const friction = frictionNodes.length === 0 ? "" : renderCol("Friction", frictionNodes);
+  const offer: ContributorNode[] = [
+    { label: "Empty until a review card exists", dim: true },
+  ];
+  return `
+    <div class="stage-zoom" data-zoom-open="inReview">
+      <div class="stage-zoom-head">In Review</div>
+      <div class="stage-zoom-cols">
+        ${renderCol("Review speed", speedNodes)}
+        ${renderCol("Why bound", bound)}
+        ${friction}
+        ${renderCol("Next lever", offer)}
+      </div>
+    </div>`;
+}
+
 export function renderStageZoom(
   state: Readonly<GameState>,
   content: GameContent,
   open: ZoomStage | null,
 ): string {
   if (open === "inProgress") return inProgressZoom(state, content);
+  if (open === "inReview") return inReviewZoom(state, content);
   if (open === "done") return doneZoom(state, content);
   return "";
 }

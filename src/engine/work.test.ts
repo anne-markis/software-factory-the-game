@@ -25,22 +25,24 @@ describe("work ledger (ADR 0009)", () => {
   it("classifies unshipped pipeline stocks and not identity/resource stocks", () => {
     expect(isPipelineStock("backlog")).toBe(true);
     expect(isPipelineStock("inProgress")).toBe(true);
+    expect(isPipelineStock("inReview")).toBe(true);
     expect(isPipelineStock("done")).toBe(true);
     expect(isPipelineStock("shipped")).toBe(false);
     expect(isPipelineStock("users")).toBe(false);
     expect(isPipelineStock("budget")).toBe(false);
   });
 
-  it("unshippedWork is Ready + In Progress + Done, not shipped", () => {
+  it("unshippedWork is Ready + In Progress + In Review + Done, not shipped", () => {
     const e = new Engine(testContent());
     const s = e.getState() as GameState;
     expect(unshippedWork(s)).toBe(300);
     expect(committedWork(s)).toBe(300);
     s.stocks.inProgress = 10;
+    s.stocks.inReview = 4;
     s.stocks.done = 5;
     s.stocks.backlog = 20;
     s.stocks.shipped = 999;
-    expect(unshippedWork(s)).toBe(35);
+    expect(unshippedWork(s)).toBe(39);
   });
 
   it("attachInjectedWork grows the only in-flight remaining and no-ops with none", () => {
@@ -117,7 +119,7 @@ describe("work ledger (ADR 0009)", () => {
     expect(atEmpty.stocks.users).toBe(0);
     expect(atEmpty.projects[0]!.remaining).toBeGreaterThan(1);
     expect(unshippedWork(atEmpty)).toBeCloseTo(atEmpty.projects[0]!.remaining, 8);
-    expect(atEmpty.stocks.inProgress + atEmpty.stocks.done).toBeCloseTo(atEmpty.projects[0]!.remaining, 8);
+    expect(atEmpty.stocks.inProgress + atEmpty.stocks.inReview + atEmpty.stocks.done).toBeCloseTo(atEmpty.projects[0]!.remaining, 8);
 
     for (let i = 0; i < 400 && atEmpty.completedProjects === 0; i++) {
       e.tick();
@@ -174,6 +176,7 @@ describe("work ledger (ADR 0009)", () => {
     const s = e.getState() as GameState;
     s.stocks.backlog = 50;
     s.stocks.inProgress = 0;
+    s.stocks.inReview = 0;
     s.stocks.done = 0;
     expect(s.projects).toHaveLength(0);
     e.startProject("gig-landing-page");
@@ -221,12 +224,13 @@ describe("work ledger conservation across every mutation path", () => {
 
     s.stocks.backlog = 0;
     s.stocks.inProgress = 0;
+    s.stocks.inReview = 0;
     s.stocks.done = 0;
     expect(workLedgerIssues(s).some((m) => m.includes("exceeds unshipped"))).toBe(true);
   });
 
   it("addToStock/scaleStock on each pipeline stage keep remaining in lockstep; shipped does not", () => {
-    for (const stock of ["backlog", "inProgress", "done"] as const) {
+    for (const stock of ["backlog", "inProgress", "inReview", "done"] as const) {
       const e = new Engine(testContent());
       const before = e.getState().projects[0]!.remaining;
       applyEffects(e.getState() as GameState, [{ type: "addToStock", stock, value: 10 }], "inj");
@@ -289,6 +293,7 @@ describe("work ledger conservation across every mutation path", () => {
     const s = e.getState() as GameState;
     s.stocks.backlog = 0;
     s.stocks.inProgress = 0;
+    s.stocks.inReview = 0;
     s.stocks.done = 0;
     const surplusBefore = surplusWork(s);
     e.startProject("gig-bugfix");

@@ -75,13 +75,13 @@ function boxCenterX(svg: string, key: string): number {
 }
 
 describe("loopDiagramSvg", () => {
-  it("renders six stage boxes in order with Ideas/Plan count+capacity and realized pull/finish/deploy", () => {
+  it("renders seven stage boxes in order with Ideas/Plan count+capacity and realized pull/finish/review/deploy", () => {
     const content = emptyContent();
     const state = initialState(content);
     const svg = loopDiagramSvg(state, content);
     expect(svg).toContain("<svg");
-    expect(stageKeys(svg)).toEqual(["ideas", "plan", "backlog", "inProgress", "done", "shipped"]);
-    for (const label of ["Ideas", "Plan", "Ready", "In Progress", "Done", "Shipped"]) expect(svg).toContain(label);
+    expect(stageKeys(svg)).toEqual(["ideas", "plan", "backlog", "inProgress", "inReview", "done", "shipped"]);
+    for (const label of ["Ideas", "Plan", "Ready", "In Progress", "In Review", "Done", "Shipped"]) expect(svg).toContain(label);
 
     expect(stageValue(svg, "ideas")).toBe("100");
     expect(stageValue(svg, "plan")).toBe("0");
@@ -91,28 +91,29 @@ describe("loopDiagramSvg", () => {
     expect(stageRate(svg, "backlog")).toBeNull();
     expect(stageGroup(svg, "inProgress")).toContain("data-stage-cycle");
     expect(stageGroup(svg, "ideas")).not.toContain("data-stage-cycle");
+    expect(stageRate(svg, "inReview")).toBeNull();
     expect(stageRate(svg, "done")).toBeNull();
     expect(stageRate(svg, "shipped")).toBeNull();
 
-    // Pull / finish / deploy arrows stay realized flow. Before any tick,
-    // that is 0 even though finish/deploy capacity is 1.0/day. Plan's
+    // Pull / finish / review / deploy arrows stay realized flow. Before any tick,
+    // that is 0 even though finish/review/deploy capacity is 1.0/day. Plan's
     // 1.0/day is capacity on the box, not an arrow.
-    expect(svg.match(/0\.0\/day/g)).toHaveLength(3);
+    expect(svg.match(/0\.0\/day/g)).toHaveLength(4);
     expect(svg).toContain("debt +0.5/pt");
     expect(svg).not.toContain("slower");
     expect(svg).not.toContain("data-debt-drag");
     expect(svg).not.toContain("data-debt-hot");
-    expect(svg.match(/<line /g)).toHaveLength(5);
+    expect(svg.match(/<line /g)).toHaveLength(6);
   });
 
-  it("on a fresh game's first tick, pull/finish/deploy arrows show realized flow, not raw capacity", () => {
+  it("on a fresh game's first tick, pull/finish/review/deploy arrows show realized flow, not raw capacity", () => {
     const content = emptyContent();
     const state = initialState(content);
     tick(state, createRng(content.start.seed), content, () => {});
     const svg = loopDiagramSvg(state, content);
     expect(svg).toContain("2.0/day"); // Ready drain: 1 finished + 1 seated
     expect(svg).toContain("1.0/day"); // finish realized
-    expect(svg.match(/0\.0\/day/g)).toHaveLength(1); // deploy: nothing in Done yet
+    expect(svg.match(/0\.0\/day/g)).toHaveLength(2); // review and deploy: nothing waiting yet
     expect(stageRate(svg, "ideas")).toBe("0.5/day");
     expect(stageRate(svg, "plan")).toBe("1.0/day");
   });
@@ -156,24 +157,25 @@ describe("loopDiagramSvg", () => {
     expect(stageGroup(svg, "plan")).not.toContain("B");
   });
 
-  it("drops the Done box and keeps Ideas and Plan once ci-cd is owned", () => {
+  it("drops the Done box, keeps In Review, and keeps Ideas and Plan once ci-cd is owned", () => {
     const content = fullDecisionsContent();
     const state = initialState(content);
     // Mutable escape hatch: grant ci-cd directly rather than routing through
     // a full purchase (requires/budget/gamble are exercised elsewhere).
     state.decisions.push({ instanceId: "inst-cd", defId: "ci-cd" });
     const svg = loopDiagramSvg(state, content);
-    expect(stageKeys(svg)).toEqual(["ideas", "plan", "backlog", "inProgress", "shipped"]);
+    expect(stageKeys(svg)).toEqual(["ideas", "plan", "backlog", "inProgress", "inReview", "shipped"]);
     expect(svg).toContain("Ideas");
     expect(svg).toContain("Plan");
     expect(svg).toContain("Ready");
     expect(svg).toContain("In Progress");
+    expect(svg).toContain("In Review");
     expect(svg).toContain("Shipped");
     expect(svg).not.toContain(">Done<");
     expect(svg).toContain("continuous deploy");
     expect(stageRate(svg, "ideas")).toBe("0.5/day");
     expect(stageRate(svg, "plan")).toBe("1.0/day");
-    expect(svg.match(/<line /g)).toHaveLength(4); // Ideas→Plan, Plan→Ready, pull, finish
+    expect(svg.match(/<line /g)).toHaveLength(5); // Ideas→Plan, Plan→Ready, pull, finish, review
   });
 
   it("routes the dashed debt path to Ready, not Ideas", () => {
@@ -199,7 +201,7 @@ describe("loopDiagramSvg", () => {
     const state = initialState(content);
     state.stocks.techDebt = 1400;
     const svg = loopDiagramSvg(state, content);
-    expect(svg.match(/data-debt-drag="warn"/g)).toHaveLength(3);
+    expect(svg.match(/data-debt-drag="warn"/g)).toHaveLength(4);
     expect(svg).not.toContain("data-debt-hot");
     expect(svg).toContain("debt +0.5/pt");
     expect(svg).not.toContain("slower");
@@ -209,12 +211,12 @@ describe("loopDiagramSvg", () => {
     expect(stageGroup(svg, "plan")).not.toContain("data-debt-drag");
   });
 
-  it("keeps six boxes from overlapping or running off the viewBox", () => {
+  it("keeps seven boxes from overlapping or running off the viewBox", () => {
     const content = emptyContent();
     const svg = loopDiagramSvg(initialState(content), content);
     const { w, h } = viewBoxSize(svg);
     const rects = boxRects(svg);
-    expect(rects).toHaveLength(6);
+    expect(rects).toHaveLength(7);
     const sorted = [...rects].sort((a, b) => a.x - b.x);
     for (let i = 0; i < sorted.length; i++) {
       const r = sorted[i]!;
@@ -232,7 +234,7 @@ describe("loopDiagramSvg", () => {
   });
 
   describe("Delivery loop has no teaching caption", () => {
-    it("omits the old steady-vs-growing lecture on a fresh six-box Delivery loop", () => {
+    it("omits the old steady-vs-growing lecture on a fresh seven-box Delivery loop", () => {
       const content = emptyContent();
       const svg = loopDiagramSvg(initialState(content), content);
       expect(svg).not.toMatch(/steady box/i);
@@ -311,39 +313,51 @@ describe("loopDiagramSvg", () => {
       expect(svg).toContain('aria-label="Delivery loop"');
     });
 
-    it("cues Done as capacity-bound when finish outruns deploy and Done has piled up", () => {
+    it("cues In Review as capacity-bound when finish outruns review and In Review has piled up", () => {
       const content = fullDecisionsContent();
       const e = new Engine(content);
-      injectStrongDev(e.getState() as GameState); // rates: pull 3, finish 3, deploy 1
-      for (let i = 0; i < 15; i++) e.tick(); // warm until Done ≥ 3 days of deploy
+      injectStrongDev(e.getState() as GameState); // rates: pull 3, finish 3, review 1, deploy 1
+      for (let i = 0; i < 15; i++) e.tick(); // warm until In Review ≥ 3 days of review
       const state = e.getState();
-      expect(state.stocks.done).toBeGreaterThanOrEqual(BINDING_SUSTAINED_DAYS * 1);
-      expect(bindingBottleneckStage(state, content)).toBe("done");
+      expect(state.stocks.inReview).toBeGreaterThanOrEqual(BINDING_SUSTAINED_DAYS * 1);
+      expect(bindingBottleneckStage(state, content)).toBe("inReview");
 
       const svg = loopDiagramSvg(state, content);
       expect(svg).toContain("capacity-bound");
       expect(svg).toContain('data-binding="true"');
       expect(svg).toContain('data-binding-outflow="true"');
-      expect(svg).toContain('aria-label="Delivery loop, Done capacity-bound"');
-      expect(stageGroup(svg, "done")).toContain("capacity-bound");
+      expect(svg).toContain('aria-label="Delivery loop, In Review capacity-bound"');
+      expect(stageGroup(svg, "inReview")).toContain("capacity-bound");
       expect(stageGroup(svg, "ideas")).not.toContain("capacity-bound");
       expect(stageGroup(svg, "plan")).not.toContain("capacity-bound");
-      // Machine-side only: no shop / unlock auto-navigation hooks.
       expect(svg).not.toContain("ci-cd");
       expect(svg).not.toContain("data-open-shop");
       expect(svg).not.toContain("Alter the system");
     });
 
-    it("stops cueing Done once continuous deploy removes the Done stage", () => {
+    it("still cues In Review once continuous deploy removes the Done stage", () => {
       const content = fullDecisionsContent();
       const e = new Engine(content);
       const state = e.getState() as GameState;
       injectStrongDev(state);
       state.decisions.push({ instanceId: "inst-cd", defId: "ci-cd" });
       for (let i = 0; i < 15; i++) e.tick();
-      // With ci-cd, Done never piles; equal pull/finish means no inProgress cue either.
-      expect(bindingBottleneckStage(e.getState(), content)).toBeNull();
-      expect(loopDiagramSvg(e.getState(), content)).not.toContain("capacity-bound");
+      expect(bindingBottleneckStage(e.getState(), content)).toBe("inReview");
+      expect(loopDiagramSvg(e.getState(), content)).toContain("capacity-bound");
+      expect(loopDiagramSvg(e.getState(), content)).not.toContain(">Done<");
+    });
+
+    it("cues Done as capacity-bound when review outruns deploy and Done has piled up", () => {
+      const content = emptyContent();
+      const state = initialState(content);
+      state.baseRates.review = 3;
+      state.stocks.inReview = 0;
+      state.stocks.done = 8;
+      state.stocks.inProgress = 1;
+      expect(bindingBottleneckStage(state, content)).toBe("done");
+      const svg = loopDiagramSvg(state, content);
+      expect(stageGroup(svg, "done")).toContain("capacity-bound");
+      expect(svg).toContain('aria-label="Delivery loop, Done capacity-bound"');
     });
 
     it("does not cue In Progress when seats are full and Ready is waiting", () => {
@@ -382,20 +396,22 @@ describe("loopDiagramSvg", () => {
 });
 
 describe("delivery zoom carets", () => {
-  it("places In Progress and Done carets collapsed, and drops Done under continuous deploy", () => {
+  it("places In Progress, In Review, and Done carets collapsed, and drops Done under continuous deploy", () => {
     const content = emptyContent();
-    expect(zoomableStages(initialState(content), content)).toEqual(["inProgress", "done"]);
+    expect(zoomableStages(initialState(content), content)).toEqual(["inProgress", "inReview", "done"]);
     const html = renderDeliveryCarets(initialState(content), content);
     expect(html).toContain('data-zoom="inProgress"');
+    expect(html).toContain('data-zoom="inReview"');
     expect(html).toContain('data-zoom="done"');
     expect(html).toContain('aria-expanded="false"');
 
     const contentCd = fullDecisionsContent();
     const stateCd = initialState(contentCd);
     stateCd.decisions.push({ instanceId: "inst-cd", defId: "ci-cd" });
-    expect(zoomableStages(stateCd, contentCd)).toEqual(["inProgress"]);
+    expect(zoomableStages(stateCd, contentCd)).toEqual(["inProgress", "inReview"]);
     const htmlCd = renderDeliveryCarets(stateCd, contentCd);
     expect(htmlCd).toContain('data-zoom="inProgress"');
+    expect(htmlCd).toContain('data-zoom="inReview"');
     expect(htmlCd).not.toContain('data-zoom="done"');
   });
 });

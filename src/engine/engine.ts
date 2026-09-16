@@ -57,6 +57,7 @@ export function initialState(content: GameContent): GameState {
     pointsPerDay: 0,
     pullFlow: 0,
     finishFlow: 0,
+    reviewFlow: 0,
     userAcquireFlow: 0,
     userChurnFlow: 0,
     userIncomeFlow: 0,
@@ -122,6 +123,12 @@ export class Engine {
       }
       if (restored.baseRates.plan === undefined) {
         restored.baseRates.plan = content.start.baseRates.plan;
+      }
+      if (restored.baseRates.review === undefined) {
+        restored.baseRates.review = content.start.baseRates.review;
+      }
+      if (restored.stocks.inReview === undefined) {
+        restored.stocks.inReview = content.start.stocks.inReview;
       }
       if (restored.baseCapacity === undefined) {
         restored.baseCapacity = content.start.baseCapacity;

@@ -19,51 +19,60 @@ function ciCdContent(): GameContent {
 }
 
 describe("tick", () => {
-  it("moves work at finish speed and keeps In Progress at founder capacity", () => {
+  it("moves work at finish speed into In Review and keeps In Progress at founder capacity", () => {
     const e = new Engine(testContent());
-    e.tick(); // day 1: finish 1 into Done, seat 1 from Ready
+    e.tick(); // day 1: finish 1 into In Review, seat 1 from Ready
     let s = e.getState();
     expect(s.stocks.backlog).toBe(298);
     expect(s.stocks.inProgress).toBe(1);
-    expect(s.stocks.done).toBe(1);
+    expect(s.stocks.inReview).toBe(1);
+    expect(s.stocks.done).toBe(0);
     expect(s.stocks.shipped).toBe(0);
 
-    e.tick(); // day 2: first point ships
+    e.tick(); // day 2: review 1 into Done
+    s = e.getState();
+    expect(s.stocks.shipped).toBe(0);
+    expect(s.pointsPerDay).toBe(0);
+    expect(s.stocks.inReview).toBe(1);
+    expect(s.stocks.done).toBe(1);
+    expect(s.stocks.backlog).toBe(297);
+    expect(s.stocks.inProgress).toBe(1);
+
+    e.tick(); // day 3: first point ships
     s = e.getState();
     expect(s.stocks.shipped).toBe(1);
     expect(s.pointsPerDay).toBe(1);
-    expect(s.stocks.backlog).toBe(297);
-    expect(s.stocks.inProgress).toBe(1);
     expect(s.stocks.done).toBe(1);
+    expect(s.stocks.inReview).toBe(1);
   });
 
-  it("persists realized pull/finish flow from the Ready+In Progress pool", () => {
+  it("persists realized pull/finish/review flow", () => {
     const e = new Engine(testContent());
     e.tick();
     let s = e.getState();
     expect(s.pullFlow).toBe(2);
     expect(s.finishFlow).toBe(1);
+    expect(s.reviewFlow).toBe(0);
     expect(s.pointsPerDay).toBe(0);
 
     e.tick();
     s = e.getState();
     expect(s.pullFlow).toBe(1);
     expect(s.finishFlow).toBe(1);
-    expect(s.pointsPerDay).toBe(1);
+    expect(s.reviewFlow).toBe(1);
+    expect(s.pointsPerDay).toBe(0);
   });
 
   // Studio spine (AC2): tech debt STILL accrues before the first
   // project completes, but it does NOT refill the backlog yet -- the Launch
-  // beta gets a clean 300-point burndown. So after 3 ticks the shipped point
-  // grows techDebt by 0.5 but the backlog is pure pull drawdown (300 - 6 at the
-  // 2.0/day base pull), with no debt added back (completedProjects is still 0).
+  // beta gets a clean 300-point burndown. First ship is day 3 (In Review lag).
   it("shipped points grow tech debt but do NOT refill the backlog before the first project completes", () => {
     const e = new Engine(testContent());
     e.tick();
     e.tick();
-    e.tick(); // two points shipped (first ship is day 2), debt multiplier 0.5
+    e.tick(); // one point shipped (first ship is day 3), debt multiplier 0.5
     const s = e.getState();
-    expect(s.stocks.techDebt).toBe(1);
+    expect(s.stocks.techDebt).toBe(0.5);
     expect(s.completedProjects).toBe(0);
     expect(s.stocks.backlog).toBe(296);
   });
@@ -433,40 +442,26 @@ describe("tick", () => {
   });
 
   describe("continuous deploy (ci-cd owned)", () => {
-    it("ships the entire done stock every tick once active, so done never queues beyond the current tick's finish output", () => {
+    it("ships the entire done stock every tick once active, so done never queues beyond the current tick's review output", () => {
       const content = ciCdContent();
       const e = new Engine(content);
       e.applyDecision("test-suite");
       e.applyDecision("ci-cd");
-      // Runs through both temporary setup slowdowns (test-suite expires day
-      // 6, ci-cd's expires day 2) and into the settled, unmodified-rate
-      // regime, checking the invariant holds throughout, not just at steady
-      // state. effectiveRate is an independent oracle here (it is exercised
-      // directly elsewhere) for what finishRate/pullRate are -- unaffected
-      // by this feature -- so the only thing genuinely under test is
-      // tick.ts's continuous-deploy branch: shippedFlow == the pre-tick
-      // done stock (ignoring deployRate), and this same tick's finish
-      // output is NOT included in that same ship (it lands in done, to
-      // ship next tick instead).
       for (let day = 1; day <= 20; day++) {
         const before = e.getState();
-        const inProgressBefore = before.stocks.inProgress;
+        const inReviewBefore = before.stocks.inReview;
         const doneBefore = before.stocks.done;
         const shippedBefore = before.stocks.shipped;
         e.tick();
         const after = e.getState();
-        // The finish rate is read AFTER the tick: expired modifiers are pruned
-        // at the START of a tick (the day increments first), so the post-tick
-        // modifier set is the one this tick actually ran on, while the pre-tick
-        // set still holds a modifier expiring on this very day. Nothing else
-        // moves the rate here -- debt stays far below freeDebt and there are no
-        // projects, so no drag is in play.
+        const expectedReviewFlow = Math.min(inReviewBefore, effectiveRate(after, "review"));
         const expectedFinishFlow = Math.min(
-          inProgressBefore + before.stocks.backlog,
+          before.stocks.inProgress + before.stocks.backlog,
           effectiveRate(after, "finish"),
         );
         expect(after.stocks.shipped, `day ${day}`).toBeCloseTo(shippedBefore + doneBefore, 10);
-        expect(after.stocks.done, `day ${day}`).toBeCloseTo(expectedFinishFlow, 10);
+        expect(after.stocks.done, `day ${day}`).toBeCloseTo(expectedReviewFlow, 10);
+        expect(after.stocks.inReview, `day ${day}`).toBeCloseTo(inReviewBefore - expectedReviewFlow + expectedFinishFlow, 10);
       }
     });
 
@@ -477,23 +472,24 @@ describe("tick", () => {
     // via the mutable escape hatch (getState()'s Readonly is shallow and
     // compile-time only -- see engine.ts) rather than deriving it from many
     // ticks, to isolate the ordering guarantee from unrelated arithmetic.
-    it("ships a pre-existing done stock in full immediately; that same tick's finish output waits until next tick", () => {
+    it("ships a pre-existing done stock in full immediately; that same tick's review output waits until next tick", () => {
       const content = ciCdContent();
       const e = new Engine(content);
       e.applyDecision("test-suite"); // budget 10000 -> 9500
       e.applyDecision("ci-cd"); // budget 9500 -> 8750
       const state = e.getState() as GameState;
       state.stocks.done = 5;
+      state.stocks.inReview = 1000;
       state.stocks.inProgress = 1000; // guarantee finishFlow is rate-limited, not stock-limited
       const shippedBefore = state.stocks.shipped;
 
       e.tick(); // day 1: both temp slowdowns still active (expire day 6 and day 2)
       const s = e.getState();
-      // finishRate this tick: base 1.0 * test-suite's 0.5 (mul, expires day
-      // 6) * ci-cd's temporary 0.5 setup slowdown (mul, expires day 2) = 0.25.
-      expect(s.stocks.shipped - shippedBefore).toBe(5); // the entire pre-existing done stock, exactly
-      expect(s.stocks.done).toBe(0.25); // this tick's finish output only -- not shipped this tick
-      expect(s.pointsPerDay).toBe(5); // pointsPerDay reads shippedFlow, not finishFlow
+      // reviewRate this tick: base 1.0 * test-suite's 0.5 * ci-cd's 0.5 = 0.25.
+      expect(s.stocks.shipped - shippedBefore).toBe(5);
+      expect(s.stocks.done).toBe(0.25); // this tick's review output only -- not shipped this tick
+      expect(s.stocks.inReview).toBeCloseTo(1000 - 0.25 + 0.25, 10); // reviewed 0.25, finished 0.25
+      expect(s.pointsPerDay).toBe(5);
     });
   });
 
@@ -504,7 +500,7 @@ describe("tick", () => {
   // unlock. Injects a "strong dev" (pull+finish +2 each, rates 3/3/1) directly
   // via the mutable-state escape hatch so the probe is isolated from gamble rng
   // and purchase-time setup slowdowns.
-  describe("deploy bottleneck without ci-cd (Release 15 rework)", () => {
+  describe("review bottleneck without a review card", () => {
     function injectStrongDev(e: Engine): GameState {
       const s = e.getState() as GameState;
       s.decisions.push({ instanceId: "inst-dev", defId: "basic-dev" });
@@ -515,34 +511,33 @@ describe("tick", () => {
       return s;
     }
 
-    it("caps shipping at the base deploy rate while Done piles up when ci-cd is not owned", () => {
+    it("caps shipping at the base review rate while In Review piles up when no review card exists", () => {
       const e = new Engine(ciCdContent());
-      injectStrongDev(e); // rates: pull 3, finish 3, deploy 1
+      injectStrongDev(e); // rates: pull 3, finish 3, review 1, deploy 1
       for (let i = 0; i < 5; i++) e.tick(); // warm the pipeline
-      const doneStart = e.getState().stocks.done;
+      const reviewStart = e.getState().stocks.inReview;
       let shippedDelta = 0;
       for (let i = 0; i < 10; i++) {
         const before = e.getState().stocks.shipped;
         e.tick();
         shippedDelta += e.getState().stocks.shipped - before;
-        expect(e.getState().pointsPerDay).toBeCloseTo(1, 10); // deploy-bound at base 1/day
+        expect(e.getState().pointsPerDay).toBeCloseTo(1, 10); // review-then-deploy bound at 1/day
       }
       const s = e.getState();
-      expect(shippedDelta).toBeCloseTo(10, 10); // ~1 pt/day over the window
-      // finish 3 vs ship 1 => Done grows ~2/day; it strictly piled up.
-      expect(s.stocks.done).toBeGreaterThan(doneStart + 15);
+      expect(shippedDelta).toBeCloseTo(10, 10);
+      expect(s.stocks.inReview).toBeGreaterThan(reviewStart + 15);
     });
 
-    it("ships at the finish rate once ci-cd (continuous deploy) is owned", () => {
+    it("still ships at the review rate once ci-cd is owned (Done drops; In Review stays)", () => {
       const e = new Engine(ciCdContent());
       const s = injectStrongDev(e);
-      s.decisions.push({ instanceId: "inst-cicd", defId: "ci-cd" }); // continuousDeploy active
-      for (let i = 0; i < 6; i++) e.tick(); // warm up
+      s.decisions.push({ instanceId: "inst-cicd", defId: "ci-cd" });
+      for (let i = 0; i < 6; i++) e.tick();
       for (let i = 0; i < 5; i++) {
         e.tick();
-        expect(e.getState().pointsPerDay).toBeCloseTo(3, 10); // tracks finish, not the deploy cap
+        expect(e.getState().pointsPerDay).toBeCloseTo(1, 10); // tracks review, not finish
       }
-      expect(e.getState().stocks.done).toBeCloseTo(3, 10); // only the latest tick's finish output waits
+      expect(e.getState().stocks.done).toBeCloseTo(1, 10); // latest tick's review output waits for CD
     });
   });
 
@@ -600,31 +595,35 @@ describe("tick", () => {
       expect(after.stocks.budget).toBe(0);
       expect(after.stocks.backlog).toBe(300);
       expect(after.stocks.inProgress).toBe(0);
+      expect(after.stocks.inReview).toBe(0);
       expect(after.stocks.done).toBe(0);
       expect(after.stocks.shipped).toBe(0);
       expect(after.pointsPerDay).toBe(0);
       expect(after.pullFlow).toBe(0);
       expect(after.finishFlow).toBe(0);
+      expect(after.reviewFlow).toBe(0);
       expect(after.projects[0]!.remaining).toBe(remainingBefore);
     });
 
-    it("leaves work already in In Progress and Done unmoved", () => {
+    it("leaves work already in In Progress, In Review, and Done unmoved", () => {
       const e = new Engine(testContent());
       const s = e.getState() as GameState;
       s.stocks.budget = 0;
       s.stocks.backlog = 10;
       s.stocks.inProgress = 8;
+      s.stocks.inReview = 4;
       s.stocks.done = 5;
-      s.projects[0]!.remaining = 23;
+      s.projects[0]!.remaining = 27;
 
       e.tick();
 
       const after = e.getState();
       expect(after.stocks.backlog).toBe(10);
       expect(after.stocks.inProgress).toBe(8);
+      expect(after.stocks.inReview).toBe(4);
       expect(after.stocks.done).toBe(5);
       expect(after.stocks.shipped).toBe(0);
-      expect(after.projects[0]!.remaining).toBe(23);
+      expect(after.projects[0]!.remaining).toBe(27);
     });
 
     it("resumes pipeline flow once budget is positive again", () => {
@@ -723,6 +722,7 @@ describe("tick", () => {
       expect(e.getState().stocks.ideas).toBe(150);
       expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(0.6, 10); // 2 * 0.3
       expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(0.3, 10);
+      expect(effectiveRate(e.getState(), "review")).toBeCloseTo(0.3, 10);
       expect(effectiveRate(e.getState(), "deploy")).toBeCloseTo(0.3, 10);
       expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
       expect(effectiveRate(e.getState(), "plan")).toBe(1);

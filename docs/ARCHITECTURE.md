@@ -48,19 +48,21 @@ Pipeline stocks and `ActiveProject.remaining` are two views of the same
 work (ADR 0009). Stage stocks say where unshipped points sit; remaining
 says which contract they belong to. Extra inflow (debt refill, scope
 creep, any `addToStock` / `scaleStock` on `backlog` / `inProgress` /
-`done`) must attach to one remaining when a project is in flight
+`inReview` / `done`) must attach to one remaining when a project is in flight
 (engine-picked arbitrarily if several are live; not split, not player-
 chosen). The
 cockpit Backlog hero metric is unshipped work (`backlog + inProgress +
-done`), not the Ready-stage stock. The Delivery diagram paints Ideas and Plan left of Ready, then Ready →
-In Progress → Done → Shipped. Ready is still `stocks.backlog`.
+inReview + done`), not the Ready-stage stock. The Delivery diagram paints Ideas and Plan left of Ready, then Ready →
+In Progress → In Review → Done → Shipped. Ready is still `stocks.backlog`.
 
 **In Progress is capacity**, not a waiting queue. Seats are
 `effectiveCapacity`: `baseCapacity` (founder) plus each owned card's
 `capacity` field, plus optional `capacityFromOwned` / `modifyCapacity`.
 Studio hires are `capacity: 1`; agents omit it (speed only). Ready holds
 work that does not have a seat. Finish speed is how much leaves the
-Ready + In Progress pool into Done. A point is in one stage at a time.
+Ready + In Progress pool into In Review. Review speed is how much leaves
+In Review into Done. Continuous deploy still dumps Done each tick; In
+Review stays. A point is in one stage at a time.
 
 Do not seed `start.json` `stocks.backlog` independently of
 `initialProject.sizePoints` — the loader rejects a mismatch.

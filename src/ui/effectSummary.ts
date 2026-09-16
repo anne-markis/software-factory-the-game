@@ -24,7 +24,7 @@ function signed(n: number): string {
   return n >= 0 ? `+${fmtNum(n)}` : fmtNum(n);
 }
 
-function rateLabel(target: "pull" | "finish" | "deploy" | "discover" | "plan" | "all"): string {
+function rateLabel(target: "pull" | "finish" | "review" | "deploy" | "discover" | "plan" | "all"): string {
   return target === "all" ? "all rates" : target;
 }
 
@@ -33,6 +33,7 @@ function rateLabel(target: "pull" | "finish" | "deploy" | "discover" | "plan" | 
 const STOCK_LABELS: Record<string, string> = {
   techDebt: "debt",
   inProgress: "in progress",
+  inReview: "in review",
   // Singular for per-unit income/burst lines ("+$0.75/user/day").
   users: "user",
 };

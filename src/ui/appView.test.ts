@@ -137,7 +137,7 @@ describe("appView delivery-column stats layout", () => {
     const statsHost = panels[0]!.nextElementSibling!;
     expect(statsHost.contains(under)).toBe(true);
     const underLabels = Array.from(under.querySelectorAll(".stat-label")).map((el) => el.textContent);
-    expect(underLabels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
+    expect(underLabels).toEqual(["In Progress", "In Review", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
     expect(deliveryCol.querySelector(".debt-consequences")).toBeNull();
     expect(h.root.textContent).not.toContain("High tech debt");
     expect(h.root.textContent).not.toContain("no slowdown until 400");
@@ -209,7 +209,7 @@ describe("appView delivery-column stats layout", () => {
     expect(afterDebt.classList.contains("debt-warn")).toBe(true);
     expect(afterRate.textContent).toBe("1.7 (-15%)");
     expect(afterRate.classList.contains("debt-warn")).toBe(true);
-    expect(h.root.querySelectorAll('[data-debt-drag="warn"]')).toHaveLength(3);
+    expect(h.root.querySelectorAll('[data-debt-drag="warn"]')).toHaveLength(4);
     expect(h.root.querySelector("[data-debt-hot]")).toBeNull();
     expect(h.root.textContent).toContain("debt +0.5/pt");
     expect(h.root.textContent).not.toContain("slower");

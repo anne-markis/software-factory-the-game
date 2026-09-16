@@ -42,7 +42,7 @@ function inLeakGroup(svg: string, needle: string): boolean {
   return indexBetween(svg, needle, "Leak size");
 }
 
-function panel(state: import("../engine/types").GameState, c: GameContent = content(), stage: "inProgress" | "done" = "inProgress"): string {
+function panel(state: import("../engine/types").GameState, c: GameContent = content(), stage: "inProgress" | "inReview" | "done" = "inProgress"): string {
   return renderStageZoom(state, c, stage);
 }
 
@@ -279,14 +279,27 @@ describe("renderStageZoom", () => {
     expect(svg).not.toContain("+-0.5");
   });
 
-  it("Done zoom shows deploy capacity vs finish inflow, not a card-id next lever", () => {
+  it("Done zoom shows deploy capacity vs review inflow, not a card-id next lever", () => {
     const e = new Engine(content());
     const html = panel(e.getState(), content(), "done");
     expect(html).toContain("Deploy speed");
     expect(html).toContain("Why bound");
+    expect(html).toContain("Review 1.0/day in");
     expect(html).toContain("Base 1.0/day");
     expect(html).toContain("waiting");
     expect(html).not.toContain("pts waiting to ship");
+    expect(html).not.toContain("ci-cd");
+    expect(html).not.toContain("Cycle speed");
+    expect(html).not.toContain("Leak size");
+  });
+
+  it("In Review zoom shows review speed, PR backup, and an empty next-lever slot", () => {
+    const e = new Engine(content());
+    const html = panel(e.getState(), content(), "inReview");
+    expect(html).toContain("Review speed");
+    expect(html).toContain("Why bound");
+    expect(html).toContain("waiting on PRs");
+    expect(html).toContain("Empty until a review card exists");
     expect(html).not.toContain("ci-cd");
     expect(html).not.toContain("Cycle speed");
     expect(html).not.toContain("Leak size");

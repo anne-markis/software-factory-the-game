@@ -32,7 +32,7 @@ describe("parseStartConfig", () => {
     expect(cfg.debtMultiplier).toBe(0.5);
     expect(cfg.baseCapacity).toBe(1);
     // Discover is the Ideas faucet: 0.5/day from day 0, not a delivery stage.
-    expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, deploy: 1, discover: 0.5, plan: 1 });
+    expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, review: 1, deploy: 1, discover: 0.5, plan: 1 });
     // Studio lean challenge pool: a 35-day global gap, down from
     // 50 -- the pool shrank to three events, so a shorter gap keeps them from
     // disappearing entirely without crowding a short era.
