@@ -205,10 +205,6 @@ export interface ChallengeDef {
     // this defId. Cross-checked against content.decisions by
     // validateContentGraph (parseChallenges alone has no access to decisions).
     lacksDecision?: string;
-    // Live contract only: `state.projects.length > 0`. Plan items and
-    // unattributed surplus do not count. Company Production incident uses
-    // this so an idle / between-contracts factory cannot bleed reputation.
-    requiresInFlightProject?: boolean;
   };
   probScaling?: { stat: "techDebt"; per: number; add: number };
   effects: Effect[];

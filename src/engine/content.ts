@@ -346,7 +346,6 @@ const challengeSchema = z
         minCompletedProjects: z.number().int().min(0).optional(),
         requiresAnyDecision: z.array(z.string()).min(1).optional(),
         lacksDecision: z.string().optional(),
-        requiresInFlightProject: z.boolean().optional(),
       })
       .strict()
       .optional(),

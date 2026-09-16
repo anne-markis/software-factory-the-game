@@ -601,13 +601,12 @@ describe("parseChallenges", () => {
       name: "Production incident",
       probabilityPerDay: 0.01,
       cooldownDays: 60,
-      condition: { minCompletedProjects: 1, requiresInFlightProject: true },
+      condition: { minCompletedProjects: 1 },
       probScaling: { stat: "techDebt", per: 500, add: 0.01 },
     });
     expect(incident!.effects).toEqual([
       { type: "addToStock", stock: "budget", value: -8000 },
-      { type: "addToStock", stock: "reputation", value: -2 },
-      { type: "addToStock", stock: "users", value: -15 },
+      { type: "scaleStock", stock: "users", factor: 0.95 },
       { type: "modifyRate", target: "all", op: "mul", value: 0.8, durationDays: 3 },
     ]);
     expect(company.challenges.filter((c) => c.id === "prod-incident")).toHaveLength(1);
@@ -798,16 +797,6 @@ describe("parseChallenges", () => {
         { id: "x", name: "x2", description: "x2", probabilityPerDay: 0.1, effects: [] },
       ]),
     ).toThrow(/duplicate/i);
-  });
-
-  it("parses a requiresInFlightProject condition", () => {
-    const defs = parseChallenges([
-      {
-        id: "x", name: "x", description: "x", probabilityPerDay: 0.1, effects: [],
-        condition: { minCompletedProjects: 1, requiresInFlightProject: true },
-      },
-    ]);
-    expect(defs[0].condition).toEqual({ minCompletedProjects: 1, requiresInFlightProject: true });
   });
 
   it("parses a lacksDecision condition", () => {

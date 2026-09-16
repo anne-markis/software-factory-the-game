@@ -19,5 +19,7 @@ Not wired into the player shell. Not part of `npm run build` / deploy.
 
 ## Consequences
 
-Authoring docs point at `make graph`. Viewer interaction polish can land
-in follow-ups; the contract is “same parse path, local only.”
+Authoring docs point at `make graph`. The studio shows native decisions as
+a prerequisite tree, type chips (always available vs gated, unique vs
+repeatable), challenges, and a side inspector. Further interaction polish
+can land in follow-ups; the contract remains “same parse path, local only.”

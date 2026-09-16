@@ -1,8 +1,29 @@
+import type { DecisionCategory } from "../../src/engine/types";
 import { loadShippedContent } from "../../src/engine/loadShippedContent";
-import { buildGraphModel, type ContentGraph, type GraphEdge, type GraphNode } from "./graphModel";
+import {
+  buildGraphModel,
+  type ContentGraph,
+  type EraStudioColumn,
+  type GraphChip,
+  type GraphNode,
+  type StudioTreeNode,
+} from "./graphModel";
+import {
+  EMPTY_FILTERS,
+  filterTree,
+  visibleColumns,
+  visibleNodeIds,
+  type StudioFilters,
+} from "./studioFilters";
 import "./styles.css";
 
-const SVG_NS = "http://www.w3.org/2000/svg";
+const CATEGORIES: DecisionCategory[] = [
+  "ship-faster",
+  "earn-income",
+  "tame-debt",
+  "prevent-trouble",
+  "change-structure",
+];
 
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -16,244 +37,501 @@ function element<K extends keyof HTMLElementTagNameMap>(
 }
 
 function shippedGraphModel(): ContentGraph {
-  // The first load parses eras.json; each subsequent load resolves that era
-  // (inherited prior rungs + this folder's delta) through loadActiveContent.
   const active = loadShippedContent();
   if (!active.eras) throw new Error("Shipped content did not include an eras catalog");
   return buildGraphModel(active.eras.eras.map((era) => loadShippedContent(era.id)));
 }
 
-function criteriaList(criteria: readonly string[]): HTMLUListElement {
-  const list = element("ul", "criteria-list");
-  for (const criterion of criteria) {
-    list.append(element("li", undefined, criterion));
+function chipClass(chip: GraphChip): string {
+  const slug = chip.label.replaceAll(" ", "-").replaceAll("/", "-");
+  return `chip chip-${chip.kind} chip-${slug}`;
+}
+
+function chipRow(chips: readonly GraphChip[]): HTMLUListElement {
+  const list = element("ul", "chip-row");
+  for (const chip of chips) {
+    list.append(element("li", chipClass(chip), chip.label));
   }
   return list;
 }
 
-function renderDecision(node: GraphNode): HTMLElement {
-  const card = element("article", "decision-card");
+function lineList(lines: readonly string[], className: string): HTMLUListElement | undefined {
+  if (lines.length === 0) return undefined;
+  const list = element("ul", className);
+  for (const line of lines) list.append(element("li", undefined, line));
+  return list;
+}
+
+function option(value: string, label: string, selected: string): HTMLOptionElement {
+  const node = document.createElement("option");
+  node.value = value;
+  node.textContent = label;
+  node.selected = value === selected;
+  return node;
+}
+
+function selectControl(
+  id: string,
+  label: string,
+  value: string,
+  options: Array<[string, string]>,
+  onChange: (value: string) => void,
+): HTMLLabelElement {
+  const wrap = element("label", "filter-field");
+  wrap.htmlFor = id;
+  wrap.append(element("span", undefined, label));
+  const select = document.createElement("select");
+  select.id = id;
+  for (const [optionValue, optionLabel] of options) {
+    select.append(option(optionValue, optionLabel, value));
+  }
+  select.addEventListener("change", () => onChange(select.value));
+  wrap.append(select);
+  return wrap;
+}
+
+interface StudioState {
+  filters: StudioFilters;
+  selectedId: string | null;
+}
+
+function inboundEdges(model: ContentGraph, nodeId: string): string[] {
+  return model.edges.filter((edge) => edge.to === nodeId).map((edge) => edge.label);
+}
+
+function outboundDecisionWires(model: ContentGraph, nodeId: string): string[] {
+  return model.edges
+    .filter(
+      (edge) =>
+        edge.from === nodeId &&
+        (edge.kind === "challenge-requires-any" || edge.kind === "challenge-lacks"),
+    )
+    .map((edge) => edge.label);
+}
+
+function renderInspector(model: ContentGraph, selectedId: string | null): HTMLElement {
+  const pane = element("aside", "inspector");
+  pane.setAttribute("aria-label", "Entry inspector");
+  const node = model.nodes.find((candidate) => candidate.id === selectedId);
+  if (!node || node.kind === "era") {
+    pane.append(
+      element("p", "eyebrow", "Inspector"),
+      element("h2", undefined, "Select a card"),
+      element(
+        "p",
+        "inspector-empty",
+        "Click a decision or challenge in the tree to see cost, effects, gates, and wiring.",
+      ),
+    );
+    return pane;
+  }
+
+  pane.append(
+    element("p", "eyebrow", node.kind === "challenge" ? "Challenge" : "Decision"),
+    element("p", "node-id", node.sourceId),
+    element("h2", undefined, node.title),
+    chipRow(node.chips),
+    element("p", "description", node.description),
+  );
+
+  const details = element("dl", "inspector-facts");
+  const addFact = (label: string, value: string): void => {
+    details.append(element("dt", undefined, label), element("dd", undefined, value));
+  };
+  addFact("Era", node.eraId);
+  if (node.kind === "decision") {
+    addFact("Cost", node.criteria.find((line) => line.startsWith("Cost: "))?.slice("Cost: ".length) ?? "Free");
+    addFact("Shop", node.availability === "always-available" ? "always available" : "gated");
+    addFact("Ownership", node.ownership === "unique" ? "unique (one copy)" : "repeatable");
+    addFact("Removable", node.removable ? "yes" : "no (locked)");
+    if (node.human) addFact("Headcount", "counts as human");
+  } else {
+    if (node.probabilityPerDay !== undefined) {
+      addFact(
+        "Probability",
+        node.criteria.find((line) => line.startsWith("Probability: "))?.slice("Probability: ".length) ?? "",
+      );
+    }
+    if (node.cooldownDays) addFact("Cooldown", `${node.cooldownDays}d`);
+    addFact("Roll", node.perHumanDev ? "once per human" : "once per tick (if eligible)");
+    addFact("Resolution", node.hasChoice ? "player choice" : "applies effects");
+  }
+  pane.append(details);
+
+  const requires = node.criteria.filter((line) => line.startsWith("Requires: ") || line.startsWith("Synergy "));
+  const requireList = lineList(requires, "inspector-list");
+  if (requireList) {
+    pane.append(element("h3", undefined, "Gates"), requireList);
+  }
+
+  const conditionList = lineList(node.conditionLines, "inspector-list");
+  if (conditionList) {
+    pane.append(element("h3", undefined, "Conditions"), conditionList);
+  }
+
+  const effectList = lineList(node.effectLines, "inspector-list");
+  pane.append(element("h3", undefined, "Effects"), effectList ?? element("p", "muted", "No direct effects."));
+
+  const wires = [
+    ...inboundEdges(model, node.id).filter((label) => !requires.includes(label.replace(/^Requires /, "Requires: "))),
+    ...outboundDecisionWires(model, node.id),
+  ];
+  const uniqueWires = [...new Set(wires)];
+  if (node.kind === "decision") {
+    const challengeWires = outboundDecisionWires(model, node.id);
+    if (challengeWires.length > 0) {
+      pane.append(element("h3", undefined, "Challenges that mention this card"), lineList(challengeWires, "inspector-list")!);
+    }
+  }
+  if (node.kind === "challenge" && uniqueWires.length > 0) {
+    pane.append(element("h3", undefined, "Wired from"), lineList(uniqueWires, "inspector-list")!);
+  }
+
+  if (node.effectLines.some((line) => line.includes(" for ") && line.endsWith("d"))) {
+    pane.append(
+      element(
+        "p",
+        "inspector-note",
+        "Durations are authored durationDays. A purchase-time modifier is felt for durationDays − 1 ticks; challenge mid-tick effects last the full authored window.",
+      ),
+    );
+  }
+
+  return pane;
+}
+
+function renderDecisionCard(
+  node: GraphNode,
+  selected: boolean,
+  onSelect: (id: string) => void,
+): HTMLButtonElement {
+  const card = element("button", `node-card decision-card${selected ? " is-selected" : ""}`) as HTMLButtonElement;
+  card.type = "button";
   card.dataset.nodeId = node.id;
+  card.setAttribute("aria-pressed", selected ? "true" : "false");
   card.append(
     element("p", "node-id", node.sourceId),
     element("h3", undefined, node.title),
-    element("p", "description", node.description),
-    criteriaList(node.criteria),
+    chipRow(node.chips),
   );
+  const preview = node.effectLines[0];
+  if (preview) card.append(element("p", "effect-preview", preview));
+  card.addEventListener("click", () => onSelect(node.id));
   return card;
 }
 
-function renderEraNode(node: GraphNode): HTMLElement {
-  const card = element("header", "era-card");
+function renderChallengeCard(
+  node: GraphNode,
+  selected: boolean,
+  onSelect: (id: string) => void,
+): HTMLButtonElement {
+  const card = element(
+    "button",
+    `node-card challenge-card${node.ambient ? " is-ambient" : ""}${selected ? " is-selected" : ""}`,
+  ) as HTMLButtonElement;
+  card.type = "button";
   card.dataset.nodeId = node.id;
-  const headingGroup = element("div");
-  headingGroup.append(element("p", "eyebrow", "Era"), element("h2", undefined, node.title));
-  card.append(headingGroup, element("p", "era-description", node.description), criteriaList(node.criteria));
+  card.setAttribute("aria-pressed", selected ? "true" : "false");
+  card.append(
+    element("p", "node-id", node.sourceId),
+    element("h3", undefined, node.title),
+    chipRow(node.chips),
+  );
+  card.addEventListener("click", () => onSelect(node.id));
   return card;
 }
 
-function svgElement<K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameMap[K] {
-  return document.createElementNS(SVG_NS, tag);
+function renderTree(
+  roots: readonly StudioTreeNode[],
+  nodesById: ReadonlyMap<string, GraphNode>,
+  column: EraStudioColumn,
+  visible: ReadonlySet<string>,
+  selectedId: string | null,
+  onSelect: (id: string) => void,
+): HTMLUListElement {
+  const list = element("ul", "tree");
+  for (const root of roots) {
+    const node = nodesById.get(root.nodeId);
+    if (!node) continue;
+    const item = element("li", "tree-item");
+    item.append(renderDecisionCard(node, selectedId === node.id, onSelect));
+    const attached = (column.challengesByDecisionId[node.id] ?? [])
+      .map((id) => nodesById.get(id))
+      .filter((challenge): challenge is GraphNode => Boolean(challenge) && visible.has(challenge!.id));
+    const childTree = root.children.length > 0
+      ? renderTree(root.children, nodesById, column, visible, selectedId, onSelect)
+      : undefined;
+    if (attached.length > 0) {
+      const challengeList = element("ul", "tree tree-challenges");
+      for (const challenge of attached) {
+        const challengeItem = element("li", "tree-item");
+        challengeItem.append(renderChallengeCard(challenge, selectedId === challenge.id, onSelect));
+        challengeList.append(challengeItem);
+      }
+      item.append(challengeList);
+    }
+    if (childTree && childTree.childElementCount > 0) item.append(childTree);
+    list.append(item);
+  }
+  return list;
 }
 
-function addMarker(defs: SVGDefsElement, kind: GraphEdge["kind"], color: string): void {
-  const marker = svgElement("marker");
-  marker.id = `arrow-${kind}`;
-  marker.setAttribute("markerWidth", "8");
-  marker.setAttribute("markerHeight", "8");
-  marker.setAttribute("refX", "7");
-  marker.setAttribute("refY", "4");
-  marker.setAttribute("orient", "auto");
-  marker.setAttribute("markerUnits", "strokeWidth");
-  const arrow = svgElement("path");
-  arrow.setAttribute("d", "M 0 0 L 8 4 L 0 8 z");
-  arrow.setAttribute("fill", color);
-  marker.append(arrow);
-  defs.append(marker);
-}
-
-function edgeGeometry(
-  edge: GraphEdge,
-  from: DOMRect,
-  to: DOMRect,
-  canvas: DOMRect,
-  parallelIndex: number,
-  parallelCount: number,
-): string {
-  const spread = (parallelIndex - (parallelCount - 1) / 2) * 22;
-  const local = (rect: DOMRect) => ({
-    left: rect.left - canvas.left,
-    right: rect.right - canvas.left,
-    top: rect.top - canvas.top,
-    bottom: rect.bottom - canvas.top,
-    centerX: rect.left - canvas.left + rect.width / 2,
-    centerY: rect.top - canvas.top + rect.height / 2,
-  });
-  const start = local(from);
-  const end = local(to);
-
-  if (edge.kind === "era-entry") {
-    const x1 = start.right;
-    const y1 = start.centerY + spread;
-    const x2 = end.left;
-    const y2 = end.centerY + spread;
-    const bend = Math.max(40, Math.abs(x2 - x1) / 2);
-    return `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`;
+function renderEraColumn(
+  model: ContentGraph,
+  column: EraStudioColumn,
+  visible: ReadonlySet<string>,
+  selectedId: string | null,
+  onSelect: (id: string) => void,
+): HTMLElement {
+  const nodesById = new Map(model.nodes.map((node) => [node.id, node]));
+  const eraNode = nodesById.get(column.eraNodeId);
+  const section = element("section", "era-column");
+  section.setAttribute("aria-labelledby", `era-heading-${column.eraId}`);
+  if (eraNode) {
+    const header = element("header", "era-card");
+    header.dataset.nodeId = eraNode.id;
+    const headingGroup = element("div");
+    headingGroup.append(element("p", "eyebrow", "Era"), element("h2", undefined, eraNode.title));
+    headingGroup.querySelector("h2")!.id = `era-heading-${column.eraId}`;
+    header.append(headingGroup, element("p", "era-description", eraNode.description), chipRow(eraNode.chips));
+    const entry = lineList(eraNode.criteria, "criteria-list");
+    if (entry) header.append(entry);
+    section.append(header);
   }
 
-  if (end.top >= start.bottom) {
-    const x1 = start.centerX + spread;
-    const y1 = start.bottom;
-    const x2 = end.centerX + spread;
-    const y2 = end.top;
-    const bend = Math.max(28, Math.abs(y2 - y1) / 2);
-    return `M ${x1} ${y1} C ${x1} ${y1 + bend}, ${x2} ${y2 - bend}, ${x2} ${y2}`;
-  }
-
-  const forward = end.centerX >= start.centerX;
-  const x1 = forward ? start.right : start.left;
-  const x2 = forward ? end.left : end.right;
-  const y1 = start.centerY + spread;
-  const y2 = end.centerY + spread;
-  const direction = forward ? 1 : -1;
-  const bend = Math.max(36, Math.abs(x2 - x1) / 2);
-  return `M ${x1} ${y1} C ${x1 + bend * direction} ${y1}, ${x2 - bend * direction} ${y2}, ${x2} ${y2}`;
-}
-
-function drawEdges(
-  canvas: HTMLElement,
-  svg: SVGSVGElement,
-  edges: readonly GraphEdge[],
-  renderedNodes: ReadonlyMap<string, HTMLElement>,
-): void {
-  const width = canvas.scrollWidth;
-  const height = canvas.scrollHeight;
-  svg.setAttribute("width", String(width));
-  svg.setAttribute("height", String(height));
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.querySelector(".edge-layer")?.remove();
-
-  const layer = svgElement("g");
-  layer.classList.add("edge-layer");
-  const canvasRect = canvas.getBoundingClientRect();
-
-  for (const edge of edges) {
-    const fromElement = renderedNodes.get(edge.from);
-    const toElement = renderedNodes.get(edge.to);
-    if (!fromElement || !toElement) continue;
-
-    const parallel = edges.filter((candidate) => candidate.from === edge.from && candidate.to === edge.to);
-    const pathData = edgeGeometry(
-      edge,
-      fromElement.getBoundingClientRect(),
-      toElement.getBoundingClientRect(),
-      canvasRect,
-      parallel.indexOf(edge),
-      parallel.length,
+  const roots = filterTree(column.decisionRoots, visible);
+  if (roots.length === 0) {
+    section.append(
+      element(
+        "p",
+        "empty-era",
+        column.nativeDecisionCount === 0
+          ? "No native decisions in this era. Cards inherit from earlier rungs; later folders are deltas."
+          : "No decisions match the current filters.",
+      ),
     );
-    const path = svgElement("path");
-    path.classList.add("edge", `edge-${edge.kind}`);
-    path.setAttribute("d", pathData);
-    path.setAttribute("marker-end", `url(#arrow-${edge.kind})`);
-    layer.append(path);
+  } else {
+    section.append(
+      element("h3", "lane-heading", "Decision tree"),
+      renderTree(roots, nodesById, column, visible, selectedId, onSelect),
+    );
   }
-  svg.append(layer);
+
+  const ambient = column.ambientChallengeIds
+    .filter((id) => visible.has(id))
+    .map((id) => nodesById.get(id))
+    .filter((node): node is GraphNode => Boolean(node));
+  if (ambient.length > 0) {
+    const lane = element("section", "ambient-lane");
+    lane.append(element("h3", "lane-heading", "Ambient challenges"));
+    const cards = element("div", "ambient-cards");
+    for (const challenge of ambient) {
+      cards.append(renderChallengeCard(challenge, selectedId === challenge.id, onSelect));
+    }
+    lane.append(cards);
+    section.append(lane);
+  }
+
+  const inheritedWires = column.wiredToInherited.filter((wire) => visible.has(wire.challengeNodeId));
+  if (inheritedWires.length > 0) {
+    const lane = element("section", "ambient-lane");
+    lane.append(element("h3", "lane-heading", "Wired to inherited cards"));
+    const cards = element("div", "ambient-cards");
+    for (const wire of inheritedWires) {
+      const challenge = nodesById.get(wire.challengeNodeId);
+      if (!challenge) continue;
+      const wrap = element("div", "inherited-wire");
+      wrap.append(
+        renderChallengeCard(challenge, selectedId === challenge.id, onSelect),
+        element("p", "muted", `Refs: ${wire.decisionSourceIds.join(", ")}`),
+      );
+      cards.append(wrap);
+    }
+    lane.append(cards);
+    section.append(lane);
+  }
+
+  if (
+    column.nativeDecisionCount === 0 &&
+    column.nativeChallengeCount === 0 &&
+    roots.length === 0 &&
+    ambient.length === 0
+  ) {
+    // empty-era message already covers decisions; add a second line only when
+    // there are also no native challenges at all.
+    const existing = section.querySelector(".empty-era");
+    if (existing) {
+      existing.textContent =
+        "No native decisions or challenges yet. Inherits prior rungs.";
+    }
+  }
+
+  return section;
+}
+
+function renderToolbar(
+  model: ContentGraph,
+  filters: StudioFilters,
+  onFilters: (filters: StudioFilters) => void,
+): HTMLElement {
+  const bar = element("div", "toolbar");
+  const searchField = element("label", "filter-field filter-search");
+  searchField.htmlFor = "studio-search";
+  searchField.append(element("span", undefined, "Search"));
+  const search = element("input") as HTMLInputElement;
+  search.id = "studio-search";
+  search.type = "search";
+  search.placeholder = "id, name, effect…";
+  search.value = filters.search;
+  search.addEventListener("input", () => onFilters({ ...filters, search: search.value }));
+  searchField.append(search);
+  bar.append(searchField);
+
+  bar.append(
+    selectControl(
+      "studio-era",
+      "Era",
+      filters.eraId,
+      [["", "All eras"], ...model.eras.map((era) => [era.id, era.name] as [string, string])],
+      (eraId) => onFilters({ ...filters, eraId }),
+    ),
+    selectControl(
+      "studio-category",
+      "Category",
+      filters.category,
+      [["", "All categories"], ...CATEGORIES.map((category) => [category, category.replaceAll("-", " ")] as [string, string])],
+      (category) => onFilters({ ...filters, category: category as StudioFilters["category"] }),
+    ),
+    selectControl(
+      "studio-availability",
+      "Availability",
+      filters.availability,
+      [
+        ["", "All availability"],
+        ["always-available", "Always available"],
+        ["gated", "Gated decisions"],
+        ["ambient", "Ambient challenges"],
+        ["gated-by-cards", "Challenges gated by cards"],
+      ],
+      (availability) => onFilters({ ...filters, availability: availability as StudioFilters["availability"] }),
+    ),
+    selectControl(
+      "studio-ownership",
+      "Ownership",
+      filters.ownership,
+      [
+        ["", "Unique or repeatable"],
+        ["unique", "Unique"],
+        ["repeatable", "Repeatable"],
+      ],
+      (ownership) => onFilters({ ...filters, ownership: ownership as StudioFilters["ownership"] }),
+    ),
+  );
+
+  if (
+    filters.search ||
+    filters.category ||
+    filters.availability ||
+    filters.ownership ||
+    filters.eraId
+  ) {
+    const clear = element("button", "clear-filters", "Clear filters") as HTMLButtonElement;
+    clear.type = "button";
+    clear.addEventListener("click", () => onFilters({ ...EMPTY_FILTERS }));
+    bar.append(clear);
+  }
+
+  return bar;
 }
 
 function renderLegend(): HTMLElement {
   const legend = element("div", "legend");
-  const entries: Array<[GraphEdge["kind"], string]> = [
-    ["requires", "Requires"],
-    ["requires-count", "Requires count"],
-    ["synergy", "Synergy ifOwned"],
-    ["era-entry", "Era entryAnyOf"],
+  const entries: Array<[string, string]> = [
+    ["always", "Always available"],
+    ["gated", "Gated"],
+    ["unique", "Unique"],
+    ["repeatable", "Repeatable"],
+    ["challenge", "Challenge"],
   ];
   for (const [kind, label] of entries) {
     const item = element("span", "legend-item");
-    item.append(element("i", `legend-line legend-${kind}`), document.createTextNode(label));
+    item.append(element("i", `legend-swatch legend-${kind}`), document.createTextNode(label));
     legend.append(item);
   }
   return legend;
 }
 
-function render(model: ContentGraph, root: HTMLElement): void {
+function render(model: ContentGraph, root: HTMLElement, state: StudioState): void {
+  const visible = visibleNodeIds(model, state.filters);
   const decisionCount = model.nodes.filter((node) => node.kind === "decision").length;
+  const challengeCount = model.nodes.filter((node) => node.kind === "challenge").length;
   const header = element("header", "page-header");
   const titleGroup = element("div");
   titleGroup.append(
     element("p", "eyebrow", "Local authoring tool"),
-    element("h1", undefined, "Software Factory content graph"),
+    element("h1", undefined, "Software Factory content studio"),
     element(
       "p",
       "intro",
-      `${decisionCount} decisions across ${model.eras.length} eras, parsed through loadShippedContent and the engine Zod schemas.`,
+      `${decisionCount} native decisions and ${challengeCount} native challenges across ${model.eras.length} eras. Same Zod loader as the game. Not part of the player build.`,
     ),
   );
   header.append(titleGroup, renderLegend());
 
+  const layout = element("div", "studio-layout");
+  const mainPane = element("div", "studio-main");
+  mainPane.append(renderToolbar(model, state.filters, (filters) => {
+    state.filters = filters;
+    if (state.selectedId && !visibleNodeIds(model, filters).has(state.selectedId)) {
+      state.selectedId = null;
+    }
+    render(model, root, state);
+  }));
+
   const viewport = element("div", "graph-viewport");
   const canvas = element("div", "graph-canvas");
-  canvas.style.gridTemplateColumns = `repeat(${model.eras.length}, minmax(24rem, 1fr))`;
-  const svg = svgElement("svg");
-  svg.classList.add("edge-overlay");
-  svg.setAttribute("aria-hidden", "true");
-  const defs = svgElement("defs");
-  addMarker(defs, "requires", "#f6c453");
-  addMarker(defs, "requires-count", "#ff8f66");
-  addMarker(defs, "synergy", "#be8cff");
-  addMarker(defs, "era-entry", "#66d9ef");
-  svg.append(defs);
-  canvas.append(svg);
-  const renderedNodes = new Map<string, HTMLElement>();
-
-  for (const era of model.eras) {
-    const column = element("section", "era-column");
-    column.setAttribute("aria-labelledby", `era-heading-${era.id}`);
-    const eraNode = model.nodes.find((node) => node.kind === "era" && node.eraId === era.id);
-    if (!eraNode) continue;
-    const eraCard = renderEraNode(eraNode);
-    renderedNodes.set(eraNode.id, eraCard);
-    eraCard.querySelector("h2")!.id = `era-heading-${era.id}`;
-    column.append(eraCard);
-
-    const decisions = model.nodes.filter((node) => node.kind === "decision" && node.eraId === era.id);
-    const tiers = [...new Set(decisions.map((node) => node.tier))].sort((a, b) => a - b);
-    if (tiers.length === 0) {
-      column.append(element("p", "empty-era", "No decisions shipped in this era yet."));
-    }
-    for (const tier of tiers) {
-      const tierSection = element("section", "tier");
-      tierSection.append(element("h3", "tier-heading", `Prerequisite tier ${tier}`));
-      const cards = element("div", "tier-cards");
-      for (const decision of decisions.filter((node) => node.tier === tier)) {
-        const card = renderDecision(decision);
-        renderedNodes.set(decision.id, card);
-        cards.append(card);
-      }
-      tierSection.append(cards);
-      column.append(tierSection);
-    }
-    canvas.append(column);
+  const columns = visibleColumns(model, state.filters);
+  canvas.style.gridTemplateColumns = `repeat(${Math.max(columns.length, 1)}, 24rem)`;
+  const onSelect = (id: string): void => {
+    state.selectedId = state.selectedId === id ? null : id;
+    render(model, root, state);
+  };
+  for (const column of columns) {
+    canvas.append(renderEraColumn(model, column, visible, state.selectedId, onSelect));
   }
   viewport.append(canvas);
-  root.replaceChildren(header, viewport);
+  mainPane.append(viewport);
+  layout.append(mainPane, renderInspector(model, state.selectedId));
 
-  const redraw = () => drawEdges(canvas, svg, model.edges, renderedNodes);
-  requestAnimationFrame(redraw);
-  new ResizeObserver(redraw).observe(canvas);
+  const active = document.activeElement;
+  const activeId = active instanceof HTMLElement ? active.id : "";
+  const caret =
+    active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement ? active.selectionStart : null;
+
+  root.replaceChildren(header, layout);
+
+  if (activeId) {
+    const next = root.querySelector<HTMLElement>(`#${CSS.escape(activeId)}`);
+    if (next instanceof HTMLInputElement || next instanceof HTMLSelectElement) {
+      next.focus();
+      if (next instanceof HTMLInputElement && caret !== null) next.setSelectionRange(caret, caret);
+    }
+  }
 }
 
 const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Missing #app mount point");
 
 try {
-  render(shippedGraphModel(), root);
+  const model = shippedGraphModel();
+  const state: StudioState = { filters: { ...EMPTY_FILTERS }, selectedId: null };
+  render(model, root, state);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   const failure = element("main", "load-error");
   failure.append(
     element("p", "eyebrow", "Content validation failed"),
-    element("h1", undefined, "Unable to build the content graph"),
+    element("h1", undefined, "Unable to build the content studio"),
     element("pre", undefined, message),
   );
   root.replaceChildren(failure);

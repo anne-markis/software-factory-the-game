@@ -99,6 +99,9 @@ describe("loopDiagramSvg", () => {
     // 1.0/day is capacity on the box, not an arrow.
     expect(svg.match(/0\.0\/day/g)).toHaveLength(3);
     expect(svg).toContain("debt +0.5/pt");
+    expect(svg).not.toContain("slower");
+    expect(svg).not.toContain("data-debt-drag");
+    expect(svg).not.toContain("data-debt-hot");
     expect(svg.match(/<line /g)).toHaveLength(5);
   });
 
@@ -189,6 +192,21 @@ describe("loopDiagramSvg", () => {
     expect(debtCd.startX).toBeCloseTo(boxCenterX(svgCd, "shipped"), 5);
     expect(debtCd.endX).toBeCloseTo(boxCenterX(svgCd, "backlog"), 5);
     expect(debtCd.endX).not.toBeCloseTo(boxCenterX(svgCd, "ideas"), 5);
+  });
+
+  it("tints pull/finish/deploy arrows once drag is live and leaves the leak caption alone", () => {
+    const content = emptyContent();
+    const state = initialState(content);
+    state.stocks.techDebt = 1400;
+    const svg = loopDiagramSvg(state, content);
+    expect(svg.match(/data-debt-drag="warn"/g)).toHaveLength(3);
+    expect(svg).not.toContain("data-debt-hot");
+    expect(svg).toContain("debt +0.5/pt");
+    expect(svg).not.toContain("slower");
+    expect(svg).not.toContain("-15%");
+    // Ideas and Plan are not debt-dragged; their connecting arrows stay clean.
+    expect(stageGroup(svg, "ideas")).not.toContain("data-debt-drag");
+    expect(stageGroup(svg, "plan")).not.toContain("data-debt-drag");
   });
 
   it("keeps six boxes from overlapping or running off the viewBox", () => {

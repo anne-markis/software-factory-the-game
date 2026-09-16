@@ -109,6 +109,12 @@ describe("gameFeel stat flash", () => {
     const users = views.find((v) => v.label === "Users")!;
     expect(users.value).toBe("0"); // starts at 0 until the beta completes
     expect(users.widthClass).toBe("v-users");
+    const debt = views.find((v) => v.label === "Tech Debt")!;
+    expect(debt.value).toBe("0");
+    expect(debt.valueClass).toBeUndefined();
+    const rate = cockpitStatViews(state, content).find((v) => v.label === "Points/Day")!;
+    expect(rate.value).toBe("0");
+    expect(rate.valueClass).toBeUndefined();
     // A material change to users flashes in place like the other stats.
     const root = document.createElement("div");
     const flash = createFlashController(() => 0);
@@ -144,6 +150,19 @@ describe("gameFeel stat flash", () => {
     syncStatRow(root, "delivery-stats", deliveryStatViews(state), flash);
     expect(root.querySelector(".v-rep")!.classList.contains("stat-flash")).toBe(true);
     expect(root.querySelector(".v-flow")).toBe(shipped);
+  });
+
+  it("puts live drag on Points/Day and only colors Tech Debt", () => {
+    const content = makeContent();
+    const state = initialState(content);
+    state.stocks.techDebt = 1400;
+    state.pointsPerDay = 1.7;
+    const rate = cockpitStatViews(state, content).find((v) => v.label === "Points/Day")!;
+    expect(rate.value).toBe("1.7 (-15%)");
+    expect(rate.valueClass).toBe("debt-warn");
+    const debt = deliveryStatViews(state).find((v) => v.label === "Tech Debt")!;
+    expect(debt.value).toBe("1,400");
+    expect(debt.valueClass).toBe("debt-warn");
   });
 });
 
