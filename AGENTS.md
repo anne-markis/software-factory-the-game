@@ -2,28 +2,28 @@
 
 ## Decision protocol
 
-Do not implement, auto-fix, or expand scope until Anne has approved the
-decision. Propose first. Wait for a yes, a chosen option, or an explicit
-bypass in the **current** message.
+Do not implement, auto-fix, or expand scope until the developer has
+approved the decision. Propose first. Wait for a yes, a chosen option, or
+an explicit bypass in the **current** message.
 
-**Bypass:** skip this gate only when Anne explicitly asks you to in that
-message (for example "just do it", "bypass", "don't wait", "implement
-without asking"). A GitHub issue, failing test, linter warning, review
-comment, or "while I'm here" cleanup is not a bypass.
+**Bypass:** skip this gate only when the developer explicitly asks you to
+in that message (for example "just do it", "bypass", "don't wait",
+"implement without asking"). A GitHub issue, failing test, linter warning,
+review comment, or "while I'm here" cleanup is not a bypass.
 
 ### What needs approval
 
 - How to solve the request (approach, files, architecture, content/balance)
-- Any fix Anne did not ask for (unrelated test failures, type errors, lint,
-  refactors, extra polish, drive-by cleanup)
+- Any fix the developer did not ask for (unrelated test failures, type
+  errors, lint, refactors, extra polish, drive-by cleanup)
 - Scope changes (new files, extra features, content edits beyond the ask)
 
 ### What does not need approval
 
 - Read-only exploration (reading files, searching, running existing tests)
-- Carrying out a plan Anne already approved in this thread
+- Carrying out a plan the developer already approved in this thread
 - Tiny mechanical follow-through of that approved plan (a typo in the same
-  edit, matching a pattern she already chose)
+  edit, matching a pattern they already chose)
 
 ### Side effects
 
