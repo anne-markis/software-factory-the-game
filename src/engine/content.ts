@@ -6,6 +6,7 @@ import type {
   ProjectDef,
   GameContent,
   ErasConfig,
+  Effect,
 } from "./types";
 
 // Schemas are .strict(): content files are hand-edited, so unknown or
@@ -181,15 +182,7 @@ const effectSchema = z.discriminatedUnion("type", [
       durationDays: z.number().positive().optional(),
       scaleFromHumansPer: z.number().positive().optional(),
     })
-    .strict()
-    .superRefine((effect, ctx) => {
-      if (effect.scaleFromHumansPer !== undefined && effect.op !== "add") {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "scaleFromHumansPer is only valid on add-op modifyRate",
-        });
-      }
-    }),
+    .strict(),
   z
     .object({
       type: z.literal("modifyDebtMultiplier"),
@@ -273,7 +266,15 @@ const decisionSchema = z
   })
   .strict();
 
-function inheritedIds<T extends { id: string }>(inherited: readonly T[]): Set<string> {
+function assertScaleFromHumansIsAddOp(source: string, ownerId: string, effects: Effect[]): void {
+  for (const effect of effects) {
+    if (effect.type === "modifyRate" && effect.scaleFromHumansPer !== undefined && effect.op !== "add") {
+      throw new Error(
+        `Invalid content in ${source}: "${ownerId}" scaleFromHumansPer is only valid on add-op modifyRate`,
+      );
+    }
+  }
+}
   return new Set(inherited.map((item) => item.id));
 }
 
@@ -329,7 +330,11 @@ export function parseDecisions(
     }
     for (const syn of def.synergies ?? []) {
       if (!resolvedIds.has(syn.ifOwned)) throw new Error(`Invalid content in ${source}: "${def.id}" synergy references unknown id "${syn.ifOwned}"`);
+      assertScaleFromHumansIsAddOp(source, def.id, syn.effects ?? []);
+      for (const outcome of syn.gamble ?? []) assertScaleFromHumansIsAddOp(source, def.id, outcome.effects);
     }
+    assertScaleFromHumansIsAddOp(source, def.id, def.effects);
+    for (const outcome of def.gamble ?? []) assertScaleFromHumansIsAddOp(source, def.id, outcome.effects);
     for (const grant of def.capacityFromOwned ?? []) {
       if (!resolvedIds.has(grant.id)) {
         throw new Error(`Invalid content in ${source}: "${def.id}" capacityFromOwned references unknown id "${grant.id}"`);
