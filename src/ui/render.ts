@@ -66,7 +66,9 @@ export function decisionNodeSection(defId: string): string {
 }
 
 // Def ids of unique decisions that currently have an owned instance.
-// Those cards leave Alter the system while owned (Owned keeps them).
+// Those cards leave Alter the system while owned. Removable uniques
+// stay in the Owned action list; non-removable uniques leave the shop
+// without occupying that list.
 export function ownedUniqueDefIds(
   ownedInstances: readonly DecisionInstance[],
   content: GameContent,
@@ -198,19 +200,18 @@ export function ownedPanelScaffold(): string {
   return `<div class="panel"><h3>Owned</h3><div ${SECTION_ATTR}="${OWNED_LIST_SECTION}"></div></div>`;
 }
 
-// Owned entries carry the same cost line and derived-effects
-// summary as shop cards so a player trimming upkeep does not have to
-// scroll back through Alter the system matching names card by card.
+// Owned is an action list: only removable instances, each with Remove,
+// plus the cost/effects summary so a player trimming upkeep does not
+// have to scroll Alter the system matching names card by card.
 export function renderOwnedList(ownedInstances: DecisionInstance[], content: GameContent): string {
   const ownedList = ownedInstances
     .map((inst) => {
       const def = content.decisions.find((d) => d.id === inst.defId);
-      if (!def) return "";
-      const remove = def.removable ? `<button data-remove="${esc(inst.instanceId)}">Remove</button>` : "";
+      if (!def?.removable) return "";
       const outcome = inst.gambleLabel ? ` [${esc(inst.gambleLabel)}]` : "";
       const sick = inst.sickUntilDay !== undefined ? " (sick)" : "";
       return `<div class="owned-item">
-      <div class="owned-item-head">${esc(def.name)}${outcome}${sick} ${remove}</div>
+      <div class="owned-item-head">${esc(def.name)}${outcome}${sick} <button data-remove="${esc(inst.instanceId)}">Remove</button></div>
       <div class="owned-cost">${esc(costLine(def))}</div>
       ${effectsLine(def)}
     </div>`;
