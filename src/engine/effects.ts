@@ -23,6 +23,7 @@ function pushModifier(
   value: number,
   durationDays?: number,
   ramp?: { perDay: number; cap: number },
+  scaleFromHumansPer?: number,
 ): void {
   state.modifiers.push({
     id: `mod-${state.nextModifierId++}`,
@@ -33,6 +34,7 @@ function pushModifier(
     expiresDay: durationDays !== undefined ? state.day + durationDays : undefined,
     rampPerDay: ramp?.perDay,
     rampCap: ramp?.cap,
+    scaleFromHumansPer,
   });
 }
 
@@ -43,12 +45,42 @@ function humanDevInstances(state: GameState, content: GameContent) {
   });
 }
 
+/** Copy human flags and scaleFromHumansPer from current content onto live state. */
+export function hydrateHumanScale(state: GameState, content: GameContent): void {
+  for (const inst of state.decisions) {
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (def?.human === true) inst.human = true;
+    else delete inst.human;
+    if (!def) continue;
+    const syn = (def.synergies ?? []).find((s) => s.ifOwned === inst.appliedSynergyIfOwned);
+    const effects = syn?.effects ?? def.effects;
+    for (const effect of effects) {
+      if (effect.type !== "modifyRate" || effect.scaleFromHumansPer === undefined) continue;
+      const target = effect.target === "all" ? "allRates" : effect.target;
+      for (const m of state.modifiers) {
+        if (m.source === inst.instanceId && m.target === target && m.op === effect.op) {
+          m.scaleFromHumansPer = effect.scaleFromHumansPer;
+        }
+      }
+    }
+  }
+}
+
 export function applyEffects(state: GameState, effects: Effect[], source: string, ctx: EffectContext = {}): void {
   for (const effect of effects) {
     switch (effect.type) {
       case "modifyRate": {
         const target: ModifierTarget = effect.target === "all" ? "allRates" : effect.target;
-        pushModifier(state, source, target, effect.op, effect.value, effect.durationDays);
+        pushModifier(
+          state,
+          source,
+          target,
+          effect.op,
+          effect.value,
+          effect.durationDays,
+          undefined,
+          effect.scaleFromHumansPer,
+        );
         break;
       }
       case "modifyDebtMultiplier":

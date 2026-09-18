@@ -223,7 +223,7 @@ describe("parseDecisions", () => {
       "one-time-product",
     ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
-    expect(dev.cost.perDay).toBe(7);
+    expect(dev.cost.perDay).toBe(438);
     expect(dev.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
     // The hire is always in the shop: no requires, no count gate (§5.2.2).
     expect(dev.requires).toBeUndefined();
@@ -249,13 +249,14 @@ describe("parseDecisions", () => {
     const agent = defs.find((d) => d.id === "agent")!;
     expect(agent.unique).toBeUndefined();
     expect(agent.effects).toEqual([
-      { type: "modifyRate", target: "finish", op: "add", value: 0.2 },
+      { type: "modifyRate", target: "finish", op: "add", value: 0.2, scaleFromHumansPer: 0.1 },
       { type: "modifyDebtMultiplier", op: "add", value: 0.1 },
     ]);
     // No synergies: harness and orchestration are global multipliers now, so
     // an agent bought before them still gets their benefit.
     expect(agent.synergies).toBeUndefined();
     expect(agent.description).toMatch(/each agent/i);
+    expect(agent.description).toMatch(/10%/);
 
     // agent-harness: one global multiplier pair, unique, gated on owning any
     // agent. Its old shape (empty effects + a synergy on agent) meant only
@@ -516,6 +517,17 @@ describe("parseDecisions", () => {
       },
     ]);
     expect(defs[0].effects[0]).toEqual({ type: "modifyRate", target: "plan", op: "add", value: 1 });
+  });
+
+  it("rejects scaleFromHumansPer on a mul-op modifyRate", () => {
+    expect(() =>
+      parseDecisions([
+        {
+          id: "x", name: "x", description: "x", category: "ship-faster", cost: {}, removable: true,
+          effects: [{ type: "modifyRate", target: "finish", op: "mul", value: 1.2, scaleFromHumansPer: 0.1 }],
+        },
+      ]),
+    ).toThrow(/scaleFromHumansPer/);
   });
 
   it("rejects a rampRate effect targeting \"all\" (a ramp targets exactly one rate)", () => {

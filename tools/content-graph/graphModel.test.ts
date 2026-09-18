@@ -222,6 +222,9 @@ describe("content graph model", () => {
       formatEffect({ type: "modifyRate", target: "all", op: "mul", value: 0.5, durationDays: 6 }),
     ).toBe("all rates ×0.5 for 6d");
     expect(formatEffect({ type: "continuousDeploy" })).toBe("continuous deploy (removes Done)");
+    expect(
+      formatEffect({ type: "modifyRate", target: "finish", op: "add", value: 0.2, scaleFromHumansPer: 0.1 }),
+    ).toBe("finish +0.2/day (+10%/human)");
     expect(formatProbabilityPerDay(0.01)).toBe("1%/day");
     expect(formatProbabilityPerDay(0.001)).toBe("0.1%/day");
   });

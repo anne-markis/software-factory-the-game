@@ -60,13 +60,24 @@ export function stockDragMultiplier(state: GameState, rate: RateId): number {
   return mul;
 }
 
+export function humanHeadcount(state: Pick<GameState, "decisions">): number {
+  return state.decisions.filter((d) => d.human === true).length;
+}
+
+/** Add-op contribution after live human-headcount scale, before sickness. */
+export function scaledModifierValue(state: Pick<GameState, "decisions">, m: Modifier): number {
+  if (m.op !== "add" || m.scaleFromHumansPer === undefined) return m.value;
+  const raw = m.value * (1 + m.scaleFromHumansPer * humanHeadcount(state));
+  return Math.round(raw * 1e10) / 1e10;
+}
+
 export function effectiveRate(state: GameState, rate: RateId): number {
   let value = state.baseRates[rate];
   // Sickness deliberately scales only add-op modifiers (an instance's additive
   // contribution to a rate). If a future sick-able concept uses mul modifiers,
   // sickness will not apply to it without extending this function.
   for (const m of state.modifiers) {
-    if (m.op === "add" && applies(m, rate)) value += m.value * sickFactorFor(state, m.source);
+    if (m.op === "add" && applies(m, rate)) value += scaledModifierValue(state, m) * sickFactorFor(state, m.source);
   }
   for (const m of state.modifiers) {
     if (m.op === "mul" && applies(m, rate)) value *= m.value;

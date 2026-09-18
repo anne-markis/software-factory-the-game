@@ -442,6 +442,14 @@ describe("simulation", () => {
   // the lean pool has no reputation hit left, and no rep-earning contract
   // completes), so no milestone is crossed. Loose bounds pin the shape
   // (solvent + monetized), not challenge-knife-edge exact values.
+  //
+  // RE-PINNED for basic-dev payroll $7 → $438/day ($160k calendar). Two hires
+  // cost $876/day against ~$120/day subscription at the ~160-user steady
+  // state, so the old compounding surplus is gone. The probe still waits until
+  // after launch (beta still day 302), still turns users on, and still never
+  // zero-clamps -- unpaid $438 payroll sheds the hire instead of driving
+  // budget through 0. Cash hovers in the hundreds (observed 867 / 376 / 462
+  // at days 500 / 1000 / 2000) rather than climbing past $50k.
   it("human-heavy strategy: finishes the beta and stays solvent via monetization over 2000 days", () => {
     const r = runBuildProbe(
       [
@@ -455,13 +463,14 @@ describe("simulation", () => {
       ],
       { onlyAfterLaunch: true },
     );
-    expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 149)
-    expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
+    expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 302; launch-gated)
+    expect(r.everBroke).toBe(false); // unpaid hire payroll sheds the person rather than clamping to $0
     expect(r.peakUsers).toBeGreaterThan(100); // users economy switched on and grew (observed ~160)
-    // Monetization is the money spine: subscription income lifts the budget far
-    // above the starting 10,000 (observed end ~229,276). Loose lower bound.
-    expect(r.endBudget).toBeGreaterThan(50000);
-    expect(r.budgetAtDay[2000]).toBeGreaterThan(r.budgetAtDay[500]!); // still climbing on subscription income
+    // Hire payroll now consumes the old subscription surplus; cash stays solvent
+    // but does not compound (observed end ~462).
+    expect(r.endBudget).toBeGreaterThan(100);
+    expect(r.endBudget).toBeLessThan(10000);
+    expect(r.budgetAtDay[2000]).toBeLessThan(r.budgetAtDay[500]!);
   });
 
   // Automation-heavy build, RE-PINNED for the lean Studio shop.
@@ -742,7 +751,12 @@ describe("simulation", () => {
       check(e.getState(), day);
     }
     // sanity: the factory actually did something
-    expect(e.getState().stocks.shipped).toBeGreaterThan(100);
+    // RE-PINNED for $438/day hire payroll: greedy buys basic-dev on day 1,
+    // burns the starting purse before Launch beta can finish (observed shipped
+    // ~32, completedProjects 0, budget 0, delivery frozen). The old >100 floor
+    // assumed cheap payroll; keep a low floor so invariants still require
+    // some work to have moved.
+    expect(e.getState().stocks.shipped).toBeGreaterThan(20);
 
     // RE-PINNED after dropping the cloned review cards. Greedy buys at most
     // one instance of each def, so it never opens orchestration (2x agent)

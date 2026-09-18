@@ -53,7 +53,16 @@ export const RATE_IDS: readonly DeliveryRateId[] = ["pull", "finish", "review", 
 export type RateId = DeliveryRateId | "discover" | "plan";
 
 export type Effect =
-  | { type: "modifyRate"; target: RateId | "all"; op: "add" | "mul"; value: number; durationDays?: number }
+  | {
+      type: "modifyRate";
+      target: RateId | "all";
+      op: "add" | "mul";
+      value: number;
+      durationDays?: number;
+      // Live multiplier on this add-op: contribution *= 1 + per * human headcount
+      // (`DecisionInstance.human`). Ignored on mul. Studio agents use 0.1.
+      scaleFromHumansPer?: number;
+    }
   | { type: "modifyDebtMultiplier"; op: "add" | "mul"; value: number; durationDays?: number }
   | { type: "addToStock"; stock: keyof Stocks; value: number }
   | { type: "scaleStock"; stock: keyof Stocks; factor: number }
@@ -88,6 +97,8 @@ export interface Modifier {
   // every other modifier.
   rampPerDay?: number;
   rampCap?: number;
+  // Copied from modifyRate.scaleFromHumansPer. Live: not locked at purchase.
+  scaleFromHumansPer?: number;
 }
 
 export interface GambleOutcome {
@@ -176,6 +187,10 @@ export interface DecisionInstance {
   // rate. The engine's effectiveRate computation consults these fields.
   sickUntilDay?: number;
   sickFactor?: number;
+  // Headcount flag copied from DecisionDef.human. effectiveRate counts these
+  // for scaleFromHumansPer so modifiers stay content-free. The founder seat
+  // is not an instance, so it does not count.
+  human?: boolean;
 }
 
 export interface ChoiceOption {

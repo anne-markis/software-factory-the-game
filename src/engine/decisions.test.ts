@@ -89,6 +89,51 @@ describe("decisions", () => {
     expect(effectiveRate(s, "deploy")).toBeCloseTo(base);
   });
 
+  it("human headcount amplifies owned agents live, in either buy order", () => {
+    const start = parseStartConfig(startJson);
+    const mixed: GameContent = {
+      start,
+      decisions: parseDecisions([
+        {
+          id: "basic-dev",
+          name: "Hire",
+          description: "h",
+          category: "ship-faster",
+          human: true,
+          capacity: 1,
+          cost: {},
+          effects: [],
+          removable: true,
+        },
+        {
+          id: "agent",
+          name: "Agent",
+          description: "a",
+          category: "ship-faster",
+          cost: {},
+          effects: [{ type: "modifyRate", target: "finish", op: "add", value: 0.2, scaleFromHumansPer: 0.1 }],
+          removable: true,
+        },
+      ]),
+      challenges: [],
+      projects: [],
+    };
+    const agentFirst = new Engine(mixed);
+    agentFirst.applyDecision("agent");
+    expect(effectiveRate(agentFirst.getState(), "finish")).toBeCloseTo(1.2, 10);
+    agentFirst.applyDecision("basic-dev");
+    expect(effectiveRate(agentFirst.getState(), "finish")).toBeCloseTo(1.22, 10);
+
+    const hireFirst = new Engine(mixed);
+    hireFirst.applyDecision("basic-dev");
+    hireFirst.applyDecision("agent");
+    expect(effectiveRate(hireFirst.getState(), "finish")).toBeCloseTo(1.22, 10);
+
+    const hireId = agentFirst.getState().decisions.find((d) => d.defId === "basic-dev")!.instanceId;
+    agentFirst.removeDecision(hireId);
+    expect(effectiveRate(agentFirst.getState(), "finish")).toBeCloseTo(1.2, 10);
+  });
+
   it("harness and orchestration multiply every agent, including ones bought before them", () => {
     const e = new Engine(content());
     e.applyDecision("agent");
