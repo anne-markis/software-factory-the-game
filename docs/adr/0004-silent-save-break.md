@@ -17,10 +17,11 @@ Bump `SAVE_VERSION` when the content/schema contract is incompatible.
 that error and starts a fresh game. Old saves are wiped **silently** —
 no migration, no warning banner.
 
-Shipped value as of named Plan items, the Plan stock, and the plan rate is
-`SAVE_VERSION = 6` (v5 was the Ideas stock and discover faucet; v4 was the
-Studio project redo; v3 was the lean Studio shop; v2 was the users /
-Launch beta spine).
+Shipped value as of retiring better-tooling is `SAVE_VERSION = 8`
+(v7 was In Review; v6 was named Plan items, the Plan stock, and the plan
+rate; v5 was the Ideas stock and discover faucet; v4 was the Studio
+project redo; v3 was the lean Studio shop; v2 was the users / Launch
+beta spine).
 
 ## Consequences
 

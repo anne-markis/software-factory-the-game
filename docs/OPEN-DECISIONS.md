@@ -16,8 +16,8 @@ and contractor rate contributions now boost only pull and finish, not
 deploy. Without ci-cd a strong human build outruns its own deploy stage,
 Done piles up, and shipping stays pinned at the base deploy rate; ci-cd
 (continuous deploy) is the scaling unlock that lets shipping track finish
-again. better-tooling deliberately keeps its all-rates boost (tooling
-plausibly speeds releases too), and the support-retainer / poached /
+again. The Studio shop no longer has a cheap all-rates rate card
+(better-tooling was retired). The support-retainer / poached /
 meeting-creep slowdowns keep their all-rates reach (a slowdown hits
 everything). Pinned by content.test.ts and a tick-level probe in
 tick.test.ts; the strategy probes were retuned alongside the Release 15

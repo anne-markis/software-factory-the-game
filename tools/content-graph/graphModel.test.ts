@@ -131,7 +131,7 @@ describe("content graph model", () => {
         decision.id === "agent"
           ? {
               ...decision,
-              synergies: [{ ifOwned: "better-tooling", effects: [] }],
+              synergies: [{ ifOwned: "test-suite", effects: [] }],
             }
           : decision,
       ),
@@ -143,7 +143,7 @@ describe("content graph model", () => {
     expect(model.edges).toContainEqual(
       expect.objectContaining({
         kind: "synergy",
-        from: "decision:studio:better-tooling",
+        from: "decision:studio:test-suite",
         to: "decision:studio:agent",
       }),
     );
