@@ -179,8 +179,17 @@ const effectSchema = z.discriminatedUnion("type", [
       op: z.enum(["add", "mul"]),
       value: z.number(),
       durationDays: z.number().positive().optional(),
+      scaleFromHumansPer: z.number().positive().optional(),
     })
-    .strict(),
+    .strict()
+    .superRefine((effect, ctx) => {
+      if (effect.scaleFromHumansPer !== undefined && effect.op !== "add") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "scaleFromHumansPer is only valid on add-op modifyRate",
+        });
+      }
+    }),
   z
     .object({
       type: z.literal("modifyDebtMultiplier"),

@@ -96,7 +96,7 @@
   {
     "id": "agent",
     "name": "Add coding agent",
-    "description": "Each agent finishes another 0.2 points of work a day and adds a little more tech debt. Buy as many as you can feed.",
+    "description": "Each agent finishes another 0.2 points of work a day and adds a little more tech debt. Each human developer makes every agent 10% faster. Buy as many as you can feed.",
     "category": "ship-faster",
     "cost": {
       "oneTime": 10,
@@ -107,7 +107,8 @@
         "type": "modifyRate",
         "target": "finish",
         "op": "add",
-        "value": 0.2
+        "value": 0.2,
+        "scaleFromHumansPer": 0.1
       },
       {
         "type": "modifyDebtMultiplier",

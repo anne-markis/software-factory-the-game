@@ -148,7 +148,11 @@ export function formatEffect(effect: Effect): string {
       const target = effect.target === "all" ? "all rates" : effect.target;
       const body =
         effect.op === "mul" ? `${target} ×${formatNumber(effect.value)}` : `${target} ${signed(effect.value)}/day`;
-      return duration(effect.durationDays, body);
+      const scaled =
+        effect.op === "add" && effect.scaleFromHumansPer !== undefined
+          ? `${body} (+${formatNumber(effect.scaleFromHumansPer * 100)}%/human)`
+          : body;
+      return duration(effect.durationDays, scaled);
     }
     case "modifyDebtMultiplier": {
       const body =

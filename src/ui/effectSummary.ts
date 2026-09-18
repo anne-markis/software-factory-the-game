@@ -58,7 +58,11 @@ function describeEffect(effect: Effect): string | null {
     case "modifyRate": {
       const label = rateLabel(effect.target);
       const body = effect.op === "mul" ? `${label} x${fmtNum(effect.value)}` : `${label} ${signed(effect.value)}/day`;
-      return withFeltDuration(body, effect.durationDays);
+      const scaled =
+        effect.op === "add" && effect.scaleFromHumansPer !== undefined
+          ? `${body} (+${fmtNum(effect.scaleFromHumansPer * 100)}%/human)`
+          : body;
+      return withFeltDuration(scaled, effect.durationDays);
     }
     case "modifyDebtMultiplier": {
       const body = effect.op === "mul" ? `debt x${fmtNum(effect.value)}` : `debt ${signed(effect.value)}`;

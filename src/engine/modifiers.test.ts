@@ -168,3 +168,29 @@ describe("plan rate isolation", () => {
     expect(effectiveRate(s, "plan")).toBe(s.baseRates.plan);
   });
 });
+
+describe("scaleFromHumansPer", () => {
+  it("multiplies add-ops by 1 + per × human headcount, live", () => {
+    const s = stateWithDebt(0); // drag multiplier 1
+    s.modifiers.push({
+      id: "m1",
+      source: "inst-agent",
+      target: "finish",
+      op: "add",
+      value: 0.2,
+      scaleFromHumansPer: 0.1,
+    });
+    expect(effectiveRate(s, "finish")).toBeCloseTo(1.2, 10); // 0 humans
+
+    s.decisions.push({ instanceId: "h1", defId: "dev", human: true });
+    expect(effectiveRate(s, "finish")).toBeCloseTo(1.22, 10);
+
+    s.decisions.push({ instanceId: "h2", defId: "dev", human: true });
+    expect(effectiveRate(s, "finish")).toBeCloseTo(1.24, 10);
+
+    s.decisions = s.decisions.filter((d) => d.instanceId !== "h1");
+    expect(effectiveRate(s, "finish")).toBeCloseTo(1.22, 10);
+
+    expect(effectiveRate(s, "pull")).toBe(s.baseRates.pull); // other rates untouched
+  });
+});

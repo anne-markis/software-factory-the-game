@@ -1,6 +1,6 @@
 import type { DeliveryRateId, GameContent, GameState, Modifier } from "../engine/types";
 import { availability, decisionTargetsExactRate } from "../engine/decisions";
-import { debtDragMultiplier, effectiveRate } from "../engine/modifiers";
+import { debtDragMultiplier, effectiveRate, scaledModifierValue } from "../engine/modifiers";
 import { esc, renderDecisionNode } from "./render";
 import type { ZoomStage } from "./loopDiagram";
 
@@ -68,7 +68,9 @@ function buildRateGroupNodes(
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
     const sick = inst.sickUntilDay !== undefined && inst.sickUntilDay > state.day;
-    const contributions = mods.map((m) => contribution(m.op, m.value, m.rampPerDay !== undefined)).join(", ");
+    const contributions = mods
+      .map((m) => contribution(m.op, scaledModifierValue(state, m), m.rampPerDay !== undefined))
+      .join(", ");
     const gamble = inst.gambleLabel ? ` [${inst.gambleLabel}]` : "";
     const sickSuffix = sick ? " (sick)" : "";
     nodes.push({ label: `${def.name}${gamble}: ${contributions}${sickSuffix}`, dim: sick });

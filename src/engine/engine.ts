@@ -2,6 +2,7 @@ import type { GameContent, GameState } from "./types";
 import { createRng, type Rng } from "./rng";
 import { tick, type ChallengePhase, log, isDeliveryFrozen } from "./tick";
 import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
+import { hydrateHumanScale } from "./effects";
 import { rollChallenges, resolveChoice } from "./challenges";
 import { startProject, abandonProject, pursueProject, cancelPlan, takeProject, planStock, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
 import { eraCrossingIsSilent, evaluateNextEraEntry, formatEraEntryPredicate } from "./eras";
@@ -145,6 +146,7 @@ export class Engine {
         restored.completedProjectIds = [];
       }
       this.rng = createRng(restored.rngState, true);
+      hydrateHumanScale(this.state, content);
     } else {
       this.state = initialState(content);
       this.rng = createRng(content.start.seed);

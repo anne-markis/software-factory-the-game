@@ -98,6 +98,7 @@ export function applyDecision(state: GameState, content: GameContent, defId: str
 
   const instanceId = `inst-${state.nextInstanceId++}`;
   const instance: DecisionInstance = { instanceId, defId: def.id };
+  if (def.human) instance.human = true;
   if (synergy) instance.appliedSynergyIfOwned = synergy.ifOwned;
 
   applyEffects(state, effects, instanceId);

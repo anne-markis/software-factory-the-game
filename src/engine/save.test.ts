@@ -29,6 +29,17 @@ describe("save/load", () => {
     expect(b.getState()).toEqual(a.getState());
   });
 
+  it("hydrates scaleFromHumansPer from content onto older agent modifiers", () => {
+    const c = content();
+    const a = new Engine(c);
+    a.applyDecision("agent");
+    const raw = a.getState() as GameState;
+    for (const m of raw.modifiers) delete m.scaleFromHumansPer;
+    const b = new Engine(c, deserialize(serialize(raw)));
+    const finishMod = b.getState().modifiers.find((m) => m.target === "finish" && m.op === "add");
+    expect(finishMod?.scaleFromHumansPer).toBe(0.1);
+  });
+
   it("round-trips the work ledger (unshipped vs remaining stay consistent)", () => {
     const c = content();
     const a = new Engine(c);
