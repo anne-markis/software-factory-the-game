@@ -275,6 +275,8 @@ function assertScaleFromHumansIsAddOp(source: string, ownerId: string, effects: 
     }
   }
 }
+
+function inheritedIds<T extends { id: string }>(inherited: readonly T[]): Set<string> {
   return new Set(inherited.map((item) => item.id));
 }
 
