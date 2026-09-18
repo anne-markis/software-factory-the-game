@@ -58,7 +58,7 @@
     "human": true,
     "capacity": 1,
     "cost": {
-      "perDay": 7
+      "perDay": 438
     },
     "effects": [],
     "gamble": [

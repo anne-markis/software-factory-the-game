@@ -83,11 +83,11 @@ describe("renderStats", () => {
   it("marks Budget with budget-low when runway is at or under 14 days", () => {
     const c = content();
     const e = new Engine(c);
-    e.applyDecision("basic-dev"); // +$7/day → burn 27
+    e.applyDecision("basic-dev"); // +$438/day → burn 458
     const state = e.getState();
-    state.stocks.budget = 270; // exactly 10 days
+    state.stocks.budget = 4580; // exactly 10 days
     const html = renderStats(state, c);
-    expect(html).toContain('class="stat-value v-budget budget-low">$270 (10d)</span>');
+    expect(html).toContain('class="stat-value v-budget budget-low">$4,580 (10d)</span>');
   });
 
   it("appends Nd runway and warns at 1d", () => {
@@ -254,7 +254,7 @@ describe("renderDecisions", () => {
     e.applyDecision("agent");
     const ownedHtml = renderOwnedList([...e.getState().decisions], content());
     expect(ownedHtml).toContain("owned-item");
-    expect(ownedHtml).toContain('<div class="owned-cost">$7/day</div>');
+    expect(ownedHtml).toContain('<div class="owned-cost">$438/day</div>');
     expect(ownedHtml).toContain('<div class="owned-cost">$10 once + $4/day</div>');
     // Gamble range (basic-dev) and the agent's deterministic effects both
     // reuse the shop's .tt-effects line inside the Owned panel.

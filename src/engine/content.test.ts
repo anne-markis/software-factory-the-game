@@ -223,7 +223,7 @@ describe("parseDecisions", () => {
       "one-time-product",
     ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
-    expect(dev.cost.perDay).toBe(7);
+    expect(dev.cost.perDay).toBe(438);
     expect(dev.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
     // The hire is always in the shop: no requires, no count gate (§5.2.2).
     expect(dev.requires).toBeUndefined();

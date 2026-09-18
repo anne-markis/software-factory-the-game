@@ -34,10 +34,10 @@ describe("netRecurringBurnPerDay", () => {
       },
     ];
     const e = new Engine(c);
-    e.applyDecision("basic-dev"); // perDay 7
+    e.applyDecision("basic-dev"); // perDay 438
     e.applyDecision("retainer"); // incomePerDay 8
-    // 20 base + 7 payroll - 8 income
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(19);
+    // 20 base + 438 payroll - 8 income
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(450);
   });
 
   // Studio spine: subscription income scales with the users stock,
