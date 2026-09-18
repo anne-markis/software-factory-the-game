@@ -610,18 +610,17 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(h.root.querySelector('[data-speed="1"]')!.className).not.toContain("tc-active");
   });
 
-  it("shows a newly purchased decision in the Owned panel", () => {
+  it("shows a newly purchased removable decision in the Owned panel", () => {
     const h = mount();
-    const buy = h.root.querySelector<HTMLElement>("[data-buy]:not([disabled])")!;
-    const id = buy.dataset.buy!;
-    const name = buy.closest(".tt-node")!.querySelector(".tt-node-name")!.textContent!;
+    const buy = h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!;
     buy.click();
-    expect(h.engine.getState().decisions.some((d) => d.defId === id)).toBe(true);
+    expect(h.engine.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(true);
     const side = h.root.querySelector(".side")!;
     const ownedHeading = Array.from(side.querySelectorAll("h3")).find((el) => el.textContent === "Owned");
     expect(ownedHeading).toBeTruthy();
     const ownedPanel = ownedHeading!.closest(".panel")!;
-    expect(ownedPanel.textContent).toContain(name);
+    expect(ownedPanel.textContent).toContain("Hire basic developer");
+    expect(ownedPanel.querySelector("[data-remove]")).toBeTruthy();
     // Left column no longer hosts Owned between Projects and shop.
     const main = h.root.querySelector(".main")!;
     expect(Array.from(main.querySelectorAll("h3")).map((el) => el.textContent)).not.toContain("Owned");
@@ -641,6 +640,15 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(projectsIndex).toBe(0);
     expect(shopIndex).toBeGreaterThan(projectsIndex);
     expect(mainHeadings).not.toContain("Owned");
+  });
+
+  it("keeps a non-removable purchase out of the Owned panel", () => {
+    const h = mount();
+    h.root.querySelector<HTMLElement>('[data-buy="user-interviews"]')!.click();
+    expect(h.engine.getState().decisions.some((d) => d.defId === "user-interviews")).toBe(true);
+    const ownedList = h.root.querySelector('[data-section="owned-list"]')!;
+    expect(ownedList.textContent).not.toContain("User interviews");
+    expect(ownedList.querySelector(".owned-item")).toBeNull();
   });
 
   it("drops a resolved choice out of the DOM", () => {

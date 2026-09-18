@@ -274,18 +274,34 @@ describe("renderDecisions", () => {
     expect(html).toContain("&lt;img");
   });
 
-  it("hides an owned unique decision from the shop while keeping it in Owned", () => {
+  it("hides an owned unique decision from the shop while keeping a removable unique in Owned", () => {
     const e = new Engine(content());
-    e.applyDecision("test-suite");
+    e.applyDecision("subscription");
     const shop = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     const owned = renderOwnedList([...e.getState().decisions], content());
     // Card node is gone: no tt-node name, no tt-owned placeholder, no Buy.
-    expect(shop).not.toMatch(/tt-node-name[^>]*>Add test suite/);
+    expect(shop).not.toMatch(/tt-node-name[^>]*>Subscription plan/);
     expect(shop).not.toContain("tt-owned");
-    expect(shop).not.toContain('data-buy="test-suite"');
+    expect(shop).not.toContain('data-buy="subscription"');
     expect(shop).not.toContain("<h3>Owned</h3>");
-    // Still listed under Owned.
-    expect(owned).toContain("Add test suite");
+    // Removable unique stays listed under Owned so it can be dropped.
+    expect(owned).toContain("Subscription plan");
+    expect(owned).toContain("data-remove=");
+  });
+
+  it("omits non-removable owned instances from the Owned list", () => {
+    const e = new Engine(content());
+    e.applyDecision("test-suite");
+    e.applyDecision("user-interviews");
+    e.applyDecision("basic-dev");
+    const shop = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    const owned = renderOwnedList([...e.getState().decisions], content());
+    expect(owned).not.toContain("Add test suite");
+    expect(owned).not.toContain("User interviews");
+    expect(owned).toContain("Hire basic developer");
+    expect(owned).toContain("data-remove=");
+    expect(shop).not.toMatch(/tt-node-name[^>]*>Add test suite/);
+    expect(shop).not.toContain('data-buy="test-suite"');
     // Unlocked downstream sits in the flat list with no chain header.
     expect(shop).not.toMatch(/<h4>/);
     expect(shop).not.toContain("Standalone");
