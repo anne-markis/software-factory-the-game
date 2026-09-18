@@ -340,7 +340,7 @@ describe("renderDecisions", () => {
   it("paints fresh Studio shop in decisions.json order", () => {
     const e = new Engine(content());
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
-    // ci-cd / harness / orchestration stay hidden (unmet requires).
+    // ci-cd / reviewer / review-agent / harness / orchestration stay hidden (unmet requires).
     expect(shopBuyIds(html)).toEqual([
       "test-suite",
       "basic-dev",
@@ -373,6 +373,23 @@ describe("renderDecisions", () => {
     ]);
   });
 
+  it("inserts a reviewer into its JSON slot after a basic-dev is owned", () => {
+    const e = new Engine(content());
+    e.applyDecision("basic-dev");
+    const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
+    expect(shopBuyIds(html)).toEqual([
+      "test-suite",
+      "basic-dev",
+      "reviewer",
+      "agent",
+      "better-tooling",
+      "hack-day",
+      "user-interviews",
+      "subscription",
+      "one-time-product",
+    ]);
+  });
+
   it("inserts harness and orchestration after agent once two agents are owned", () => {
     const e = new Engine(content());
     e.applyDecision("agent");
@@ -382,6 +399,7 @@ describe("renderDecisions", () => {
       "test-suite",
       "basic-dev",
       "agent",
+      "review-agent",
       "agent-harness",
       "agent-orchestration",
       "better-tooling",

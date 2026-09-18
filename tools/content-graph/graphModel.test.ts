@@ -182,7 +182,11 @@ describe("content graph model", () => {
     const agent = findTreeNode(studio!.decisionRoots, "decision:studio:agent");
     expect(testSuite?.children.map((child) => child.nodeId)).toContain("decision:studio:ci-cd");
     expect(agent?.children.map((child) => child.nodeId)).toEqual(
-      expect.arrayContaining(["decision:studio:agent-harness", "decision:studio:agent-orchestration"]),
+      expect.arrayContaining([
+        "decision:studio:review-agent",
+        "decision:studio:agent-harness",
+        "decision:studio:agent-orchestration",
+      ]),
     );
     expect(studio!.decisionRoots.some((root) => root.nodeId === "decision:studio:ci-cd")).toBe(false);
   });

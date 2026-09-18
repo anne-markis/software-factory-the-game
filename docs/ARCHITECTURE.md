@@ -62,7 +62,9 @@ Studio hires are `capacity: 1`; agents omit it (speed only). Ready holds
 work that does not have a seat. Finish speed is how much leaves the
 Ready + In Progress pool into In Review. Review speed is how much leaves
 In Review into Done. Continuous deploy still dumps Done each tick; In
-Review stays. A point is in one stage at a time.
+Review stays. A point is in one stage at a time. Studio review cards
+(`modifyRate` target `review`) drain that pile; coding hires and agents
+do not.
 
 Do not seed `start.json` `stocks.backlog` independently of
 `initialProject.sizePoints` — the loader rejects a mismatch.

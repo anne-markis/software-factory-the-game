@@ -213,7 +213,9 @@ describe("parseDecisions", () => {
       "test-suite",
       "ci-cd",
       "basic-dev",
+      "reviewer",
       "agent",
+      "review-agent",
       "agent-harness",
       "agent-orchestration",
       "better-tooling",
@@ -243,10 +245,9 @@ describe("parseDecisions", () => {
   it("pins the Studio agent ladder: stackable agents, unique harness, count-gated orchestration", () => {
     const defs = parseDecisions(decisionsJson);
 
-    // agent is the only repeatable card in the shop: no `unique`, and its
-    // effects are additive so N copies are worth N times one copy. +0.2
-    // finish/day and +0.1 debt multiplier per copy carry the power the old
-    // single mul (x1.2 finish on a base rate of 1) used to hold.
+    // agent is stackable: no `unique`, additive effects so N copies are
+    // worth N times one copy. +0.2 finish/day and +0.1 debt multiplier
+    // per copy. Review agents are a separate card.
     const agent = defs.find((d) => d.id === "agent")!;
     expect(agent.unique).toBeUndefined();
     expect(agent.effects).toEqual([
@@ -331,6 +332,19 @@ describe("parseDecisions", () => {
       expect(card.capacity).toBeUndefined();
       expect(splitTargets(card.effects)).toEqual(["finish"]);
     }
+
+    const reviewer = defs.find((d) => d.id === "reviewer")!;
+    expect(reviewer.capacity).toBeUndefined();
+    expect(reviewer.human).toBe(true);
+    expect(reviewer.requires).toEqual(["basic-dev"]);
+    for (const o of reviewer.gamble!) expect(splitTargets(o.effects)).toEqual(["review"]);
+
+    const reviewAgent = defs.find((d) => d.id === "review-agent")!;
+    expect(reviewAgent.capacity).toBeUndefined();
+    expect(reviewAgent.human).not.toBe(true);
+    expect(reviewAgent.requires).toEqual(["agent"]);
+    expect(splitTargets(reviewAgent.effects)).toEqual(["review"]);
+    expect(reviewAgent.effects.some((e) => e.type === "modifyDebtMultiplier")).toBe(false);
 
     expect(defs.find((d) => d.id === "better-tooling")!.effects).toEqual([
       { type: "modifyRate", target: "all", op: "add", value: 0.1 },

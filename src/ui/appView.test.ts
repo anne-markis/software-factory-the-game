@@ -303,6 +303,18 @@ describe("appView stage-zoom carets", () => {
     expect(h.root.querySelector('[data-zoom="inProgress"]')).not.toBeNull();
     expect(h.root.querySelector('[data-section="stage-zoom"]')!.innerHTML).toBe("");
   });
+
+  it("buys a review card from the In Review zoom Next lever", () => {
+    const h = mount();
+    h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!.click();
+    h.root.querySelector<HTMLButtonElement>('[data-zoom="inReview"]')!.click();
+    const zoom = h.root.querySelector('[data-section="stage-zoom"]')!;
+    const buy = zoom.querySelector<HTMLElement>('[data-buy="reviewer"]')!;
+    expect(buy).not.toBeNull();
+    buy.click();
+    expect(h.engine.getState().decisions.some((d) => d.defId === "reviewer")).toBe(true);
+    expect(zoom.textContent).toContain("Hire a reviewer");
+  });
 });
 
 describe("appView era identity stays off the player chrome", () => {

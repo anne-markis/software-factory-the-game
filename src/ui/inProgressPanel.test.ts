@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { renderStageZoom } from "./inProgressPanel";
 import { Engine } from "../engine/engine";
 import { parseStartConfig, parseDecisions } from "../engine/content";
+import { decisionTargetsExactRate } from "../engine/decisions";
 import { decisionsJson, startJson } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 
@@ -293,16 +294,32 @@ describe("renderStageZoom", () => {
     expect(html).not.toContain("Leak size");
   });
 
-  it("In Review zoom shows review speed, PR backup, and an empty next-lever slot", () => {
-    const e = new Engine(content());
-    const html = panel(e.getState(), content(), "inReview");
+  it("In Review zoom offers shop cards whose authored modifyRate target is review", () => {
+    const c = content();
+    const e = new Engine(c);
+    const html = panel(e.getState(), c, "inReview");
     expect(html).toContain("Review speed");
     expect(html).toContain("Why bound");
     expect(html).toContain("waiting on PRs");
-    expect(html).toContain("Empty until a review card exists");
-    expect(html).not.toContain("ci-cd");
+    expect(html).toContain("Next lever");
+    expect(html).not.toContain("Empty until a review card exists");
     expect(html).not.toContain("Cycle speed");
     expect(html).not.toContain("Leak size");
+    const reviewDefs = c.decisions.filter((d) => decisionTargetsExactRate(d, "review"));
+    expect(reviewDefs.length).toBeGreaterThan(0);
+    for (const def of reviewDefs) {
+      expect(html).toContain(def.name);
+      expect(html).not.toContain(`data-buy="${def.id}"`);
+    }
+    expect(html).not.toContain("Better tooling");
+    expect(html).not.toContain("CI/CD pipeline");
+
+    e.applyDecision("basic-dev");
+    const afterHire = panel(e.getState(), c, "inReview");
+    expect(afterHire).toContain('data-buy="reviewer"');
+    expect(afterHire).not.toContain('data-buy="basic-dev"');
+    expect(afterHire).not.toContain('data-buy="agent"');
+    expect(afterHire).not.toContain('data-buy="better-tooling"');
   });
 });
 

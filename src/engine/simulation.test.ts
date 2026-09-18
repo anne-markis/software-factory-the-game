@@ -452,6 +452,7 @@ describe("simulation", () => {
         "better-tooling",
         "basic-dev",
         "basic-dev",
+        "reviewer",
       ],
       { onlyAfterLaunch: true },
     );
@@ -504,6 +505,8 @@ describe("simulation", () => {
         "agent",
         "test-suite",
         "ci-cd",
+        "review-agent",
+        "review-agent",
       ],
       { onlyAfterLaunch: true },
     );
@@ -620,7 +623,7 @@ describe("simulation", () => {
     const e = new Engine(content);
     const check = ledgerWatcher();
     const monetization = ["subscription", "one-time-product"];
-    const ladder = ["agent", "agent", "agent-harness", "agent-orchestration"];
+    const ladder = ["agent", "agent", "agent-harness", "agent-orchestration", "review-agent"];
     const buys: string[] = [];
     let completedDay = 0;
     let minBudgetAfterLaunch = Infinity;
@@ -660,6 +663,7 @@ describe("simulation", () => {
       "d303:agent",
       "d304:agent-harness",
       "d305:agent-orchestration",
+      "d306:review-agent",
     ]);
     expect(orchestrationOfferedWithOneAgent).toBe(false);
     expect(completedDay).toBe(302);
@@ -727,25 +731,13 @@ describe("simulation", () => {
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
 
-    // RE-PINNED for the lean Studio shop. This probe's loop buys
-    // at most ONE instance of each def, and the lean shop is nine cards, of
-    // which exactly one (the single agent it allows itself) raises debt while
-    // three cut it (test-suite, agent-harness, and -- unreachable here, since
-    // the count gate wants two agents -- orchestration). So greedy's debt no
-    // longer balloons: 794 techDebt at day 2000, not far past the 400 free
-    // band, and no archetype narrates at all (archetypesSeen is empty). The old
-    // Release 15 assertions -- an early peak above 5 pt/day collapsing to under
-    // half of it -- described a shop with agent-swarm (x1.8 all rates),
-    // self-learning ramps and three hire tiers, none of which is in Studio:
-    // measured peak is now 2.80 pt/day (day 130) and end 1.76 pt/day, and the
-    // decline is the users support drag as much as debt.
-    //
-    // Rather than re-pin a lesson this content does not teach, the throughput
-    // assertions are reduced to what greedy still demonstrates here: capacity
-    // above the base 1 pt/day, and a decline from its own peak by day 2000.
-    // The limits-to-growth lesson lives in the archetype unit tests.
-    expect(peakPointsPerDay).toBeGreaterThan(1.0); // observed ~1.1; review-bound until a review card exists
-    expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay); // observed 1.76 at day 2000
+    // RE-PINNED for review cards. This probe still buys at most ONE instance
+    // of each def. Greedy now also rolls a reviewer gamble; this seed lands
+    // Net-negative, so review sits under founder speed, coding agents do not
+    // survive payroll, and the measured peak is ~0.8 (users support drag)
+    // with end 0. Throughput assertions only pin "it shipped, then declined."
+    expect(peakPointsPerDay).toBeGreaterThan(0);
+    expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay);
     // No solvency or completion assertions here, deliberately -- this test
     // exercises engine invariants under maximal purchasing pressure, not
     // balance. (Observed: 1 completion, shipped ~3782, budget ~246,058 --

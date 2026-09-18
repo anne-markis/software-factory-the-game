@@ -1,6 +1,7 @@
 import type { DeliveryRateId, GameContent, GameState, Modifier } from "../engine/types";
+import { availability, decisionTargetsExactRate } from "../engine/decisions";
 import { debtDragMultiplier, effectiveRate } from "../engine/modifiers";
-import { esc } from "./render";
+import { esc, renderDecisionNode } from "./render";
 import type { ZoomStage } from "./loopDiagram";
 
 export type { ZoomStage };
@@ -229,9 +230,6 @@ function inReviewZoom(state: Readonly<GameState>, content: GameContent): string 
     { label: `${waiting} waiting on PRs`, dim: false },
   ];
   const friction = frictionNodes.length === 0 ? "" : renderCol("Friction", frictionNodes);
-  const offer: ContributorNode[] = [
-    { label: "Empty until a review card exists", dim: true },
-  ];
   return `
     <div class="stage-zoom" data-zoom-open="inReview">
       <div class="stage-zoom-head">In Review</div>
@@ -239,9 +237,31 @@ function inReviewZoom(state: Readonly<GameState>, content: GameContent): string 
         ${renderCol("Review speed", speedNodes)}
         ${renderCol("Why bound", bound)}
         ${friction}
-        ${renderCol("Next lever", offer)}
+        ${renderReviewOffers(state, content)}
       </div>
     </div>`;
+}
+
+// Next lever is derived from authored effects: any shop decision whose
+// modifyRate target is exactly `review` (not `all`). Ids stay in content.
+function renderReviewOffers(state: Readonly<GameState>, content: GameContent): string {
+  const ownedCounts = new Map<string, number>();
+  for (const inst of state.decisions) {
+    ownedCounts.set(inst.defId, (ownedCounts.get(inst.defId) ?? 0) + 1);
+  }
+  const bits: string[] = [];
+  for (const a of availability(state as GameState, content)) {
+    if (!decisionTargetsExactRate(a.def, "review")) continue;
+    if (a.code === "already-owned") continue;
+    if (a.code === "missing-requires") {
+      const reason = a.reason ?? "requires another card";
+      bits.push(`<p class="stage-zoom-dim">${esc(a.def.name)} — ${esc(reason)}</p>`);
+      continue;
+    }
+    bits.push(renderDecisionNode(a, ownedCounts.get(a.def.id) ?? 0));
+  }
+  const items = bits.length > 0 ? bits.join("") : `<p class="stage-zoom-dim">No shop card targets review</p>`;
+  return `<div><h4>Next lever</h4>${items}</div>`;
 }
 
 export function renderStageZoom(

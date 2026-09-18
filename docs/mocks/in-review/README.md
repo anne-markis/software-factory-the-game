@@ -52,9 +52,10 @@ Collapsed: watch the box. ▾ opens the full-width drawer:
 - **Review speed** — base rate; later humans / agents land here.
 - **Why bound** — finish in vs review out vs pts waiting (same cue math
   Done uses).
-- **Next lever** — empty slot now; later the shop can **offer a card
-  here** (human reviewers, agent review, bottleneck relief). Dashed in
-  the mock.
+- **Next lever** — shop cards whose authored `modifyRate` target is
+  exactly `review` (human reviewer, review agent). Hidden until
+  `requires` is met; Buy uses the same `data-buy` path as Alter the
+  system.
 
 ## Pros
 
