@@ -328,7 +328,7 @@ describe("decisions", () => {
     expect(decisionTargetsExactRate(byId["agent"]!, "review")).toBe(false);
     expect(decisionTargetsExactRate(byId["agent-harness"]!, "review")).toBe(false);
     expect(decisionTargetsExactRate(byId["basic-dev"]!, "review")).toBe(false);
-    expect(decisionTargetsExactRate(byId["better-tooling"]!, "review")).toBe(false);
+    expect(decisionTargetsExactRate(byId["hack-day"]!, "review")).toBe(false);
   });
 
   it("orchestration raises review as well as finish", () => {

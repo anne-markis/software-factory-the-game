@@ -311,8 +311,8 @@ describe("renderStageZoom", () => {
       expect(html).toContain(def.name);
       expect(html).not.toContain(`data-buy="${def.id}"`);
     }
-    expect(html).not.toContain("Better tooling");
     expect(html).not.toContain("CI/CD pipeline");
+    expect(html).not.toContain("Hack day");
 
     e.applyDecision("agent");
     e.applyDecision("agent");
@@ -320,7 +320,7 @@ describe("renderStageZoom", () => {
     expect(afterAgents).toContain('data-buy="agent-orchestration"');
     expect(afterAgents).not.toContain('data-buy="agent"');
     expect(afterAgents).not.toContain('data-buy="agent-harness"');
-    expect(afterAgents).not.toContain('data-buy="better-tooling"');
+    expect(afterAgents).not.toContain('data-buy="hack-day"');
   });
 });
 

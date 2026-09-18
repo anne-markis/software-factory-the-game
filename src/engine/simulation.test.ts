@@ -429,9 +429,7 @@ describe("simulation", () => {
   //
   // RE-PINNED for the lean Studio shop: the org ladder
   // (eng-manager, senior-dev, standup, contractor) left Studio, so "human
-  // heavy" is now better-tooling plus two basic-dev hires -- the only cards that
-  // lift several rates at once (better-tooling all three, each hire pull and
-  // finish together), which is why this build ships fastest of the three.
+  // heavy" is two basic-dev hires plus the delivery pair and monetization.
   //
   // Observed: completes the Launch beta on day 149, then works small-crm the
   // rest of the run without finishing it (completedProjects stays 1, ~2823 of
@@ -457,7 +455,6 @@ describe("simulation", () => {
         "ci-cd",
         "subscription",
         "one-time-product",
-        "better-tooling",
         "basic-dev",
         "basic-dev",
       ],
@@ -530,8 +527,7 @@ describe("simulation", () => {
   // depends entirely on which stage is binding, and the shop only makes sense if
   // finish-side capacity can eventually reach the shipped stock.
   //
-  // Base rates are pull 2, finish 1, deploy 1 (the pull headroom this change added). Nothing in the lean shop lifts pull except better-tooling (+0.1) and
-  // the hire (whose gamble adds the same amount to pull and finish), so pull's
+  // Base rates are pull 2, finish 1, deploy 1 (the pull headroom this change added). Nothing in the lean shop permanently lifts pull, so pull's
   // extra point is what the ladder eats into. Deploy is the wall behind it, and
   // the way past that wall is structural rather than a rate: test-suite -> ci-cd
   // switches on continuous deploy, which drops the Done stage entirely.
@@ -752,18 +748,18 @@ describe("simulation", () => {
     }
     // sanity: the factory actually did something
     // RE-PINNED for $438/day hire payroll: greedy buys basic-dev on day 1,
-    // burns the starting purse before Launch beta can finish (observed shipped
-    // ~32, completedProjects 0, budget 0, delivery frozen). The old >100 floor
-    // assumed cheap payroll; keep a low floor so invariants still require
-    // some work to have moved.
-    expect(e.getState().stocks.shipped).toBeGreaterThan(20);
+    // burns the starting purse before Launch beta can finish (completedProjects
+    // 0, budget 0, delivery frozen). Without better-tooling's +0.1 all-rates
+    // bump, observed shipped is ~14 rather than ~32. Keep a low floor so
+    // invariants still require some work to have moved.
+    expect(e.getState().stocks.shipped).toBeGreaterThan(10);
 
-    // RE-PINNED after dropping the cloned review cards. Greedy buys at most
-    // one instance of each def, so it never opens orchestration (2x agent)
-    // and stays review-bound aside from better-tooling. Peak is above the
-    // founder 1 pt/day; end is below that peak.
-    expect(peakPointsPerDay).toBeGreaterThan(1.0);
-    expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay);
+    // RE-PINNED after dropping the cloned review cards, then better-tooling.
+    // Greedy buys at most one instance of each def, so it never opens
+    // orchestration (2x agent). Payroll freeze hits before anything else
+    // can lift rates, so peak stays at the founder 1 pt/day.
+    expect(peakPointsPerDay).toBeGreaterThanOrEqual(1.0);
+    expect(e.getState().pointsPerDay).toBeLessThanOrEqual(peakPointsPerDay);
     // No solvency or completion assertions here, deliberately -- this test
     // exercises engine invariants under maximal purchasing pressure, not
     // balance. (Observed: 1 completion, shipped ~3782, budget ~246,058 --

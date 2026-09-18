@@ -216,7 +216,6 @@ describe("parseDecisions", () => {
       "agent",
       "agent-harness",
       "agent-orchestration",
-      "better-tooling",
       "hack-day",
       "user-interviews",
       "subscription",
@@ -312,7 +311,7 @@ describe("parseDecisions", () => {
     expect(defs.every((d) => d.incomePerDay === undefined)).toBe(true);
   });
 
-  it("keeps the Release 15 deploy-bottleneck split on the hire, and \"all\" on tooling", () => {
+  it("keeps the Release 15 deploy-bottleneck split on the hire", () => {
     const defs = parseDecisions(decisionsJson);
     // A hire adds an In Progress seat (capacity: 1) and gambles finish speed.
     // Deploy stays with ci-cd. Agents are finish-only and add no seats.
@@ -337,9 +336,7 @@ describe("parseDecisions", () => {
     expect(orch.capacity).toBeUndefined();
     expect(splitTargets(orch.effects)).toEqual(["finish", "review"]);
 
-    expect(defs.find((d) => d.id === "better-tooling")!.effects).toEqual([
-      { type: "modifyRate", target: "all", op: "add", value: 0.1 },
-    ]);
+    expect(defs.find((d) => d.id === "better-tooling")).toBeUndefined();
   });
 
   it("parses a requiresCounts gate and rejects malformed ones", () => {

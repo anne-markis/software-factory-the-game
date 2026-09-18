@@ -231,7 +231,7 @@ describe("renderDecisions", () => {
     c.start.stocks.budget = 0;
     const e = new Engine(c);
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], c);
-    expect(html).toContain('data-buy="better-tooling" disabled');
+    expect(html).toContain('data-buy="one-time-product" disabled');
     expect(html).toContain("cannot afford");
     // Prerequisite-locked cards stay hidden even when broke.
     expect(html).not.toContain('data-buy="ci-cd"');
@@ -345,7 +345,6 @@ describe("renderDecisions", () => {
       "test-suite",
       "basic-dev",
       "agent",
-      "better-tooling",
       "hack-day",
       "user-interviews",
       "subscription",
@@ -365,7 +364,6 @@ describe("renderDecisions", () => {
       "ci-cd",
       "basic-dev",
       "agent",
-      "better-tooling",
       "hack-day",
       "user-interviews",
       "subscription",
@@ -384,7 +382,6 @@ describe("renderDecisions", () => {
       "agent",
       "agent-harness",
       "agent-orchestration",
-      "better-tooling",
       "hack-day",
       "user-interviews",
       "subscription",
@@ -404,7 +401,6 @@ describe("renderDecisions", () => {
       "test-suite",
       "basic-dev",
       "agent",
-      "better-tooling",
       "hack-day",
       "user-interviews",
       "subscription",
@@ -511,10 +507,10 @@ describe("renderDecisions", () => {
     const c = content();
     c.start.stocks.budget = 0;
     const e = new Engine(c);
-    const tooling = e.availableDecisions().find((a) => a.def.id === "better-tooling")!;
-    const html = renderDecisionNode(tooling, 0);
+    const product = e.availableDecisions().find((a) => a.def.id === "one-time-product")!;
+    const html = renderDecisionNode(product, 0);
     const { chrome, details } = nodeParts(html);
-    expect(html).toMatch(/<button class="tt-buy" data-buy="better-tooling" disabled>Buy<\/button>/);
+    expect(html).toMatch(/<button class="tt-buy" data-buy="one-time-product" disabled>Buy<\/button>/);
     expect(chrome).toContain('class="tt-reason"');
     expect(chrome).toContain("cannot afford");
     expect(details).not.toContain("cannot afford");

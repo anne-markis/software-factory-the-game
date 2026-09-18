@@ -1,6 +1,8 @@
 import type { GameState } from "./types";
 
-// Bumped to 7 for In Review: a v6 save has no inReview stock and no review
+// Bumped to 8 to retire better-tooling from the Studio shop: a v7 save can
+// still own that id, and there is nothing to migrate it to. Bumped to 7 for
+// In Review: a v6 save has no inReview stock and no review
 // rate, so finish would still land in Done and the Delivery spine would
 // skip the permanent PR queue. Bumped to 6 for named Plan items, the Plan stock, and the plan rate:
 // a v5 save has no Plan pile and no Pursue/Cancel/auto-Ready grammar, so
@@ -21,7 +23,7 @@ import type { GameState } from "./types";
 // deserialize rejects mismatched versions, and the UI's loadGame swallows that
 // error and starts fresh, so old saves are wiped silently rather than resumed
 // into an inconsistent state.
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export function serialize(state: Readonly<GameState>): string {
   return JSON.stringify({ version: SAVE_VERSION, state });

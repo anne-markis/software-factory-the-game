@@ -181,25 +181,6 @@
     "unique": true
   },
   {
-    "id": "better-tooling",
-    "name": "Better tooling",
-    "description": "Sharper editors and faster builds speed up every rate a little, for good.",
-    "category": "ship-faster",
-    "cost": {
-      "oneTime": 150
-    },
-    "effects": [
-      {
-        "type": "modifyRate",
-        "target": "all",
-        "op": "add",
-        "value": 0.1
-      }
-    ],
-    "removable": false,
-    "unique": true
-  },
-  {
     "id": "hack-day",
     "name": "Hack day",
     "description": "A day of tinkering instead of shipping. Delivery slows 70% for a day; fifty ideas land in the pile. Run it whenever you can spare the factory.",
