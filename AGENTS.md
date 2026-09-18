@@ -53,6 +53,8 @@ are all that is needed before working.
 Standard commands are documented in `README.md`; the notes below are the
 non-obvious bits:
 
+- **GitHub:** always use the `gh` CLI for issues, comments, labels, and
+  close/reopen. Do not use GitHub MCP.
 - **Dev server:** `npm run dev` (Vite) serves at `http://localhost:5173/`. It
   binds to localhost only; that is reachable from the in-VM browser, so no
   `--host` flag is needed for manual testing here.
