@@ -117,12 +117,13 @@ describe("renderStats", () => {
 
 describe("renderDeliveryStats", () => {
   // flow/quality stocks under the Delivery loop, same slot pattern.
-  it("renders In Progress, Done, Shipped, Tech Debt, Reputation, Users, and Ideas with fixed-width value slots", () => {
+  it("renders In Progress, In Review, Done, Shipped, Tech Debt, Reputation, Users, and Ideas with fixed-width value slots", () => {
     const c = content();
     const e = new Engine(c);
     const html = renderDeliveryStats(e.getState());
     expect(html).toContain('<div class="delivery-stats">');
     expect(html).toContain('<span class="stat-label">In Progress</span> <span class="stat-value v-count">');
+    expect(html).toContain('<span class="stat-label">In Review</span> <span class="stat-value v-count">');
     expect(html).toContain('<span class="stat-label">Done</span> <span class="stat-value v-count">');
     expect(html).toContain('<span class="stat-label">Shipped</span> <span class="stat-value v-flow">');
     expect(html).toContain('<span class="stat-label">Tech Debt</span> <span class="stat-value v-debt">');

@@ -20,9 +20,8 @@ function sickFactorFor(state: GameState, source: string): number {
 
 function applies(m: Modifier, rate: RateId): boolean {
   // Discover and plan are faucets before Ready, not delivery stages.
-  // "all" / allRates stay the three-stage factory line so existing shop
-  // cards and challenges do not silently retune Ideas or Plan. Discover
-  // cards do not raise plan.
+  // "all" / allRates stay the factory line (pull/finish/review/deploy) so
+  // existing shop cards and challenges do not silently retune Ideas or Plan.
   if (rate === "discover" || rate === "plan") return m.target === rate;
   return m.target === rate || m.target === "allRates";
 }

@@ -2,11 +2,12 @@ import type { Engine } from "../engine/engine";
 import type { GameState } from "../engine/types";
 import { unshippedWork, workLedgerIssues } from "../engine/work";
 
-export type StoryPointStage = "ready" | "inProgress" | "done";
+export type StoryPointStage = "ready" | "inProgress" | "inReview" | "done";
 
-const STAGE_STOCK: Record<StoryPointStage, "backlog" | "inProgress" | "done"> = {
+const STAGE_STOCK: Record<StoryPointStage, "backlog" | "inProgress" | "inReview" | "done"> = {
   ready: "backlog",
   inProgress: "inProgress",
+  inReview: "inReview",
   done: "done",
 };
 
@@ -19,6 +20,7 @@ export const DEV_CONSOLE_HELP = `Software Factory cheats (this tab’s console)
   sf.points()                    // unshipped story points (cockpit Backlog)
   sf.points(40)                  // set oldest contract + Ready queue to 40
   sf.points(40, "inProgress")    // same, but park them in In Progress (WIP bubble)
+  sf.points(40, "inReview")      // park them in In Review
   sf.points(40, "done")          // park them in Done
   sf.peek()                      // era + stocks + in-flight remaining
 
@@ -50,13 +52,14 @@ export function setBudget(state: GameState, value: number): void {
 export function setStoryPoints(state: GameState, value: number, stage: StoryPointStage = "ready"): void {
   requireAmount(value, "story points");
   if (!(stage in STAGE_STOCK)) {
-    throw new Error(`stage must be ready, inProgress, or done (got ${String(stage)})`);
+    throw new Error(`stage must be ready, inProgress, inReview, or done (got ${String(stage)})`);
   }
   const others = state.projects.slice(1).reduce((sum, p) => sum + p.remaining, 0);
   if (state.projects[0]) state.projects[0].remaining = value;
   const total = value + others;
   state.stocks.backlog = 0;
   state.stocks.inProgress = 0;
+  state.stocks.inReview = 0;
   state.stocks.done = 0;
   state.stocks[STAGE_STOCK[stage]] = total;
   const issues = workLedgerIssues(state);
@@ -69,8 +72,9 @@ export interface CheatPeek {
   budget: number;
   unshipped: number;
   ready: number;
-  inProgress: number;
-  done: number;
+    inProgress: number;
+    inReview: number;
+    done: number;
   shipped: number;
   users: number;
   remaining: { name: string; points: number }[];
@@ -84,6 +88,7 @@ export function peekCheats(state: Pick<GameState, "day" | "eraId" | "stocks" | "
     unshipped: unshippedWork(state),
     ready: state.stocks.backlog,
     inProgress: state.stocks.inProgress,
+    inReview: state.stocks.inReview,
     done: state.stocks.done,
     shipped: state.stocks.shipped,
     users: state.stocks.users,

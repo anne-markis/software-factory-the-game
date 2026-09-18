@@ -17,12 +17,14 @@ function realizedFlow(state: Readonly<GameState>, rate: DeliveryRateId): number 
       return state.pullFlow;
     case "finish":
       return state.finishFlow;
+    case "review":
+      return state.reviewFlow;
     case "deploy":
       return state.pointsPerDay;
   }
 }
 
-type StageKey = "ideas" | "plan" | "backlog" | "inProgress" | "done" | "shipped";
+type StageKey = "ideas" | "plan" | "backlog" | "inProgress" | "inReview" | "done" | "shipped";
 
 interface StageDef {
   key: StageKey;
@@ -39,21 +41,24 @@ const UPSTREAM: StageDef[] = [
 
 const PIPELINE_FULL: StageDef[] = [
   // ADR 0009: Ready is waiting-for-a-seat (`backlog`). Cockpit "Backlog" is
-  // unshipped work across Ready + In Progress + Done, not this box. In
+  // unshipped work across Ready + In Progress + In Review + Done, not this box. In
   // Progress is capacity, filled from Ready. Ideas and Plan sit left of
   // Ready; they are stocks, not pipeline stages.
   { key: "backlog", label: "Ready" },
   { key: "inProgress", label: "In Progress" },
+  { key: "inReview", label: "In Review" },
   { key: "done", label: "Done" },
   { key: "shipped", label: "Shipped" },
 ];
 
 // Continuous-deploy layout: Done is dropped -- once ci-cd is owned it always
 // pins at 0 (tick.ts ships the whole done stock every tick), so a box for it
-// would only ever read 0 and add nothing. Ideas and Plan stay.
+// would only ever read 0 and add nothing. In Review stays: CI/CD does not
+// skip review. Ideas and Plan stay.
 const PIPELINE_CD: StageDef[] = [
   { key: "backlog", label: "Ready" },
   { key: "inProgress", label: "In Progress" },
+  { key: "inReview", label: "In Review" },
   { key: "shipped", label: "Shipped" },
 ];
 
@@ -61,31 +66,27 @@ const BOX_W = 150;
 const BOX_H = 78;
 const GAP = 48;
 const Y = 24;
-const STAGE_COUNT = 6;
+const STAGE_COUNT = 7;
 const VIEW_W = STAGE_COUNT * BOX_W + (STAGE_COUNT - 1) * GAP + 32;
 const VIEW_H = 175;
 
-  // In Progress is capacity (seats), not a queue that grows. The box stays
-  // at seat count; Ready holds waiting work. Cue Done when finish outruns
-  // deploy and Done has piled up. Do not cue In Progress for a full team —
-  // that is the healthy seated state, not a jam.
-  //
-  // Threshold (documented for the PR / DoD):
-  // - Inflow capacity must be clearly ahead of outflow: inflowRate >=
-  //   INFLOW_RATIO × outflowRate (1.5×). Uses effectiveRate (decision-facing
-  //   capacity), not realized flow — a starved upstream can make realized
-  //   inflow look low even when the stage is the structural bottleneck.
-  // - The pile itself proves a sustained stretch: stock >= SUSTAINED_DAYS
-  //   days of outflow capacity (3 days). No streak counter in engine/UI
-  //   state — a transient blip never reaches a 3-day pile.
-  // - Zero outflow with a non-empty stock and positive inflow also counts
-  //   (infinite days of backlog).
-  // Among candidates, pick the largest days-of-outflow pile (most visibly
-  // stuck). Continuous deploy drops Done, so nothing cues then unless a
-  // later stage is added. Ideas / Plan never cue: they are not pipeline
-  // stages. A healthy seated loop (In Progress = seats, Ready waiting) never
-  // cues.
-export type BindingStage = "inProgress" | "done";
+// In Progress is capacity (seats), not a queue that grows. Cue In Review
+// when finish outruns review and the pile is 3 days of review outflow.
+// Cue Done when review outruns deploy. Continuous deploy drops Done, so
+// only In Review can cue then. Ideas / Plan never cue. A healthy seated
+// loop (In Progress = seats, Ready waiting) never cues.
+//
+// Threshold (documented for the PR / DoD):
+// - Inflow capacity must be clearly ahead of outflow: inflowRate >=
+//   INFLOW_RATIO × outflowRate (1.5×). Uses effectiveRate (decision-facing
+//   capacity), not realized flow — a starved upstream can make realized
+//   inflow look low even when the stage is the structural bottleneck.
+// - The pile itself proves a sustained stretch: stock >= SUSTAINED_DAYS
+//   days of outflow capacity (3 days). No streak counter in engine/UI
+//   state — a transient blip never reaches a 3-day pile.
+// - Zero outflow with a non-empty stock and positive inflow also counts
+//   (infinite days of backlog).
+export type BindingStage = "inReview" | "done";
 
 export const BINDING_INFLOW_RATIO = 1.5;
 export const BINDING_SUSTAINED_DAYS = 3;
@@ -112,11 +113,16 @@ export function bindingBottleneckStage(
   content: GameContent,
 ): BindingStage | null {
   const candidates: BindingCandidate[] = [];
+  const finish = effectiveRate(state, "finish");
+  const review = effectiveRate(state, "review");
+  const reviewDays = candidateDays(state.stocks.inReview, finish, review);
+  if (reviewDays !== null) {
+    candidates.push({ stage: "inReview", daysOfOutflow: reviewDays });
+  }
 
   if (!continuousDeployActive(state, content)) {
-    const finish = effectiveRate(state, "finish");
     const deploy = effectiveRate(state, "deploy");
-    const doneDays = candidateDays(state.stocks.done, finish, deploy);
+    const doneDays = candidateDays(state.stocks.done, review, deploy);
     if (doneDays !== null) {
       candidates.push({ stage: "done", daysOfOutflow: doneDays });
     }
@@ -129,10 +135,11 @@ export function bindingBottleneckStage(
 
 function pipelineFlowBetween(from: StageKey, to: StageKey): DeliveryRateId | null {
   if (from === "backlog" && to === "inProgress") return "pull";
-  if (from === "inProgress" && to === "done") return "finish";
+  if (from === "inProgress" && to === "inReview") return "finish";
+  if (from === "inReview" && to === "done") return "review";
   if (from === "done" && to === "shipped") return "deploy";
-  // Continuous deploy: finish ships straight from In Progress to Shipped.
-  if (from === "inProgress" && to === "shipped") return "finish";
+  // Continuous deploy: review ships from In Review to Shipped.
+  if (from === "inReview" && to === "shipped") return "review";
   return null;
 }
 
@@ -226,7 +233,7 @@ const DEFS = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" mar
 
 function ariaLabel(binding: BindingStage | null): string {
   if (binding === "done") return "Delivery loop, Done capacity-bound";
-  if (binding === "inProgress") return "Delivery loop, In Progress capacity-bound";
+  if (binding === "inReview") return "Delivery loop, In Review capacity-bound";
   return "Delivery loop";
 }
 
@@ -268,10 +275,10 @@ function deliveryLoop(
       const flow = pipelineFlowBetween(from.key, to.key);
       const label = flow ? fmtRate(realizedFlow(state, flow)) : "";
       const bindingOutflow =
-        (binding === "inProgress" && flow === "finish") || (binding === "done" && flow === "deploy");
+        (binding === "inReview" && flow === "review") || (binding === "done" && flow === "deploy");
       const flowDrag = flow ? dragTone : "ok";
       const cdCaption =
-        continuousDeploy && flow === "finish"
+        continuousDeploy && flow === "review"
           ? `
       <text x="${(x1 + x2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">continuous deploy</text>`
           : "";
@@ -294,7 +301,7 @@ function deliveryLoop(
     </svg>`;
 }
 
-export type ZoomStage = "inProgress" | "done";
+export type ZoomStage = "inProgress" | "inReview" | "done";
 
 function stageList(continuousDeploy: boolean): StageDef[] {
   return continuousDeploy ? [...UPSTREAM, ...PIPELINE_CD] : [...UPSTREAM, ...PIPELINE_FULL];
@@ -304,6 +311,7 @@ export function zoomableStages(state: Readonly<GameState>, content: GameContent)
   const keys = new Set(stageList(continuousDeployActive(state, content)).map((s) => s.key));
   const out: ZoomStage[] = [];
   if (keys.has("inProgress")) out.push("inProgress");
+  if (keys.has("inReview")) out.push("inReview");
   if (keys.has("done")) out.push("done");
   return out;
 }
@@ -319,7 +327,7 @@ export function deliveryCaretBoxes(state: Readonly<GameState>, content: GameCont
   const stages = stageList(continuousDeployActive(state, content));
   const contentWidth = stages.length * BOX_W + (stages.length - 1) * GAP;
   const x0 = (VIEW_W - contentWidth) / 2;
-  const labels: Record<ZoomStage, string> = { inProgress: "In Progress", done: "Done" };
+  const labels: Record<ZoomStage, string> = { inProgress: "In Progress", inReview: "In Review", done: "Done" };
   return zoomableStages(state, content).map((key) => {
     const i = stages.findIndex((s) => s.key === key);
     const x = stageX(x0, i);

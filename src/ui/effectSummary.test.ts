@@ -126,7 +126,7 @@ describe("summarizeDecisionEffects", () => {
     const harness = decisions.find((d) => d.id === "agent-harness")!;
     expect(summarizeDecisionEffects(harness)).toBe("finish x1.25, debt x0.7");
     const orchestration = decisions.find((d) => d.id === "agent-orchestration")!;
-    expect(summarizeDecisionEffects(orchestration)).toBe("finish x1.45, debt x0.55");
+    expect(summarizeDecisionEffects(orchestration)).toBe("finish x1.45, review x1.45, debt x0.55");
   });
 
   it("joins multiple effects with a comma", () => {

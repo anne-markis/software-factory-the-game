@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { renderStageZoom } from "./inProgressPanel";
 import { Engine } from "../engine/engine";
 import { parseStartConfig, parseDecisions } from "../engine/content";
+import { decisionTargetsExactRate } from "../engine/decisions";
 import { decisionsJson, startJson } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 
@@ -42,7 +43,7 @@ function inLeakGroup(svg: string, needle: string): boolean {
   return indexBetween(svg, needle, "Leak size");
 }
 
-function panel(state: import("../engine/types").GameState, c: GameContent = content(), stage: "inProgress" | "done" = "inProgress"): string {
+function panel(state: import("../engine/types").GameState, c: GameContent = content(), stage: "inProgress" | "inReview" | "done" = "inProgress"): string {
   return renderStageZoom(state, c, stage);
 }
 
@@ -279,17 +280,47 @@ describe("renderStageZoom", () => {
     expect(svg).not.toContain("+-0.5");
   });
 
-  it("Done zoom shows deploy capacity vs finish inflow, not a card-id next lever", () => {
+  it("Done zoom shows deploy capacity vs review inflow, not a card-id next lever", () => {
     const e = new Engine(content());
     const html = panel(e.getState(), content(), "done");
     expect(html).toContain("Deploy speed");
     expect(html).toContain("Why bound");
+    expect(html).toContain("Review 1.0/day in");
     expect(html).toContain("Base 1.0/day");
     expect(html).toContain("waiting");
     expect(html).not.toContain("pts waiting to ship");
     expect(html).not.toContain("ci-cd");
     expect(html).not.toContain("Cycle speed");
     expect(html).not.toContain("Leak size");
+  });
+
+  it("In Review zoom offers shop cards whose authored modifyRate target is review", () => {
+    const c = content();
+    const e = new Engine(c);
+    const html = panel(e.getState(), c, "inReview");
+    expect(html).toContain("Review speed");
+    expect(html).toContain("Why bound");
+    expect(html).toContain("waiting on PRs");
+    expect(html).toContain("Next lever");
+    expect(html).not.toContain("Empty until a review card exists");
+    expect(html).not.toContain("Cycle speed");
+    expect(html).not.toContain("Leak size");
+    const reviewDefs = c.decisions.filter((d) => decisionTargetsExactRate(d, "review"));
+    expect(reviewDefs.length).toBeGreaterThan(0);
+    for (const def of reviewDefs) {
+      expect(html).toContain(def.name);
+      expect(html).not.toContain(`data-buy="${def.id}"`);
+    }
+    expect(html).not.toContain("Better tooling");
+    expect(html).not.toContain("CI/CD pipeline");
+
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    const afterAgents = panel(e.getState(), c, "inReview");
+    expect(afterAgents).toContain('data-buy="agent-orchestration"');
+    expect(afterAgents).not.toContain('data-buy="agent"');
+    expect(afterAgents).not.toContain('data-buy="agent-harness"');
+    expect(afterAgents).not.toContain('data-buy="better-tooling"');
   });
 });
 

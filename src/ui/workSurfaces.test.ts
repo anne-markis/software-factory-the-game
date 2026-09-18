@@ -68,6 +68,7 @@ function assertSurfacesAgree(root: HTMLElement, state: Readonly<GameState>): voi
 
   expect(statValue(root, "backlog")).toBe(fmt(unshippedWork(state)));
   expect(statValue(root, "inProgress")).toBe(fmt(state.stocks.inProgress));
+  expect(statValue(root, "inReview")).toBe(fmt(state.stocks.inReview));
   expect(statValue(root, "done")).toBe(fmt(state.stocks.done));
   expect(statValue(root, "shipped")).toBe(fmt(state.stocks.shipped));
 
@@ -75,6 +76,7 @@ function assertSurfacesAgree(root: HTMLElement, state: Readonly<GameState>): voi
   expect(stageValue(root, "plan")).toBe(fmt(state.stocks.plan));
   expect(stageValue(root, "backlog")).toBe(fmt(state.stocks.backlog));
   expect(stageValue(root, "inProgress")).toBe(fmt(state.stocks.inProgress));
+  expect(stageValue(root, "inReview")).toBe(fmt(state.stocks.inReview));
   expect(stageValue(root, "shipped")).toBe(fmt(state.stocks.shipped));
   const doneBox = stageValue(root, "done");
   if (doneBox !== null) expect(doneBox).toBe(fmt(state.stocks.done));

@@ -297,7 +297,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
       // View preference, not game state — do not save.
       const el = target.closest<HTMLElement>("[data-zoom]")!;
       const next = el.dataset.zoom;
-      if (next === "inProgress" || next === "done") {
+      if (next === "inProgress" || next === "inReview" || next === "done") {
         openZoom = openZoom === next ? null : next;
         render();
       }

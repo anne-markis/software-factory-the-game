@@ -12,9 +12,6 @@ describe("buildTechTree", () => {
     const tree = buildTechTree(content());
     expect(tree.chains).toHaveLength(2);
     expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent"]);
-    // Studio shop: the hire chain lost its senior-dev/eng-manager
-    // tiers, so basic-dev is now a standalone card alongside better-tooling,
-    // hack-day, user-interviews, and the two monetization cards.
     expect(tree.standalone.map((d) => d.id).sort()).toEqual(
       ["basic-dev", "better-tooling", "hack-day", "one-time-product", "subscription", "user-interviews"].sort(),
     );
@@ -36,7 +33,6 @@ describe("buildTechTree", () => {
     const chain = tree.chains.find((c) => c.name === "Add coding agent")!;
     expect(chain.tiers).toHaveLength(2);
     expect(chain.tiers[0].map((d) => d.id)).toEqual(["agent"]);
-    // content order: agent-harness appears before agent-orchestration
     expect(chain.tiers[1].map((d) => d.id)).toEqual(["agent-harness", "agent-orchestration"]);
   });
 

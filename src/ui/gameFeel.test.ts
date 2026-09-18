@@ -105,7 +105,7 @@ describe("gameFeel stat flash", () => {
     const state = initialState(content);
     const views = deliveryStatViews(state);
     const labels = views.map((v) => v.label);
-    expect(labels).toEqual(["In Progress", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
+    expect(labels).toEqual(["In Progress", "In Review", "Done", "Shipped", "Tech Debt", "Reputation", "Users", "Ideas"]);
     const users = views.find((v) => v.label === "Users")!;
     expect(users.value).toBe("0"); // starts at 0 until the beta completes
     expect(users.widthClass).toBe("v-users");

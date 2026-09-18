@@ -12,9 +12,9 @@ export function isPipelineStock(stock: StockName): stock is PipelineStock {
   return (PIPELINE_STOCKS as readonly string[]).includes(stock);
 }
 
-/** Unshipped factory work: Ready + In Progress + Done. */
+/** Unshipped factory work: Ready + In Progress + In Review + Done. */
 export function unshippedWork(state: Pick<GameState, "stocks">): number {
-  return state.stocks.backlog + state.stocks.inProgress + state.stocks.done;
+  return state.stocks.backlog + state.stocks.inProgress + state.stocks.inReview + state.stocks.done;
 }
 
 /** Contract points still owed across in-flight projects. */
@@ -34,10 +34,11 @@ export function surplusWork(state: Pick<GameState, "stocks" | "projects">): numb
  */
 export function workLedgerIssues(state: Pick<GameState, "stocks" | "projects">): string[] {
   const issues: string[] = [];
-  const { backlog, inProgress, done } = state.stocks;
+  const { backlog, inProgress, inReview, done } = state.stocks;
   for (const [name, v] of [
     ["backlog", backlog],
     ["inProgress", inProgress],
+    ["inReview", inReview],
     ["done", done],
   ] as const) {
     if (!Number.isFinite(v) || v < -1e-9) issues.push(`${name} is ${v}`);

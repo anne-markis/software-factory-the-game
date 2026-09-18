@@ -49,10 +49,10 @@ authoring instructions.
 ## Stocks
 
 Every named quantity the engine writes is a **stock** (`Stocks` in
-`src/engine/types.ts`). Pipeline stocks: `backlog`, `inProgress`, `done`,
+`src/engine/types.ts`). Pipeline stocks: `backlog`, `inProgress`, `inReview`, `done`,
 `shipped`. Resource / identity stocks: `budget`, `techDebt`, `reputation`,
 `users`, `ideas`, `plan`. All clamp at a minimum of 0. Budget at `$0` freezes `pull` /
-`finish` / `deploy` for that tick (in-flight remaining does not burn
+`finish` / `review` / `deploy` for that tick (in-flight remaining does not burn
 down). Day, income netting, and payroll failure still run; delivery
 resumes on the next tick after budget is positive again. This is
 separate from **stall** (pipeline empty and nothing affordable).
@@ -67,7 +67,7 @@ at the `discover` rate (`start.baseRates.discover`, 0.5/day). Discover is
 not a pipeline stage, is not frozen at `$0`, and does not scale with
 reputation, users, or shipped points. The Delivery diagram shows the pile
 and the current discover capacity from day 0. Shop cards raise it with
-`modifyRate` `add` targeting `discover` (`all` still means pull/finish/deploy).
+`modifyRate` `add` targeting `discover` (`all` still means pull/finish/review/deploy).
 Studio: **Hack day** is a repeatable day-0 spend ($500 once): `+50` Ideas
 immediately and delivery `x0.3` for one felt day. **User interviews** is a
 repeatable day-0 spend ($1000 once) that grants `+200` Ideas and does not
@@ -93,7 +93,9 @@ Pipeline stage stocks say *where* unshipped work sits. `backlog` is the
 Ready queue (waiting for an In Progress seat), not the cockpit hero
 metric. `inProgress` is capacity: founder `baseCapacity` plus owned
 cards' `capacity` (Studio hires +1; agents omit it and only add finish
-speed). Cockpit **Backlog** is `backlog + inProgress + done` (ADR 0009).
+speed). Cockpit **Backlog** is `backlog + inProgress + inReview + done` (ADR 0009).
+`inReview` is a waiting pile (review-rate outflow), not seats; it stays on
+the Delivery line when continuous deploy drops Done.
 In-flight `ActiveProject.remaining` is the same work attributed to a
 contract; injected pipeline work (debt, scope creep) attaches to remaining
 so it delays delivery instead of counting as free progress. Users still

@@ -14,6 +14,7 @@ const stocksSchema = z
   .object({
     backlog: z.number().min(0),
     inProgress: z.number().min(0),
+    inReview: z.number().min(0),
     done: z.number().min(0),
     shipped: z.number().min(0),
     // budget: unconstrained here; runtime clamping is the engine's job.
@@ -35,9 +36,9 @@ const milestoneSchema = z
   })
   .strict();
 
-const deliveryRate = z.enum(["pull", "finish", "deploy"]);
-const rateTarget = z.enum(["pull", "finish", "deploy", "discover", "plan", "all"]);
-const stockName = z.enum(["backlog", "inProgress", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas", "plan"]);
+const deliveryRate = z.enum(["pull", "finish", "review", "deploy"]);
+const rateTarget = z.enum(["pull", "finish", "review", "deploy", "discover", "plan", "all"]);
+const stockName = z.enum(["backlog", "inProgress", "inReview", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas", "plan"]);
 
 // Stocks granted on project completion (Studio spine). Shared by
 // ProjectDef and StartConfig.initialProject.
@@ -65,6 +66,7 @@ const startSchema = z
       .object({
         pull: z.number().min(0),
         finish: z.number().min(0),
+        review: z.number().min(0),
         deploy: z.number().min(0),
         discover: z.number().min(0),
         plan: z.number().min(0),

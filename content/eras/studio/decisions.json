@@ -165,6 +165,12 @@
         "value": 1.45
       },
       {
+        "type": "modifyRate",
+        "target": "review",
+        "op": "mul",
+        "value": 1.45
+      },
+      {
         "type": "modifyDebtMultiplier",
         "op": "mul",
         "value": 0.55

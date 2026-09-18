@@ -134,7 +134,7 @@ describe("simulation", () => {
     // moment it completes -- nothing invents users offstage before launch.
     expect(usersBeforeCompletion).toBe(0);
     expect(repBeforeCompletion).toBe(0);
-    expect(completionDay).toBe(301);
+    expect(completionDay).toBe(302);
     expect(repAfterCompletion).toBe(c.start.initialProject.reputationReward); // 1
     expect(usersAfterCompletion).toBeCloseTo(31.3, 1); // 30 grant + first organic day (1.6 - 0.3 churn)
     // Phase 1: exactly linear -$20/day, no payout during the $0/pt beta.
@@ -142,8 +142,8 @@ describe("simulation", () => {
     expect(at[100]).toBe(8000);
     expect(at[200]).toBe(6000);
     expect(at[300]).toBe(4000); // solvency rule: beta finishes with budget to spare
-    // Completion bump: +$800 bonus lands on day 301; day 302 is one burn later.
-    expect(at[302]).toBe(4760); // (10000 - 20*301) + 800 - 20
+    // Completion bump: +$800 bonus lands on day 302 (one extra pipeline day for In Review).
+    expect(at[302]).toBe(4760); // (10000 - 20*302) + 800
     // Phase 2: clean -$20/day tail to zero. 4760 / 20 = 238 -> day 540.
     expect(firstZeroDay).toBe(540);
     expect(at[540]).toBe(0);
@@ -195,7 +195,7 @@ describe("simulation", () => {
       if (s.stocks.users > 0) sawUsers = true;
       if (day === 300) budgetAt300 = s.stocks.budget;
     }
-    expect(completionDay).toBe(301);
+    expect(completionDay).toBe(302);
     expect(sawUsers).toBe(true); // the users economy did switch on at launch
     expect(budgetAt300).toBeLessThan(4200); // pre-completion glide, well off 10,000 (observed 4000: no cash event reaches an idle Studio)
     expect(budgetAt300).toBeGreaterThan(0); // no instant death
@@ -303,7 +303,9 @@ describe("simulation", () => {
       const owned = (id: string) => s.decisions.some((d) => d.defId === id);
       if (!owned("test-suite") && s.stocks.budget >= 500) e.applyDecision("test-suite");
       if (owned("test-suite") && !owned("ci-cd") && s.stocks.budget >= 750) e.applyDecision("ci-cd");
-      if (owned("ci-cd") && hires < 2) {
+      // Hires do not raise review, so buying them before launch only burns
+      // payroll against a 1 pt/day In Review wall. Wait until the beta ships.
+      if (owned("ci-cd") && s.completedProjects >= 1 && hires < 2) {
         e.applyDecision("basic-dev");
         hires += 1;
       }
@@ -441,15 +443,18 @@ describe("simulation", () => {
   // completes), so no milestone is crossed. Loose bounds pin the shape
   // (solvent + monetized), not challenge-knife-edge exact values.
   it("human-heavy strategy: finishes the beta and stays solvent via monetization over 2000 days", () => {
-    const r = runBuildProbe([
-      "test-suite",
-      "ci-cd",
-      "subscription",
-      "one-time-product",
-      "better-tooling",
-      "basic-dev",
-      "basic-dev",
-    ]);
+    const r = runBuildProbe(
+      [
+        "test-suite",
+        "ci-cd",
+        "subscription",
+        "one-time-product",
+        "better-tooling",
+        "basic-dev",
+        "basic-dev",
+      ],
+      { onlyAfterLaunch: true },
+    );
     expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 149)
     expect(r.everBroke).toBe(false); // observed: never zero-clamped in 2000 days
     expect(r.peakUsers).toBeGreaterThan(100); // users economy switched on and grew (observed ~160)
@@ -527,7 +532,7 @@ describe("simulation", () => {
   // debt->backlog regen yet) and well before the ladder's upkeep runs it dry, so
   // these compare throughput rather than survival.
   const ladderWindow = 120;
-  function ladderBuild(opts: { ladder: boolean; continuousDeploy: boolean }): Engine {
+  function ladderBuild(opts: { ladder: boolean; continuousDeploy: boolean; orchestration?: boolean }): Engine {
     const content = fullContent();
     content.challenges = [];
     const e = new Engine(content);
@@ -538,7 +543,7 @@ describe("simulation", () => {
     if (opts.ladder) {
       for (let i = 0; i < 4; i++) e.applyDecision("agent");
       e.applyDecision("agent-harness");
-      e.applyDecision("agent-orchestration");
+      if (opts.orchestration !== false) e.applyDecision("agent-orchestration");
     }
     return e;
   }
@@ -550,13 +555,13 @@ describe("simulation", () => {
   // piles up Done instead (deploy is now the constraint). The loop diagram reads
   // a growing box as the bottleneck, so this is the game pointing at the
   // test-suite -> ci-cd branch as the next thing to buy.
-  it("without continuous deploy, the agent ladder moves the bottleneck from finish to deploy rather than shipping more", () => {
+  it("without continuous deploy, the agent ladder moves the bottleneck from finish to In Review rather than shipping more", () => {
     const idle = ladderBuild({ ladder: false, continuousDeploy: false });
     const ladder = ladderBuild({ ladder: true, continuousDeploy: false });
 
-    // Finish capacity is more than tripled, and now exceeds every other stage.
     expect(effectiveRate(ladder.getState(), "finish")).toBeCloseTo(3.2625, 4);
     expect(effectiveRate(ladder.getState(), "pull")).toBe(2);
+    expect(effectiveRate(ladder.getState(), "review")).toBeCloseTo(1.45, 4);
     expect(effectiveRate(ladder.getState(), "deploy")).toBe(1);
     expect(effectiveRate(idle.getState(), "finish")).toBe(1);
 
@@ -566,23 +571,33 @@ describe("simulation", () => {
     }
     const i = idle.getState();
     const l = ladder.getState();
-    expect(l.stocks.shipped).toBe(i.stocks.shipped); // observed: 118 both -- deploy-bound
+    expect(l.stocks.shipped).toBe(i.stocks.shipped); // deploy-bound at 1/day
     expect(l.stocks.budget).toBeLessThan(i.stocks.budget);
     expect(i.stocks.inProgress).toBe(1);
-    expect(i.stocks.done).toBeLessThan(2);
-    // Agents add speed, not seats. They empty Ready into Done; the pile is Done.
+    expect(i.stocks.inReview).toBeLessThan(2);
     expect(l.stocks.inProgress).toBe(0);
     expect(l.stocks.backlog).toBe(0);
-    expect(l.stocks.done).toBeGreaterThan(100);
-    // And the debt half of the ladder lands regardless of the bottleneck.
-    expect(l.stocks.techDebt).toBeLessThan(i.stocks.techDebt); // 41 vs 59
+    expect(l.stocks.inReview).toBeGreaterThan(100);
+    expect(l.stocks.techDebt).toBeLessThan(i.stocks.techDebt);
   });
 
-  // Half two: with continuous deploy bought, the Done stage is gone and
-  // finish speed is the ceiling. The ladder spends that speed against Ready
-  // (agents add no seats). Over 120 days it empties the 300-point beta;
-  // idle is still finishing at 1/day.
-  it("with ci-cd owned, the full agent ladder ships about twice what an idle factory does", () => {
+  it("with ci-cd but no orchestration, coding agents still ship at founder review", () => {
+    const idle = ladderBuild({ ladder: false, continuousDeploy: true });
+    const coding = ladderBuild({ ladder: true, continuousDeploy: true, orchestration: false });
+    for (let day = 1; day <= ladderWindow; day++) {
+      idle.tick();
+      coding.tick();
+    }
+    const i = idle.getState();
+    const c = coding.getState();
+    expect(effectiveRate(c, "review")).toBe(1);
+    expect(Math.abs(c.stocks.shipped - i.stocks.shipped)).toBeLessThan(2);
+    expect(i.pointsPerDay).toBeCloseTo(1, 5);
+    expect(c.pointsPerDay).toBeCloseTo(1, 5);
+    expect(c.stocks.inReview).toBeGreaterThan(50);
+  });
+
+  it("with ci-cd and orchestration, the ladder ships at the review mul and still piles In Review", () => {
     const idle = ladderBuild({ ladder: false, continuousDeploy: true });
     const ladder = ladderBuild({ ladder: true, continuousDeploy: true });
     for (let day = 1; day <= ladderWindow; day++) {
@@ -591,10 +606,12 @@ describe("simulation", () => {
     }
     const i = idle.getState();
     const l = ladder.getState();
-    expect(l.stocks.shipped).toBeGreaterThan(i.stocks.shipped * 1.9);
+    expect(effectiveRate(l, "review")).toBeCloseTo(1.45, 4);
+    expect(l.stocks.shipped).toBeGreaterThan(i.stocks.shipped);
     expect(i.pointsPerDay).toBeCloseTo(1, 5);
+    expect(l.pointsPerDay).toBeCloseTo(1.45, 5);
+    expect(l.stocks.inReview).toBeGreaterThan(50);
     expect(l.stocks.backlog + l.stocks.inProgress).toBeCloseTo(0, 5);
-    expect(l.stocks.techDebt).toBeGreaterThan(i.stocks.techDebt);
   });
 
   // acceptance: a SHORT Studio session on the lean shop has to hold
@@ -656,13 +673,13 @@ describe("simulation", () => {
     expect(buys).toEqual([
       "d1:subscription",
       "d2:one-time-product",
-      "d301:agent",
       "d302:agent",
-      "d303:agent-harness",
-      "d304:agent-orchestration",
+      "d303:agent",
+      "d304:agent-harness",
+      "d305:agent-orchestration",
     ]);
     expect(orchestrationOfferedWithOneAgent).toBe(false);
-    expect(completedDay).toBe(301);
+    expect(completedDay).toBe(302);
     const s = e.getState();
     expect(s.decisions.filter((d) => d.defId === "agent")).toHaveLength(2); // stackable, and both survived payroll
     expect(minBudgetAfterLaunch).toBeGreaterThan(1000); // never near the zero clamp (observed ~3129)
@@ -727,25 +744,12 @@ describe("simulation", () => {
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
 
-    // RE-PINNED for the lean Studio shop. This probe's loop buys
-    // at most ONE instance of each def, and the lean shop is nine cards, of
-    // which exactly one (the single agent it allows itself) raises debt while
-    // three cut it (test-suite, agent-harness, and -- unreachable here, since
-    // the count gate wants two agents -- orchestration). So greedy's debt no
-    // longer balloons: 794 techDebt at day 2000, not far past the 400 free
-    // band, and no archetype narrates at all (archetypesSeen is empty). The old
-    // Release 15 assertions -- an early peak above 5 pt/day collapsing to under
-    // half of it -- described a shop with agent-swarm (x1.8 all rates),
-    // self-learning ramps and three hire tiers, none of which is in Studio:
-    // measured peak is now 2.80 pt/day (day 130) and end 1.76 pt/day, and the
-    // decline is the users support drag as much as debt.
-    //
-    // Rather than re-pin a lesson this content does not teach, the throughput
-    // assertions are reduced to what greedy still demonstrates here: capacity
-    // above the base 1 pt/day, and a decline from its own peak by day 2000.
-    // The limits-to-growth lesson lives in the archetype unit tests.
-    expect(peakPointsPerDay).toBeGreaterThan(1.5); // observed 2.80 (day 130)
-    expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay); // observed 1.76 at day 2000
+    // RE-PINNED after dropping the cloned review cards. Greedy buys at most
+    // one instance of each def, so it never opens orchestration (2x agent)
+    // and stays review-bound aside from better-tooling. Peak is above the
+    // founder 1 pt/day; end is below that peak.
+    expect(peakPointsPerDay).toBeGreaterThan(1.0);
+    expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay);
     // No solvency or completion assertions here, deliberately -- this test
     // exercises engine invariants under maximal purchasing pressure, not
     // balance. (Observed: 1 completion, shipped ~3782, budget ~246,058 --

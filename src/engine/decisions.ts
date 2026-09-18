@@ -1,4 +1,4 @@
-import type { DecisionDef, DecisionInstance, GameContent, GameState, GambleOutcome } from "./types";
+import type { DecisionDef, DecisionInstance, Effect, GameContent, GameState, GambleOutcome, RateId } from "./types";
 import type { Rng } from "./rng";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { applyEffects } from "./effects";
@@ -11,6 +11,17 @@ export interface Availability {
   purchasable: boolean;
   code?: AvailabilityCode;
   reason?: string;
+}
+
+function authoredEffects(def: DecisionDef): Effect[] {
+  const effects = [...def.effects];
+  for (const outcome of def.gamble ?? []) effects.push(...outcome.effects);
+  return effects;
+}
+
+/** True when any authored effect or gamble outcome uses modifyRate on this id (not `"all"`). */
+export function decisionTargetsExactRate(def: DecisionDef, rate: RateId): boolean {
+  return authoredEffects(def).some((e) => e.type === "modifyRate" && e.target === rate);
 }
 
 function owned(state: GameState, defId: string): boolean {

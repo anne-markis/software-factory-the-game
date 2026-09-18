@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
+import { decisionTargetsExactRate } from "./decisions";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, startJson } from "./loadShippedContent";
 import { effectiveRate, effectiveDebtMultiplier } from "./modifiers";
@@ -256,8 +257,6 @@ describe("decisions", () => {
 
   it("the agent ladder is not human, so payroll-loss and human gates ignore it", () => {
     const defs = parseDecisions(decisionsJson);
-    // basic-dev is the only human in the Studio shop; the challenge pool's
-    // human gates and removeHuman all key on this flag.
     expect(defs.filter((d) => d.human === true).map((d) => d.id)).toEqual(["basic-dev"]);
     for (const id of ["agent", "agent-harness", "agent-orchestration"]) {
       expect(defs.find((d) => d.id === id)!.human).not.toBe(true);
@@ -274,5 +273,28 @@ describe("decisions", () => {
     const s = e.getState();
     expect(s.decisions).toHaveLength(0);
     expect(s.log.some((l) => l.message.includes("Payroll failed"))).toBe(true);
+  });
+
+  it("classifies review cards by exact modifyRate target, not all", () => {
+    const defs = parseDecisions(decisionsJson);
+    const byId = Object.fromEntries(defs.map((d) => [d.id, d]));
+    expect(decisionTargetsExactRate(byId["agent-orchestration"]!, "review")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent-orchestration"]!, "finish")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent"]!, "review")).toBe(false);
+    expect(decisionTargetsExactRate(byId["agent-harness"]!, "review")).toBe(false);
+    expect(decisionTargetsExactRate(byId["basic-dev"]!, "review")).toBe(false);
+    expect(decisionTargetsExactRate(byId["better-tooling"]!, "review")).toBe(false);
+  });
+
+  it("orchestration raises review as well as finish", () => {
+    const e = new Engine(content());
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    const finishBefore = effectiveRate(e.getState(), "finish");
+    const debtBefore = effectiveDebtMultiplier(e.getState());
+    e.applyDecision("agent-orchestration");
+    expect(effectiveRate(e.getState(), "review")).toBeCloseTo(1.45, 5);
+    expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(finishBefore * 1.45, 5);
+    expect(effectiveDebtMultiplier(e.getState())).toBeCloseTo(debtBefore * 0.55, 5);
   });
 });

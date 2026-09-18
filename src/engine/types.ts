@@ -1,6 +1,7 @@
 export interface Stocks {
   backlog: number;
   inProgress: number;
+  inReview: number;
   done: number;
   shipped: number;
   budget: number;
@@ -34,19 +35,21 @@ export type StockName = keyof Stocks;
 
 // Unshipped delivery stages. `backlog` here is the Ready queue (work waiting
 // for a seat), not the cockpit "Backlog" hero metric — that reads the sum
-// of these three (ADR 0009). `inProgress` is capacity (seats filled from
-// Ready), not an unbounded queue. Shipped is excluded: it already left.
-export const PIPELINE_STOCKS = ["backlog", "inProgress", "done"] as const;
+// of these four (ADR 0009). `inProgress` is capacity (seats filled from
+// Ready), not an unbounded queue. `inReview` is a Done-shaped waiting pile
+// (review rate outflow); it stays on the line when continuous deploy drops
+// Done. Shipped is excluded: it already left.
+export const PIPELINE_STOCKS = ["backlog", "inProgress", "inReview", "done"] as const;
 export type PipelineStock = (typeof PIPELINE_STOCKS)[number];
 
-// Delivery-loop rates. RATE_IDS is the three-stage factory line; discover
+// Delivery-loop rates. RATE_IDS is the factory line; discover
 // is a separate Ideas faucet and plan is a separate Plan-fill rate (neither
 // is a pipeline stage). The Delivery diagram paints Ideas and Plan as
-// count+capacity boxes left of Ready; pull/finish/deploy arrows stay
+// count+capacity boxes left of Ready; pull/finish/review/deploy arrows stay
 // realized flow. "all" / allRates modifiers and stock/debt drags apply to
 // delivery rates only. Discover cards do not raise plan.
-export type DeliveryRateId = "pull" | "finish" | "deploy";
-export const RATE_IDS: readonly DeliveryRateId[] = ["pull", "finish", "deploy"];
+export type DeliveryRateId = "pull" | "finish" | "review" | "deploy";
+export const RATE_IDS: readonly DeliveryRateId[] = ["pull", "finish", "review", "deploy"];
 export type RateId = DeliveryRateId | "discover" | "plan";
 
 export type Effect =
@@ -447,11 +450,13 @@ export interface GameState {
   log: LogEntry[];
   pointsPerDay: number;
   // Realized flow this tick. pointsPerDay is shippedFlow (Done → Shipped).
-  // finishFlow is how much left the Ready+In Progress pool into Done (speed).
+  // finishFlow is how much left the Ready+In Progress pool into In Review.
+  // reviewFlow is how much left In Review into Done.
   // pullFlow is how much left Ready (seats filling plus work that finished
   // from Ready the same day). In Progress itself is capacity, not a queue.
   pullFlow: number;
   finishFlow: number;
+  reviewFlow: number;
   // Realized users-loop flows this tick (mirrors pullFlow for the product
   // economy). userAcquireFlow is gross organic gain; userChurnFlow is the
   // amount leaving; userIncomeFlow is budget credited from decisions that

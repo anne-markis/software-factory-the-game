@@ -41,10 +41,11 @@ export function effectiveCapacity(state: GameState, content: GameContent): numbe
 }
 
 /**
- * Finish at `finishRate` from the Ready+In Progress pool, then split what
- * remains so In Progress is `min(capacity, leftover)` and Ready holds the
- * rest. Speed decides how much moves; a point is in one stage. Empty seats
- * fill from Ready the same tick; extra above capacity spills back to Ready.
+ * Finish at `finishRate` from the Ready+In Progress pool into In Review,
+ * then split what remains so In Progress is `min(capacity, leftover)` and
+ * Ready holds the rest. Speed decides how much moves; a point is in one
+ * stage. Empty seats fill from Ready the same tick; extra above capacity
+ * spills back to Ready.
  */
 export function applySeatCapacity(
   state: Pick<GameState, "stocks">,
@@ -60,7 +61,7 @@ export function applySeatCapacity(
   }
   const finishFlow = Math.min(Math.max(0, finishRate), pool);
   const leftover = pool - finishFlow;
-  state.stocks.done += finishFlow;
+  state.stocks.inReview += finishFlow;
   state.stocks.inProgress = Math.min(capacity, leftover);
   state.stocks.backlog = leftover - state.stocks.inProgress;
   const pullFlow = Math.max(0, readyBefore - state.stocks.backlog);

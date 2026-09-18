@@ -188,7 +188,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
   }
 }
 
-/** True when a tick starts already at $0: pull/finish/deploy realize 0 flow. */
+/** True when a tick starts already at $0: pull/finish/review/deploy realize 0 flow. */
 export function isDeliveryFrozen(state: Pick<GameState, "stocks">): boolean {
   return state.stocks.budget <= 0;
 }
@@ -213,17 +213,19 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
 
   const frozen = isDeliveryFrozen(state);
   const deployRate = frozen ? 0 : effectiveRate(state, "deploy");
+  const reviewRate = frozen ? 0 : effectiveRate(state, "review");
   const finishRate = frozen ? 0 : effectiveRate(state, "finish");
   const capacity = effectiveCapacity(state, content);
   // Ideas faucet: always-on from day 0, not a pipeline stage, not frozen
   // with delivery. Shop cards raise it via modifyRate add on discover.
   state.stocks.ideas = Math.max(0, state.stocks.ideas + effectiveRate(state, "discover"));
 
-  // Deploy first, then finish+seats. Speed (finishRate) is how much leaves
-  // the Ready+In Progress pool into Done; a point is in one stage at a time.
-  // In Progress is capacity, filled from Ready — not a third "pull faster
-  // than you finish" rate. Continuous deploy still dumps Done before this
-  // tick's finish lands, so a point that finishes today ships next tick.
+  // Downstream first: ship Done, then review into Done, then finish into
+  // In Review. Speed (finishRate) is how much leaves the Ready+In Progress
+  // pool into In Review; a point is in one stage at a time. In Progress is
+  // capacity, filled from Ready. Continuous deploy still dumps Done before
+  // this tick's review lands, so a point that is reviewed today ships next
+  // tick — the same lag finish used to have vs Done.
   const shippedFlow = frozen
     ? 0
     : continuousDeployActive(state, content)
@@ -231,6 +233,10 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
       : Math.min(state.stocks.done, deployRate);
   state.stocks.done -= shippedFlow;
   state.stocks.shipped += shippedFlow;
+
+  const reviewFlow = frozen ? 0 : Math.min(state.stocks.inReview, reviewRate);
+  state.stocks.inReview -= reviewFlow;
+  state.stocks.done += reviewFlow;
 
   let finishFlow = 0;
   let pullFlow = 0;
@@ -279,5 +285,6 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   state.pointsPerDay = shippedFlow;
   state.pullFlow = pullFlow;
   state.finishFlow = finishFlow;
+  state.reviewFlow = reviewFlow;
   state.rngState = rng.getState();
 }

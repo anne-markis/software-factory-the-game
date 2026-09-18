@@ -121,6 +121,7 @@ describe("discover rate isolation", () => {
       value: 0.5,
     });
     expect(effectiveRate(s, "pull")).toBe(s.baseRates.pull * 0.5);
+    expect(effectiveRate(s, "review")).toBe(s.baseRates.review * 0.5);
     expect(effectiveRate(s, "discover")).toBe(s.baseRates.discover);
   });
 
@@ -143,6 +144,7 @@ describe("plan rate isolation", () => {
       value: 0.5,
     });
     expect(effectiveRate(s, "pull")).toBe(s.baseRates.pull * 0.5);
+    expect(effectiveRate(s, "review")).toBe(s.baseRates.review * 0.5);
     expect(effectiveRate(s, "plan")).toBe(s.baseRates.plan);
   });
 

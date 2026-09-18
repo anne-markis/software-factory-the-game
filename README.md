@@ -16,7 +16,7 @@ people, agents, and process; survive random challenges; scale points/day.
 To jump to a boundary without playing a full run, open the browser
 DevTools console on the running game and type `sf.help()`. `sf.era()`
 reads the current era (eras stay off the title). `sf.budget(n)` and
-`sf.points(n)` (optionally park points in `"inProgress"` or `"done"`)
+`sf.points(n)` (optionally park points in `"inProgress"`, `"inReview"`, or `"done"`)
 write through the work ledger and save.
 
 ## Deploy
