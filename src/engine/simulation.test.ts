@@ -748,18 +748,18 @@ describe("simulation", () => {
     }
     // sanity: the factory actually did something
     // RE-PINNED for $438/day hire payroll: greedy buys basic-dev on day 1,
-    // burns the starting purse before Launch beta can finish (observed shipped
-    // ~32, completedProjects 0, budget 0, delivery frozen). The old >100 floor
-    // assumed cheap payroll; keep a low floor so invariants still require
-    // some work to have moved.
-    expect(e.getState().stocks.shipped).toBeGreaterThan(20);
+    // burns the starting purse before Launch beta can finish (completedProjects
+    // 0, budget 0, delivery frozen). Without better-tooling's +0.1 all-rates
+    // bump, observed shipped is ~14 rather than ~32. Keep a low floor so
+    // invariants still require some work to have moved.
+    expect(e.getState().stocks.shipped).toBeGreaterThan(10);
 
-    // RE-PINNED after dropping the cloned review cards. Greedy buys at most
-    // one instance of each def, so it never opens orchestration (2x agent)
-    // and stays review-bound. Peak is above the
-    // founder 1 pt/day; end is below that peak.
-    expect(peakPointsPerDay).toBeGreaterThan(1.0);
-    expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay);
+    // RE-PINNED after dropping the cloned review cards, then better-tooling.
+    // Greedy buys at most one instance of each def, so it never opens
+    // orchestration (2x agent). Payroll freeze hits before anything else
+    // can lift rates, so peak stays at the founder 1 pt/day.
+    expect(peakPointsPerDay).toBeGreaterThanOrEqual(1.0);
+    expect(e.getState().pointsPerDay).toBeLessThanOrEqual(peakPointsPerDay);
     // No solvency or completion assertions here, deliberately -- this test
     // exercises engine invariants under maximal purchasing pressure, not
     // balance. (Observed: 1 completion, shipped ~3782, budget ~246,058 --
