@@ -304,16 +304,17 @@ describe("appView stage-zoom carets", () => {
     expect(h.root.querySelector('[data-section="stage-zoom"]')!.innerHTML).toBe("");
   });
 
-  it("buys a review card from the In Review zoom Next lever", () => {
+  it("buys orchestration from the In Review zoom Next lever", () => {
     const h = mount();
-    h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="agent"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="agent"]')!.click();
     h.root.querySelector<HTMLButtonElement>('[data-zoom="inReview"]')!.click();
     const zoom = h.root.querySelector('[data-section="stage-zoom"]')!;
-    const buy = zoom.querySelector<HTMLElement>('[data-buy="reviewer"]')!;
+    const buy = zoom.querySelector<HTMLElement>('[data-buy="agent-orchestration"]')!;
     expect(buy).not.toBeNull();
     buy.click();
-    expect(h.engine.getState().decisions.some((d) => d.defId === "reviewer")).toBe(true);
-    expect(zoom.textContent).toContain("Hire a reviewer");
+    expect(h.engine.getState().decisions.some((d) => d.defId === "agent-orchestration")).toBe(true);
+    expect(h.engine.getState().modifiers.some((m) => m.target === "review" && m.op === "mul" && m.value === 1.45)).toBe(true);
   });
 });
 

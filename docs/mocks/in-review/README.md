@@ -53,9 +53,9 @@ Collapsed: watch the box. ▾ opens the full-width drawer:
 - **Why bound** — finish in vs review out vs pts waiting (same cue math
   Done uses).
 - **Next lever** — shop cards whose authored `modifyRate` target is
-  exactly `review` (human reviewer, review agent). Hidden until
-  `requires` is met; Buy uses the same `data-buy` path as Alter the
-  system.
+  exactly `review` (not `"all"`). Studio that is Agent orchestration,
+  gated on 2× coding agent. Buy uses the same `data-buy` path as Alter
+  the system.
 
 ## Pros
 

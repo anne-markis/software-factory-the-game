@@ -314,12 +314,13 @@ describe("renderStageZoom", () => {
     expect(html).not.toContain("Better tooling");
     expect(html).not.toContain("CI/CD pipeline");
 
-    e.applyDecision("basic-dev");
-    const afterHire = panel(e.getState(), c, "inReview");
-    expect(afterHire).toContain('data-buy="reviewer"');
-    expect(afterHire).not.toContain('data-buy="basic-dev"');
-    expect(afterHire).not.toContain('data-buy="agent"');
-    expect(afterHire).not.toContain('data-buy="better-tooling"');
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    const afterAgents = panel(e.getState(), c, "inReview");
+    expect(afterAgents).toContain('data-buy="agent-orchestration"');
+    expect(afterAgents).not.toContain('data-buy="agent"');
+    expect(afterAgents).not.toContain('data-buy="agent-harness"');
+    expect(afterAgents).not.toContain('data-buy="better-tooling"');
   });
 });
 

@@ -540,17 +540,17 @@ describe("tick", () => {
       expect(e.getState().stocks.done).toBeCloseTo(1, 10); // latest tick's review output waits for CD
     });
 
-    it("a review-rate add plus ci-cd ships above founder review", () => {
+    it("orchestration plus ci-cd ships above founder review", () => {
       const e = new Engine(ciCdContent());
       const s = injectStrongDev(e);
       s.decisions.push({ instanceId: "inst-cicd", defId: "ci-cd" });
-      s.decisions.push({ instanceId: "inst-rev", defId: "review-agent" });
-      s.modifiers.push({ id: "m-rev", source: "inst-rev", target: "review", op: "add", value: 0.5 });
-      expect(effectiveRate(e.getState(), "review")).toBeCloseTo(1.5, 5);
+      s.decisions.push({ instanceId: "inst-orch", defId: "agent-orchestration" });
+      s.modifiers.push({ id: "m-rev", source: "inst-orch", target: "review", op: "mul", value: 1.45 });
+      expect(effectiveRate(e.getState(), "review")).toBeCloseTo(1.45, 5);
       for (let i = 0; i < 6; i++) e.tick();
       for (let i = 0; i < 5; i++) {
         e.tick();
-        expect(e.getState().pointsPerDay).toBeCloseTo(1.5, 10);
+        expect(e.getState().pointsPerDay).toBeCloseTo(1.45, 10);
       }
     });
   });

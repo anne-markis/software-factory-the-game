@@ -452,7 +452,6 @@ describe("simulation", () => {
         "better-tooling",
         "basic-dev",
         "basic-dev",
-        "reviewer",
       ],
       { onlyAfterLaunch: true },
     );
@@ -505,8 +504,6 @@ describe("simulation", () => {
         "agent",
         "test-suite",
         "ci-cd",
-        "review-agent",
-        "review-agent",
       ],
       { onlyAfterLaunch: true },
     );
@@ -535,7 +532,7 @@ describe("simulation", () => {
   // debt->backlog regen yet) and well before the ladder's upkeep runs it dry, so
   // these compare throughput rather than survival.
   const ladderWindow = 120;
-  function ladderBuild(opts: { ladder: boolean; continuousDeploy: boolean }): Engine {
+  function ladderBuild(opts: { ladder: boolean; continuousDeploy: boolean; orchestration?: boolean }): Engine {
     const content = fullContent();
     content.challenges = [];
     const e = new Engine(content);
@@ -546,7 +543,7 @@ describe("simulation", () => {
     if (opts.ladder) {
       for (let i = 0; i < 4; i++) e.applyDecision("agent");
       e.applyDecision("agent-harness");
-      e.applyDecision("agent-orchestration");
+      if (opts.orchestration !== false) e.applyDecision("agent-orchestration");
     }
     return e;
   }
@@ -564,7 +561,7 @@ describe("simulation", () => {
 
     expect(effectiveRate(ladder.getState(), "finish")).toBeCloseTo(3.2625, 4);
     expect(effectiveRate(ladder.getState(), "pull")).toBe(2);
-    expect(effectiveRate(ladder.getState(), "review")).toBe(1);
+    expect(effectiveRate(ladder.getState(), "review")).toBeCloseTo(1.45, 4);
     expect(effectiveRate(ladder.getState(), "deploy")).toBe(1);
     expect(effectiveRate(idle.getState(), "finish")).toBe(1);
 
@@ -574,7 +571,7 @@ describe("simulation", () => {
     }
     const i = idle.getState();
     const l = ladder.getState();
-    expect(l.stocks.shipped).toBe(i.stocks.shipped); // review-bound at 1/day
+    expect(l.stocks.shipped).toBe(i.stocks.shipped); // deploy-bound at 1/day
     expect(l.stocks.budget).toBeLessThan(i.stocks.budget);
     expect(i.stocks.inProgress).toBe(1);
     expect(i.stocks.inReview).toBeLessThan(2);
@@ -584,7 +581,23 @@ describe("simulation", () => {
     expect(l.stocks.techDebt).toBeLessThan(i.stocks.techDebt);
   });
 
-  it("with ci-cd owned, the full agent ladder still ships at the review rate (In Review stays)", () => {
+  it("with ci-cd but no orchestration, coding agents still ship at founder review", () => {
+    const idle = ladderBuild({ ladder: false, continuousDeploy: true });
+    const coding = ladderBuild({ ladder: true, continuousDeploy: true, orchestration: false });
+    for (let day = 1; day <= ladderWindow; day++) {
+      idle.tick();
+      coding.tick();
+    }
+    const i = idle.getState();
+    const c = coding.getState();
+    expect(effectiveRate(c, "review")).toBe(1);
+    expect(Math.abs(c.stocks.shipped - i.stocks.shipped)).toBeLessThan(2);
+    expect(i.pointsPerDay).toBeCloseTo(1, 5);
+    expect(c.pointsPerDay).toBeCloseTo(1, 5);
+    expect(c.stocks.inReview).toBeGreaterThan(50);
+  });
+
+  it("with ci-cd and orchestration, the ladder ships at the review mul and still piles In Review", () => {
     const idle = ladderBuild({ ladder: false, continuousDeploy: true });
     const ladder = ladderBuild({ ladder: true, continuousDeploy: true });
     for (let day = 1; day <= ladderWindow; day++) {
@@ -593,9 +606,10 @@ describe("simulation", () => {
     }
     const i = idle.getState();
     const l = ladder.getState();
-    expect(Math.abs(l.stocks.shipped - i.stocks.shipped)).toBeLessThan(2);
+    expect(effectiveRate(l, "review")).toBeCloseTo(1.45, 4);
+    expect(l.stocks.shipped).toBeGreaterThan(i.stocks.shipped);
     expect(i.pointsPerDay).toBeCloseTo(1, 5);
-    expect(l.pointsPerDay).toBeCloseTo(1, 5);
+    expect(l.pointsPerDay).toBeCloseTo(1.45, 5);
     expect(l.stocks.inReview).toBeGreaterThan(50);
     expect(l.stocks.backlog + l.stocks.inProgress).toBeCloseTo(0, 5);
   });
@@ -623,7 +637,7 @@ describe("simulation", () => {
     const e = new Engine(content);
     const check = ledgerWatcher();
     const monetization = ["subscription", "one-time-product"];
-    const ladder = ["agent", "agent", "agent-harness", "agent-orchestration", "review-agent"];
+    const ladder = ["agent", "agent", "agent-harness", "agent-orchestration"];
     const buys: string[] = [];
     let completedDay = 0;
     let minBudgetAfterLaunch = Infinity;
@@ -663,7 +677,6 @@ describe("simulation", () => {
       "d303:agent",
       "d304:agent-harness",
       "d305:agent-orchestration",
-      "d306:review-agent",
     ]);
     expect(orchestrationOfferedWithOneAgent).toBe(false);
     expect(completedDay).toBe(302);
@@ -731,12 +744,11 @@ describe("simulation", () => {
     // sanity: the factory actually did something
     expect(e.getState().stocks.shipped).toBeGreaterThan(100);
 
-    // RE-PINNED for review cards. This probe still buys at most ONE instance
-    // of each def. Greedy now also rolls a reviewer gamble; this seed lands
-    // Net-negative, so review sits under founder speed, coding agents do not
-    // survive payroll, and the measured peak is ~0.8 (users support drag)
-    // with end 0. Throughput assertions only pin "it shipped, then declined."
-    expect(peakPointsPerDay).toBeGreaterThan(0);
+    // RE-PINNED after dropping the cloned review cards. Greedy buys at most
+    // one instance of each def, so it never opens orchestration (2x agent)
+    // and stays review-bound aside from better-tooling. Peak is above the
+    // founder 1 pt/day; end is below that peak.
+    expect(peakPointsPerDay).toBeGreaterThan(1.0);
     expect(e.getState().pointsPerDay).toBeLessThan(peakPointsPerDay);
     // No solvency or completion assertions here, deliberately -- this test
     // exercises engine invariants under maximal purchasing pressure, not

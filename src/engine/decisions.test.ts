@@ -234,8 +234,6 @@ describe("decisions", () => {
     expect(byId["ci-cd"]).toMatchObject({ purchasable: false, code: "missing-requires" });
     expect(byId["agent-harness"]).toMatchObject({ purchasable: false, code: "missing-requires" });
     expect(byId["agent-orchestration"]).toMatchObject({ purchasable: false, code: "missing-requires" });
-    expect(byId["reviewer"]).toMatchObject({ purchasable: false, code: "missing-requires" });
-    expect(byId["review-agent"]).toMatchObject({ purchasable: false, code: "missing-requires" });
 
     e.applyDecision("hack-day");
     expect(e.getState().stocks.ideas).toBe(150);
@@ -259,8 +257,8 @@ describe("decisions", () => {
 
   it("the agent ladder is not human, so payroll-loss and human gates ignore it", () => {
     const defs = parseDecisions(decisionsJson);
-    expect(defs.filter((d) => d.human === true).map((d) => d.id)).toEqual(["basic-dev", "reviewer"]);
-    for (const id of ["agent", "review-agent", "agent-harness", "agent-orchestration"]) {
+    expect(defs.filter((d) => d.human === true).map((d) => d.id)).toEqual(["basic-dev"]);
+    for (const id of ["agent", "agent-harness", "agent-orchestration"]) {
       expect(defs.find((d) => d.id === id)!.human).not.toBe(true);
     }
   });
@@ -280,22 +278,23 @@ describe("decisions", () => {
   it("classifies review cards by exact modifyRate target, not all", () => {
     const defs = parseDecisions(decisionsJson);
     const byId = Object.fromEntries(defs.map((d) => [d.id, d]));
-    expect(decisionTargetsExactRate(byId["reviewer"]!, "review")).toBe(true);
-    expect(decisionTargetsExactRate(byId["review-agent"]!, "review")).toBe(true);
-    expect(decisionTargetsExactRate(byId["basic-dev"]!, "review")).toBe(false);
+    expect(decisionTargetsExactRate(byId["agent-orchestration"]!, "review")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent-orchestration"]!, "finish")).toBe(true);
     expect(decisionTargetsExactRate(byId["agent"]!, "review")).toBe(false);
+    expect(decisionTargetsExactRate(byId["agent-harness"]!, "review")).toBe(false);
+    expect(decisionTargetsExactRate(byId["basic-dev"]!, "review")).toBe(false);
     expect(decisionTargetsExactRate(byId["better-tooling"]!, "review")).toBe(false);
-    expect(decisionTargetsExactRate(byId["review-agent"]!, "finish")).toBe(false);
   });
 
-  it("review agent raises review without seats or debt", () => {
+  it("orchestration raises review as well as finish", () => {
     const e = new Engine(content());
     e.applyDecision("agent");
-    const debtAfterAgent = effectiveDebtMultiplier(e.getState());
-    e.applyDecision("review-agent");
-    expect(effectiveRate(e.getState(), "review")).toBeCloseTo(1.2, 5);
-    expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(1.2, 5);
-    expect(effectiveDebtMultiplier(e.getState())).toBe(debtAfterAgent);
-    expect(e.getState().baseCapacity).toBe(1);
+    e.applyDecision("agent");
+    const finishBefore = effectiveRate(e.getState(), "finish");
+    const debtBefore = effectiveDebtMultiplier(e.getState());
+    e.applyDecision("agent-orchestration");
+    expect(effectiveRate(e.getState(), "review")).toBeCloseTo(1.45, 5);
+    expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(finishBefore * 1.45, 5);
+    expect(effectiveDebtMultiplier(e.getState())).toBeCloseTo(debtBefore * 0.55, 5);
   });
 });

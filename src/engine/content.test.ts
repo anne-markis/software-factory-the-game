@@ -213,9 +213,7 @@ describe("parseDecisions", () => {
       "test-suite",
       "ci-cd",
       "basic-dev",
-      "reviewer",
       "agent",
-      "review-agent",
       "agent-harness",
       "agent-orchestration",
       "better-tooling",
@@ -247,7 +245,7 @@ describe("parseDecisions", () => {
 
     // agent is stackable: no `unique`, additive effects so N copies are
     // worth N times one copy. +0.2 finish/day and +0.1 debt multiplier
-    // per copy. Review agents are a separate card.
+    // per copy.
     const agent = defs.find((d) => d.id === "agent")!;
     expect(agent.unique).toBeUndefined();
     expect(agent.effects).toEqual([
@@ -280,6 +278,7 @@ describe("parseDecisions", () => {
     expect(orch.requiresCounts).toEqual([{ id: "agent", count: 2 }]);
     expect(orch.effects).toEqual([
       { type: "modifyRate", target: "finish", op: "mul", value: 1.45 },
+      { type: "modifyRate", target: "review", op: "mul", value: 1.45 },
       { type: "modifyDebtMultiplier", op: "mul", value: 0.55 },
     ]);
     // Worth the gate: strictly more speed than the harness, and a higher
@@ -327,24 +326,15 @@ describe("parseDecisions", () => {
     for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish"]);
     expect(dev.synergies).toBeUndefined();
 
-    for (const id of ["agent", "agent-harness", "agent-orchestration"]) {
+    for (const id of ["agent", "agent-harness"]) {
       const card = defs.find((d) => d.id === id)!;
       expect(card.capacity).toBeUndefined();
       expect(splitTargets(card.effects)).toEqual(["finish"]);
     }
 
-    const reviewer = defs.find((d) => d.id === "reviewer")!;
-    expect(reviewer.capacity).toBeUndefined();
-    expect(reviewer.human).toBe(true);
-    expect(reviewer.requires).toEqual(["basic-dev"]);
-    for (const o of reviewer.gamble!) expect(splitTargets(o.effects)).toEqual(["review"]);
-
-    const reviewAgent = defs.find((d) => d.id === "review-agent")!;
-    expect(reviewAgent.capacity).toBeUndefined();
-    expect(reviewAgent.human).not.toBe(true);
-    expect(reviewAgent.requires).toEqual(["agent"]);
-    expect(splitTargets(reviewAgent.effects)).toEqual(["review"]);
-    expect(reviewAgent.effects.some((e) => e.type === "modifyDebtMultiplier")).toBe(false);
+    const orch = defs.find((d) => d.id === "agent-orchestration")!;
+    expect(orch.capacity).toBeUndefined();
+    expect(splitTargets(orch.effects)).toEqual(["finish", "review"]);
 
     expect(defs.find((d) => d.id === "better-tooling")!.effects).toEqual([
       { type: "modifyRate", target: "all", op: "add", value: 0.1 },

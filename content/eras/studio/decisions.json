@@ -94,51 +94,6 @@
     "removable": true
   },
   {
-    "id": "reviewer",
-    "name": "Hire a reviewer",
-    "description": "Reviews PRs instead of writing them. It's a gamble, and they're gone for good if payroll fails.",
-    "category": "ship-faster",
-    "human": true,
-    "cost": {
-      "perDay": 7
-    },
-    "requires": [
-      "basic-dev"
-    ],
-    "effects": [],
-    "gamble": [
-      {
-        "probability": 0.5,
-        "label": "Strong hire",
-        "effects": [
-          { "type": "modifyRate", "target": "review", "op": "add", "value": 1.0 }
-        ]
-      },
-      {
-        "probability": 0.25,
-        "label": "Decent hire",
-        "effects": [
-          { "type": "modifyRate", "target": "review", "op": "add", "value": 0.5 }
-        ]
-      },
-      {
-        "probability": 0.2,
-        "label": "Net-negative hire",
-        "effects": [
-          { "type": "modifyRate", "target": "review", "op": "add", "value": -0.5 }
-        ]
-      },
-      {
-        "probability": 0.05,
-        "label": "Disaster hire",
-        "effects": [
-          { "type": "modifyRate", "target": "review", "op": "add", "value": -1.0 }
-        ]
-      }
-    ],
-    "removable": true
-  },
-  {
     "id": "agent",
     "name": "Add coding agent",
     "description": "Each agent finishes another 0.2 points of work a day and adds a little more tech debt. Buy as many as you can feed.",
@@ -158,28 +113,6 @@
         "type": "modifyDebtMultiplier",
         "op": "add",
         "value": 0.1
-      }
-    ],
-    "removable": true
-  },
-  {
-    "id": "review-agent",
-    "name": "Add review agent",
-    "description": "Each review agent clears another 0.2 points of PRs a day. They only read, so they add no tech debt. Buy as many as you can feed.",
-    "category": "ship-faster",
-    "cost": {
-      "oneTime": 10,
-      "perDay": 4
-    },
-    "requires": [
-      "agent"
-    ],
-    "effects": [
-      {
-        "type": "modifyRate",
-        "target": "review",
-        "op": "add",
-        "value": 0.2
       }
     ],
     "removable": true
@@ -228,6 +161,12 @@
       {
         "type": "modifyRate",
         "target": "finish",
+        "op": "mul",
+        "value": 1.45
+      },
+      {
+        "type": "modifyRate",
+        "target": "review",
         "op": "mul",
         "value": 1.45
       },
