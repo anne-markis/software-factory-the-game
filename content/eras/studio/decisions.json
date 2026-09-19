@@ -100,7 +100,7 @@
   {
     "id": "agent",
     "name": "Add coding agent",
-    "description": "Each agent finishes another 0.2 points of work a day, reviews a little (0.05/day — less than it codes), and adds a little more tech debt. Each human developer makes every agent's coding 10% faster. Buy as many as you can feed.",
+    "description": "Each agent finishes another 0.2 points of work a day, reviews 0.05/day, and adds a little more tech debt. Each human developer makes every agent's coding 10% faster. Buy as many as you can feed.",
     "category": "ship-faster",
     "cost": {
       "oneTime": 10,
