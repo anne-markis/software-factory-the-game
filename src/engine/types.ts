@@ -473,11 +473,11 @@ export interface GameState {
   completedProjectIds: string[];
   pendingChoices: PendingChoice[];
   log: LogEntry[];
-  // Last N days of decision income by type (see INCOME_HISTORY_DAYS in
+  // last N days of decision income by type (see INCOME_HISTORY_DAYS in
   // tick.ts). Feeds the collapsible Income chart; not an Events stream.
   // initialState seeds []; deserialize backfills [] on current-version
   // hand-built states. Quiet days are stored as zeros so the sparkline
-  // keeps a stable window.
+  // keeps a stable span.
   incomeByDay: DailyIncome[];
   pointsPerDay: number;
   // Realized flow this tick. pointsPerDay is shippedFlow (Done → Shipped).

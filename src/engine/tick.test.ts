@@ -438,15 +438,15 @@ describe("tick", () => {
         const before = e.getState().stocks.budget;
         e.tick();
         // A burst day nets +$120 income - $20 burn = +$100; a quiet day is -$20.
-        if (e.getState().stocks.budget > before) bursts += 1;
+        if (e.getState().stocks.budget > before) {
+          bursts += 1;
+          expect(e.getState().incomeByDay.at(-1)?.burst).toBeCloseTo(120, 5);
+        }
       }
       // At probabilityPerDay 0.08 over 300 days, expect ~24 bursts; assert some
-      // fired and that the burst was recorded on incomeByDay, not Events.
+      // fired and that each hit was recorded on incomeByDay, not Events.
       expect(bursts).toBeGreaterThan(5);
       expect(e.getState().log.some((l) => l.message.includes("product sale burst"))).toBe(false);
-      expect(e.getState().incomeByDay.some((d) => d.burst > 0)).toBe(true);
-      const hit = e.getState().incomeByDay.find((d) => d.burst > 0)!;
-      expect(hit.burst).toBeCloseTo(120, 5);
     });
 
     it("caps incomeByDay at INCOME_HISTORY_DAYS", () => {

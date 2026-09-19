@@ -16,7 +16,7 @@ export function log(state: GameState, message: string): void {
   if (state.log.length > 200) state.log.shift();
 }
 
-/** Sparkline window for the Income panel. Quiet days stay in the buffer. */
+/** Sparkline length for the Income panel. Quiet days stay in the buffer. */
 export const INCOME_HISTORY_DAYS = 14;
 
 function recordDailyIncome(state: GameState, recurring: number, burst: number): void {
