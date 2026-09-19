@@ -51,9 +51,14 @@ function isPursue(def: ProjectDef): boolean {
   return def.pursue === true;
 }
 
+export function pursueIdeaCost(def: ProjectDef): number {
+  if (!isPursue(def)) return 0;
+  return def.ideaCost ?? def.sizePoints;
+}
+
 function cannotAfford(state: GameState, def: ProjectDef): boolean {
   if (state.stocks.budget < def.upfrontCost) return true;
-  return isPursue(def) && state.stocks.ideas < def.sizePoints;
+  return isPursue(def) && state.stocks.ideas < pursueIdeaCost(def);
 }
 
 export function projectAvailability(state: GameState, content: GameContent): ProjectAvailability[] {
@@ -99,13 +104,14 @@ export function pursueProject(state: GameState, content: GameContent, defId: str
   if (!isPursue(def)) throw new Error(`${def.name} starts, it is not pursued`);
   const blocked = blockReason(state, content, def);
   if (blocked) throw new Error(`${def.name}: ${blocked}`);
-  if (state.stocks.ideas < def.sizePoints) {
+  const ideas = pursueIdeaCost(def);
+  if (state.stocks.ideas < ideas) {
     throw new Error(`Cannot pursue ${def.name}: not enough ideas`);
   }
   if (state.stocks.budget < def.upfrontCost) {
     throw new Error(`Cannot afford ${def.name}`);
   }
-  state.stocks.ideas -= def.sizePoints;
+  state.stocks.ideas -= ideas;
   state.stocks.budget -= def.upfrontCost;
   planItems(state).push({
     defId: def.id,
@@ -114,7 +120,7 @@ export function pursueProject(state: GameState, content: GameContent, defId: str
     size: def.sizePoints,
   });
   syncPlanStock(state);
-  log(state, `Pursuing: ${def.name} (−${def.sizePoints} ideas, −$${def.upfrontCost})`);
+  log(state, `Pursuing: ${def.name} (−${ideas} ideas, −$${def.upfrontCost})`);
 }
 
 export function takeProject(state: GameState, content: GameContent, defId: string): void {

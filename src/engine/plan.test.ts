@@ -166,6 +166,26 @@ describe("Pursue, Plan, Cancel, auto-Ready", () => {
     expect(rich.getState().plan).toHaveLength(1);
   });
 
+  it("Pursue spends ideaCost when it differs from sizePoints, and Plan size stays sizePoints", () => {
+    const split = sized({
+      id: "split-plan",
+      name: "Split plan",
+      sizePoints: 1000,
+      pursue: true,
+      ideaCost: 200,
+    });
+    const short = new Engine(content([split], { ideas: 199 }));
+    expect(() => short.pursueProject("split-plan")).toThrow(/ideas/i);
+    expect(short.getState().stocks.ideas).toBe(199);
+    expect(short.getState().plan).toEqual([]);
+
+    const e = new Engine(content([split], { ideas: 250 }));
+    e.pursueProject("split-plan");
+    const s = e.getState();
+    expect(s.stocks.ideas).toBe(50);
+    expect(s.plan).toEqual([{ defId: "split-plan", name: "Split plan", progress: 0, size: 1000 }]);
+  });
+
   it("Cancel is not Abandon: pipeline remaining stays, and Abandon does not drop Plan items", () => {
     const e = new Engine(content([PEER_A], { ideas: 100 }));
     e.pursueProject("plan-a");

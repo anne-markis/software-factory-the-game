@@ -731,6 +731,32 @@ describe("parseChallenges", () => {
     expect(refactor.unique).toBeUndefined();
     expect(refactor.pursue).toBeUndefined();
     expect(refactor.completionStockGrants).toEqual([{ stock: "techDebt", amount: -50 }]);
+    const medium = defs.find((p) => p.id === "medium-refactor")!;
+    expect(medium).toMatchObject({
+      name: "Medium refactor",
+      sizePoints: 150,
+      upfrontCost: 0,
+      payoutPerPoint: 0,
+      completionBonus: 0,
+      reputationReward: 0,
+    });
+    expect(medium.unique).toBeUndefined();
+    expect(medium.pursue).toBeUndefined();
+    expect(medium.ideaCost).toBeUndefined();
+    expect(medium.completionStockGrants).toEqual([{ stock: "techDebt", amount: -150 }]);
+    const large = defs.find((p) => p.id === "large-refactor")!;
+    expect(large).toMatchObject({
+      name: "Large refactor",
+      sizePoints: 1000,
+      upfrontCost: 0,
+      payoutPerPoint: 0,
+      completionBonus: 0,
+      reputationReward: 0,
+      pursue: true,
+      ideaCost: 200,
+    });
+    expect(large.unique).toBeUndefined();
+    expect(large.completionStockGrants).toEqual([{ stock: "techDebt", amount: -1000 }]);
     expect(defs.find((p) => p.id === "gig-landing-page")!.pursue).toBeUndefined();
     expect(defs.find((p) => p.id === "gig-plugin")!.pursue).toBe(true);
     const v1 = defs.find((p) => p.id === "ship-v1")!;
@@ -885,6 +911,8 @@ describe("parseProjects", () => {
       "gig-landing-page",
       "gig-plugin",
       "small-refactor",
+      "medium-refactor",
+      "large-refactor",
       "ship-v1",
       "ship-v2",
       "ship-v3",
@@ -937,6 +965,7 @@ describe("parseProjects", () => {
       },
     ]);
     expect(flagged[0]!.pursue).toBe(true);
+    expect(flagged[0]!.ideaCost).toBeUndefined();
     expect(() =>
       parseProjects([
         {
@@ -948,6 +977,52 @@ describe("parseProjects", () => {
           completionBonus: 0,
           reputationReward: 0,
           pursue: "yes",
+        },
+      ]),
+    ).toThrow(/content\/projects\.json/);
+  });
+
+  it("parses ideaCost on Pursue and rejects it on Start", () => {
+    const defs = parseProjects([
+      {
+        id: "x",
+        name: "x",
+        sizePoints: 1000,
+        upfrontCost: 0,
+        payoutPerPoint: 0,
+        completionBonus: 0,
+        reputationReward: 0,
+        pursue: true,
+        ideaCost: 200,
+      },
+    ]);
+    expect(defs[0]!.ideaCost).toBe(200);
+    expect(() =>
+      parseProjects([
+        {
+          id: "x",
+          name: "x",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 0,
+          ideaCost: 200,
+        },
+      ]),
+    ).toThrow(/ideaCost/);
+    expect(() =>
+      parseProjects([
+        {
+          id: "x",
+          name: "x",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 0,
+          pursue: true,
+          ideaCost: -1,
         },
       ]),
     ).toThrow(/content\/projects\.json/);

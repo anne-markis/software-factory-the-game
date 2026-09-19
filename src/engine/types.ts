@@ -256,10 +256,14 @@ export interface ProjectDef {
   // (or while it is already in flight). Studio's v1–v5 ladder is unique;
   // tiny client gigs omit this and stay repeatable. Default false.
   unique?: boolean;
-  // When true, the offer is Pursue (spend Ideas = sizePoints, enter Plan).
-  // Omit or false is Start (no Ideas spend, write Ready immediately). Default
-  // must stay Start so inherited gigs do not silently Pursue.
+  // When true, the offer is Pursue (spend Ideas, enter Plan). Omit or false
+  // is Start (no Ideas spend, write Ready immediately). Default must stay
+  // Start so inherited gigs do not silently Pursue.
   pursue?: boolean;
+  // Ideas spent on Pursue. Independent of sizePoints (effort / Plan size).
+  // Omit on a Pursue offer to spend sizePoints, matching older catalog cards
+  // written before the two numbers were split.
+  ideaCost?: number;
   // Stocks granted on completion (Studio spine). Applied in
   // attributeShipped's completion branch alongside the budget/reputation
   // rewards. The Launch beta grants +30 users this way, which is what starts

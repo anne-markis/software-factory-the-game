@@ -433,6 +433,8 @@ const projectSchema = z
     unique: z.boolean().optional(),
     // Omit = Start. true = Pursue. Same optional-boolean style as unique.
     pursue: z.boolean().optional(),
+    // Ideas spent on Pursue. Independent of sizePoints. Omit = spend sizePoints.
+    ideaCost: z.number().min(0).optional(),
     completionStockGrants: completionStockGrantsSchema,
     // Same shape as DecisionDef.stockFlowMods. Applied while this id is in
     // completedProjectIds (not while in-flight).
@@ -457,6 +459,11 @@ export function parseProjects(
     }
     rejectRedeclaredId(source, "project", def.id, priorIds);
     ids.add(def.id);
+    if (def.ideaCost !== undefined && def.pursue !== true) {
+      throw new Error(
+        `Invalid content in ${source}: "${def.id}" has ideaCost but is not a Pursue offer`,
+      );
+    }
   }
   return defs;
 }

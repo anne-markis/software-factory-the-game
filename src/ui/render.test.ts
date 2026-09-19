@@ -941,6 +941,13 @@ describe("renderProjectOffers", () => {
     expect(html).toContain("400 pts");
     expect(html).toContain("$1,000");
     expect(html).not.toContain("$0/pt");
+    expect(html).toContain('data-project="medium-refactor" >Start<');
+    expect(html).toContain("150 pts");
+    expect(html).toContain("debt −150");
+    expect(html).toContain('data-project="large-refactor" >Pursue<');
+    expect(html).toContain("1,000 pts");
+    expect(html).toContain('class="num">200<');
+    expect(html).toContain("debt −1000");
   });
 
   it("omits an already-in-flight catalog row from Available (it lives in In flight)", () => {

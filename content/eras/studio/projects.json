@@ -38,6 +38,28 @@
     "completionStockGrants": [{ "stock": "techDebt", "amount": -50 }]
   },
   {
+    "id": "medium-refactor",
+    "name": "Medium refactor",
+    "sizePoints": 150,
+    "upfrontCost": 0,
+    "payoutPerPoint": 0,
+    "completionBonus": 0,
+    "reputationReward": 0,
+    "completionStockGrants": [{ "stock": "techDebt", "amount": -150 }]
+  },
+  {
+    "id": "large-refactor",
+    "name": "Large refactor",
+    "sizePoints": 1000,
+    "upfrontCost": 0,
+    "payoutPerPoint": 0,
+    "completionBonus": 0,
+    "reputationReward": 0,
+    "pursue": true,
+    "ideaCost": 200,
+    "completionStockGrants": [{ "stock": "techDebt", "amount": -1000 }]
+  },
+  {
     "id": "ship-v1",
     "name": "Ship v1",
     "sizePoints": 400,

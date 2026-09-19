@@ -247,6 +247,70 @@ describe("projects", () => {
     expect(e.getState().projects.some((p) => p.defId === "small-refactor")).toBe(true);
   });
 
+  it("Medium refactor starts immediately, reduces techDebt by 150 clamped at 0, and is repeatable", () => {
+    const c = content();
+    shrinkStart(c);
+    const refactor = c.projects.find((p) => p.id === "medium-refactor")!;
+    refactor.sizePoints = 2;
+    const e = new Engine(c);
+    for (let i = 0; i < 6; i++) e.tick();
+    expect(e.getState().completedProjects).toBe(1);
+
+    const s = e.getState() as GameState;
+    s.stocks.techDebt = 40;
+    s.debtMultiplierBase = 0;
+    const budgetBefore = s.stocks.budget;
+    const repBefore = s.stocks.reputation;
+    const dayBefore = s.day;
+    const ideasBefore = s.stocks.ideas;
+
+    e.startProject("medium-refactor");
+    expect(e.getState().plan).toEqual([]);
+    for (let i = 0; i < 20 && e.getState().completedProjects < 2; i++) e.tick();
+    expect(e.getState().completedProjects).toBe(2);
+    expect(e.getState().completedProjectIds).toContain("medium-refactor");
+    expect(e.getState().stocks.techDebt).toBe(0);
+    const days = e.getState().day - dayBefore;
+    expect(e.getState().stocks.budget).toBeCloseTo(budgetBefore - 20 * days, 5);
+    expect(e.getState().stocks.reputation).toBe(repBefore);
+    expect(e.getState().stocks.ideas).toBe(ideasBefore);
+    expect(e.availableProjects().find((p) => p.def.id === "medium-refactor")!.startable).toBe(true);
+  });
+
+  it("Large refactor spends 200 ideas, plans 1000 points, and reduces techDebt by 1000", () => {
+    const c = content({ ideas: 250 });
+    shrinkStart(c);
+    const refactor = c.projects.find((p) => p.id === "large-refactor")!;
+    refactor.sizePoints = 2;
+    const e = new Engine(c);
+    for (let i = 0; i < 6; i++) e.tick();
+    expect(e.getState().completedProjects).toBe(1);
+
+    const s = e.getState() as GameState;
+    s.stocks.techDebt = 80;
+    s.debtMultiplierBase = 0;
+    s.stocks.ideas = 250;
+    const short = e.availableProjects().find((p) => p.def.id === "large-refactor")!;
+    expect(short.def.pursue).toBe(true);
+    expect(short.def.ideaCost).toBe(200);
+    s.stocks.ideas = 199;
+    expect(e.availableProjects().find((p) => p.def.id === "large-refactor")!.startable).toBe(false);
+    expect(() => e.pursueProject("large-refactor")).toThrow(/ideas/i);
+    expect(e.getState().stocks.ideas).toBe(199);
+
+    s.stocks.ideas = 250;
+    e.pursueProject("large-refactor");
+    expect(e.getState().stocks.ideas).toBe(50);
+    expect(e.getState().plan).toEqual([
+      { defId: "large-refactor", name: "Large refactor", progress: 0, size: 2 },
+    ]);
+    for (let i = 0; i < 40 && e.getState().completedProjects < 2; i++) e.tick();
+    expect(e.getState().completedProjects).toBe(2);
+    expect(e.getState().completedProjectIds).toContain("large-refactor");
+    expect(e.getState().stocks.techDebt).toBe(0);
+    expect(e.availableProjects().find((p) => p.def.id === "large-refactor")!.startable).toBe(true);
+  });
+
   it("unlocks Ship v1 after Launch beta and keeps v2 locked until v1 completes", () => {
     const c = content({ ideas: 2000 });
     shrinkStart(c);
