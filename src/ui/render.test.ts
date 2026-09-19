@@ -7,10 +7,15 @@ import {
   renderDecisionNode,
   decisionsPanelScaffold,
   ownedPanelScaffold,
+  incomePanelScaffold,
+  logPanelScaffold,
   renderOwnedList,
   decisionNodeSection,
   OWNED_LIST_SECTION,
+  INCOME_CHART_SECTION,
+  LOG_SECTION,
   renderLog,
+  renderIncomeChart,
   renderChoicesScaffold,
   renderChoiceCountdown,
   choiceCountdownSection,
@@ -197,10 +202,11 @@ describe("renderDecisions", () => {
     expect(html).not.toContain("data-buy=");
   });
 
-  it("ownedPanelScaffold exposes the Owned list patch target", () => {
+  it("ownedPanelScaffold exposes the Owned list patch target inside expanded details", () => {
     const html = ownedPanelScaffold();
     expect(html).toContain(`<h3>Owned</h3>`);
     expect(html).toContain(`${SECTION_ATTR}="${OWNED_LIST_SECTION}"`);
+    expect(html).toMatch(/<details class="panel side-details" open>/);
   });
 
   it("decisionsPanelScaffold omits shells for owned unique decisions", () => {
@@ -541,11 +547,44 @@ describe("renderLog", () => {
     expect(html).toContain("Day 39: msg 39 &lt;b&gt;");
     expect(html).not.toContain("Day 9:");
     expect(html.indexOf("Day 39:")).toBeLessThan(html.indexOf("Day 38:"));
+    expect(html).not.toContain("Events");
   });
 
   it("renders an empty log with no placeholder copy", () => {
     expect(renderLog([])).not.toContain("Quiet so far.");
     expect(renderLog([])).toContain('<div class="log"></div>');
+  });
+});
+
+describe("side rail scaffolds", () => {
+  it("Income, Events, and Owned chrome are expanded details with patch targets", () => {
+    expect(incomePanelScaffold()).toContain(`${SECTION_ATTR}="${INCOME_CHART_SECTION}"`);
+    expect(logPanelScaffold()).toContain(`${SECTION_ATTR}="${LOG_SECTION}"`);
+    expect(incomePanelScaffold()).toMatch(/<details class="panel side-details" open>/);
+    expect(logPanelScaffold()).toMatch(/<details class="panel side-details" open>/);
+    expect(incomePanelScaffold()).toContain("<h3>Income</h3>");
+    expect(logPanelScaffold()).toContain("<h3>Events</h3>");
+  });
+});
+
+describe("renderIncomeChart", () => {
+  it("shows an empty state when no dollars have been earned", () => {
+    expect(renderIncomeChart([])).toContain("No income yet.");
+    expect(renderIncomeChart([{ day: 1, recurring: 0, burst: 0 }])).toContain("No income yet.");
+    expect(renderIncomeChart([{ day: 1, recurring: 0, burst: 0 }])).not.toContain("income-bars");
+  });
+
+  it("stacks recurring and burst as separate series with latest totals", () => {
+    const html = renderIncomeChart([
+      { day: 10, recurring: 75, burst: 0 },
+      { day: 11, recurring: 75, burst: 120 },
+    ]);
+    expect(html).toContain("income-recurring");
+    expect(html).toContain("income-burst");
+    expect(html).toContain("Recurring $75");
+    expect(html).toContain("Burst $120");
+    expect(html).toContain('aria-label="Income last 2 days, recurring and burst"');
+    expect(html).toContain("Day 11: recurring $75, burst $120");
   });
 });
 

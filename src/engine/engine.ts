@@ -55,6 +55,7 @@ export function initialState(content: GameContent): GameState {
     completedProjectIds: [],
     pendingChoices: [],
     log: [],
+    incomeByDay: [],
     pointsPerDay: 0,
     pullFlow: 0,
     finishFlow: 0,
@@ -144,6 +145,9 @@ export class Engine {
       }
       if (restored.completedProjectIds === undefined) {
         restored.completedProjectIds = [];
+      }
+      if (restored.incomeByDay === undefined) {
+        restored.incomeByDay = [];
       }
       this.rng = createRng(restored.rngState, true);
       hydrateHumanScale(this.state, content);

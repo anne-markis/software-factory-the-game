@@ -1,6 +1,6 @@
 import type { Availability } from "../engine/decisions";
 import type { ProjectAvailability } from "../engine/projects";
-import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject } from "../engine/types";
+import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject, DailyIncome } from "../engine/types";
 import { effectiveRate } from "../engine/modifiers";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { projectEffectChips, type ProjectChip, type ProjectEffectSource } from "./projectEffects";
@@ -60,6 +60,12 @@ function effectsLine(def: DecisionDef): string {
 // projects/choices split: a content-stable scaffold holds per-node section
 // containers, and each card is patched independently.
 export const OWNED_LIST_SECTION = "owned-list";
+export const INCOME_CHART_SECTION = "income-chart";
+export const LOG_SECTION = "log";
+
+function sideDetailsScaffold(title: string, section: string): string {
+  return `<details class="panel side-details" open><summary><h3>${title}</h3></summary><div ${SECTION_ATTR}="${section}"></div></details>`;
+}
 
 export function decisionNodeSection(defId: string): string {
   return `decision-node:${defId}`;
@@ -195,9 +201,19 @@ export function decisionsPanelScaffold(
     <div class="panel"><h3>Alter the system</h3>${shop}</div>`;
 }
 
-/** Owned panel chrome for the right rail. */
+/** Owned panel chrome for the right rail. Starts expanded; player can collapse. */
 export function ownedPanelScaffold(): string {
-  return `<div class="panel"><h3>Owned</h3><div ${SECTION_ATTR}="${OWNED_LIST_SECTION}"></div></div>`;
+  return sideDetailsScaffold("Owned", OWNED_LIST_SECTION);
+}
+
+/** Income sparkline chrome. Starts expanded; player can collapse. */
+export function incomePanelScaffold(): string {
+  return sideDetailsScaffold("Income", INCOME_CHART_SECTION);
+}
+
+/** Events panel chrome. Starts expanded; player can collapse. */
+export function logPanelScaffold(): string {
+  return sideDetailsScaffold("Events", LOG_SECTION);
 }
 
 // Owned is an action list: only removable instances, each with Remove,
@@ -239,7 +255,37 @@ export function renderLog(log: readonly LogEntry[]): string {
   const lines = [...log].slice(-30).reverse()
     .map((entry) => `<div>Day ${entry.day}: ${esc(entry.message)}</div>`)
     .join("");
-  return `<div class="panel"><h3>Events</h3><div class="log">${lines}</div></div>`;
+  return `<div class="log">${lines}</div>`;
+}
+
+function incomeBarHeight(amount: number, max: number): string {
+  if (max <= 0 || amount <= 0) return "0";
+  return `${Math.max(1, Math.round((amount / max) * 100))}%`;
+}
+
+/** Stacked recurring/burst sparkline for the last recorded days. */
+export function renderIncomeChart(incomeByDay: readonly DailyIncome[]): string {
+  const earned = incomeByDay.some((d) => d.recurring > 0 || d.burst > 0);
+  if (!earned) {
+    return `<div class="income-empty">No income yet.</div>`;
+  }
+  const max = Math.max(...incomeByDay.map((d) => d.recurring + d.burst), 0);
+  const latest = incomeByDay[incomeByDay.length - 1]!;
+  const bars = incomeByDay
+    .map((d) => {
+      const recH = incomeBarHeight(d.recurring, max);
+      const burstH = incomeBarHeight(d.burst, max);
+      const title = `Day ${d.day}: recurring $${fmt(d.recurring)}, burst $${fmt(d.burst)}`;
+      return `<div class="income-col" title="${esc(title)}"><div class="income-stack"><div class="income-seg income-burst" style="height:${burstH}"></div><div class="income-seg income-recurring" style="height:${recH}"></div></div></div>`;
+    })
+    .join("");
+  return `<div class="income-chart" role="img" aria-label="Income last ${incomeByDay.length} days, recurring and burst">
+    <div class="income-bars">${bars}</div>
+    <div class="income-legend">
+      <span><span class="income-swatch income-recurring"></span> Recurring $${fmt(latest.recurring)}</span>
+      <span><span class="income-swatch income-burst"></span> Burst $${fmt(latest.burst)}</span>
+    </div>
+  </div>`;
 }
 
 // The projects panel is split into two independently-patched sections

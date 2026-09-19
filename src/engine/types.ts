@@ -315,6 +315,16 @@ export interface LogEntry {
   message: string;
 }
 
+// One tick of decision income, split by how it was credited. Recurring is
+// flat incomePerDay plus incomeFromStock; burst is burstFromStock hits.
+// The Events log does not record these receipts (purchasing the card still
+// does). Capped on GameState.incomeByDay.
+export interface DailyIncome {
+  day: number;
+  recurring: number;
+  burst: number;
+}
+
 // Always-on stock drag (Studio spine / ADR 0006). Mirrors the
 // tech-debt debtDrag shape but keyed on an arbitrary stock and pointed at a
 // specific rate (or "all", like modifyRate). Above freeBand, every excess
@@ -463,6 +473,12 @@ export interface GameState {
   completedProjectIds: string[];
   pendingChoices: PendingChoice[];
   log: LogEntry[];
+  // Last N days of decision income by type (see INCOME_HISTORY_DAYS in
+  // tick.ts). Feeds the collapsible Income chart; not an Events stream.
+  // initialState seeds []; deserialize backfills [] on current-version
+  // hand-built states. Quiet days are stored as zeros so the sparkline
+  // keeps a stable window.
+  incomeByDay: DailyIncome[];
   pointsPerDay: number;
   // Realized flow this tick. pointsPerDay is shippedFlow (Done → Shipped).
   // finishFlow is how much left the Ready+In Progress pool into In Review.

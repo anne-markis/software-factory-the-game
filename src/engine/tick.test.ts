@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { Engine } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
+import { INCOME_HISTORY_DAYS } from "./tick";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
 import type { GameContent, GameState, ProjectDef } from "./types";
@@ -387,6 +388,10 @@ describe("tick", () => {
       // The only difference is the subscription's incomeFromStock: 100 users *
       // $0.75/user/day = $75/day on top of whatever the no-sub engine did.
       expect(subDelta - noSubDelta).toBeCloseTo(75, 5);
+      const day = withSub.getState().incomeByDay.at(-1);
+      expect(day?.recurring).toBeCloseTo(75, 5);
+      expect(day?.burst).toBe(0);
+      expect(withSub.getState().log.some((l) => /\$/.test(l.message) && /burst|income|subscription/i.test(l.message))).toBe(false);
     });
 
     it("subscription earns nothing at zero users (useless until launch)", () => {
@@ -416,6 +421,7 @@ describe("tick", () => {
         expect(withOtp.getState().userIncomeFlow).toBe(0);
         expect(withOtp.getState().stocks.budget).toBe(before - content.start.baseBurnPerDay);
         expect(withOtp.getState().log.some((l) => l.message.includes("product sale burst"))).toBe(false);
+        expect(withOtp.getState().incomeByDay.at(-1)?.burst).toBe(0);
         expect(withOtp.getState().rngState).toBe(withoutOtp.getState().rngState);
       }
     });
@@ -435,9 +441,21 @@ describe("tick", () => {
         if (e.getState().stocks.budget > before) bursts += 1;
       }
       // At probabilityPerDay 0.08 over 300 days, expect ~24 bursts; assert some
-      // fired and that the burst was logged.
+      // fired and that the burst was recorded on incomeByDay, not Events.
       expect(bursts).toBeGreaterThan(5);
-      expect(e.getState().log.some((l) => l.message.includes("product sale burst"))).toBe(true);
+      expect(e.getState().log.some((l) => l.message.includes("product sale burst"))).toBe(false);
+      expect(e.getState().incomeByDay.some((d) => d.burst > 0)).toBe(true);
+      const hit = e.getState().incomeByDay.find((d) => d.burst > 0)!;
+      expect(hit.burst).toBeCloseTo(120, 5);
+    });
+
+    it("caps incomeByDay at INCOME_HISTORY_DAYS", () => {
+      const e = new Engine(testContent());
+      for (let i = 0; i < INCOME_HISTORY_DAYS + 5; i++) e.tick();
+      const days = e.getState().incomeByDay;
+      expect(days).toHaveLength(INCOME_HISTORY_DAYS);
+      expect(days[0]!.day).toBe(e.getState().day - INCOME_HISTORY_DAYS + 1);
+      expect(days.at(-1)!.day).toBe(e.getState().day);
     });
   });
 

@@ -25,11 +25,16 @@ import {
   PROJECTS_OFFERS_SECTION,
   decisionsPanelScaffold,
   ownedPanelScaffold,
+  incomePanelScaffold,
+  logPanelScaffold,
   decisionNodeSection,
   renderDecisionNode,
   renderOwnedList,
+  renderIncomeChart,
   shopScaffoldKey,
   OWNED_LIST_SECTION,
+  INCOME_CHART_SECTION,
+  LOG_SECTION,
   renderStall,
   renderTimeControls,
   renderBuildStamp,
@@ -106,7 +111,6 @@ const TIME_CONTROLS = "time-controls";
 const DECISIONS = "decisions";
 const PROJECTS = "projects";
 const CHOICES = "choices";
-const LOG = "log";
 
 function pageScaffold(): string {
   // time controls + Reset sit above the stats bar and loop panels
@@ -149,7 +153,8 @@ function pageScaffold(): string {
         <div ${SECTION_ATTR}="${DECISIONS}"></div>
       </div>
       <div class="side">
-        <div ${SECTION_ATTR}="${LOG}"></div>
+        ${incomePanelScaffold()}
+        ${logPanelScaffold()}
         ${ownedPanelScaffold()}
       </div>
     </div>
@@ -260,8 +265,10 @@ export function mountAppView(deps: AppViewDeps): AppView {
     projects.patch(PROJECTS_STATUS_SECTION, renderProjectsStatus([...state.projects], state, content));
     projects.patch(PROJECTS_OFFERS_SECTION, renderProjectOffers(engine.availableProjects(), state));
     renderChoicesRegion([...state.pendingChoices], state.day, state.paused);
-    page.patch(LOG, renderLog(state.log));
-    // Owned sits under Events in `.side`, patched on the page region.
+    page.patch(INCOME_CHART_SECTION, renderIncomeChart(state.incomeByDay ?? []));
+    page.patch(LOG_SECTION, renderLog(state.log));
+    // Income / Events / Owned sit in `.side` as static <details> chrome
+    // (default open). Only inner sections patch, so collapse state survives ticks.
     page.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
   }
 
