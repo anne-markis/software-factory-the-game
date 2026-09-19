@@ -627,11 +627,15 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(h.actions).toBe(1);
   });
 
-  it("places Owned under Events in the right rail", () => {
+  it("places Income, Events, and Owned in the right rail, all expanded", () => {
     const h = mount();
     const side = h.root.querySelector(".side")!;
     const headings = Array.from(side.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toEqual(["Events", "Owned"]);
+    expect(headings).toEqual(["Income", "Events", "Owned"]);
+    const details = Array.from(side.querySelectorAll<HTMLDetailsElement>("details.side-details"));
+    expect(details).toHaveLength(3);
+    expect(details.every((d) => d.open)).toBe(true);
+    expect(side.querySelector('[data-section="income-chart"]')!.textContent).toContain("No income yet.");
     expect(side.querySelector('[data-section="owned-list"]')!.textContent!.trim()).toBe("");
     const main = h.root.querySelector(".main")!;
     const mainHeadings = Array.from(main.querySelectorAll("h3")).map((el) => el.textContent);
@@ -640,6 +644,43 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(projectsIndex).toBe(0);
     expect(shopIndex).toBeGreaterThan(projectsIndex);
     expect(mainHeadings).not.toContain("Owned");
+    expect(mainHeadings).not.toContain("Income");
+  });
+
+  it("keeps Income/Events/Owned details nodes and collapse state across ticks", () => {
+    const h = mount();
+    const side = h.root.querySelector(".side")!;
+    const panels = Array.from(side.querySelectorAll<HTMLDetailsElement>("details.side-details"));
+    const income = panels[0]!;
+    const events = panels[1]!;
+    const owned = panels[2]!;
+    income.open = false;
+    events.open = false;
+    expect(owned.open).toBe(true);
+    for (let i = 0; i < 5; i++) {
+      h.engine.tick();
+      h.view.render();
+    }
+    const after = Array.from(side.querySelectorAll<HTMLDetailsElement>("details.side-details"));
+    expect(after[0]).toBe(income);
+    expect(after[1]).toBe(events);
+    expect(after[2]).toBe(owned);
+    expect(income.open).toBe(false);
+    expect(events.open).toBe(false);
+    expect(owned.open).toBe(true);
+  });
+
+  it("puts subscription receipts on Income, while purchase stays in Events", () => {
+    const h = mount();
+    h.root.querySelector<HTMLElement>('[data-buy="subscription"]')!.click();
+    expect(h.root.querySelector(".log")!.textContent).toMatch(/Purchased: .*Subscription/i);
+    h.state.stocks.users = 100;
+    h.engine.tick();
+    h.view.render();
+    const chart = h.root.querySelector('[data-section="income-chart"]')!;
+    expect(chart.textContent).toContain("Recurring $75");
+    expect(chart.textContent).toContain("Burst $0");
+    expect(h.root.querySelector(".log")!.textContent).not.toMatch(/product sale burst|incomeFromStock/i);
   });
 
   it("keeps a non-removable purchase out of the Owned panel", () => {

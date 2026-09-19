@@ -16,6 +16,15 @@ export function log(state: GameState, message: string): void {
   if (state.log.length > 200) state.log.shift();
 }
 
+/** Sparkline length for the Income panel. Quiet days stay in the buffer. */
+export const INCOME_HISTORY_DAYS = 14;
+
+function recordDailyIncome(state: GameState, recurring: number, burst: number): void {
+  if (!state.incomeByDay) state.incomeByDay = [];
+  state.incomeByDay.push({ day: state.day, recurring, burst });
+  while (state.incomeByDay.length > INCOME_HISTORY_DAYS) state.incomeByDay.shift();
+}
+
 // Attribute shipped points equally across in-flight remainings, pay revenue
 // and bonuses. Factory throughput is conserved; each live contract gets
 // credit / n. Completing a remaining in this tick snaps its unused share onto
@@ -137,17 +146,23 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
   // later-purchased decision can still rescue an earlier decision's payroll;
   // otherwise outcomes would depend arbitrarily on purchase order.
   let totalIncome = 0;
+  let recurringIncome = 0;
+  let burstIncome = 0;
   state.userIncomeFlow = 0;
   for (const inst of snapshot) {
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
-    if (def.incomePerDay) totalIncome += def.incomePerDay;
+    if (def.incomePerDay) {
+      totalIncome += def.incomePerDay;
+      recurringIncome += def.incomePerDay;
+    }
     // Studio monetization: income scaled by a stock's level,
     // stacked on top of any flat incomePerDay. The subscription card reads
     // users; useless at 0 users (contributes exactly 0).
     if (def.incomeFromStock) {
       const fromStock = state.stocks[def.incomeFromStock.stock] * def.incomeFromStock.perUnit;
       totalIncome += fromStock;
+      recurringIncome += fromStock;
       if (def.incomeFromStock.stock === "users") state.userIncomeFlow += fromStock;
     }
     // Probabilistic income burst scaled by a stock's level (one-time-product
@@ -157,18 +172,20 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     // roll when the stock is 0: a hit would credit $0 anyway, and drawing
     // here would burn the purchase RNG stream through the isolated
     // pre-launch burndown (users stay 0 until the first project completes).
+    // Receipts go on incomeByDay, not the Events log.
     if (def.burstFromStock) {
       const stock = state.stocks[def.burstFromStock.stock];
       if (stock > 0 && rng.next() < def.burstFromStock.probabilityPerDay) {
         const burst = stock * def.burstFromStock.perUnit;
         if (burst > 0) {
           totalIncome += burst;
+          burstIncome += burst;
           if (def.burstFromStock.stock === "users") state.userIncomeFlow += burst;
-          log(state, `${def.name}: +$${burst.toFixed(0)} from a product sale burst`);
         }
       }
     }
   }
+  recordDailyIncome(state, recurringIncome, burstIncome);
   // Clamp at 0 deliberately per the design spec: budget never goes negative.
   // Insolvency also freezes delivery (isDeliveryFrozen) and removes unpaid
   // payroll; it is not a negative balance.
