@@ -1,5 +1,5 @@
 import type { Availability } from "../engine/decisions";
-import type { ProjectAvailability } from "../engine/projects";
+import { pursueIdeaCost, type ProjectAvailability } from "../engine/projects";
 import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject, DailyIncome, DailyExpenses } from "../engine/types";
 import { effectiveRate } from "../engine/modifiers";
 import { summarizeDecisionEffects } from "./effectSummary";
@@ -472,11 +472,12 @@ export function renderProjectOffers(offers: ProjectAvailability[], state: Readon
       const def = o.def;
       const disabled = o.startable ? "" : "disabled";
       const label = def.pursue ? "Pursue" : "Start";
-      const ideasShort = !!def.pursue && state.stocks.ideas < def.sizePoints;
+      const ideasCost = pursueIdeaCost(def);
+      const ideasShort = !!def.pursue && state.stocks.ideas < ideasCost;
       const cashShort = state.stocks.budget < def.upfrontCost;
       const cashNote = cashShort ? `<div class="proj-sub proj-warn">cannot afford</div>` : "";
       const upfront = def.upfrontCost > 0 ? `<div class="proj-sub">$${fmt(def.upfrontCost)} start</div>` : "";
-      const ideas = def.pursue ? fmt(def.sizePoints) : PROJ_EMPTY;
+      const ideas = def.pursue ? fmt(ideasCost) : PROJ_EMPTY;
       const ideasClass = ideasShort ? "num proj-warn" : "num";
       const chips = chipsHtml(projectEffectChips(def));
       return `<tr>
