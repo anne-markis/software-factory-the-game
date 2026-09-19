@@ -8,14 +8,17 @@ import {
   decisionsPanelScaffold,
   ownedPanelScaffold,
   incomePanelScaffold,
+  expensesPanelScaffold,
   logPanelScaffold,
   renderOwnedList,
   decisionNodeSection,
   OWNED_LIST_SECTION,
   INCOME_CHART_SECTION,
+  EXPENSES_CHART_SECTION,
   LOG_SECTION,
   renderLog,
   renderIncomeChart,
+  renderExpensesChart,
   renderChoicesScaffold,
   renderChoiceCountdown,
   choiceCountdownSection,
@@ -557,12 +560,15 @@ describe("renderLog", () => {
 });
 
 describe("side rail scaffolds", () => {
-  it("Income, Events, and Owned chrome are expanded details with patch targets", () => {
+  it("Income, Expenses, Events, and Owned chrome are expanded details with patch targets", () => {
     expect(incomePanelScaffold()).toContain(`${SECTION_ATTR}="${INCOME_CHART_SECTION}"`);
+    expect(expensesPanelScaffold()).toContain(`${SECTION_ATTR}="${EXPENSES_CHART_SECTION}"`);
     expect(logPanelScaffold()).toContain(`${SECTION_ATTR}="${LOG_SECTION}"`);
     expect(incomePanelScaffold()).toMatch(/<details class="panel side-details" open>/);
+    expect(expensesPanelScaffold()).toMatch(/<details class="panel side-details" open>/);
     expect(logPanelScaffold()).toMatch(/<details class="panel side-details" open>/);
     expect(incomePanelScaffold()).toContain("<h3>Income</h3>");
+    expect(expensesPanelScaffold()).toContain("<h3>Expenses</h3>");
     expect(logPanelScaffold()).toContain("<h3>Events</h3>");
   });
 });
@@ -585,6 +591,29 @@ describe("renderIncomeChart", () => {
     expect(html).toContain("Burst $120");
     expect(html).toContain('aria-label="Income last 2 days, recurring and burst"');
     expect(html).toContain("Day 11: recurring $75, burst $120");
+  });
+});
+
+describe("renderExpensesChart", () => {
+  it("shows an empty state when no dollars have been spent", () => {
+    expect(renderExpensesChart([])).toContain("No expenses yet.");
+    expect(renderExpensesChart([{ day: 1, human: 0, agents: 0, misc: 0 }])).toContain("No expenses yet.");
+    expect(renderExpensesChart([{ day: 1, human: 0, agents: 0, misc: 0 }])).not.toContain("income-bars");
+  });
+
+  it("stacks human, agents, and misc as separate series with latest totals", () => {
+    const html = renderExpensesChart([
+      { day: 10, human: 0, agents: 0, misc: 20 },
+      { day: 11, human: 438, agents: 16, misc: 37 },
+    ]);
+    expect(html).toContain("exp-human");
+    expect(html).toContain("exp-agents");
+    expect(html).toContain("exp-misc");
+    expect(html).toContain("Human $438");
+    expect(html).toContain("Agents $16");
+    expect(html).toContain("Misc $37");
+    expect(html).toContain('aria-label="Expenses last 2 days, human, agents, and misc"');
+    expect(html).toContain("Day 11: human $438, agents $16, misc $37");
   });
 });
 

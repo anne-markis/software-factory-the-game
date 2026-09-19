@@ -26,14 +26,17 @@ import {
   decisionsPanelScaffold,
   ownedPanelScaffold,
   incomePanelScaffold,
+  expensesPanelScaffold,
   logPanelScaffold,
   decisionNodeSection,
   renderDecisionNode,
   renderOwnedList,
   renderIncomeChart,
+  renderExpensesChart,
   shopScaffoldKey,
   OWNED_LIST_SECTION,
   INCOME_CHART_SECTION,
+  EXPENSES_CHART_SECTION,
   LOG_SECTION,
   renderStall,
   renderTimeControls,
@@ -154,6 +157,7 @@ function pageScaffold(): string {
       </div>
       <div class="side">
         ${incomePanelScaffold()}
+        ${expensesPanelScaffold()}
         ${logPanelScaffold()}
         ${ownedPanelScaffold()}
       </div>
@@ -266,8 +270,9 @@ export function mountAppView(deps: AppViewDeps): AppView {
     projects.patch(PROJECTS_OFFERS_SECTION, renderProjectOffers(engine.availableProjects(), state));
     renderChoicesRegion([...state.pendingChoices], state.day, state.paused);
     page.patch(INCOME_CHART_SECTION, renderIncomeChart(state.incomeByDay ?? []));
+    page.patch(EXPENSES_CHART_SECTION, renderExpensesChart(state.expensesByDay ?? []));
     page.patch(LOG_SECTION, renderLog(state.log));
-    // Income / Events / Owned sit in `.side` as static <details> chrome
+    // Income / Expenses / Events / Owned sit in `.side` as static <details> chrome
     // (default open). Only inner sections patch, so collapse state survives ticks.
     page.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
   }

@@ -1,4 +1,4 @@
-import type { ActiveProject, GameContent, GameState, StockFlowMod } from "./types";
+import type { ActiveProject, DailyExpenses, GameContent, GameState, StockFlowMod } from "./types";
 import type { Rng } from "./rng";
 import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
 import { continuousDeployActive } from "./continuousDeploy";
@@ -16,13 +16,39 @@ export function log(state: GameState, message: string): void {
   if (state.log.length > 200) state.log.shift();
 }
 
-/** Sparkline length for the Income panel. Quiet days stay in the buffer. */
+/** Sparkline length for the Income and Expenses panels. Quiet days stay in the buffer. */
 export const INCOME_HISTORY_DAYS = 14;
 
 function recordDailyIncome(state: GameState, recurring: number, burst: number): void {
   if (!state.incomeByDay) state.incomeByDay = [];
   state.incomeByDay.push({ day: state.day, recurring, burst });
   while (state.incomeByDay.length > INCOME_HISTORY_DAYS) state.incomeByDay.shift();
+}
+
+function recordDailyExpenses(state: GameState, split: Omit<DailyExpenses, "day">): void {
+  if (!state.expensesByDay) state.expensesByDay = [];
+  state.expensesByDay.push({ day: state.day, ...split });
+  while (state.expensesByDay.length > INCOME_HISTORY_DAYS) state.expensesByDay.shift();
+}
+
+/** Owned per-day drain plus shop-floor burn, bucketed for the Expenses chart. */
+export function dailyExpenseSplit(
+  state: Pick<GameState, "decisions" | "baseBurnPerDay">,
+  content: GameContent,
+): Omit<DailyExpenses, "day"> {
+  let human = 0;
+  let agents = 0;
+  let misc = state.baseBurnPerDay;
+  for (const inst of state.decisions) {
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (!def) continue;
+    const perDay = def.cost.perDay ?? 0;
+    if (perDay <= 0) continue;
+    if (def.human) human += perDay;
+    else if (def.id === "agent") agents += perDay;
+    else misc += perDay;
+  }
+  return { human, agents, misc };
 }
 
 // Attribute shipped points equally across in-flight remainings, pay revenue
@@ -186,6 +212,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     }
   }
   recordDailyIncome(state, recurringIncome, burstIncome);
+  recordDailyExpenses(state, dailyExpenseSplit({ decisions: snapshot, baseBurnPerDay: state.baseBurnPerDay }, content));
   // Clamp at 0 deliberately per the design spec: budget never goes negative.
   // Insolvency also freezes delivery (isDeliveryFrozen) and removes unpaid
   // payroll; it is not a negative balance.

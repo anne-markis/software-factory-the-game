@@ -1,6 +1,6 @@
 import type { Availability } from "../engine/decisions";
 import type { ProjectAvailability } from "../engine/projects";
-import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject, DailyIncome } from "../engine/types";
+import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject, DailyIncome, DailyExpenses } from "../engine/types";
 import { effectiveRate } from "../engine/modifiers";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { projectEffectChips, type ProjectChip, type ProjectEffectSource } from "./projectEffects";
@@ -61,6 +61,7 @@ function effectsLine(def: DecisionDef): string {
 // containers, and each card is patched independently.
 export const OWNED_LIST_SECTION = "owned-list";
 export const INCOME_CHART_SECTION = "income-chart";
+export const EXPENSES_CHART_SECTION = "expenses-chart";
 export const LOG_SECTION = "log";
 
 function sideDetailsScaffold(title: string, section: string): string {
@@ -211,6 +212,11 @@ export function incomePanelScaffold(): string {
   return sideDetailsScaffold("Income", INCOME_CHART_SECTION);
 }
 
+/** Expenses sparkline chrome. Starts expanded; player can collapse. */
+export function expensesPanelScaffold(): string {
+  return sideDetailsScaffold("Expenses", EXPENSES_CHART_SECTION);
+}
+
 /** Events panel chrome. Starts expanded; player can collapse. */
 export function logPanelScaffold(): string {
   return sideDetailsScaffold("Events", LOG_SECTION);
@@ -284,6 +290,33 @@ export function renderIncomeChart(incomeByDay: readonly DailyIncome[]): string {
     <div class="income-legend">
       <span><span class="income-swatch income-recurring"></span> Recurring $${fmt(latest.recurring)}</span>
       <span><span class="income-swatch income-burst"></span> Burst $${fmt(latest.burst)}</span>
+    </div>
+  </div>`;
+}
+
+/** Stacked human/agents/misc sparkline for the last recorded days. */
+export function renderExpensesChart(expensesByDay: readonly DailyExpenses[]): string {
+  const spent = expensesByDay.some((d) => d.human > 0 || d.agents > 0 || d.misc > 0);
+  if (!spent) {
+    return `<div class="income-empty">No expenses yet.</div>`;
+  }
+  const max = Math.max(...expensesByDay.map((d) => d.human + d.agents + d.misc), 0);
+  const latest = expensesByDay[expensesByDay.length - 1]!;
+  const bars = expensesByDay
+    .map((d) => {
+      const humanH = incomeBarHeight(d.human, max);
+      const agentsH = incomeBarHeight(d.agents, max);
+      const miscH = incomeBarHeight(d.misc, max);
+      const title = `Day ${d.day}: human $${fmt(d.human)}, agents $${fmt(d.agents)}, misc $${fmt(d.misc)}`;
+      return `<div class="income-col" title="${esc(title)}"><div class="income-stack"><div class="income-seg exp-misc" style="height:${miscH}"></div><div class="income-seg exp-agents" style="height:${agentsH}"></div><div class="income-seg exp-human" style="height:${humanH}"></div></div></div>`;
+    })
+    .join("");
+  return `<div class="income-chart" role="img" aria-label="Expenses last ${expensesByDay.length} days, human, agents, and misc">
+    <div class="income-bars">${bars}</div>
+    <div class="income-legend">
+      <span><span class="income-swatch exp-human"></span> Human $${fmt(latest.human)}</span>
+      <span><span class="income-swatch exp-agents"></span> Agents $${fmt(latest.agents)}</span>
+      <span><span class="income-swatch exp-misc"></span> Misc $${fmt(latest.misc)}</span>
     </div>
   </div>`;
 }

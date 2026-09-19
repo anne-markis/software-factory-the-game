@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en" class="force-dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mock — expenses under Income</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #181818;
+        --fg: #e8e8e8;
+        --fg-dim: #aaa;
+        --border: #888;
+        --accent-amber: #e0a030;
+        --chip-users: #8ab4e8;
+        --desc: #c2c2c2;
+      }
+      body {
+        font-family: ui-monospace, monospace;
+        max-width: 40rem;
+        margin: 1rem auto;
+        padding: 0 1rem 2rem;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      h1 { font-size: 1.2rem; margin: 0 0 0.5rem; }
+      h3 { margin: 0; font-size: 1rem; display: inline; }
+      p { line-height: 1.45; color: var(--desc); }
+      .mock-chrome { color: var(--fg-dim); font-size: 0.85rem; }
+      .rail { width: 22rem; max-width: 100%; }
+      .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 1rem; }
+      .side-details > summary { cursor: pointer; list-style-position: outside; }
+      .income-bars {
+        display: flex; align-items: stretch; gap: 2px; height: 4.5rem;
+        border-bottom: 1px solid var(--border); margin-top: 0.35rem;
+      }
+      .income-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+      .income-stack { display: flex; flex-direction: column; justify-content: flex-end; width: 100%; height: 100%; }
+      .income-seg { width: 100%; min-height: 0; }
+      .income-seg.income-recurring, .income-swatch.income-recurring { background: var(--fg); }
+      .income-seg.income-burst, .income-swatch.income-burst { background: var(--accent-amber); }
+      .income-seg.exp-human, .income-swatch.exp-human { background: var(--fg); }
+      .income-seg.exp-agents, .income-swatch.exp-agents { background: var(--accent-amber); }
+      .income-seg.exp-misc, .income-swatch.exp-misc { background: var(--chip-users); }
+      .income-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; margin-top: 0.4rem; font-size: 0.8rem; color: var(--fg-dim); }
+      .income-swatch { display: inline-block; width: 0.65rem; height: 0.65rem; margin-right: 0.25rem; vertical-align: -0.05rem; border: 1px solid var(--border); }
+    </style>
+  </head>
+  <body>
+    <p class="mock-chrome">Software Factory · static mock · locked G</p>
+    <h1>Expenses under Income</h1>
+    <p>Same caret panel, 14 stacked day-bars, latest-day legend. Human / agents / misc replace Recurring / Burst.</p>
+    <div class="rail" id="rail"></div>
+    <script>
+      function pct(n, max) {
+        if (max <= 0 || n <= 0) return "0";
+        return Math.max(1, Math.round((n / max) * 100)) + "%";
+      }
+      function chart(days, segs, max, legend, aria) {
+        const bars = days.map((d) => {
+          const inner = segs.map(([cls, key]) => `<div class="income-seg ${cls}" style="height:${pct(d[key], max)}"></div>`).join("");
+          return `<div class="income-col"><div class="income-stack">${inner}</div></div>`;
+        }).join("");
+        return `<div class="income-chart" role="img" aria-label="${aria}"><div class="income-bars">${bars}</div><div class="income-legend">${legend}</div></div>`;
+      }
+      function panel(title, inner) {
+        return `<details class="panel side-details" open><summary><h3>${title}</h3></summary>${inner}</details>`;
+      }
+      function swatch(cls, label) {
+        return `<span><span class="income-swatch ${cls}"></span> ${label}</span>`;
+      }
+      const incomeDays = Array.from({ length: 14 }, (_, i) => ({ recurring: 225, burst: i === 10 ? 180 : 0 }));
+      const incomeMax = Math.max(...incomeDays.map((d) => d.recurring + d.burst));
+      const expDays = Array.from({ length: 14 }, (_, i) => ({
+        human: i >= 4 ? 438 : 0,
+        agents: i >= 8 ? 16 : i >= 6 ? 8 : 0,
+        misc: 20 + (i >= 9 ? 17 : 0),
+      }));
+      const expMax = Math.max(...expDays.map((d) => d.human + d.agents + d.misc));
+      const latest = expDays[expDays.length - 1];
+      document.getElementById("rail").innerHTML =
+        panel("Income", chart(incomeDays, [["income-burst", "burst"], ["income-recurring", "recurring"]], incomeMax, swatch("income-recurring", "Recurring $225") + swatch("income-burst", "Burst $0"), "Income")) +
+        panel("Expenses", chart(expDays, [["exp-misc", "misc"], ["exp-agents", "agents"], ["exp-human", "human"]], expMax, swatch("exp-human", `Human $${latest.human}`) + swatch("exp-agents", `Agents $${latest.agents}`) + swatch("exp-misc", `Misc $${latest.misc}`), "Expenses"));
+    </script>
+  </body>
+</html>
