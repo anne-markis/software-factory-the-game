@@ -320,6 +320,11 @@ describe("renderStageZoom", () => {
     expect(afterAgents).not.toContain('data-buy="agent-harness"');
     expect(afterAgents).not.toContain('data-buy="hack-day"');
     expect(afterAgents).not.toContain('data-buy="agent-ci-review"');
+
+    e.applyDecision("test-suite");
+    e.applyDecision("ci-cd");
+    const afterCiCd = panel(e.getState(), c, "inReview");
+    expect(afterCiCd).toContain('data-buy="agent-ci-review"');
   });
 });
 

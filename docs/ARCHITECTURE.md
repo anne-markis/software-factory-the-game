@@ -66,7 +66,7 @@ Review stays. A point is in one stage at a time. Studio orchestration
 multiplies `review` as well as `finish`. Coding agents add a smaller
 review trickle than they add finish; the harness does not multiply
 review. Hires gamble review (+0.7 strong, +0.1 poor). `agent-ci-review` is a
-review multiplier gated on CI/CD and orchestration; it does not skip
+review multiplier gated on CI/CD; it does not skip
 In Review.
 
 Do not seed `start.json` `stocks.backlog` independently of

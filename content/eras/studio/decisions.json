@@ -200,8 +200,7 @@
       "perDay": 12
     },
     "requires": [
-      "ci-cd",
-      "agent-orchestration"
+      "ci-cd"
     ],
     "effects": [
       {
