@@ -627,15 +627,16 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(h.actions).toBe(1);
   });
 
-  it("places Income, Events, and Owned in the right rail, all expanded", () => {
+  it("places Income, Expenses, Events, and Owned in the right rail, all expanded", () => {
     const h = mount();
     const side = h.root.querySelector(".side")!;
     const headings = Array.from(side.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toEqual(["Income", "Events", "Owned"]);
+    expect(headings).toEqual(["Income", "Expenses", "Events", "Owned"]);
     const details = Array.from(side.querySelectorAll<HTMLDetailsElement>("details.side-details"));
-    expect(details).toHaveLength(3);
+    expect(details).toHaveLength(4);
     expect(details.every((d) => d.open)).toBe(true);
     expect(side.querySelector('[data-section="income-chart"]')!.textContent).toContain("No income yet.");
+    expect(side.querySelector('[data-section="expenses-chart"]')!.textContent).toContain("No expenses yet.");
     expect(side.querySelector('[data-section="owned-list"]')!.textContent!.trim()).toBe("");
     const main = h.root.querySelector(".main")!;
     const mainHeadings = Array.from(main.querySelectorAll("h3")).map((el) => el.textContent);
@@ -645,16 +646,19 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(shopIndex).toBeGreaterThan(projectsIndex);
     expect(mainHeadings).not.toContain("Owned");
     expect(mainHeadings).not.toContain("Income");
+    expect(mainHeadings).not.toContain("Expenses");
   });
 
-  it("keeps Income/Events/Owned details nodes and collapse state across ticks", () => {
+  it("keeps Income/Expenses/Events/Owned details nodes and collapse state across ticks", () => {
     const h = mount();
     const side = h.root.querySelector(".side")!;
     const panels = Array.from(side.querySelectorAll<HTMLDetailsElement>("details.side-details"));
     const income = panels[0]!;
-    const events = panels[1]!;
-    const owned = panels[2]!;
+    const expenses = panels[1]!;
+    const events = panels[2]!;
+    const owned = panels[3]!;
     income.open = false;
+    expenses.open = false;
     events.open = false;
     expect(owned.open).toBe(true);
     for (let i = 0; i < 5; i++) {
@@ -663,11 +667,24 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     }
     const after = Array.from(side.querySelectorAll<HTMLDetailsElement>("details.side-details"));
     expect(after[0]).toBe(income);
-    expect(after[1]).toBe(events);
-    expect(after[2]).toBe(owned);
+    expect(after[1]).toBe(expenses);
+    expect(after[2]).toBe(events);
+    expect(after[3]).toBe(owned);
     expect(income.open).toBe(false);
+    expect(expenses.open).toBe(false);
     expect(events.open).toBe(false);
     expect(owned.open).toBe(true);
+  });
+
+  it("puts shop-floor burn on Expenses after a tick", () => {
+    const h = mount();
+    h.engine.tick();
+    h.view.render();
+    const chart = h.root.querySelector('[data-section="expenses-chart"]')!;
+    expect(chart.textContent).toContain("Human $0");
+    expect(chart.textContent).toContain("Agents $0");
+    expect(chart.textContent).toContain("Misc $20");
+    expect(chart.querySelector(".income-bars")).toBeTruthy();
   });
 
   it("puts subscription receipts on Income, while purchase stays in Events", () => {

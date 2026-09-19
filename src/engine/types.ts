@@ -325,6 +325,16 @@ export interface DailyIncome {
   burst: number;
 }
 
+// One tick of cash drain, split for the Expenses sparkline. human is
+// owned `human` payroll; agents is owned `agent` copies; misc is shop-floor
+// base burn plus every other perDay. Capped on GameState.expensesByDay.
+export interface DailyExpenses {
+  day: number;
+  human: number;
+  agents: number;
+  misc: number;
+}
+
 // Always-on stock drag (Studio spine / ADR 0006). Mirrors the
 // tech-debt debtDrag shape but keyed on an arbitrary stock and pointed at a
 // specific rate (or "all", like modifyRate). Above freeBand, every excess
@@ -479,6 +489,10 @@ export interface GameState {
   // hand-built states. Quiet days are stored as zeros so the sparkline
   // keeps a stable span.
   incomeByDay: DailyIncome[];
+  // last N days of burn by type (same cap as incomeByDay). Feeds the
+  // collapsible Expenses chart under Income. initialState seeds [];
+  // deserialize backfills [] on current-version hand-built states.
+  expensesByDay: DailyExpenses[];
   pointsPerDay: number;
   // Realized flow this tick. pointsPerDay is shippedFlow (Done → Shipped).
   // finishFlow is how much left the Ready+In Progress pool into In Review.

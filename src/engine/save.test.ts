@@ -350,15 +350,23 @@ describe("save/load", () => {
     expect(restored.incomeByDay).toEqual([]);
   });
 
-  it("round-trips incomeByDay", () => {
+  it("defaults a missing expensesByDay to [] (legacy save shape)", () => {
     const c = content();
     const a = new Engine(c);
-    a.applyDecision("subscription");
-    (a.getState() as GameState).stocks.users = 40;
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.expensesByDay;
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.expensesByDay).toEqual([]);
+  });
+
+  it("round-trips expensesByDay", () => {
+    const c = content();
+    const a = new Engine(c);
+    a.applyDecision("agent");
     a.tick();
     const restored = deserialize(serialize(a.getState()));
-    expect(restored.incomeByDay).toEqual(a.getState().incomeByDay);
-    expect(restored.incomeByDay.at(-1)?.recurring).toBeCloseTo(30, 5);
+    expect(restored.expensesByDay).toEqual(a.getState().expensesByDay);
+    expect(restored.expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, misc: 20 });
   });
 
   it("loads a legacy save without lastChallengeDay fine (stays undefined, no default needed)", () => {

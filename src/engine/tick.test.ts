@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { Engine } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
-import { INCOME_HISTORY_DAYS } from "./tick";
+import { INCOME_HISTORY_DAYS, dailyExpenseSplit } from "./tick";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
 import type { GameContent, GameState, ProjectDef } from "./types";
@@ -455,6 +455,29 @@ describe("tick", () => {
       const days = e.getState().incomeByDay;
       expect(days).toHaveLength(INCOME_HISTORY_DAYS);
       expect(days[0]!.day).toBe(e.getState().day - INCOME_HISTORY_DAYS + 1);
+      expect(days.at(-1)!.day).toBe(e.getState().day);
+    });
+
+    it("splits expenses into human, agent copies, and misc (shop floor plus other perDay)", () => {
+      const content = ciCdContent();
+      const e = new Engine(content);
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 0, agents: 0, misc: 20 });
+      e.applyDecision("basic-dev");
+      e.applyDecision("agent");
+      e.applyDecision("agent");
+      e.applyDecision("agent-harness");
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 8, misc: 25 });
+    });
+
+    it("records expensesByDay on tick and caps it with income history", () => {
+      const content = ciCdContent();
+      const e = new Engine(content);
+      e.applyDecision("agent");
+      e.tick();
+      expect(e.getState().expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, misc: 20 });
+      for (let i = 0; i < INCOME_HISTORY_DAYS + 2; i++) e.tick();
+      const days = e.getState().expensesByDay;
+      expect(days).toHaveLength(INCOME_HISTORY_DAYS);
       expect(days.at(-1)!.day).toBe(e.getState().day);
     });
   });

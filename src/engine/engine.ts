@@ -56,6 +56,7 @@ export function initialState(content: GameContent): GameState {
     pendingChoices: [],
     log: [],
     incomeByDay: [],
+    expensesByDay: [],
     pointsPerDay: 0,
     pullFlow: 0,
     finishFlow: 0,
@@ -148,6 +149,9 @@ export class Engine {
       }
       if (restored.incomeByDay === undefined) {
         restored.incomeByDay = [];
+      }
+      if (restored.expensesByDay === undefined) {
+        restored.expensesByDay = [];
       }
       this.rng = createRng(restored.rngState, true);
       hydrateHumanScale(this.state, content);

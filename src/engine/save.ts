@@ -104,6 +104,9 @@ export function deserialize(json: string): GameState {
   if (state.incomeByDay === undefined) {
     state.incomeByDay = [];
   }
+  if (state.expensesByDay === undefined) {
+    state.expensesByDay = [];
+  }
   // Completed-id set for unique versions / requiresCompletedId. Content-free
   // like milestonesSeen, so it defaults here. SAVE_VERSION 4 rejects genuine
   // v3 saves; this only guards hand-built current-version states.
