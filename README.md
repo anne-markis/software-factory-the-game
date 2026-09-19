@@ -11,7 +11,8 @@ people, agents, and process; survive random challenges; scale points/day.
 
 ## Test
 
-    npm run test
+    npm run test          # tsc --noEmit, then Vitest
+    npm run typecheck     # tsc --noEmit only
 
 To jump to a boundary without playing a full run, open the browser
 DevTools console on the running game and type `sf.help()`. `sf.era()`
