@@ -91,7 +91,7 @@ describe("content graph model", () => {
         to: "decision:studio:agent-ci-review",
       }),
     );
-    expect(model.edges).toContainEqual(
+    expect(model.edges).not.toContainEqual(
       expect.objectContaining({
         kind: "requires",
         from: "decision:studio:agent-orchestration",

@@ -361,15 +361,12 @@ describe("decisions", () => {
     expect(finishAfterAgent - 1).toBeGreaterThan(reviewAfterAgent - afterHire);
   });
 
-  it("agent-ci-review needs ci-cd and orchestration, then multiplies review without skipping the stage", () => {
+  it("agent-ci-review needs ci-cd, then multiplies review without skipping the stage", () => {
     const e = new Engine(content());
     expect(e.availableDecisions().find((a) => a.def.id === "agent-ci-review")).toMatchObject({
       purchasable: false,
       code: "missing-requires",
     });
-    e.applyDecision("agent");
-    e.applyDecision("agent");
-    e.applyDecision("agent-orchestration");
     expect(() => e.applyDecision("agent-ci-review")).toThrow(/requires CI\/CD pipeline/);
     e.applyDecision("test-suite");
     e.applyDecision("ci-cd");

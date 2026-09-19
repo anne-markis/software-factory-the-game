@@ -292,7 +292,7 @@ describe("parseDecisions", () => {
 
     const ciReview = defs.find((d) => d.id === "agent-ci-review")!;
     expect(ciReview.unique).toBe(true);
-    expect(ciReview.requires).toEqual(["ci-cd", "agent-orchestration"]);
+    expect(ciReview.requires).toEqual(["ci-cd"]);
     expect(ciReview.effects).toEqual([{ type: "modifyRate", target: "review", op: "mul", value: 2.5 }]);
     expect(ciReview.effects.some((e) => e.type === "continuousDeploy")).toBe(false);
   });
