@@ -289,7 +289,9 @@ export interface ActiveProject {
   // inflow (debt refill, scope creep, addToStock/scaleStock on a pipeline
   // stock) attaches to one in-flight remaining (this one if it is the only
   // contract; otherwise engine-picked) so remaining tracks the work, not a
-  // parallel ship-countdown. Completes at ~0 in attributeShipped.
+  // parallel ship-countdown. Completes at ~0 in attributeShipped, or when
+  // remaining falls below PROJECT_DISPLAY_GRAIN (the 1-decimal UI already
+  // paints that as "0 left").
   remaining: number;
   payoutPerPoint: number;
   completionBonus: number;
