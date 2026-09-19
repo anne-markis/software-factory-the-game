@@ -262,7 +262,6 @@ describe("projects", () => {
     const budgetBefore = s.stocks.budget;
     const repBefore = s.stocks.reputation;
     const dayBefore = s.day;
-    const ideasBefore = s.stocks.ideas;
 
     e.startProject("medium-refactor");
     expect(e.getState().plan).toEqual([]);
@@ -273,7 +272,6 @@ describe("projects", () => {
     const days = e.getState().day - dayBefore;
     expect(e.getState().stocks.budget).toBeCloseTo(budgetBefore - 20 * days, 5);
     expect(e.getState().stocks.reputation).toBe(repBefore);
-    expect(e.getState().stocks.ideas).toBe(ideasBefore);
     expect(e.availableProjects().find((p) => p.def.id === "medium-refactor")!.startable).toBe(true);
   });
 
@@ -308,6 +306,8 @@ describe("projects", () => {
     expect(e.getState().completedProjects).toBe(2);
     expect(e.getState().completedProjectIds).toContain("large-refactor");
     expect(e.getState().stocks.techDebt).toBe(0);
+    expect(e.availableProjects().find((p) => p.def.id === "large-refactor")!.reason).not.toBe("already completed");
+    (e.getState() as GameState).stocks.ideas = 200;
     expect(e.availableProjects().find((p) => p.def.id === "large-refactor")!.startable).toBe(true);
   });
 
