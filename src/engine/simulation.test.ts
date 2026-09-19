@@ -303,8 +303,8 @@ describe("simulation", () => {
       const owned = (id: string) => s.decisions.some((d) => d.defId === id);
       if (!owned("test-suite") && s.stocks.budget >= 500) e.applyDecision("test-suite");
       if (owned("test-suite") && !owned("ci-cd") && s.stocks.budget >= 750) e.applyDecision("ci-cd");
-      // Hires do not raise review, so buying them before launch only burns
-      // payroll against a 1 pt/day In Review wall. Wait until the beta ships.
+      // Hires add a little review (part of the job) but not enough to pay
+      // $438/day before the beta ships. Wait until launch.
       if (owned("ci-cd") && s.completedProjects >= 1 && hires < 2) {
         e.applyDecision("basic-dev");
         hires += 1;
@@ -566,7 +566,7 @@ describe("simulation", () => {
 
     expect(effectiveRate(ladder.getState(), "finish")).toBeCloseTo(3.2625, 4);
     expect(effectiveRate(ladder.getState(), "pull")).toBe(2);
-    expect(effectiveRate(ladder.getState(), "review")).toBeCloseTo(1.45, 4);
+    expect(effectiveRate(ladder.getState(), "review")).toBeCloseTo(1.2 * 1.45, 4);
     expect(effectiveRate(ladder.getState(), "deploy")).toBe(1);
     expect(effectiveRate(idle.getState(), "finish")).toBe(1);
 
@@ -582,11 +582,11 @@ describe("simulation", () => {
     expect(i.stocks.inReview).toBeLessThan(2);
     expect(l.stocks.inProgress).toBe(0);
     expect(l.stocks.backlog).toBe(0);
-    expect(l.stocks.inReview).toBeGreaterThan(100);
+    expect(l.stocks.inReview).toBeGreaterThan(80);
     expect(l.stocks.techDebt).toBeLessThan(i.stocks.techDebt);
   });
 
-  it("with ci-cd but no orchestration, coding agents still ship at founder review", () => {
+  it("with ci-cd but no orchestration, coding agents ship at their own review add", () => {
     const idle = ladderBuild({ ladder: false, continuousDeploy: true });
     const coding = ladderBuild({ ladder: true, continuousDeploy: true, orchestration: false });
     for (let day = 1; day <= ladderWindow; day++) {
@@ -595,10 +595,10 @@ describe("simulation", () => {
     }
     const i = idle.getState();
     const c = coding.getState();
-    expect(effectiveRate(c, "review")).toBe(1);
-    expect(Math.abs(c.stocks.shipped - i.stocks.shipped)).toBeLessThan(2);
+    expect(effectiveRate(c, "review")).toBeCloseTo(1.2, 4);
+    expect(c.stocks.shipped).toBeGreaterThan(i.stocks.shipped);
     expect(i.pointsPerDay).toBeCloseTo(1, 5);
-    expect(c.pointsPerDay).toBeCloseTo(1, 5);
+    expect(c.pointsPerDay).toBeCloseTo(1.2, 5);
     expect(c.stocks.inReview).toBeGreaterThan(50);
   });
 
@@ -611,10 +611,10 @@ describe("simulation", () => {
     }
     const i = idle.getState();
     const l = ladder.getState();
-    expect(effectiveRate(l, "review")).toBeCloseTo(1.45, 4);
+    expect(effectiveRate(l, "review")).toBeCloseTo(1.2 * 1.45, 4);
     expect(l.stocks.shipped).toBeGreaterThan(i.stocks.shipped);
     expect(i.pointsPerDay).toBeCloseTo(1, 5);
-    expect(l.pointsPerDay).toBeCloseTo(1.45, 5);
+    expect(l.pointsPerDay).toBeCloseTo(1.2 * 1.45, 5);
     expect(l.stocks.inReview).toBeGreaterThan(50);
     expect(l.stocks.backlog + l.stocks.inProgress).toBeCloseTo(0, 5);
   });

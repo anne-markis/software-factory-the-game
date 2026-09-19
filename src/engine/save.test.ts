@@ -181,12 +181,12 @@ describe("save/load", () => {
   it("defaults missing id counters from existing ids (legacy save shape)", () => {
     const c = content();
     const a = new Engine(c);
-    a.applyDecision("basic-dev"); // creates inst-1 and one finish modifier
+    a.applyDecision("basic-dev"); // creates inst-1, review modifier, finish modifier
     const raw = JSON.parse(serialize(a.getState()));
     delete raw.state.nextModifierId;
     delete raw.state.nextInstanceId;
     const restored = deserialize(JSON.stringify(raw));
-    expect(restored.nextModifierId).toBe(2);
+    expect(restored.nextModifierId).toBe(3);
     expect(restored.nextInstanceId).toBe(2);
   });
 

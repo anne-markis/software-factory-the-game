@@ -153,12 +153,43 @@ function summarizeGamble(gamble: GambleOutcome[]): string {
       return `${label} ${fmtRange(max)} to ${fmtRange(min)}`;
     }
   }
+  const perTarget = summarizeGamblePerTarget(gamble);
+  if (perTarget) return perTarget;
   // Fallback: shape is too heterogeneous to range cleanly (spec section 3)
   // -- name the best and worst outcome instead of trying to force a range.
   const scored = gamble.map((o) => ({ label: o.label, score: outcomeScore(o.effects) }));
   const best = scored.reduce((a, b) => (b.score > a.score ? b : a));
   const worst = scored.reduce((a, b) => (b.score < a.score ? b : a));
   return `${best.label} to ${worst.label}`;
+}
+
+const RATE_RANGE_ORDER = ["pull", "finish", "review", "deploy", "discover", "plan", "all"] as const;
+
+// When every outcome is add-op modifyRate on the same targets, but the
+// values differ by target (Studio hire: finish gamble vs review floor),
+// emit one range per rate instead of collapsing to outcome labels.
+function summarizeGamblePerTarget(gamble: GambleOutcome[]): string | null {
+  const maps: Array<Map<string, number>> = [];
+  for (const outcome of gamble) {
+    const byTarget = new Map<string, number>();
+    for (const effect of outcome.effects) {
+      if (effect.type !== "modifyRate" || effect.op !== "add" || effect.durationDays !== undefined) return null;
+      if (byTarget.has(effect.target)) return null;
+      byTarget.set(effect.target, effect.value);
+    }
+    if (byTarget.size === 0) return null;
+    maps.push(byTarget);
+  }
+  const keys = [...maps[0]!.keys()].sort();
+  if (maps.some((m) => m.size !== keys.length || keys.some((k) => !m.has(k)))) return null;
+  const fmtRange = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}`;
+  const ordered = RATE_RANGE_ORDER.filter((k) => keys.includes(k));
+  return ordered
+    .map((target) => {
+      const values = maps.map((m) => m.get(target)!);
+      return `${rateLabel(target as (typeof RATE_RANGE_ORDER)[number])} ${fmtRange(Math.max(...values))} to ${fmtRange(Math.min(...values))}`;
+    })
+    .join(", ");
 }
 
 // Pure: same DecisionDef always yields the same string. Returns "" only for a

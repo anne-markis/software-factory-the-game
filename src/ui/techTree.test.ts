@@ -8,38 +8,28 @@ function content(): GameContent {
 }
 
 describe("buildTechTree", () => {
-  it("groups the lean Studio content into two chains and five standalone decisions", () => {
+  it("groups the lean Studio content into one connected ladder and five standalone decisions", () => {
     const tree = buildTechTree(content());
-    expect(tree.chains).toHaveLength(2);
-    expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent"]);
+    expect(tree.chains).toHaveLength(1);
+    expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite"]);
     expect(tree.standalone.map((d) => d.id).sort()).toEqual(
       ["basic-dev", "hack-day", "one-time-product", "subscription", "user-interviews"].sort(),
     );
   });
 
-  it("assigns test-suite/ci-cd tiers 0 and 1", () => {
+  it("assigns test-suite and agent as roots, ci-cd/harness/orchestration next, agent-ci-review last", () => {
     const tree = buildTechTree(content());
-    const chain = tree.chains.find((c) => c.name === "Add test suite")!;
-    expect(chain.tiers).toHaveLength(2);
-    expect(chain.tiers[0].map((d) => d.id)).toEqual(["test-suite"]);
-    expect(chain.tiers[1].map((d) => d.id)).toEqual(["ci-cd"]);
-  });
-
-  // agent-orchestration's prerequisite is a count gate
-  // (requiresCounts: 2x agent) rather than a plain requires, so this also pins
-  // that count gates place a card in the tree the same way requires does.
-  it("assigns the agent chain tiers: agent 0, harness and orchestration 1", () => {
-    const tree = buildTechTree(content());
-    const chain = tree.chains.find((c) => c.name === "Add coding agent")!;
-    expect(chain.tiers).toHaveLength(2);
-    expect(chain.tiers[0].map((d) => d.id)).toEqual(["agent"]);
-    expect(chain.tiers[1].map((d) => d.id)).toEqual(["agent-harness", "agent-orchestration"]);
+    const chain = tree.chains[0]!;
+    expect(chain.tiers).toHaveLength(3);
+    expect(chain.tiers[0].map((d) => d.id)).toEqual(["test-suite", "agent"]);
+    expect(chain.tiers[1].map((d) => d.id)).toEqual(["ci-cd", "agent-harness", "agent-orchestration"]);
+    expect(chain.tiers[2].map((d) => d.id)).toEqual(["agent-ci-review"]);
   });
 
   it("orders chains deterministically by their root's content-order position", () => {
     const tree = buildTechTree(content());
     // decisions.json order: test-suite, ci-cd, basic-dev, agent, ...
-    expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent"]);
+    expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite"]);
   });
 
   it("is stable across repeated calls (deterministic ordering, not incidental)", () => {
