@@ -209,12 +209,12 @@ export function ownedPanelScaffold(): string {
 
 /** Income sparkline chrome. Starts expanded; player can collapse. */
 export function incomePanelScaffold(): string {
-  return sideDetailsScaffold("Income", INCOME_CHART_SECTION);
+  return sideDetailsScaffold("Income / day", INCOME_CHART_SECTION);
 }
 
 /** Expenses sparkline chrome. Starts expanded; player can collapse. */
 export function expensesPanelScaffold(): string {
-  return sideDetailsScaffold("Expenses", EXPENSES_CHART_SECTION);
+  return sideDetailsScaffold("Expenses / day", EXPENSES_CHART_SECTION);
 }
 
 /** Events panel chrome. Starts expanded; player can collapse. */
@@ -281,15 +281,15 @@ export function renderIncomeChart(incomeByDay: readonly DailyIncome[]): string {
     .map((d) => {
       const recH = incomeBarHeight(d.recurring, max);
       const burstH = incomeBarHeight(d.burst, max);
-      const title = `Day ${d.day}: recurring $${fmt(d.recurring)}, burst $${fmt(d.burst)}`;
+      const title = `Day ${d.day}: recurring $${fmt(d.recurring)}/day, burst $${fmt(d.burst)}/day`;
       return `<div class="income-col" title="${esc(title)}"><div class="income-stack"><div class="income-seg income-burst" style="height:${burstH}"></div><div class="income-seg income-recurring" style="height:${recH}"></div></div></div>`;
     })
     .join("");
-  return `<div class="income-chart" role="img" aria-label="Income last ${incomeByDay.length} days, recurring and burst">
+  return `<div class="income-chart" role="img" aria-label="Income per day last ${incomeByDay.length} days, recurring and burst">
     <div class="income-bars">${bars}</div>
     <div class="income-legend">
-      <span><span class="income-swatch income-recurring"></span> Recurring $${fmt(latest.recurring)}</span>
-      <span><span class="income-swatch income-burst"></span> Burst $${fmt(latest.burst)}</span>
+      <span><span class="income-swatch income-recurring"></span> Recurring $${fmt(latest.recurring)}/day</span>
+      <span><span class="income-swatch income-burst"></span> Burst $${fmt(latest.burst)}/day</span>
     </div>
   </div>`;
 }
@@ -307,16 +307,16 @@ export function renderExpensesChart(expensesByDay: readonly DailyExpenses[]): st
       const humanH = incomeBarHeight(d.human, max);
       const agentsH = incomeBarHeight(d.agents, max);
       const miscH = incomeBarHeight(d.misc, max);
-      const title = `Day ${d.day}: human $${fmt(d.human)}, agents $${fmt(d.agents)}, misc $${fmt(d.misc)}`;
+      const title = `Day ${d.day}: human $${fmt(d.human)}/day, agents $${fmt(d.agents)}/day, misc $${fmt(d.misc)}/day`;
       return `<div class="income-col" title="${esc(title)}"><div class="income-stack"><div class="income-seg exp-misc" style="height:${miscH}"></div><div class="income-seg exp-agents" style="height:${agentsH}"></div><div class="income-seg exp-human" style="height:${humanH}"></div></div></div>`;
     })
     .join("");
-  return `<div class="income-chart" role="img" aria-label="Expenses last ${expensesByDay.length} days, human, agents, and misc">
+  return `<div class="income-chart" role="img" aria-label="Expenses per day last ${expensesByDay.length} days, human, agents, and misc">
     <div class="income-bars">${bars}</div>
     <div class="income-legend">
-      <span><span class="income-swatch exp-human"></span> Human $${fmt(latest.human)}</span>
-      <span><span class="income-swatch exp-agents"></span> Agents $${fmt(latest.agents)}</span>
-      <span><span class="income-swatch exp-misc"></span> Misc $${fmt(latest.misc)}</span>
+      <span><span class="income-swatch exp-human"></span> Human $${fmt(latest.human)}/day</span>
+      <span><span class="income-swatch exp-agents"></span> Agents $${fmt(latest.agents)}/day</span>
+      <span><span class="income-swatch exp-misc"></span> Misc $${fmt(latest.misc)}/day</span>
     </div>
   </div>`;
 }
