@@ -17,7 +17,7 @@ import {
   projectsJson,
   startJson,
 } from "./loadShippedContent";
-import type { GameContent } from "./types";
+import type { Effect, GameContent } from "./types";
 
 describe("parseStartConfig", () => {
   it("parses the shipped start.json", () => {
@@ -337,9 +337,15 @@ describe("parseDecisions", () => {
       { type: "modifyRate", target: "review", op: "add", value: 0.7 },
     ]);
     for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "review"]);
-    expect(dev.gamble!.map((o) => o.effects.find((e) => e.type === "modifyRate" && e.target === "review")!.value)).toEqual(
-      [0.7, 0.4, 0.1, 0.1],
-    );
+    expect(
+      dev.gamble!.map((o) => {
+        const review = o.effects.find(
+          (e): e is Extract<Effect, { type: "modifyRate" }> => e.type === "modifyRate" && e.target === "review",
+        );
+        expect(review).toBeDefined();
+        return review!.value;
+      }),
+    ).toEqual([0.7, 0.4, 0.1, 0.1]);
     expect(dev.synergies).toBeUndefined();
 
     const agent = defs.find((d) => d.id === "agent")!;

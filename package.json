@@ -8,7 +8,8 @@
     "dev": "vite",
     "graph": "vite --config tools/content-graph/vite.config.ts",
     "build": "tsc && vite build",
-    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc --noEmit && vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {

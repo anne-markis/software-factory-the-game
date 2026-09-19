@@ -58,12 +58,14 @@ non-obvious bits:
 - **Dev server:** `npm run dev` (Vite) serves at `http://localhost:5173/`. It
   binds to localhost only; that is reachable from the in-VM browser, so no
   `--host` flag is needed for manual testing here.
-- **Tests:** `npm run test` runs the full Vitest suite (unit + simulation/balance
-  probes, jsdom for DOM-touching UI tests). This is the primary automated
-  verification. `npm run test:watch` for watch mode.
-- **Lint / type-check:** there is no separate lint command. Type-checking is done
-  by `tsc` as the first half of `npm run build` (`tsc && vite build`), so run
-  `npm run build` to type-check.
+- **Tests:** `npm run test` runs `tsc --noEmit` then the full Vitest suite
+  (unit + simulation/balance probes, jsdom for DOM-touching UI tests). Vitest
+  does not typecheck; `tsc` is what catches `Effect` narrowing and similar
+  errors. This is the primary automated verification. `npm run test:watch`
+  is Vitest-only. PRs run the same `npm run test` via `.github/workflows/ci.yml`.
+- **Lint / type-check:** there is no separate lint command. `npm run typecheck`
+  is `tsc --noEmit`. The same check is the first half of `npm run test` and of
+  `npm run build` (`tsc && vite build`).
 - **Content JSON** (`content/*.json`) is imported as ES modules and bundled at
   build time (no runtime fetches). Editing content requires no code changes but
   is only picked up on a dev-server reload / rebuild; strict Zod schemas fail
