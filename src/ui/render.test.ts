@@ -256,6 +256,20 @@ describe("renderDecisions", () => {
     expect(html).toContain(`[${inst.gambleLabel}]`);
   });
 
+  it("lists removable owned instances newest-first", () => {
+    const e = new Engine(content());
+    e.applyDecision("basic-dev");
+    e.applyDecision("subscription");
+    e.applyDecision("agent");
+    const html = renderOwnedList([...e.getState().decisions], content());
+    const agent = html.indexOf("Add coding agent");
+    const subscription = html.indexOf("Subscription plan");
+    const hire = html.indexOf("Hire basic developer");
+    expect(agent).toBeGreaterThan(-1);
+    expect(agent).toBeLessThan(subscription);
+    expect(subscription).toBeLessThan(hire);
+  });
+
   // Owned entries surface cost + derived effects (same helpers as shop cards) so upkeep trim does not require scrolling Alter the system.
   it("shows cost and derived effects on each Owned entry", () => {
     const e = new Engine(content());
