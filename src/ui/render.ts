@@ -226,7 +226,9 @@ export function logPanelScaffold(): string {
 // plus the cost/effects summary so a player trimming upkeep does not
 // have to scroll Alter the system matching names card by card.
 export function renderOwnedList(ownedInstances: DecisionInstance[], content: GameContent): string {
-  const ownedList = ownedInstances
+  // Newest acquisitions first (engine stores oldest-first; same as Events).
+  const ownedList = [...ownedInstances]
+    .reverse()
     .map((inst) => {
       const def = content.decisions.find((d) => d.id === inst.defId);
       if (!def?.removable) return "";
