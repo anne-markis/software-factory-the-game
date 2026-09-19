@@ -53,14 +53,21 @@
   {
     "id": "basic-dev",
     "name": "Hire basic developer",
-    "description": "Adds a developer, hopefully a strong one. It's a gamble, and they're gone for good if payroll fails.",
+    "description": "Adds a developer, hopefully a strong one. It's a gamble, and they're gone for good if payroll fails. Reviewing PRs is part of the job, even when the coding gamble goes badly.",
     "category": "ship-faster",
     "human": true,
     "capacity": 1,
     "cost": {
       "perDay": 438
     },
-    "effects": [],
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "review",
+        "op": "add",
+        "value": 0.25
+      }
+    ],
     "gamble": [
       {
         "probability": 0.5,
@@ -96,7 +103,7 @@
   {
     "id": "agent",
     "name": "Add coding agent",
-    "description": "Each agent finishes another 0.2 points of work a day and adds a little more tech debt. Each human developer makes every agent 10% faster. Buy as many as you can feed.",
+    "description": "Each agent finishes another 0.2 points of work a day, reviews a little (0.05/day — less than it codes), and adds a little more tech debt. Each human developer makes every agent's coding 10% faster. Buy as many as you can feed.",
     "category": "ship-faster",
     "cost": {
       "oneTime": 10,
@@ -109,6 +116,12 @@
         "op": "add",
         "value": 0.2,
         "scaleFromHumansPer": 0.1
+      },
+      {
+        "type": "modifyRate",
+        "target": "review",
+        "op": "add",
+        "value": 0.05
       },
       {
         "type": "modifyDebtMultiplier",
@@ -175,6 +188,30 @@
         "type": "modifyDebtMultiplier",
         "op": "mul",
         "value": 0.55
+      }
+    ],
+    "removable": true,
+    "unique": true
+  },
+  {
+    "id": "agent-ci-review",
+    "name": "Add agent review to CI/CD",
+    "description": "Wire agents into the pipeline as reviewers. They still take time on each PR, and a human has to step in when an agent cannot resolve it. In Review stays on the line — this does not skip it.",
+    "category": "change-structure",
+    "cost": {
+      "oneTime": 500,
+      "perDay": 12
+    },
+    "requires": [
+      "ci-cd",
+      "agent-orchestration"
+    ],
+    "effects": [
+      {
+        "type": "modifyRate",
+        "target": "review",
+        "op": "mul",
+        "value": 2.5
       }
     ],
     "removable": true,

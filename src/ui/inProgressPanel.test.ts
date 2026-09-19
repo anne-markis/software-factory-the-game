@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { renderStageZoom } from "./inProgressPanel";
 import { Engine } from "../engine/engine";
 import { parseStartConfig, parseDecisions } from "../engine/content";
-import { decisionTargetsExactRate } from "../engine/decisions";
 import { decisionsJson, startJson } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 
@@ -305,22 +304,22 @@ describe("renderStageZoom", () => {
     expect(html).not.toContain("Empty until a review card exists");
     expect(html).not.toContain("Cycle speed");
     expect(html).not.toContain("Leak size");
-    const reviewDefs = c.decisions.filter((d) => decisionTargetsExactRate(d, "review"));
-    expect(reviewDefs.length).toBeGreaterThan(0);
-    for (const def of reviewDefs) {
-      expect(html).toContain(def.name);
-      expect(html).not.toContain(`data-buy="${def.id}"`);
-    }
-    expect(html).not.toContain("CI/CD pipeline");
-    expect(html).not.toContain("Hack day");
+    expect(html).toContain("Agent orchestration");
+    expect(html).toContain("Add agent review to CI/CD");
+    expect(html).toContain("Hire basic developer");
+    expect(html).not.toContain('data-buy="agent-orchestration"');
+    expect(html).not.toContain('data-buy="agent-ci-review"');
+    expect(html).not.toContain('data-buy="ci-cd"');
+    expect(html).not.toContain('data-buy="hack-day"');
 
     e.applyDecision("agent");
     e.applyDecision("agent");
     const afterAgents = panel(e.getState(), c, "inReview");
     expect(afterAgents).toContain('data-buy="agent-orchestration"');
-    expect(afterAgents).not.toContain('data-buy="agent"');
+    expect(afterAgents).toContain('data-buy="agent"');
     expect(afterAgents).not.toContain('data-buy="agent-harness"');
     expect(afterAgents).not.toContain('data-buy="hack-day"');
+    expect(afterAgents).not.toContain('data-buy="agent-ci-review"');
   });
 });
 

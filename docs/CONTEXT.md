@@ -92,8 +92,8 @@ inherited Start gigs stay Start.
 Pipeline stage stocks say *where* unshipped work sits. `backlog` is the
 Ready queue (waiting for an In Progress seat), not the cockpit hero
 metric. `inProgress` is capacity: founder `baseCapacity` plus owned
-cards' `capacity` (Studio hires +1; agents omit it and only add finish
-speed). Cockpit **Backlog** is `backlog + inProgress + inReview + done` (ADR 0009).
+cards' `capacity` (Studio hires +1; agents omit it and add finish
+speed plus a smaller review trickle). Cockpit **Backlog** is `backlog + inProgress + inReview + done` (ADR 0009).
 `inReview` is a waiting pile (review-rate outflow), not seats; it stays on
 the Delivery line when continuous deploy drops Done.
 In-flight `ActiveProject.remaining` is the same work attributed to a

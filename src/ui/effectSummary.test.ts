@@ -122,11 +122,13 @@ describe("summarizeDecisionEffects", () => {
   it("the shipped agent ladder summarises stacking adds and global multipliers", () => {
     const decisions = parseDecisions(decisionsJson);
     const agent = decisions.find((d) => d.id === "agent")!;
-    expect(summarizeDecisionEffects(agent)).toBe("finish +0.2/day (+10%/human), debt +0.1");
+    expect(summarizeDecisionEffects(agent)).toBe("finish +0.2/day (+10%/human), review +0.05/day, debt +0.1");
     const harness = decisions.find((d) => d.id === "agent-harness")!;
     expect(summarizeDecisionEffects(harness)).toBe("finish x1.25, debt x0.7");
     const orchestration = decisions.find((d) => d.id === "agent-orchestration")!;
     expect(summarizeDecisionEffects(orchestration)).toBe("finish x1.45, review x1.45, debt x0.55");
+    const ciReview = decisions.find((d) => d.id === "agent-ci-review")!;
+    expect(summarizeDecisionEffects(ciReview)).toBe("review x2.5");
   });
 
   it("joins multiple effects with a comma", () => {

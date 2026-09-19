@@ -303,7 +303,7 @@ describe("decisions", () => {
   it("the agent ladder is not human, so payroll-loss and human gates ignore it", () => {
     const defs = parseDecisions(decisionsJson);
     expect(defs.filter((d) => d.human === true).map((d) => d.id)).toEqual(["basic-dev"]);
-    for (const id of ["agent", "agent-harness", "agent-orchestration"]) {
+    for (const id of ["agent", "agent-harness", "agent-orchestration", "agent-ci-review"]) {
       expect(defs.find((d) => d.id === id)!.human).not.toBe(true);
     }
   });
@@ -325,9 +325,12 @@ describe("decisions", () => {
     const byId = Object.fromEntries(defs.map((d) => [d.id, d]));
     expect(decisionTargetsExactRate(byId["agent-orchestration"]!, "review")).toBe(true);
     expect(decisionTargetsExactRate(byId["agent-orchestration"]!, "finish")).toBe(true);
-    expect(decisionTargetsExactRate(byId["agent"]!, "review")).toBe(false);
+    expect(decisionTargetsExactRate(byId["agent"]!, "review")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent"]!, "finish")).toBe(true);
+    expect(decisionTargetsExactRate(byId["basic-dev"]!, "review")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent-ci-review"]!, "review")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent-ci-review"]!, "finish")).toBe(false);
     expect(decisionTargetsExactRate(byId["agent-harness"]!, "review")).toBe(false);
-    expect(decisionTargetsExactRate(byId["basic-dev"]!, "review")).toBe(false);
     expect(decisionTargetsExactRate(byId["hack-day"]!, "review")).toBe(false);
   });
 
@@ -338,8 +341,40 @@ describe("decisions", () => {
     const finishBefore = effectiveRate(e.getState(), "finish");
     const debtBefore = effectiveDebtMultiplier(e.getState());
     e.applyDecision("agent-orchestration");
-    expect(effectiveRate(e.getState(), "review")).toBeCloseTo(1.45, 5);
+    expect(effectiveRate(e.getState(), "review")).toBeCloseTo(1.1 * 1.45, 5);
     expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(finishBefore * 1.45, 5);
     expect(effectiveDebtMultiplier(e.getState())).toBeCloseTo(debtBefore * 0.55, 5);
+  });
+
+  it("a hire always adds review; agents add less review than finish", () => {
+    const e = new Engine(content());
+    expect(effectiveRate(e.getState(), "review")).toBe(1);
+    e.applyDecision("basic-dev");
+    expect(effectiveRate(e.getState(), "review")).toBeCloseTo(1.25, 10);
+    expect(effectiveRate(e.getState(), "finish")).toBeGreaterThanOrEqual(0);
+    const afterHire = effectiveRate(e.getState(), "review");
+    e.applyDecision("agent");
+    expect(effectiveRate(e.getState(), "review")).toBeCloseTo(afterHire + 0.05, 10);
+    const finishAfterAgent = effectiveRate(e.getState(), "finish");
+    const reviewAfterAgent = effectiveRate(e.getState(), "review");
+    expect(finishAfterAgent - 1).toBeGreaterThan(reviewAfterAgent - afterHire);
+  });
+
+  it("agent-ci-review needs ci-cd and orchestration, then multiplies review without skipping the stage", () => {
+    const e = new Engine(content());
+    expect(e.availableDecisions().find((a) => a.def.id === "agent-ci-review")).toMatchObject({
+      purchasable: false,
+      code: "missing-requires",
+    });
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    e.applyDecision("agent-orchestration");
+    expect(() => e.applyDecision("agent-ci-review")).toThrow(/requires CI\/CD pipeline/);
+    e.applyDecision("test-suite");
+    e.applyDecision("ci-cd");
+    const reviewBefore = effectiveRate(e.getState(), "review");
+    e.applyDecision("agent-ci-review");
+    expect(effectiveRate(e.getState(), "review")).toBeCloseTo(reviewBefore * 2.5, 5);
+    expect(e.getState().stocks.inReview).toBeGreaterThanOrEqual(0);
   });
 });

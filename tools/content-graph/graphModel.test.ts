@@ -84,6 +84,20 @@ describe("content graph model", () => {
         to: "decision:studio:agent-orchestration",
       }),
     );
+    expect(model.edges).toContainEqual(
+      expect.objectContaining({
+        kind: "requires",
+        from: "decision:studio:ci-cd",
+        to: "decision:studio:agent-ci-review",
+      }),
+    );
+    expect(model.edges).toContainEqual(
+      expect.objectContaining({
+        kind: "requires",
+        from: "decision:studio:agent-orchestration",
+        to: "decision:studio:agent-ci-review",
+      }),
+    );
   });
 
   it("does not repeat inherited Studio decisions as Company or Megacorp nodes", () => {
@@ -181,6 +195,9 @@ describe("content graph model", () => {
     const testSuite = findTreeNode(studio!.decisionRoots, "decision:studio:test-suite");
     const agent = findTreeNode(studio!.decisionRoots, "decision:studio:agent");
     expect(testSuite?.children.map((child) => child.nodeId)).toContain("decision:studio:ci-cd");
+    expect(findTreeNode(testSuite!.children, "decision:studio:ci-cd")?.children.map((child) => child.nodeId)).toContain(
+      "decision:studio:agent-ci-review",
+    );
     expect(agent?.children.map((child) => child.nodeId)).toEqual(
       expect.arrayContaining(["decision:studio:agent-harness", "decision:studio:agent-orchestration"]),
     );

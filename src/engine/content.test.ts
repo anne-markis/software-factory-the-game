@@ -216,6 +216,7 @@ describe("parseDecisions", () => {
       "agent",
       "agent-harness",
       "agent-orchestration",
+      "agent-ci-review",
       "hack-day",
       "user-interviews",
       "subscription",
@@ -223,6 +224,7 @@ describe("parseDecisions", () => {
     ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(438);
+    expect(dev.effects).toEqual([{ type: "modifyRate", target: "review", op: "add", value: 0.25 }]);
     expect(dev.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
     // The hire is always in the shop: no requires, no count gate (§5.2.2).
     expect(dev.requires).toBeUndefined();
@@ -237,18 +239,20 @@ describe("parseDecisions", () => {
     expect(defs.find((d) => d.id === "test-suite")!.category).toBe("tame-debt");
     expect(defs.find((d) => d.id === "subscription")!.category).toBe("earn-income");
     expect(defs.find((d) => d.id === "ci-cd")!.category).toBe("change-structure");
+    expect(defs.find((d) => d.id === "agent-ci-review")!.category).toBe("change-structure");
   });
 
   it("pins the Studio agent ladder: stackable agents, unique harness, count-gated orchestration", () => {
     const defs = parseDecisions(decisionsJson);
 
     // agent is stackable: no `unique`, additive effects so N copies are
-    // worth N times one copy. +0.2 finish/day and +0.1 debt multiplier
-    // per copy.
+    // worth N times one copy. +0.2 finish/day, a smaller +0.05 review/day,
+    // and +0.1 debt multiplier per copy.
     const agent = defs.find((d) => d.id === "agent")!;
     expect(agent.unique).toBeUndefined();
     expect(agent.effects).toEqual([
       { type: "modifyRate", target: "finish", op: "add", value: 0.2, scaleFromHumansPer: 0.1 },
+      { type: "modifyRate", target: "review", op: "add", value: 0.05 },
       { type: "modifyDebtMultiplier", op: "add", value: 0.1 },
     ]);
     // No synergies: harness and orchestration are global multipliers now, so
@@ -285,6 +289,12 @@ describe("parseDecisions", () => {
     // ongoing burn so it stays a real budget decision rather than a strict
     // upgrade you buy the moment you can afford it.
     expect(orch.cost.perDay!).toBeGreaterThan(harness.cost.perDay!);
+
+    const ciReview = defs.find((d) => d.id === "agent-ci-review")!;
+    expect(ciReview.unique).toBe(true);
+    expect(ciReview.requires).toEqual(["ci-cd", "agent-orchestration"]);
+    expect(ciReview.effects).toEqual([{ type: "modifyRate", target: "review", op: "mul", value: 2.5 }]);
+    expect(ciReview.effects.some((e) => e.type === "continuousDeploy")).toBe(false);
   });
 
   it("pins the Studio monetization and delivery cards", () => {
@@ -313,24 +323,28 @@ describe("parseDecisions", () => {
 
   it("keeps the Release 15 deploy-bottleneck split on the hire", () => {
     const defs = parseDecisions(decisionsJson);
-    // A hire adds an In Progress seat (capacity: 1) and gambles finish speed.
-    // Deploy stays with ci-cd. Agents are finish-only and add no seats.
+    // A hire adds an In Progress seat (capacity: 1), always-on review, and
+    // gambles finish speed. Deploy stays with ci-cd. Agents add finish plus
+    // a smaller review trickle and add no seats.
     const splitTargets = (effects: { type: string; target?: string }[]) =>
       effects.filter((e) => e.type === "modifyRate").map((e) => e.target).sort();
 
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.capacity).toBe(1);
+    expect(splitTargets(dev.effects)).toEqual(["review"]);
     expect(dev.gamble![0].effects).toEqual([
       { type: "modifyRate", target: "finish", op: "add", value: 1.0 },
     ]);
     for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish"]);
     expect(dev.synergies).toBeUndefined();
 
-    for (const id of ["agent", "agent-harness"]) {
-      const card = defs.find((d) => d.id === id)!;
-      expect(card.capacity).toBeUndefined();
-      expect(splitTargets(card.effects)).toEqual(["finish"]);
-    }
+    const agent = defs.find((d) => d.id === "agent")!;
+    expect(agent.capacity).toBeUndefined();
+    expect(splitTargets(agent.effects)).toEqual(["finish", "review"]);
+
+    const harness = defs.find((d) => d.id === "agent-harness")!;
+    expect(harness.capacity).toBeUndefined();
+    expect(splitTargets(harness.effects)).toEqual(["finish"]);
 
     const orch = defs.find((d) => d.id === "agent-orchestration")!;
     expect(orch.capacity).toBeUndefined();

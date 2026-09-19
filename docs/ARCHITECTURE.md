@@ -63,8 +63,11 @@ work that does not have a seat. Finish speed is how much leaves the
 Ready + In Progress pool into In Review. Review speed is how much leaves
 In Review into Done. Continuous deploy still dumps Done each tick; In
 Review stays. A point is in one stage at a time. Studio orchestration
-multiplies `review` as well as `finish`; coding agents and the harness
-do not.
+multiplies `review` as well as `finish`. Coding agents add a smaller
+review trickle than they add finish; the harness does not multiply
+review. Hires add review as part of the job. `agent-ci-review` is a
+review multiplier gated on CI/CD and orchestration; it does not skip
+In Review.
 
 Do not seed `start.json` `stocks.backlog` independently of
 `initialProject.sizePoints` — the loader rejects a mismatch.
