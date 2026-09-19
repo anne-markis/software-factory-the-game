@@ -79,8 +79,8 @@
       const expMax = Math.max(...expDays.map((d) => d.human + d.agents + d.misc));
       const latest = expDays[expDays.length - 1];
       document.getElementById("rail").innerHTML =
-        panel("Income", chart(incomeDays, [["income-burst", "burst"], ["income-recurring", "recurring"]], incomeMax, swatch("income-recurring", "Recurring $225") + swatch("income-burst", "Burst $0"), "Income")) +
-        panel("Expenses", chart(expDays, [["exp-misc", "misc"], ["exp-agents", "agents"], ["exp-human", "human"]], expMax, swatch("exp-human", `Human $${latest.human}`) + swatch("exp-agents", `Agents $${latest.agents}`) + swatch("exp-misc", `Misc $${latest.misc}`), "Expenses"));
+        panel("Income / day", chart(incomeDays, [["income-burst", "burst"], ["income-recurring", "recurring"]], incomeMax, swatch("income-recurring", "Recurring $225/day") + swatch("income-burst", "Burst $0/day"), "Income per day")) +
+        panel("Expenses / day", chart(expDays, [["exp-misc", "misc"], ["exp-agents", "agents"], ["exp-human", "human"]], expMax, swatch("exp-human", `Human $${latest.human}/day`) + swatch("exp-agents", `Agents $${latest.agents}/day`) + swatch("exp-misc", `Misc $${latest.misc}/day`), "Expenses per day"));
     </script>
   </body>
 </html>

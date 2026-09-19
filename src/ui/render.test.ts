@@ -567,8 +567,8 @@ describe("side rail scaffolds", () => {
     expect(incomePanelScaffold()).toMatch(/<details class="panel side-details" open>/);
     expect(expensesPanelScaffold()).toMatch(/<details class="panel side-details" open>/);
     expect(logPanelScaffold()).toMatch(/<details class="panel side-details" open>/);
-    expect(incomePanelScaffold()).toContain("<h3>Income</h3>");
-    expect(expensesPanelScaffold()).toContain("<h3>Expenses</h3>");
+    expect(incomePanelScaffold()).toContain("<h3>Income / day</h3>");
+    expect(expensesPanelScaffold()).toContain("<h3>Expenses / day</h3>");
     expect(logPanelScaffold()).toContain("<h3>Events</h3>");
   });
 });
@@ -587,10 +587,10 @@ describe("renderIncomeChart", () => {
     ]);
     expect(html).toContain("income-recurring");
     expect(html).toContain("income-burst");
-    expect(html).toContain("Recurring $75");
-    expect(html).toContain("Burst $120");
-    expect(html).toContain('aria-label="Income last 2 days, recurring and burst"');
-    expect(html).toContain("Day 11: recurring $75, burst $120");
+    expect(html).toContain("Recurring $75/day");
+    expect(html).toContain("Burst $120/day");
+    expect(html).toContain('aria-label="Income per day last 2 days, recurring and burst"');
+    expect(html).toContain("Day 11: recurring $75/day, burst $120/day");
   });
 });
 
@@ -609,11 +609,11 @@ describe("renderExpensesChart", () => {
     expect(html).toContain("exp-human");
     expect(html).toContain("exp-agents");
     expect(html).toContain("exp-misc");
-    expect(html).toContain("Human $438");
-    expect(html).toContain("Agents $16");
-    expect(html).toContain("Misc $37");
-    expect(html).toContain('aria-label="Expenses last 2 days, human, agents, and misc"');
-    expect(html).toContain("Day 11: human $438, agents $16, misc $37");
+    expect(html).toContain("Human $438/day");
+    expect(html).toContain("Agents $16/day");
+    expect(html).toContain("Misc $37/day");
+    expect(html).toContain('aria-label="Expenses per day last 2 days, human, agents, and misc"');
+    expect(html).toContain("Day 11: human $438/day, agents $16/day, misc $37/day");
   });
 });
 
