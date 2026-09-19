@@ -19,6 +19,11 @@ export function log(state: GameState, message: string): void {
 /** Sparkline length for the Income and Expenses panels. Quiet days stay in the buffer. */
 export const INCOME_HISTORY_DAYS = 14;
 
+// 1-decimal UI (`fmt` maximumFractionDigits: 1) paints remaining in [0, 0.05)
+// as "0". Completing at float ~0 left a sub-grain tail walking finish →
+// review → deploy for extra days while Size / Backlog / stages all read 0.
+export const PROJECT_DISPLAY_GRAIN = 0.05;
+
 function recordDailyIncome(state: GameState, recurring: number, burst: number): void {
   if (!state.incomeByDay) state.incomeByDay = [];
   state.incomeByDay.push({ day: state.day, recurring, burst });
@@ -109,6 +114,25 @@ function attributeShipped(state: GameState, shippedFlow: number): void {
     state.projects = stillLive;
     credit = leftover;
   }
+}
+
+// After ship-credit and debt attach: remaining below the 1-decimal display
+// grain is already "0 left" on the board. Snap-complete so grants (tech-debt
+// paydown, user lumps) fire that tick. Unpaid crumbs stay in the pipeline as
+// surplus (ADR 0009: leftover ships without credit). Visible remainings
+// (>= grain, which paints as 0.1+) still wait for ship.
+function snapCompleteBelowDisplayGrain(state: GameState): void {
+  if (state.projects.length === 0) return;
+  const stillLive: ActiveProject[] = [];
+  for (const p of state.projects) {
+    if (p.remaining < PROJECT_DISPLAY_GRAIN) {
+      p.remaining = 0;
+      completeProject(state, p);
+    } else {
+      stillLive.push(p);
+    }
+  }
+  state.projects = stillLive;
 }
 
 // Always-on stock flows (Studio organic acquisition). Runs after
@@ -306,6 +330,8 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
     state.stocks.backlog += debtGain;
     attachInjectedWork(state, debtGain);
   }
+
+  snapCompleteBelowDisplayGrain(state);
 
   // Plan fill + auto-Ready run after ship-credit so a newly readied
   // contract cannot collect today's shipped points, and after seats so

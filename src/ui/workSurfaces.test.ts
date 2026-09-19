@@ -172,6 +172,39 @@ describe("cross-surface work counting (ADR 0009)", () => {
     expect(statValue(root, "users")).not.toBe("0");
   });
 
+  it("drops the in-flight row and pays the debt grant the same tick Size would read 0", () => {
+    const { root, engine, view } = mount();
+    const s = engine.getState() as GameState;
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.projects = [
+      {
+        defId: "small-refactor",
+        name: "Small refactor",
+        remaining: 0.04,
+        payoutPerPoint: 0,
+        completionBonus: 0,
+        reputationReward: 0,
+        completionStockGrants: [{ stock: "techDebt", amount: -50 }],
+      },
+    ];
+    s.stocks.backlog = 0.04;
+    s.stocks.inProgress = 0;
+    s.stocks.inReview = 0;
+    s.stocks.done = 0;
+    s.stocks.techDebt = 251.5;
+    s.pointsPerDay = 0.03;
+    view.render();
+    expect(projectLine(root, "small-refactor")).toContain("0 left");
+    expect(statValue(root, "backlog")).toBe("0");
+
+    engine.tick();
+    view.render();
+    expect(root.querySelector('[data-project-status="small-refactor"]')).toBeNull();
+    expect(engine.getState().completedProjectIds).toContain("small-refactor");
+    expect(statValue(root, "techDebt")).toBe(fmt(201.5));
+  });
+
   it("paints Planning progress / size that matches the engine Plan ledger", () => {
     const { root, engine, view } = mount();
     const s = engine.getState() as GameState;

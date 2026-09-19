@@ -4,9 +4,10 @@ import { join } from "node:path";
 import { Engine } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
-import { INCOME_HISTORY_DAYS, dailyExpenseSplit } from "./tick";
+import { INCOME_HISTORY_DAYS, PROJECT_DISPLAY_GRAIN, dailyExpenseSplit } from "./tick";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
+import { unshippedWork, surplusWork } from "./work";
 import type { GameContent, GameState, ProjectDef } from "./types";
 
 export function testContent(): GameContent {
@@ -593,6 +594,101 @@ describe("tick", () => {
         e.tick();
         expect(e.getState().pointsPerDay).toBeCloseTo(1.45, 10);
       }
+    });
+  });
+
+  describe("invisible remaining does not delay completion grants", () => {
+    function inFlightRefactor(remaining: number): GameState["projects"][number] {
+      return {
+        defId: "small-refactor",
+        name: "Small refactor",
+        remaining,
+        payoutPerPoint: 0,
+        completionBonus: 0,
+        reputationReward: 0,
+        completionStockGrants: [{ stock: "techDebt", amount: -50 }],
+      };
+    }
+
+    function seedInvisibleTail(e: Engine, remaining: number, stage: "backlog" | "inReview" | "done" = "backlog"): GameState {
+      const s = e.getState() as GameState;
+      s.completedProjects = 1;
+      s.completedProjectIds = ["launch-beta"];
+      s.projects = [inFlightRefactor(remaining)];
+      s.stocks.backlog = 0;
+      s.stocks.inProgress = 0;
+      s.stocks.inReview = 0;
+      s.stocks.done = 0;
+      s.stocks[stage] = remaining;
+      s.stocks.techDebt = 251.5;
+      s.debtMultiplierBase = 0.2;
+      return s;
+    }
+
+    it("snap-completes remaining below the 1-decimal display grain on the next tick", () => {
+      const e = new Engine(testContent());
+      seedInvisibleTail(e, 0.04, "backlog");
+      const unshippedBefore = unshippedWork(e.getState());
+      e.tick();
+      const after = e.getState();
+      expect(after.completedProjectIds).toContain("small-refactor");
+      expect(after.projects).toHaveLength(0);
+      // No ship this tick: grant only, no debt refill.
+      expect(after.stocks.techDebt).toBeCloseTo(201.5, 8);
+      // Crumbs stay in the pipe as surplus (Ready emptied into In Review this tick).
+      expect(unshippedWork(after)).toBeCloseTo(unshippedBefore, 8);
+      expect(surplusWork(after)).toBeCloseTo(unshippedWork(after), 8);
+    });
+
+    it(`keeps remaining at the grain (${PROJECT_DISPLAY_GRAIN}), which the UI paints as 0.1`, () => {
+      const e = new Engine(testContent());
+      seedInvisibleTail(e, PROJECT_DISPLAY_GRAIN, "backlog");
+      e.tick();
+      const after = e.getState();
+      expect(after.completedProjectIds).not.toContain("small-refactor");
+      expect(after.projects).toHaveLength(1);
+      expect(after.projects[0]!.remaining).toBeCloseTo(PROJECT_DISPLAY_GRAIN, 10);
+      expect(after.stocks.techDebt).toBeCloseTo(251.5, 8);
+    });
+
+    it("does not wait for crumbs to walk review and deploy before paying the grant", () => {
+      const e = new Engine(testContent());
+      seedInvisibleTail(e, 0.04, "backlog");
+      e.tick();
+      expect(e.getState().completedProjectIds).toContain("small-refactor");
+      expect(e.getState().stocks.inReview).toBeCloseTo(0.04, 8);
+      expect(e.getState().stocks.done).toBe(0);
+      expect(e.getState().pointsPerDay).toBe(0);
+    });
+
+    it("does not pay leftover payoutPerPoint for snapped crumbs", () => {
+      const e = new Engine(testContent());
+      const s = seedInvisibleTail(e, 0.04, "backlog");
+      s.projects[0]!.payoutPerPoint = 18;
+      const budgetBefore = s.stocks.budget;
+      e.tick();
+      const after = e.getState();
+      expect(after.completedProjectIds).toContain("small-refactor");
+      expect(after.stocks.budget).toBeCloseTo(budgetBefore - after.baseBurnPerDay, 8);
+    });
+
+    it("lets debt attach lift remaining back over the grain instead of snapping", () => {
+      const e = new Engine(testContent());
+      const s = e.getState() as GameState;
+      s.completedProjects = 1;
+      s.completedProjectIds = ["launch-beta"];
+      s.projects = [inFlightRefactor(1.04)];
+      s.stocks.backlog = 0;
+      s.stocks.inProgress = 0;
+      s.stocks.inReview = 0;
+      s.stocks.done = 1;
+      s.stocks.techDebt = 100;
+      s.debtMultiplierBase = 0.5;
+      e.tick();
+      const after = e.getState();
+      // Ship 1 → remaining 0.04, then +0.5 debt attach → 0.54, still visible.
+      expect(after.completedProjectIds).not.toContain("small-refactor");
+      expect(after.projects[0]!.remaining).toBeCloseTo(0.54, 8);
     });
   });
 
