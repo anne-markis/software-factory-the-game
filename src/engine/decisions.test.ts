@@ -37,11 +37,11 @@ describe("decisions", () => {
     const s = e.getState();
     expect(s.decisions).toHaveLength(1);
     expect(s.decisions[0].gambleLabel).toBeDefined();
-    // Hire writes an always-on review modifier plus one gambled finish
-    // modifier. The seat is DecisionDef.capacity, not a modifier.
+    // Hire writes two gambled modifiers: finish and review. The seat is
+    // DecisionDef.capacity, not a modifier.
     const mods = s.modifiers.filter((m) => m.source === s.decisions[0].instanceId);
     expect(mods).toHaveLength(2);
-    expect(mods.some((m) => m.target === "review" && m.value === 0.25)).toBe(true);
+    expect(mods.some((m) => m.target === "review" && [0.7, 0.4, 0.1].includes(m.value))).toBe(true);
     const finish = mods.find((m) => m.target === "finish")!;
     expect([1.0, 0.5, -0.5, -1.0]).toContain(finish.value);
   });
@@ -347,12 +347,12 @@ describe("decisions", () => {
     expect(effectiveDebtMultiplier(e.getState())).toBeCloseTo(debtBefore * 0.55, 5);
   });
 
-  it("a hire always adds review; agents add less review than finish", () => {
+  it("a hire gambles review between 0.1 and 0.7; agents add less review than finish", () => {
     const e = new Engine(content());
     expect(effectiveRate(e.getState(), "review")).toBe(1);
     e.applyDecision("basic-dev");
-    expect(effectiveRate(e.getState(), "review")).toBeCloseTo(1.25, 10);
-    expect(effectiveRate(e.getState(), "finish")).toBeGreaterThanOrEqual(0);
+    const hireReview = effectiveRate(e.getState(), "review") - 1;
+    expect([0.7, 0.4, 0.1].some((v) => Math.abs(hireReview - v) < 1e-10)).toBe(true);
     const afterHire = effectiveRate(e.getState(), "review");
     e.applyDecision("agent");
     expect(effectiveRate(e.getState(), "review")).toBeCloseTo(afterHire + 0.05, 10);

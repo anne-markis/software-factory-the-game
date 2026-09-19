@@ -218,6 +218,12 @@ describe("summarizeDecisionEffects", () => {
       });
       expect(summarizeDecisionEffects(def)).toBe("Jackpot to Bust");
     });
+
+    it("mixed add-op rates on the same outcomes emit one range per target", () => {
+      const decisions = parseDecisions(decisionsJson);
+      const hire = decisions.find((d) => d.id === "basic-dev")!;
+      expect(summarizeDecisionEffects(hire)).toBe("capacity +1, finish +1.0 to -1.0, review +0.7 to +0.1");
+    });
   });
 
   describe("sweep over shipped content", () => {

@@ -224,7 +224,7 @@ describe("parseDecisions", () => {
     ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(438);
-    expect(dev.effects).toEqual([{ type: "modifyRate", target: "review", op: "add", value: 0.25 }]);
+    expect(dev.effects).toEqual([]);
     expect(dev.gamble!.reduce((sum, o) => sum + o.probability, 0)).toBeCloseTo(1);
     // The hire is always in the shop: no requires, no count gate (§5.2.2).
     expect(dev.requires).toBeUndefined();
@@ -323,19 +323,23 @@ describe("parseDecisions", () => {
 
   it("keeps the Release 15 deploy-bottleneck split on the hire", () => {
     const defs = parseDecisions(decisionsJson);
-    // A hire adds an In Progress seat (capacity: 1), always-on review, and
-    // gambles finish speed. Deploy stays with ci-cd. Agents add finish plus
-    // a smaller review trickle and add no seats.
+    // A hire adds an In Progress seat (capacity: 1) and gambles both finish
+    // and review. Strong review is +0.7; poor still +0.1. Deploy stays with
+    // ci-cd. Agents add finish plus a smaller review trickle and add no seats.
     const splitTargets = (effects: { type: string; target?: string }[]) =>
       effects.filter((e) => e.type === "modifyRate").map((e) => e.target).sort();
 
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.capacity).toBe(1);
-    expect(splitTargets(dev.effects)).toEqual(["review"]);
+    expect(dev.effects).toEqual([]);
     expect(dev.gamble![0].effects).toEqual([
       { type: "modifyRate", target: "finish", op: "add", value: 1.0 },
+      { type: "modifyRate", target: "review", op: "add", value: 0.7 },
     ]);
-    for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish"]);
+    for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "review"]);
+    expect(dev.gamble!.map((o) => o.effects.find((e) => e.type === "modifyRate" && e.target === "review")!.value)).toEqual(
+      [0.7, 0.4, 0.1, 0.1],
+    );
     expect(dev.synergies).toBeUndefined();
 
     const agent = defs.find((d) => d.id === "agent")!;
