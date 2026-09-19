@@ -37,12 +37,13 @@ describe("decisions", () => {
     const s = e.getState();
     expect(s.decisions).toHaveLength(1);
     expect(s.decisions[0].gambleLabel).toBeDefined();
-    // Hire gamble writes one finish modifier. The seat is DecisionDef.capacity,
-    // not a modifier, so sickness cannot shrink In Progress.
+    // Hire writes an always-on review modifier plus one gambled finish
+    // modifier. The seat is DecisionDef.capacity, not a modifier.
     const mods = s.modifiers.filter((m) => m.source === s.decisions[0].instanceId);
-    expect(mods).toHaveLength(1);
-    expect(mods[0].target).toBe("finish");
-    expect([1.0, 0.5, -0.5, -1.0]).toContain(mods[0].value);
+    expect(mods).toHaveLength(2);
+    expect(mods.some((m) => m.target === "review" && m.value === 0.25)).toBe(true);
+    const finish = mods.find((m) => m.target === "finish")!;
+    expect([1.0, 0.5, -0.5, -1.0]).toContain(finish.value);
   });
 
   it("uses the synergy variant when the synergy decision is owned", () => {

@@ -582,7 +582,7 @@ describe("simulation", () => {
     expect(i.stocks.inReview).toBeLessThan(2);
     expect(l.stocks.inProgress).toBe(0);
     expect(l.stocks.backlog).toBe(0);
-    expect(l.stocks.inReview).toBeGreaterThan(100);
+    expect(l.stocks.inReview).toBeGreaterThan(80);
     expect(l.stocks.techDebt).toBeLessThan(i.stocks.techDebt);
   });
 
