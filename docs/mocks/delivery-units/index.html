@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mock — Delivery units (seats vs waiting)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fff;
+        --fg: #000;
+        --fg-dim: #666;
+        --border: #999;
+        --accent-amber: #a60;
+        --desc: #444;
+        --note-bg: #f6f6f6;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #181818;
+          --fg: #e8e8e8;
+          --fg-dim: #aaa;
+          --border: #888;
+          --accent-amber: #e0a030;
+          --desc: #c2c2c2;
+          --note-bg: #242424;
+        }
+      }
+      body {
+        font-family: ui-monospace, monospace;
+        max-width: 1280px;
+        margin: 1rem auto;
+        padding: 0 1rem 3rem;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      h1 { font-size: 1.6rem; margin: 0 0 0.5rem; }
+      h2 { font-size: 1.2rem; margin: 2rem 0 0.5rem; }
+      h3 { margin: 0 0 0.35rem; font-size: 1rem; }
+      p, li { line-height: 1.45; color: var(--desc); }
+      .lede { color: var(--fg); max-width: 82ch; }
+      .toc {
+        display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem;
+        margin: 1rem 0 1.5rem; padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; background: var(--bg); z-index: 3;
+      }
+      .toc a { color: var(--fg); }
+      .panel { border: 1px solid var(--border); padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.75rem; }
+      .stats {
+        display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.5rem 1rem; font-size: 0.95rem; margin-bottom: 0.75rem;
+      }
+      .stat { display: inline-flex; gap: 0.5rem; }
+      .stat-label { color: var(--fg-dim); }
+      .delivery-stats {
+        display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.35rem 1rem; font-size: 0.85rem; margin: 0.55rem 0 0.15rem;
+        color: var(--fg);
+      }
+      .delivery-stats .unit { color: var(--fg-dim); font-size: 0.75rem; }
+      .mock-chrome { margin-bottom: 0.25rem; color: var(--fg-dim); font-size: 0.85rem; }
+      .notes {
+        background: var(--note-bg); border: 1px solid var(--border);
+        padding: 0.6rem 0.9rem; margin: 0.5rem 0 1.5rem; font-size: 0.9rem;
+      }
+      .notes strong { color: var(--fg); }
+      table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin: 0.75rem 0 1.5rem; }
+      th, td { border: 1px solid var(--border); padding: 0.4rem 0.55rem; text-align: left; vertical-align: top; }
+      th { color: var(--fg); }
+      td { color: var(--desc); }
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+      @media (min-width: 980px) {
+        .pair { grid-template-columns: 1fr 1fr; }
+      }
+
+      .grid-7 {
+        display: grid;
+        grid-template-columns: 1fr 2.2rem 1fr 2.2rem 1fr 2.2rem 1fr 2.2rem 1fr 2.2rem 1fr 2.2rem 1fr;
+        column-gap: 0.1rem;
+        row-gap: 0.35rem;
+        align-items: start;
+      }
+      .grid-6 {
+        display: grid;
+        grid-template-columns: 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr 2.6rem 1fr;
+        column-gap: 0.15rem;
+        row-gap: 0.35rem;
+        align-items: start;
+      }
+      .stage {
+        grid-row: 1;
+        border: 1px solid var(--border);
+        min-height: 6.4rem;
+        padding: 0.45rem 0.2rem 0.35rem;
+        text-align: center;
+        background: var(--bg);
+        color: inherit;
+        font: inherit;
+        position: relative;
+      }
+      .stage.bound { border-width: 2.5px; }
+      .stage-name { display: block; font-size: 0.82rem; }
+      .stage-value { display: block; font-size: 1.05rem; font-weight: bold; margin-top: 0.2rem; }
+      .stage-unit { display: block; font-size: 0.68rem; color: var(--fg-dim); margin-top: 0.12rem; }
+      .stage-rate { display: block; font-size: 0.72rem; margin-top: 0.15rem; color: var(--fg); }
+      .stage-cue { display: block; font-size: 0.68rem; font-style: italic; margin-top: 0.18rem; }
+      .cycle { display: block; margin: 0.2rem auto 0; width: 44px; height: 16px; }
+      .flow {
+        grid-row: 1;
+        align-self: center;
+        text-align: center;
+        font-size: 0.65rem;
+        color: var(--fg);
+        padding-top: 0.2rem;
+      }
+      .flow .rate { display: block; margin-bottom: 0.15rem; }
+      .flow .arrow { display: block; }
+      .s-ideas { grid-column: 1; }
+      .f-1 { grid-column: 2; }
+      .s-plan { grid-column: 3; }
+      .f-2 { grid-column: 4; }
+      .s-ready { grid-column: 5; }
+      .f-3 { grid-column: 6; }
+      .s-ip { grid-column: 7; }
+      .f-4 { grid-column: 8; }
+      .s-review { grid-column: 9; }
+      .f-5 { grid-column: 10; }
+      .s-done { grid-column: 11; }
+      .f-6 { grid-column: 12; }
+      .s-shipped { grid-column: 13; }
+      .grid-6 .s-shipped { grid-column: 11; }
+      .grid-6 .f-5 { grid-column: 10; }
+      .regen-7 {
+        grid-column: 5 / 14;
+        grid-row: 2;
+        border-top: 1px dashed var(--border);
+        text-align: center;
+        font-size: 0.75rem;
+        padding: 0.35rem 0 0.15rem;
+        color: var(--fg);
+      }
+      .regen-6 {
+        grid-column: 5 / 12;
+        grid-row: 2;
+        border-top: 1px dashed var(--border);
+        text-align: center;
+        font-size: 0.75rem;
+        padding: 0.35rem 0 0.15rem;
+        color: var(--fg);
+      }
+      @media (max-width: 900px) {
+        .grid-7, .grid-6 { grid-template-columns: 1fr; }
+        .stage, .flow, .regen-7, .regen-6 { grid-column: 1 / -1 !important; grid-row: auto; }
+        .flow { text-align: left; padding: 0.15rem 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <p class="mock-chrome">Software Factory · static mock · not wired to the engine</p>
+    <h1>Delivery units — seats vs waiting</h1>
+    <p class="lede">
+      Same boxes, labeled by kind. In Progress shows occupied/capacity
+      <strong>seats</strong>. Ready, In Review, and Done show a
+      <strong>waiting</strong> pile. The jam cue on a queue is
+      <code>backed up</code>, not <code>capacity-bound</code>. Engine
+      unchanged: review is still a rate, not seats.
+    </p>
+
+    <nav class="toc">
+      <a href="#compare">Today vs proposed</a>
+      <a href="#healthy">Founder healthy</a>
+      <a href="#hire">After a hire</a>
+      <a href="#cd">CI/CD</a>
+      <a href="#table">What each box means</a>
+    </nav>
+
+    <div class="stats">
+      <span class="stat"><span class="stat-label">Day</span> 86</span>
+      <span class="stat"><span class="stat-label">Backlog</span> 228</span>
+      <span class="stat"><span class="stat-label">Budget</span> $7,200 (90d)</span>
+      <span class="stat"><span class="stat-label">Points/Day</span> 1.0</span>
+    </div>
+    <p class="notes">
+      Snapshot for the jam scenes: four coding agents, no orchestration,
+      no CI/CD unless the scene says so. Finish ~3.3/day, review 1.0/day,
+      deploy 1.0/day. In Progress stays at founder seats. In Review is
+      the integrator.
+    </p>
+
+    <h2 id="compare">Same jam — today vs proposed</h2>
+    <p>
+      Both rows are the same factory. The left/top row is the live spine.
+      The right/bottom row is the proposal.
+    </p>
+    <div class="pair">
+      <div class="panel" id="today-jam">
+        <h3>Today · unlabeled counts</h3>
+        <div class="mock" data-scene="today-jam"></div>
+      </div>
+      <div class="panel" id="proposed-jam">
+        <h3>Proposed · seats vs waiting</h3>
+        <div class="mock" data-scene="proposed-jam"></div>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> Today In Progress <code>1</code> and
+      In Review <code>47</code> look like the same statistic, and the cue
+      says <code>capacity-bound</code> on a queue. Proposed: In Progress
+      reads <code>1 / 1 seats</code> (full, not growing). In Review reads
+      <code>47 waiting</code> with <code>backed up</code>. Arrows still
+      show realized flow, so review’s 1.0/day sits next to a climbing pile.
+    </div>
+
+    <h2 id="healthy">Founder, healthy (proposed)</h2>
+    <p>
+      Finish and review are both 1/day. The In Review box holds about one
+      day of pipeline lag, not a runaway queue. No cue.
+    </p>
+    <div class="panel" id="healthy">
+      <h3>Delivery · founder, day 12</h3>
+      <div class="mock" data-scene="healthy"></div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> <code>1 / 1 seats</code> next to
+      <code>1 waiting</code> is a full coding seat and a one-day PR, not
+      two stages of equal “1”. Ready still holds the rest of the beta.
+    </div>
+
+    <h2 id="hire">After a hire (proposed)</h2>
+    <p>
+      A developer added a seat. In Progress grows because capacity grew.
+      In Review grows because finish outran review. Different reasons,
+      now visible on the box.
+    </p>
+    <div class="panel" id="hire">
+      <h3>Delivery · one hire, no review card</h3>
+      <div class="mock" data-scene="hire"></div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> IP went <code>1 / 1</code> →
+      <code>2 / 2</code>, not “2 in the queue.” Finish 2.0/day vs review
+      1.0/day is the pile. Hiring more coding still makes this worse.
+    </div>
+
+    <h2 id="cd">CI/CD (proposed)</h2>
+    <p>
+      Done is gone. In Review is still a waiting pile. Continuous deploy
+      does not turn this box into seats.
+    </p>
+    <div class="panel" id="cd">
+      <h3>Delivery · CI/CD owned</h3>
+      <div class="mock" data-scene="cd"></div>
+    </div>
+    <div class="notes">
+      <strong>What to notice.</strong> Same unit language with six boxes.
+      Review 1.0/day still ships; the 47 is waiting, not reviewers.
+    </div>
+
+    <h2 id="table">What each box means</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Box</th>
+          <th>Today</th>
+          <th>Proposed hero</th>
+          <th>Proposed caption</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Ideas / Plan</th>
+          <td>count + /day on the box</td>
+          <td>count</td>
+          <td>/day (unchanged)</td>
+        </tr>
+        <tr>
+          <th>Ready</th>
+          <td>count, no unit</td>
+          <td>count</td>
+          <td>waiting</td>
+        </tr>
+        <tr>
+          <th>In Progress</th>
+          <td>occupied seats as a bare count</td>
+          <td>occupied / capacity</td>
+          <td>seats</td>
+        </tr>
+        <tr>
+          <th>In Review</th>
+          <td>queue as a bare count + capacity-bound</td>
+          <td>queue count</td>
+          <td>waiting (+ backed up when bound)</td>
+        </tr>
+        <tr>
+          <th>Done</th>
+          <td>queue as a bare count + capacity-bound</td>
+          <td>queue count</td>
+          <td>waiting (+ backed up when bound)</td>
+        </tr>
+        <tr>
+          <th>Shipped</th>
+          <td>cumulative count</td>
+          <td>cumulative count</td>
+          <td>none</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="lede">
+      Still a mock. If this is the cut: loop diagram + delivery strip
+      only. No review seats, no rate retune.
+    </p>
+
+    <script>
+      const CYCLE = `<svg class="cycle" viewBox="0 0 44 18" aria-hidden="true"><ellipse cx="22" cy="9" rx="16" ry="7" fill="none" stroke="currentColor"/><path d="M8 7 L12 5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M36 9 L37 13" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+
+      function stage(col, name, value, extra, bound) {
+        const cls = bound ? "stage bound" : "stage";
+        return `<div class="${cls} ${col}"><span class="stage-name">${name}</span><span class="stage-value">${value}</span>${extra}</div>`;
+      }
+      function flow(col, rate) {
+        return `<div class="flow ${col}"><span class="rate">${rate}</span><span class="arrow">→</span></div>`;
+      }
+      function unit(text) {
+        return `<span class="stage-unit">${text}</span>`;
+      }
+      function cue(text) {
+        return `<span class="stage-cue">${text}</span>`;
+      }
+      function rate(text) {
+        return `<span class="stage-rate">${text}</span>`;
+      }
+
+      function strip(rows) {
+        return `<div class="delivery-stats">${rows
+          .map(([k, v, u]) => `<span><span class="stat-label">${k}</span> ${v}${u ? ` <span class="unit">${u}</span>` : ""}</span>`)
+          .join("")}</div>`;
+      }
+
+      const ideasPlan = () =>
+        stage("s-ideas", "Ideas", "64", rate("0.5/day"), false) +
+        flow("f-1", "") +
+        stage("s-plan", "Plan", "18", rate("1.0/day"), false) +
+        flow("f-2", "");
+
+      function spine(scene) {
+        const today = scene === "today-jam";
+        const proposed = !today;
+        const cd = scene === "cd";
+        const healthy = scene === "healthy";
+        const hire = scene === "hire";
+
+        const readyN = healthy ? "288" : "180";
+        const ipHero = today ? "1" : hire ? "2 / 2" : "1 / 1";
+        const ipExtra = proposed
+          ? `${unit("seats")}${CYCLE}`
+          : CYCLE;
+        const reviewN = healthy ? "1" : "47";
+        const doneN = healthy ? "1" : "8";
+        const finish = healthy ? "1.0/day" : hire ? "2.0/day" : "3.3/day";
+        const reviewFlow = healthy ? "1.0/day" : "1.0/day";
+        const pull = healthy ? "1.0/day" : hire ? "2.0/day" : "1.0/day";
+        const shipped = healthy ? "12" : "96";
+        const reviewBound = !healthy;
+        const doneBound = !healthy && !cd;
+        const reviewExtra = proposed
+          ? `${unit("waiting")}${reviewBound ? cue("backed up") : ""}`
+          : reviewBound ? cue("capacity-bound") : "";
+        const doneExtra = proposed
+          ? `${unit("waiting")}${doneBound ? cue("backed up") : ""}`
+          : doneBound ? cue("capacity-bound") : "";
+        const readyExtra = proposed ? unit("waiting") : "";
+        const grid = cd ? "grid-6" : "grid-7";
+        const regen = cd ? "regen-6" : "regen-7";
+
+        const stats = proposed
+          ? strip([
+              ["In Progress", hire ? "2 / 2" : "1 / 1", "seats"],
+              ["In Review", reviewN, "waiting"],
+              ["Done", cd ? "—" : doneN, cd ? "" : "waiting"],
+              ["Shipped", shipped, ""],
+            ])
+          : strip([
+              ["In Progress", "1", ""],
+              ["In Review", reviewN, ""],
+              ["Done", doneN, ""],
+              ["Shipped", shipped, ""],
+            ]);
+
+        const doneShip = cd
+          ? flow("f-5", reviewFlow) + stage("s-shipped", "Shipped", shipped, "", false)
+          : flow("f-5", reviewFlow) +
+            stage("s-done", "Done", doneN, doneExtra, doneBound) +
+            flow("f-6", "1.0/day") +
+            stage("s-shipped", "Shipped", shipped, "", false);
+
+        return `
+          <div class="${grid}">
+            ${ideasPlan()}
+            ${stage("s-ready", "Ready", readyN, readyExtra, false)}
+            ${flow("f-3", pull)}
+            ${stage("s-ip", "In Progress", ipHero, ipExtra, false)}
+            ${flow("f-4", finish)}
+            ${stage("s-review", "In Review", reviewN, reviewExtra, reviewBound)}
+            ${doneShip}
+            <div class="${regen}">debt +0.2/pt → Ready</div>
+          </div>
+          ${stats}`;
+      }
+
+      document.querySelectorAll(".mock").forEach((host) => {
+        host.innerHTML = spine(host.dataset.scene);
+      });
+    </script>
+  </body>
+</html>
