@@ -193,7 +193,7 @@
   {
     "id": "agent-ci-review",
     "name": "Add agent review to CI/CD",
-    "description": "Wire agents into the pipeline as reviewers. They still take time on each PR, and a human has to step in when an agent cannot resolve it. In Review stays on the line — this does not skip it.",
+    "description": "Wire agents into the pipeline as reviewers. They still take time on each PR, and a human has to step in when an agent cannot resolve it.",
     "category": "change-structure",
     "cost": {
       "oneTime": 500,
