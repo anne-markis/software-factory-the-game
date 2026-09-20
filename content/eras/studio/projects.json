@@ -1,31 +1,21 @@
 [
   {
     "id": "gig-bugfix",
-    "name": "Weekend bugfix",
+    "name": "Bugfix sprint",
     "sizePoints": 100,
-    "upfrontCost": 0,
+    "upfrontCost": 200,
     "payoutPerPoint": 18,
     "completionBonus": 200,
     "reputationReward": 1
   },
   {
     "id": "gig-landing-page",
-    "name": "Landing page",
+    "name": "Back-burner feature",
     "sizePoints": 150,
-    "upfrontCost": 0,
+    "upfrontCost": 300,
     "payoutPerPoint": 16,
     "completionBonus": 300,
     "reputationReward": 1
-  },
-  {
-    "id": "gig-plugin",
-    "name": "Client plugin",
-    "sizePoints": 450,
-    "upfrontCost": 0,
-    "payoutPerPoint": 17,
-    "completionBonus": 700,
-    "reputationReward": 2,
-    "pursue": true
   },
   {
     "id": "small-refactor",

@@ -18,7 +18,6 @@ const STUDIO_FOLLOW_ON = [
   "ship-v5",
   "gig-bugfix",
   "gig-landing-page",
-  "gig-plugin",
 ];
 
 function startNextStudioWork(e: Engine, reserve = 0): void {

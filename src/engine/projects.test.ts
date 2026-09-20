@@ -23,7 +23,7 @@ describe("projects", () => {
     const e = new Engine(content());
     e.startProject("gig-bugfix");
     const s = e.getState();
-    expect(s.stocks.budget).toBe(10000); // Studio gigs are $0 upfront
+    expect(s.stocks.budget).toBe(9800); // Bugfix sprint charges $200 upfront
     expect(s.stocks.backlog).toBe(400); // Studio start backlog 300 + bugfix 100
     expect(s.projects).toHaveLength(2);
   });
@@ -542,16 +542,16 @@ describe("Start vs Pursue offers", () => {
     expect(ready.reason).toBeUndefined();
   });
 
-  it("Start still works on Weekend bugfix while something is in Plan", () => {
-    const e = new Engine(content({ ideas: 450 }));
-    e.pursueProject("gig-plugin");
-    expect(e.getState().plan.some((p) => p.defId === "gig-plugin")).toBe(true);
+  it("Start still works on Bugfix sprint while something is in Plan", () => {
+    const e = new Engine(content({ ideas: 200 }));
+    e.pursueProject("large-refactor");
+    expect(e.getState().plan.some((p) => p.defId === "large-refactor")).toBe(true);
     const ideasAfterPursue = e.getState().stocks.ideas;
     e.startProject("gig-bugfix");
     const s = e.getState();
     expect(s.projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
     expect(s.stocks.ideas).toBe(ideasAfterPursue);
-    expect(s.plan.some((p) => p.defId === "gig-plugin")).toBe(true);
+    expect(s.plan.some((p) => p.defId === "large-refactor")).toBe(true);
   });
 
   it("Start refuses a Pursue offer; Pursue refuses a Start offer", () => {

@@ -212,12 +212,12 @@ describe("cross-surface work counting (ADR 0009)", () => {
     s.completedProjectIds = ["launch-beta"];
     s.stocks.ideas = 850;
     engine.pursueProject("ship-v1");
-    engine.pursueProject("gig-plugin");
+    engine.pursueProject("large-refactor");
     view.render();
     assertSurfacesAgree(root, engine.getState());
     expect(projectLine(root, "launch-beta")).toContain("Abandon");
     expect(root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("~800d");
-    expect(root.querySelector('[data-plan-status="gig-plugin"]')!.textContent).toContain("~900d");
+    expect(root.querySelector('[data-plan-status="large-refactor"]')!.textContent).toContain("~2,000d");
     engine.tick();
     view.render();
     assertSurfacesAgree(root, engine.getState());

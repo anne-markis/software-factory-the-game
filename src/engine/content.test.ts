@@ -710,9 +710,9 @@ describe("parseChallenges", () => {
     const defs = parseProjects(projectsJson);
     const bugfix = defs.find((p) => p.id === "gig-bugfix")!;
     expect(bugfix).toMatchObject({
-      name: "Weekend bugfix",
+      name: "Bugfix sprint",
       sizePoints: 100,
-      upfrontCost: 0,
+      upfrontCost: 200,
       payoutPerPoint: 18,
       completionBonus: 200,
       reputationReward: 1,
@@ -757,8 +757,17 @@ describe("parseChallenges", () => {
     });
     expect(large.unique).toBeUndefined();
     expect(large.completionStockGrants).toEqual([{ stock: "techDebt", amount: -1000 }]);
-    expect(defs.find((p) => p.id === "gig-landing-page")!.pursue).toBeUndefined();
-    expect(defs.find((p) => p.id === "gig-plugin")!.pursue).toBe(true);
+    const landing = defs.find((p) => p.id === "gig-landing-page")!;
+    expect(landing).toMatchObject({
+      name: "Back-burner feature",
+      sizePoints: 150,
+      upfrontCost: 300,
+      payoutPerPoint: 16,
+      completionBonus: 300,
+      reputationReward: 1,
+    });
+    expect(landing.pursue).toBeUndefined();
+    expect(defs.find((p) => p.id === "gig-plugin")).toBeUndefined();
     const v1 = defs.find((p) => p.id === "ship-v1")!;
     expect(v1).toMatchObject({
       name: "Ship v1",
@@ -899,7 +908,7 @@ describe("parseProjects", () => {
     const defs = parseProjects(projectsJson);
     expect(defs.every((p) => typeof p.reputationReward === "number")).toBe(true);
     expect(defs.find((p) => p.id === "gig-bugfix")!.reputationReward).toBe(1);
-    expect(defs.find((p) => p.id === "gig-plugin")!.reputationReward).toBe(2);
+    expect(defs.find((p) => p.id === "gig-landing-page")!.reputationReward).toBe(1);
     expect(defs.find((p) => p.id === "ship-v1")!.reputationReward).toBe(2);
     expect(defs.find((p) => p.id === "ship-v5")!.reputationReward).toBe(4);
   });
@@ -909,7 +918,6 @@ describe("parseProjects", () => {
     expect(studio.projects.map((p) => p.id)).toEqual([
       "gig-bugfix",
       "gig-landing-page",
-      "gig-plugin",
       "small-refactor",
       "medium-refactor",
       "large-refactor",
@@ -928,7 +936,9 @@ describe("parseProjects", () => {
     expect(big.requiresReputation).toBe(5);
     expect(big.pursue).toBe(true);
     expect(company.projects.find((p) => p.id === "gig-bugfix")!.pursue).toBeUndefined();
-    expect(company.projects.find((p) => p.id === "gig-plugin")!.pursue).toBe(true);
+    expect(company.projects.find((p) => p.id === "gig-landing-page")!.pursue).toBeUndefined();
+    expect(company.projects.find((p) => p.id === "large-refactor")!.pursue).toBe(true);
+    expect(company.projects.some((p) => p.id === "gig-plugin")).toBe(false);
     expect(company.projects.some((p) => p.id === "mobile-app")).toBe(false);
     const mega = loadShippedContent("megacorp");
     const ent = mega.projects.find((p) => p.id === "enterprise-replatform")!;
