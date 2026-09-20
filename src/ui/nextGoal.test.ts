@@ -74,7 +74,7 @@ describe("nextMilestoneGoal", () => {
 
 describe("nextContractGoal", () => {
   it("skips startable gigs and surfaces the nearest version-ladder gate", () => {
-    // Fresh game: tiny gigs are startable ($0 upfront). Ship v1–v5 wait on
+    // Fresh game: tiny gigs are startable (tutorial upfront, starting cash covers). Ship v1–v5 wait on
     // the prior version (v1 on Launch beta). Sort is reputation, then
     // completed-count, then id — ship-v1 wins among the locked versions.
     const e = new Engine(content);

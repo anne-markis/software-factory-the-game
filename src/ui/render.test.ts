@@ -738,13 +738,13 @@ describe("renderProjectsStatus", () => {
     const s = initialState(c);
     s.plan = [
       { defId: "ship-v1", name: "Ship v1", progress: 0, size: 400 },
-      { defId: "gig-plugin", name: "Client plugin", progress: 0, size: 450 },
+      { defId: "large-refactor", name: "Large refactor", progress: 0, size: 1000 },
     ];
     const html = renderProjectsStatus([...s.projects], s, c);
     expect(html).toContain("0 / 400");
-    expect(html).toContain("0 / 450");
+    expect(html).toContain("0 / 1,000");
     expect(html).toContain("~800d");
-    expect(html).toContain("~900d");
+    expect(html).toContain("~2,000d");
     expect(html.match(/data-cancel="/g)).toHaveLength(2);
   });
 
@@ -781,7 +781,7 @@ describe("renderProjectsStatus", () => {
 
     s.projects.push({
       defId: "gig-bugfix",
-      name: "Weekend bugfix",
+      name: "Bugfix sprint",
       remaining: 100,
       payoutPerPoint: 18,
       completionBonus: 200,
@@ -789,7 +789,7 @@ describe("renderProjectsStatus", () => {
     });
     const two = renderProjectsStatus([...s.projects], s, c);
     expect(two).toContain("Launch beta");
-    expect(two).toContain("Weekend bugfix");
+    expect(two).toContain("Bugfix sprint");
     expect(two.match(/100 left/g)).toHaveLength(2);
     expect(two.match(/~200d/g)).toHaveLength(2);
     expect(s.pointsPerDay).toBe(1);
@@ -818,7 +818,10 @@ describe("renderProjectOffers", () => {
     const e = new Engine(c);
     const html = renderProjectOffers(e.availableProjects(), e.getState());
     expect(html).toContain('data-project="gig-bugfix" ');
-    expect(html).toContain("Weekend bugfix");
+    expect(html).toContain("Bugfix sprint");
+    expect(html).toContain("$200 start");
+    expect(html).toContain("Back-burner feature");
+    expect(html).toContain("$300 start");
     expect(html).toContain("100 pts");
     expect(html).toContain("$18");
     expect(html).toContain("$200");
@@ -894,12 +897,12 @@ describe("renderProjectOffers", () => {
     s.completedProjects = 1;
     s.completedProjectIds = ["launch-beta"];
     s.stocks.ideas = 400;
-    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 3, size: 450 }];
+    s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 3, size: 1000 }];
     const html = renderProjectOffers(projectAvailability(s, c), s);
     expect(html).toContain('data-project="gig-bugfix" >Start<');
     expect(html).not.toContain('data-project="gig-bugfix" disabled');
     expect(html).toContain('data-project="ship-v1" >Pursue<');
-    expect(html).not.toContain('data-project="gig-plugin"');
+    expect(html).not.toContain('data-project="large-refactor"');
   });
 
   it("keeps cannot-afford offers visible and disabled", () => {
@@ -969,7 +972,7 @@ describe("renderProjectOffers", () => {
     const s = initialState(c);
     s.projects.push({
       defId: "gig-bugfix",
-      name: "Weekend bugfix",
+      name: "Bugfix sprint",
       remaining: 100,
       payoutPerPoint: 18,
       completionBonus: 200,
@@ -991,7 +994,7 @@ describe("renderProjectOffers", () => {
   it("does not change as Plan progress fills, so offer buttons survive the tick", () => {
     const c = studioProjects();
     const s = initialState(c);
-    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 0, size: 450 }];
+    s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 0, size: 1000 }];
     const before = renderProjectOffers(projectAvailability(s, c), s);
     s.plan[0]!.progress = 10;
     s.stocks.plan = 10;

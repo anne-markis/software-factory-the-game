@@ -500,7 +500,7 @@ describe("appView node identity across renders", () => {
   it("keeps the same offer button nodes while Plan progress ticks", () => {
     const h = mount();
     const s = h.engine.getState() as GameState;
-    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 0, size: 450 }];
+    s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 0, size: 1000 }];
     s.stocks.plan = 0;
     h.view.render();
     const start = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
@@ -510,7 +510,7 @@ describe("appView node identity across renders", () => {
     h.view.render();
     expect(h.root.querySelector('[data-project="gig-bugfix"]')).toBe(start);
     expect(h.root.querySelector('[data-project="gig-landing-page"]')).toBe(pursue);
-    expect(h.root.querySelector('[data-plan-status="gig-plugin"]')!.textContent).toContain("4 / 450");
+    expect(h.root.querySelector('[data-plan-status="large-refactor"]')!.textContent).toContain("4 / 1,000");
   });
 
   it("keeps the same choice option button nodes while the expiry countdown beside them ticks down", () => {
@@ -783,7 +783,7 @@ describe("appView click delegation on the stable root", () => {
   it("starts a Start gig while Plan is filling", () => {
     const h = mount();
     const s = h.engine.getState() as GameState;
-    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 10, size: 450 }];
+    s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 10, size: 1000 }];
     s.stocks.plan = 10;
     h.view.render();
     const start = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
@@ -792,7 +792,7 @@ describe("appView click delegation on the stable root", () => {
     start.click();
     expect(h.engine.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
     expect(h.engine.getState().plan).toHaveLength(1);
-    expect(h.engine.getState().plan[0]!.defId).toBe("gig-plugin");
+    expect(h.engine.getState().plan[0]!.defId).toBe("large-refactor");
     expect(h.actions).toBe(1);
   });
 
@@ -801,19 +801,19 @@ describe("appView click delegation on the stable root", () => {
     const s = h.engine.getState() as GameState;
     s.plan = [
       { defId: "ship-v1", name: "Ship v1", progress: 20, size: 400 },
-      { defId: "gig-plugin", name: "Client plugin", progress: 5, size: 450 },
+      { defId: "large-refactor", name: "Large refactor", progress: 5, size: 1000 },
     ];
     s.stocks.plan = 25;
     s.stocks.ideas = 0;
     h.view.render();
     const inFlightBefore = h.engine.getState().projects.map((p) => p.defId);
     h.root.querySelector<HTMLElement>('[data-cancel="ship-v1"]')!.click();
-    expect(h.engine.getState().plan.map((p) => p.defId)).toEqual(["gig-plugin"]);
+    expect(h.engine.getState().plan.map((p) => p.defId)).toEqual(["large-refactor"]);
     expect(h.engine.getState().plan[0]!.progress).toBe(5);
     expect(h.engine.getState().stocks.ideas).toBe(0);
     expect(h.engine.getState().projects.map((p) => p.defId)).toEqual(inFlightBefore);
     expect(h.root.querySelector('[data-plan-status="ship-v1"]')).toBeNull();
-    expect(h.root.querySelector('[data-plan-status="gig-plugin"]')).not.toBeNull();
+    expect(h.root.querySelector('[data-plan-status="large-refactor"]')).not.toBeNull();
     expect(h.root.querySelector('[data-abandon="launch-beta"]')).not.toBeNull();
     expect(h.actions).toBe(1);
   });
@@ -821,15 +821,15 @@ describe("appView click delegation on the stable root", () => {
   it("abandons in-flight work without dropping Planning rows", () => {
     const h = mount();
     const s = h.engine.getState() as GameState;
-    s.plan = [{ defId: "gig-plugin", name: "Client plugin", progress: 8, size: 450 }];
+    s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 8, size: 1000 }];
     s.stocks.plan = 8;
     h.view.render();
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     h.root.querySelector<HTMLElement>('[data-abandon="launch-beta"]')!.click();
     expect(h.engine.getState().projects).toHaveLength(0);
     expect(h.engine.getState().plan).toHaveLength(1);
-    expect(h.engine.getState().plan[0]!.defId).toBe("gig-plugin");
-    expect(h.root.querySelector('[data-plan-status="gig-plugin"]')).not.toBeNull();
+    expect(h.engine.getState().plan[0]!.defId).toBe("large-refactor");
+    expect(h.root.querySelector('[data-plan-status="large-refactor"]')).not.toBeNull();
     expect(h.root.querySelector('[data-abandon="launch-beta"]')).toBeNull();
     expect(h.actions).toBe(1);
     confirmSpy.mockRestore();
