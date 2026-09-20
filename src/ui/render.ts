@@ -61,11 +61,17 @@ function effectsLine(def: DecisionDef): string {
 // containers, and each card is patched independently.
 export const OWNED_LIST_SECTION = "owned-list";
 export const INCOME_CHART_SECTION = "income-chart";
+export const INCOME_TITLE_SECTION = "income-title";
 export const EXPENSES_CHART_SECTION = "expenses-chart";
+export const EXPENSES_TITLE_SECTION = "expenses-title";
 export const LOG_SECTION = "log";
 
 function sideDetailsScaffold(title: string, section: string): string {
   return `<details class="panel side-details" open><summary><h3>${title}</h3></summary><div ${SECTION_ATTR}="${section}"></div></details>`;
+}
+
+function sideDetailsChartScaffold(titleSection: string, chartSection: string): string {
+  return `<details class="panel side-details" open><summary><h3 ${SECTION_ATTR}="${titleSection}"></h3></summary><div ${SECTION_ATTR}="${chartSection}"></div></details>`;
 }
 
 export function decisionNodeSection(defId: string): string {
@@ -209,12 +215,26 @@ export function ownedPanelScaffold(): string {
 
 /** Income sparkline chrome. Starts expanded; player can collapse. */
 export function incomePanelScaffold(): string {
-  return sideDetailsScaffold("Income / day", INCOME_CHART_SECTION);
+  return sideDetailsChartScaffold(INCOME_TITLE_SECTION, INCOME_CHART_SECTION);
 }
 
 /** Expenses sparkline chrome. Starts expanded; player can collapse. */
 export function expensesPanelScaffold(): string {
-  return sideDetailsScaffold("Expenses / day", EXPENSES_CHART_SECTION);
+  return sideDetailsChartScaffold(EXPENSES_TITLE_SECTION, EXPENSES_CHART_SECTION);
+}
+
+/** Latest-day recurring + burst, for the always-visible Income heading. */
+export function renderIncomeTitle(incomeByDay: readonly DailyIncome[]): string {
+  const latest = incomeByDay[incomeByDay.length - 1];
+  const total = latest ? latest.recurring + latest.burst : 0;
+  return `Income: $${fmt(total)}`;
+}
+
+/** Latest-day human + agents + misc, for the always-visible Expenses heading. */
+export function renderExpensesTitle(expensesByDay: readonly DailyExpenses[]): string {
+  const latest = expensesByDay[expensesByDay.length - 1];
+  const total = latest ? latest.human + latest.agents + latest.misc : 0;
+  return `Expenses: $${fmt(total)}`;
 }
 
 /** Events panel chrome. Starts expanded; player can collapse. */

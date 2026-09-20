@@ -32,11 +32,15 @@ import {
   renderDecisionNode,
   renderOwnedList,
   renderIncomeChart,
+  renderIncomeTitle,
   renderExpensesChart,
+  renderExpensesTitle,
   shopScaffoldKey,
   OWNED_LIST_SECTION,
   INCOME_CHART_SECTION,
+  INCOME_TITLE_SECTION,
   EXPENSES_CHART_SECTION,
+  EXPENSES_TITLE_SECTION,
   LOG_SECTION,
   renderStall,
   renderTimeControls,
@@ -269,11 +273,13 @@ export function mountAppView(deps: AppViewDeps): AppView {
     projects.patch(PROJECTS_STATUS_SECTION, renderProjectsStatus([...state.projects], state, content));
     projects.patch(PROJECTS_OFFERS_SECTION, renderProjectOffers(engine.availableProjects(), state));
     renderChoicesRegion([...state.pendingChoices], state.day, state.paused);
+    page.patch(INCOME_TITLE_SECTION, renderIncomeTitle(state.incomeByDay ?? []));
     page.patch(INCOME_CHART_SECTION, renderIncomeChart(state.incomeByDay ?? []));
+    page.patch(EXPENSES_TITLE_SECTION, renderExpensesTitle(state.expensesByDay ?? []));
     page.patch(EXPENSES_CHART_SECTION, renderExpensesChart(state.expensesByDay ?? []));
     page.patch(LOG_SECTION, renderLog(state.log));
     // Income / Expenses / Events / Owned sit in `.side` as static <details> chrome
-    // (default open). Only inner sections patch, so collapse state survives ticks.
+    // (default open). Titles and charts patch in place so collapse survives ticks.
     page.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
   }
 

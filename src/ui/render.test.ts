@@ -14,11 +14,15 @@ import {
   decisionNodeSection,
   OWNED_LIST_SECTION,
   INCOME_CHART_SECTION,
+  INCOME_TITLE_SECTION,
   EXPENSES_CHART_SECTION,
+  EXPENSES_TITLE_SECTION,
   LOG_SECTION,
   renderLog,
   renderIncomeChart,
+  renderIncomeTitle,
   renderExpensesChart,
+  renderExpensesTitle,
   renderChoicesScaffold,
   renderChoiceCountdown,
   choiceCountdownSection,
@@ -575,15 +579,37 @@ describe("renderLog", () => {
 
 describe("side rail scaffolds", () => {
   it("Income, Expenses, Events, and Owned chrome are expanded details with patch targets", () => {
+    expect(incomePanelScaffold()).toContain(`${SECTION_ATTR}="${INCOME_TITLE_SECTION}"`);
     expect(incomePanelScaffold()).toContain(`${SECTION_ATTR}="${INCOME_CHART_SECTION}"`);
+    expect(expensesPanelScaffold()).toContain(`${SECTION_ATTR}="${EXPENSES_TITLE_SECTION}"`);
     expect(expensesPanelScaffold()).toContain(`${SECTION_ATTR}="${EXPENSES_CHART_SECTION}"`);
     expect(logPanelScaffold()).toContain(`${SECTION_ATTR}="${LOG_SECTION}"`);
     expect(incomePanelScaffold()).toMatch(/<details class="panel side-details" open>/);
     expect(expensesPanelScaffold()).toMatch(/<details class="panel side-details" open>/);
     expect(logPanelScaffold()).toMatch(/<details class="panel side-details" open>/);
-    expect(incomePanelScaffold()).toContain("<h3>Income / day</h3>");
-    expect(expensesPanelScaffold()).toContain("<h3>Expenses / day</h3>");
     expect(logPanelScaffold()).toContain("<h3>Events</h3>");
+  });
+});
+
+describe("renderIncomeTitle", () => {
+  it("rolls up the latest day's recurring and burst", () => {
+    expect(renderIncomeTitle([])).toBe("Income: $0");
+    expect(renderIncomeTitle([{ day: 1, recurring: 0, burst: 0 }])).toBe("Income: $0");
+    expect(renderIncomeTitle([
+      { day: 10, recurring: 75, burst: 0 },
+      { day: 11, recurring: 354, burst: 180 },
+    ])).toBe("Income: $534");
+  });
+});
+
+describe("renderExpensesTitle", () => {
+  it("rolls up the latest day's human, agents, and misc", () => {
+    expect(renderExpensesTitle([])).toBe("Expenses: $0");
+    expect(renderExpensesTitle([{ day: 1, human: 0, agents: 0, misc: 0 }])).toBe("Expenses: $0");
+    expect(renderExpensesTitle([
+      { day: 10, human: 0, agents: 0, misc: 20 },
+      { day: 11, human: 438, agents: 16, misc: 37 },
+    ])).toBe("Expenses: $491");
   });
 });
 
