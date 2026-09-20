@@ -95,9 +95,9 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(def)).toBe("+$0.75/user/day");
   });
 
-  it("burstFromStock summarises as a chance-based burst per unit of stock", () => {
+  it("burstFromStock summarises as a per-unit chance of a sale", () => {
     const def = base({ effects: [], burstFromStock: { stock: "users", probabilityPerDay: 0.08, perUnit: 1.2 } });
-    expect(summarizeDecisionEffects(def)).toBe("~8%/day burst of $1.2/user");
+    expect(summarizeDecisionEffects(def)).toBe("~8%/user/day chance of a $1.2 sale");
   });
 
   it("the shipped subscription and one-time-product cards summarise their user-scaled income", () => {
@@ -105,7 +105,7 @@ describe("summarizeDecisionEffects", () => {
     const sub = decisions.find((d) => d.id === "subscription")!;
     expect(summarizeDecisionEffects(sub)).toBe("+$0.75/user/day");
     const otp = decisions.find((d) => d.id === "one-time-product")!;
-    expect(summarizeDecisionEffects(otp)).toBe("~8%/day burst of $1.2/user");
+    expect(summarizeDecisionEffects(otp)).toBe("~8%/user/day chance of a $1.2 sale");
   });
 
   // the agent ladder is the shop's headline retune, so pin what its

@@ -247,7 +247,7 @@ function decisionEffectLines(decision: DecisionDef): string[] {
   }
   if (decision.burstFromStock) {
     lines.push(
-      `burst ${formatProbabilityPerDay(decision.burstFromStock.probabilityPerDay)} of ${formatCurrency(decision.burstFromStock.perUnit)}/${decision.burstFromStock.stock}`,
+      `burst ${formatNumber(decision.burstFromStock.probabilityPerDay * 100)}%/${decision.burstFromStock.stock}/day of ${formatCurrency(decision.burstFromStock.perUnit)}/sale`,
     );
   }
   for (const mod of decision.stockFlowMods ?? []) {

@@ -240,6 +240,7 @@ const decisionSchema = z
     incomePerDay: z.number().min(0).optional(),
     // Studio monetization: income scaled by a stock's level.
     incomeFromStock: z.object({ stock: stockName, perUnit: z.number().min(0) }).strict().optional(),
+    // probabilityPerDay is the per-unit buy chance each tick; perUnit is $ per sale.
     burstFromStock: z
       .object({ stock: stockName, probabilityPerDay: z.number().min(0).max(1), perUnit: z.number().min(0) })
       .strict()

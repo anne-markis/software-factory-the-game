@@ -207,13 +207,15 @@ export function summarizeDecisionEffects(def: DecisionDef): string {
   // Studio monetization: telegraph that these cards scale with a
   // stock (users), so a card at 0 users reads as "0 income for now" rather
   // than a blank line. incomeFromStock is steady per-day; burstFromStock is
-  // occasional, so it is labelled as a chance-based burst.
+  // a per-unit buy chance, so it is labelled as chance of a sale.
   if (def.incomeFromStock) {
     parts.push(`+$${fmtNum(def.incomeFromStock.perUnit)}/${stockLabel(def.incomeFromStock.stock)}/day`);
   }
   if (def.burstFromStock) {
     const pct = Math.round(def.burstFromStock.probabilityPerDay * 100);
-    parts.push(`~${pct}%/day burst of $${fmtNum(def.burstFromStock.perUnit)}/${stockLabel(def.burstFromStock.stock)}`);
+    parts.push(
+      `~${pct}%/${stockLabel(def.burstFromStock.stock)}/day chance of a $${fmtNum(def.burstFromStock.perUnit)} sale`,
+    );
   }
   if (def.gamble && def.gamble.length > 0) parts.push(summarizeGamble(def.gamble));
   // Empty for a decision whose whole story is conditional (a synergy target or

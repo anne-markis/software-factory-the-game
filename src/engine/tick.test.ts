@@ -427,27 +427,56 @@ describe("tick", () => {
       }
     });
 
-    it("one-time-product burstFromStock produces probabilistic income scaled by users", () => {
+    it("one-time-product burstFromStock is per-user sales, not an all-or-nothing lump", () => {
       const content = ciCdContent();
       content.start.stocks.backlog = 0;
       const e = new Engine(content);
       e.applyDecision("one-time-product");
-      (e.getState() as GameState).stocks.users = 100; // burst = 100 * 1.2 = $120 on a hit
-      let bursts = 0;
+      const sale = 1.2;
+      const users = 100;
+      let daysWithSales = 0;
+      let totalBurst = 0;
+      const seenAmounts = new Set<number>();
       for (let i = 0; i < 300; i++) {
-        (e.getState() as GameState).stocks.users = 100; // hold users flat to isolate the burst
-        const before = e.getState().stocks.budget;
+        (e.getState() as GameState).stocks.users = users;
         e.tick();
-        // A burst day nets +$120 income - $20 burn = +$100; a quiet day is -$20.
-        if (e.getState().stocks.budget > before) {
-          bursts += 1;
-          expect(e.getState().incomeByDay.at(-1)?.burst).toBeCloseTo(120, 5);
+        const burst = e.getState().incomeByDay.at(-1)?.burst ?? 0;
+        totalBurst += burst;
+        if (burst > 0) {
+          daysWithSales += 1;
+          seenAmounts.add(Number(burst.toFixed(5)));
+          expect(burst / sale).toBeCloseTo(Math.round(burst / sale), 5);
+          expect(burst).toBeLessThanOrEqual(users * sale + 1e-9);
         }
       }
-      // At probabilityPerDay 0.08 over 300 days, expect ~24 bursts; assert some
-      // fired and that each hit was recorded on incomeByDay, not Events.
-      expect(bursts).toBeGreaterThan(5);
+      // Independent 8% rolls: almost every day has at least one sale
+      // (P(none) = 0.92^100), and receipts are k × $1.20, not a single $120 lump.
+      expect(daysWithSales).toBeGreaterThan(250);
+      expect(seenAmounts.size).toBeGreaterThan(1);
+      expect(seenAmounts.has(120)).toBe(false);
+      expect(totalBurst / 300).toBeCloseTo(users * 0.08 * sale, 0);
       expect(e.getState().log.some((l) => l.message.includes("product sale burst"))).toBe(false);
+    });
+
+    it("one-time-product still pays occasional sales when the user base is small", () => {
+      const content = ciCdContent();
+      content.start.stocks.backlog = 0;
+      const e = new Engine(content);
+      e.applyDecision("one-time-product");
+      let daysWithSales = 0;
+      let maxBurst = 0;
+      for (let i = 0; i < 400; i++) {
+        (e.getState() as GameState).stocks.users = 3;
+        e.tick();
+        const burst = e.getState().incomeByDay.at(-1)?.burst ?? 0;
+        if (burst > 0) daysWithSales += 1;
+        maxBurst = Math.max(maxBurst, burst);
+      }
+      // 3 users × 8%: most days are quiet, but some sales still land, and a
+      // hit is 1–3 add-ons ($1.20–$3.60), not a $3.60 company-wide lump every time.
+      expect(daysWithSales).toBeGreaterThan(20);
+      expect(daysWithSales).toBeLessThan(200);
+      expect(maxBurst).toBeLessThanOrEqual(3 * 1.2 + 1e-9);
     });
 
     it("caps incomeByDay at INCOME_HISTORY_DAYS", () => {

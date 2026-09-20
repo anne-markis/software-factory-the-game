@@ -151,9 +151,10 @@ export interface DecisionDef {
   // chargeUpkeep: totalIncome += stocks[stock] * perUnit. The subscription
   // card reads users at $0.75/user/day; useless at 0 users.
   incomeFromStock?: { stock: StockName; perUnit: number };
-  // Probabilistic income burst scaled by a stock's level (Studio
-  // monetization). Each day rolls probabilityPerDay; on a hit it credits
-  // stocks[stock] * perUnit to budget. The one-time-product card reads users.
+  // Per-unit probabilistic sales (Studio monetization). Each point of
+  // stock independently rolls probabilityPerDay; each success credits
+  // perUnit (one sale). Expected income is still stocks[stock] *
+  // probabilityPerDay * perUnit. The one-time-product card reads users.
   burstFromStock?: { stock: StockName; probabilityPerDay: number; perUnit: number };
   // Additive nudges to start.stockFlows (ADR 0006). Studio decisions ship
   // none; the engine sums deltas from owned decisions when present.
