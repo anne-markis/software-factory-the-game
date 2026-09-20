@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en" class="force-dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mock — Income / Expenses rolled-up titles</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #181818;
+        --fg: #e8e8e8;
+        --fg-dim: #aaa;
+        --border: #888;
+        --accent-amber: #e0a030;
+        --chip-users: #8ab4e8;
+        --desc: #c2c2c2;
+      }
+      body {
+        font-family: ui-monospace, monospace;
+        max-width: 56rem;
+        margin: 1rem auto;
+        padding: 0 1rem 2rem;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      h1 { font-size: 1.2rem; margin: 0 0 0.5rem; }
+      h2 { font-size: 0.95rem; margin: 1.5rem 0 0.4rem; color: var(--fg-dim); font-weight: normal; }
+      h3 { margin: 0; font-size: 1rem; display: inline; }
+      p { line-height: 1.45; color: var(--desc); }
+      .mock-chrome { color: var(--fg-dim); font-size: 0.85rem; }
+      .note { font-size: 0.85rem; color: var(--fg-dim); }
+      .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1.25rem; align-items: start; }
+      .rail { width: 22rem; max-width: 100%; }
+      .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-dim); margin-bottom: 0.4rem; }
+      .panel { border: 1px solid var(--border); padding: 0.5rem 1rem; margin-bottom: 1rem; }
+      .side-details > summary { cursor: pointer; list-style-position: outside; }
+      .side-details > summary h3 { display: inline; margin: 0; }
+      .amount { font-variant-numeric: tabular-nums; }
+      .income-empty { color: var(--fg-dim); font-size: 0.85rem; }
+      .income-bars {
+        display: flex; align-items: stretch; gap: 2px; height: 4.5rem;
+        border-bottom: 1px solid var(--border); margin-top: 0.35rem;
+      }
+      .income-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+      .income-stack { display: flex; flex-direction: column; justify-content: flex-end; width: 100%; height: 100%; }
+      .income-seg { width: 100%; min-height: 0; }
+      .income-seg.income-recurring, .income-swatch.income-recurring { background: var(--fg); }
+      .income-seg.income-burst, .income-swatch.income-burst { background: var(--accent-amber); }
+      .income-seg.exp-human, .income-swatch.exp-human { background: var(--fg); }
+      .income-seg.exp-agents, .income-swatch.exp-agents { background: var(--accent-amber); }
+      .income-seg.exp-misc, .income-swatch.exp-misc { background: var(--chip-users); }
+      .income-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; margin-top: 0.4rem; font-size: 0.8rem; color: var(--fg-dim); }
+      .income-swatch { display: inline-block; width: 0.65rem; height: 0.65rem; margin-right: 0.25rem; vertical-align: -0.05rem; border: 1px solid var(--border); }
+      table { border-collapse: collapse; font-size: 0.85rem; margin: 0.5rem 0 0; }
+      th, td { text-align: left; padding: 0.3rem 0.75rem 0.3rem 0; border-bottom: 1px solid #333; vertical-align: top; }
+      th { color: var(--fg-dim); font-weight: normal; }
+      .pick { outline: 1px dashed var(--accent-amber); outline-offset: 2px; }
+      code { color: var(--fg); }
+    </style>
+  </head>
+  <body>
+    <p class="mock-chrome">Software Factory · static mock · titles only</p>
+    <h1>Rolled-up Income / Expenses titles</h1>
+    <p>
+      Collapsed or open, the heading always shows <strong>today's total</strong>
+      (same number as the stacked bars' last day). Breakdowns stay in the
+      legend after you expand.
+    </p>
+
+    <h2>Side-by-side</h2>
+    <div class="cols">
+      <div>
+        <div class="label">Now</div>
+        <div class="rail" id="now"></div>
+      </div>
+      <div>
+        <div class="label">Proposed · expanded</div>
+        <div class="rail" id="proposed-open"></div>
+      </div>
+      <div>
+        <div class="label">Proposed · collapsed (still shows the total)</div>
+        <div class="rail" id="proposed-closed"></div>
+      </div>
+    </div>
+
+    <h2>Empty day (no income / no expenses yet)</h2>
+    <div class="cols">
+      <div>
+        <div class="label">Proposed · zeros</div>
+        <div class="rail" id="empty"></div>
+      </div>
+    </div>
+
+    <h2>Title format (pick one)</h2>
+    <p class="note">Highlighted row is what this mock paints. Say which you want before implementation.</p>
+    <table>
+      <thead>
+        <tr><th></th><th>Income heading</th><th>Expenses heading</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>A (your example)</td>
+          <td><code>Income: 534</code></td>
+          <td><code>Expenses: 471</code></td>
+        </tr>
+        <tr class="pick">
+          <td>B (this mock · matches Budget $)</td>
+          <td><code>Income: $534</code></td>
+          <td><code>Expenses: $471</code></td>
+        </tr>
+        <tr>
+          <td>C (keep cadence)</td>
+          <td><code>Income: $534/day</code></td>
+          <td><code>Expenses: $471/day</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <script>
+      function pct(n, max) {
+        if (max <= 0 || n <= 0) return "0";
+        return Math.max(1, Math.round((n / max) * 100)) + "%";
+      }
+      function chart(days, segs, max, legend, aria) {
+        const bars = days.map((d) => {
+          const inner = segs.map(([cls, key]) => `<div class="income-seg ${cls}" style="height:${pct(d[key], max)}"></div>`).join("");
+          return `<div class="income-col"><div class="income-stack">${inner}</div></div>`;
+        }).join("");
+        return `<div class="income-chart" role="img" aria-label="${aria}"><div class="income-bars">${bars}</div><div class="income-legend">${legend}</div></div>`;
+      }
+      function panel(title, inner, open) {
+        return `<details class="panel side-details"${open ? " open" : ""}><summary><h3>${title}</h3></summary>${inner}</details>`;
+      }
+      function swatch(cls, label) {
+        return `<span><span class="income-swatch ${cls}"></span> ${label}</span>`;
+      }
+      const incomeDays = Array.from({ length: 14 }, (_, i) => ({
+        recurring: 354,
+        burst: i === 10 || i === 13 ? 180 : 0,
+      }));
+      const incomeMax = Math.max(...incomeDays.map((d) => d.recurring + d.burst));
+      const latestIncome = incomeDays[incomeDays.length - 1];
+      const incomeTotal = latestIncome.recurring + latestIncome.burst;
+      const expDays = Array.from({ length: 14 }, (_, i) => ({
+        human: i >= 4 ? 438 : 0,
+        agents: i >= 8 ? 16 : i >= 6 ? 8 : 0,
+        misc: 20 + (i >= 9 ? 17 : 0),
+      }));
+      const expMax = Math.max(...expDays.map((d) => d.human + d.agents + d.misc));
+      const latestExp = expDays[expDays.length - 1];
+      const expTotal = latestExp.human + latestExp.agents + latestExp.misc;
+
+      const incomeChart = chart(
+        incomeDays,
+        [["income-burst", "burst"], ["income-recurring", "recurring"]],
+        incomeMax,
+        swatch("income-recurring", `Recurring $${latestIncome.recurring}/day`) +
+          swatch("income-burst", `Burst $${latestIncome.burst}/day`),
+        "Income per day",
+      );
+      const expChart = chart(
+        expDays,
+        [["exp-misc", "misc"], ["exp-agents", "agents"], ["exp-human", "human"]],
+        expMax,
+        swatch("exp-human", `Human $${latestExp.human}/day`) +
+          swatch("exp-agents", `Agents $${latestExp.agents}/day`) +
+          swatch("exp-misc", `Misc $${latestExp.misc}/day`),
+        "Expenses per day",
+      );
+
+      function rail(incomeTitle, expTitle, open) {
+        return panel(incomeTitle, incomeChart, open) + panel(expTitle, expChart, open);
+      }
+
+      document.getElementById("now").innerHTML = rail("Income / day", "Expenses / day", true);
+      document.getElementById("proposed-open").innerHTML = rail(
+        `Income: <span class="amount">$${incomeTotal}</span>`,
+        `Expenses: <span class="amount">$${expTotal}</span>`,
+        true,
+      );
+      document.getElementById("proposed-closed").innerHTML = rail(
+        `Income: <span class="amount">$${incomeTotal}</span>`,
+        `Expenses: <span class="amount">$${expTotal}</span>`,
+        false,
+      );
+      document.getElementById("empty").innerHTML =
+        panel(`Income: <span class="amount">$0</span>`, `<div class="income-empty">No income yet.</div>`, true) +
+        panel(`Expenses: <span class="amount">$0</span>`, `<div class="income-empty">No expenses yet.</div>`, true);
+    </script>
+  </body>
+</html>
