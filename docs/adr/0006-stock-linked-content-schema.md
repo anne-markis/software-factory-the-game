@@ -14,9 +14,11 @@ the *schema*: field names, where they live, and what the engine evaluates.
 
 - `incomeFromStock?: { stock, perUnit }` — stacks with flat `incomePerDay`.
   Income that tick += `stocks[stock] * perUnit`.
-- `burstFromStock?: { stock, probabilityPerDay, perUnit }` — each day rolls
-  `probabilityPerDay`; on a hit, credit `stocks[stock] * perUnit` into the
-  same income step as flat income (consumed by burn / payroll).
+- `burstFromStock?: { stock, probabilityPerDay, perUnit }` — each unit of
+  stock independently rolls `probabilityPerDay`; each success credits
+  `perUnit` (one sale) into the same income step as flat income (consumed
+  by burn / payroll). Expected income is `stocks[stock] * probabilityPerDay *
+  perUnit`.
 - `stockFlowMods?: [{ stock, acquirePerDayDelta?, churnRateDelta? }]` —
   additive nudges to a matching `start.stockFlows` entry. On a decision,
   applied while owned. On a project, applied while the id is in
@@ -58,7 +60,7 @@ Users stay 0 until Launch beta completes, then +30 users and +$800.
 Organic flow after `minCompletedProjects: 1`: `1.5 + reputation × 0.1`
 users/day, 1% churn. Support drag: free band 25, `dragPerPoint` 0.004,
 `maxDrag` 0.35, target `"all"`. Subscription: `$0.75 / user / day`.
-One-time product: `p = 0.08`, `$1.20 / user` on a hit.
+One-time product: `p = 0.08` per user per day, `$1.20` per sale.
 
 ## Rejected
 

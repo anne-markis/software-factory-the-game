@@ -58,7 +58,9 @@ that file. To change player order, move the object in the JSON array.
 
 Cost may be `{}`. `incomePerDay` / `incomeFromStock` / `burstFromStock`
 credit in the same income step **before** payroll that tick. Burst rolls
-from the shared RNG; a hit is not a post-insolvency windfall.
+from the shared RNG: each point of stock independently rolls
+`probabilityPerDay`, and each success credits `perUnit`. A sale is not a
+post-insolvency windfall.
 `stockFlowMods` add to a matching `start.stockFlows` entry (omit until a
 card or completed project should change organic acquire/churn).
 Monetization-only cards still need `"effects": []`.

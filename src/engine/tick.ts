@@ -1,5 +1,6 @@
 import type { ActiveProject, DailyExpenses, GameContent, GameState, StockFlowMod } from "./types";
 import type { Rng } from "./rng";
+import { sampleIndependentHits } from "./binomial";
 import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
 import { continuousDeployActive } from "./continuousDeploy";
 import { detectArchetypes } from "./archetypes";
@@ -215,18 +216,19 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
       recurringIncome += fromStock;
       if (def.incomeFromStock.stock === "users") state.userIncomeFlow += fromStock;
     }
-    // Probabilistic income burst scaled by a stock's level (one-time-product
-    // card). Rolled per owned decision each day; on a hit it credits
-    // stocks[stock] * perUnit. Netted into the same income step as everything
-    // else so it is consumed by burn like flat income (semantics). Skip the
-    // roll when the stock is 0: a hit would credit $0 anyway, and drawing
-    // here would burn the purchase RNG stream through the isolated
-    // pre-launch burndown (users stay 0 until the first project completes).
+    // Per-unit sales (one-time-product card). Each point of stock rolls
+    // probabilityPerDay independently; each hit credits perUnit. Expected
+    // $/day is still stock * p * perUnit, but a small stock means fewer
+    // sales rather than the same rare all-or-nothing company roll. Skip
+    // when the stock is 0: hits would credit $0, and drawing here would
+    // burn the purchase RNG stream through the isolated pre-launch
+    // burndown (users stay 0 until the first project completes).
     // Receipts go on incomeByDay, not the Events log.
     if (def.burstFromStock) {
       const stock = state.stocks[def.burstFromStock.stock];
-      if (stock > 0 && rng.next() < def.burstFromStock.probabilityPerDay) {
-        const burst = stock * def.burstFromStock.perUnit;
+      if (stock > 0) {
+        const sales = sampleIndependentHits(rng, stock, def.burstFromStock.probabilityPerDay);
+        const burst = sales * def.burstFromStock.perUnit;
         if (burst > 0) {
           totalIncome += burst;
           burstIncome += burst;

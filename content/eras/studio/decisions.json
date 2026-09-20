@@ -273,7 +273,7 @@
   {
     "id": "one-time-product",
     "name": "One-time product",
-    "description": "Sell a paid add-on. Occasional sales bursts scale with your user base; lumpier than a subscription and worth nothing at zero users.",
+    "description": "Sell a paid add-on. Each user has a chance to buy each day, so a small audience means fewer sales, not none. Worth nothing at zero users.",
     "category": "earn-income",
     "cost": {
       "oneTime": 400
