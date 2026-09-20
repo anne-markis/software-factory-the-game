@@ -696,6 +696,7 @@ describe("renderProjectsStatus", () => {
     expect(html).toContain("<th>Project</th>");
     expect(html).toContain("<th>Size</th>");
     expect(html).toContain("<th>Ideas</th>");
+    expect(html).toContain("<th>Start $</th>");
     expect(html).toContain("<th>$/pt</th>");
     expect(html).toContain("<th>Done $</th>");
     expect(html).toContain("<th>Effects</th>");
@@ -819,9 +820,10 @@ describe("renderProjectOffers", () => {
     const html = renderProjectOffers(e.availableProjects(), e.getState());
     expect(html).toContain('data-project="gig-bugfix" ');
     expect(html).toContain("Bugfix sprint");
-    expect(html).toContain("$200 start");
+    expect(html).toContain("$2,200");
     expect(html).toContain("Back-burner feature");
-    expect(html).toContain("$300 start");
+    expect(html).toContain("$3,000");
+    expect(html).not.toContain("$200 start");
     expect(html).toContain("100 pts");
     expect(html).toContain("$18");
     expect(html).toContain("$200");
@@ -926,6 +928,7 @@ describe("renderProjectOffers", () => {
     const html = renderProjectOffers(projectAvailability(s, c), s);
     expect(html).toContain('data-project="pricey" disabled');
     expect(html).toContain("cannot afford");
+    expect(html).toContain('class="num proj-warn">$50,000<');
   });
 
   // finished unique versions leave the offers list; repeatables stay.

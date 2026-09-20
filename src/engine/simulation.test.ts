@@ -25,10 +25,12 @@ function startNextStudioWork(e: Engine, reserve = 0): void {
   if (s.projects.length > 0 || (s.plan?.length ?? 0) > 0) return;
   for (const id of STUDIO_FOLLOW_ON) {
     const w = e.availableProjects().find((p) => p.def.id === id);
-    if (w?.startable && s.stocks.budget >= w.def.upfrontCost + reserve) {
-      e.takeProject(id);
-      return;
-    }
+    if (!w?.startable || s.stocks.budget < w.def.upfrontCost + reserve) continue;
+    const shipCredit = w.def.sizePoints * w.def.payoutPerPoint + w.def.completionBonus;
+    // Filler gigs can cost more than they pay; a solvent probe does not take those.
+    if (w.def.upfrontCost > 0 && shipCredit < w.def.upfrontCost) continue;
+    e.takeProject(id);
+    return;
   }
 }
 

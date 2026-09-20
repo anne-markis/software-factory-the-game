@@ -349,6 +349,7 @@ function projectColgroup(): string {
     <col class="proj-col-name" />
     <col class="proj-col-size" />
     <col class="proj-col-ideas" />
+    <col class="proj-col-start" />
     <col class="proj-col-rate" />
     <col class="proj-col-done" />
     <col class="proj-col-fx" />
@@ -361,6 +362,7 @@ function projectThead(): string {
     <th>Project</th>
     <th>Size</th>
     <th>Ideas</th>
+    <th>Start $</th>
     <th>$/pt</th>
     <th>Done $</th>
     <th>Effects</th>
@@ -368,7 +370,7 @@ function projectThead(): string {
 }
 
 function groupRow(label: string, now = false): string {
-  return `<tr class="proj-group${now ? " proj-group-now" : ""}"><td colspan="7">${esc(label)}</td></tr>`;
+  return `<tr class="proj-group${now ? " proj-group-now" : ""}"><td colspan="8">${esc(label)}</td></tr>`;
 }
 
 function moneyCell(n: number): string {
@@ -417,6 +419,7 @@ export function renderProjectsStatus(
         <td><div class="proj-name"><strong>${esc(item.name)}</strong></div>${etaSub(eta)}</td>
         <td class="num">${fmt(item.progress)} / ${fmt(item.size)}</td>
         <td class="num">${PROJ_EMPTY}</td>
+        <td class="num">${def ? moneyCell(def.upfrontCost) : PROJ_EMPTY}</td>
         <td class="num">${def ? moneyCell(def.payoutPerPoint) : PROJ_EMPTY}</td>
         <td class="num">${def ? moneyCell(def.completionBonus) : PROJ_EMPTY}</td>
         <td class="proj-fx">${chips}</td>
@@ -427,6 +430,7 @@ export function renderProjectsStatus(
   const flightRows = inFlight
     .map((p) => {
       const eta = formatProjectEta(p.remaining, state.pointsPerDay, n);
+      const catalog = content.projects.find((d) => d.id === p.defId);
       const chips = chipsHtml(projectEffectChips(extrasForActive(p, content)));
       return `<tr class="proj-now" data-project-status="${esc(p.defId)}">
         <td class="proj-btn"><button type="button" data-abandon="${esc(p.defId)}">Abandon</button></td>
@@ -436,6 +440,7 @@ export function renderProjectsStatus(
         </td>
         <td class="num"><span class="proj-left">${fmt(p.remaining)} left</span></td>
         <td class="num">${PROJ_EMPTY}</td>
+        <td class="num">${moneyCell(catalog?.upfrontCost ?? 0)}</td>
         <td class="num">${moneyCell(p.payoutPerPoint)}</td>
         <td class="num">${moneyCell(p.completionBonus)}</td>
         <td class="proj-fx">${chips}</td>
@@ -464,7 +469,7 @@ function isVisibleProjectOffer(o: ProjectAvailability): boolean {
 }
 
 export function renderProjectOffers(offers: ProjectAvailability[], state: Readonly<GameState>): string {
-  // Offer copy is size / Ideas / payout / effects only. In-flight remaining
+  // Offer copy is size / Ideas / start cash / payout / effects. In-flight remaining
   // and ETAs do not appear here, so this string stays stable between ticks
   // and Start/Pursue nodes survive the 10Hz patch. Extra WIP is told by the
   // in-flight rows above, which use the 1/n slice.
@@ -478,15 +483,16 @@ export function renderProjectOffers(offers: ProjectAvailability[], state: Readon
       const ideasShort = !!def.pursue && state.stocks.ideas < ideasCost;
       const cashShort = state.stocks.budget < def.upfrontCost;
       const cashNote = cashShort ? `<div class="proj-sub proj-warn">cannot afford</div>` : "";
-      const upfront = def.upfrontCost > 0 ? `<div class="proj-sub">$${fmt(def.upfrontCost)} start</div>` : "";
       const ideas = def.pursue ? fmt(ideasCost) : PROJ_EMPTY;
       const ideasClass = ideasShort ? "num proj-warn" : "num";
+      const startClass = cashShort ? "num proj-warn" : "num";
       const chips = chipsHtml(projectEffectChips(def));
       return `<tr>
         <td class="proj-btn"><button data-project="${esc(def.id)}" ${disabled}>${label}</button></td>
-        <td><div class="proj-name"><strong>${esc(def.name)}</strong></div>${upfront}${cashNote}</td>
+        <td><div class="proj-name"><strong>${esc(def.name)}</strong></div>${cashNote}</td>
         <td class="num">${fmt(def.sizePoints)} pts</td>
         <td class="${ideasClass}">${ideas}</td>
+        <td class="${startClass}">${moneyCell(def.upfrontCost)}</td>
         <td class="num">${moneyCell(def.payoutPerPoint)}</td>
         <td class="num">${moneyCell(def.completionBonus)}</td>
         <td class="proj-fx">${chips}</td>

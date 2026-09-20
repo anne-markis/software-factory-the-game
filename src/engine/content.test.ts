@@ -712,7 +712,7 @@ describe("parseChallenges", () => {
     expect(bugfix).toMatchObject({
       name: "Bugfix sprint",
       sizePoints: 100,
-      upfrontCost: 200,
+      upfrontCost: 2200,
       payoutPerPoint: 18,
       completionBonus: 200,
       reputationReward: 1,
@@ -761,7 +761,7 @@ describe("parseChallenges", () => {
     expect(landing).toMatchObject({
       name: "Back-burner feature",
       sizePoints: 150,
-      upfrontCost: 300,
+      upfrontCost: 3000,
       payoutPerPoint: 16,
       completionBonus: 300,
       reputationReward: 1,
