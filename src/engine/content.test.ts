@@ -1195,7 +1195,7 @@ describe("per-era content layout", () => {
     expect(eras.startingEraId).toBe("studio");
     expect(eras.eras.map((e) => e.id)).toEqual(["studio", "company", "megacorp"]);
     expect(eras.eras[0].entryAnyOf).toBeUndefined();
-    expect(eras.eras[1].entryAnyOf).toEqual([{ minBudget: 1000000 }]);
+    expect(eras.eras[1].entryAnyOf).toEqual([{ minBudget: 500000 }]);
     expect(eras.eras[1].silentEntry).toBeUndefined();
     expect(eras.eras[2].entryAnyOf).toEqual([{ minBudget: 100000000 }]);
     expect(eras.eras[2].silentEntry).toBeUndefined();

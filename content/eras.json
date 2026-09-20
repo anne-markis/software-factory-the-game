@@ -9,7 +9,7 @@
       "id": "company",
       "name": "Company",
       "entryAnyOf": [
-        { "minBudget": 1000000 }
+        { "minBudget": 500000 }
       ]
     },
     {
