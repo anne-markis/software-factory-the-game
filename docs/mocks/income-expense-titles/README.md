@@ -11,5 +11,5 @@ in / going out?"
 - Sparkline + per-bucket `/day` legend stay inside the open body
 - Events and Owned titles stay as they are
 
-Format on the mock: `Income: $534` / `Expenses: $471` (Budget-style `$`,
+Format on the mock: `Income: $534` / `Expenses: $491` (Budget-style `$`,
 no `/day` on the heading). Variants are labeled on the page.
