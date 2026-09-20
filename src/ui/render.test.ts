@@ -820,9 +820,9 @@ describe("renderProjectOffers", () => {
     const html = renderProjectOffers(e.availableProjects(), e.getState());
     expect(html).toContain('data-project="gig-bugfix" ');
     expect(html).toContain("Bugfix sprint");
-    expect(html).toContain("$200");
+    expect(html).toContain("$2,200");
     expect(html).toContain("Back-burner feature");
-    expect(html).toContain("$300");
+    expect(html).toContain("$3,000");
     expect(html).not.toContain("$200 start");
     expect(html).toContain("100 pts");
     expect(html).toContain("$18");

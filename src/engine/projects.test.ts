@@ -23,7 +23,7 @@ describe("projects", () => {
     const e = new Engine(content());
     e.startProject("gig-bugfix");
     const s = e.getState();
-    expect(s.stocks.budget).toBe(9800); // Bugfix sprint charges $200 upfront
+    expect(s.stocks.budget).toBe(7800); // Bugfix sprint charges $2,200 upfront
     expect(s.stocks.backlog).toBe(400); // Studio start backlog 300 + bugfix 100
     expect(s.projects).toHaveLength(2);
   });
