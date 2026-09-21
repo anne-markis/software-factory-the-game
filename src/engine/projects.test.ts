@@ -5,6 +5,7 @@ import { projectsJson, startJson } from "./loadShippedContent";
 import { effectiveRate } from "./modifiers";
 import { applyEffects } from "./effects";
 import { unshippedWork, workLedgerIssues } from "./work";
+import { requireContract } from "./types";
 import type { GameContent, GameState, ProjectDef } from "./types";
 
 function content(overrides: Partial<GameContent["start"]["stocks"]> = {}): GameContent {
@@ -217,7 +218,7 @@ describe("projects", () => {
   it("Small refactor reduces techDebt by 50 clamped at 0, without budget or reputation, and is repeatable", () => {
     const c = content();
     shrinkStart(c);
-    const refactor = c.projects.find((p) => p.id === "small-refactor")!;
+    const refactor = requireContract(c.projects.find((p) => p.id === "small-refactor"));
     refactor.sizePoints = 2;
     const e = new Engine(c);
     for (let i = 0; i < 6; i++) e.tick(); // complete Launch beta
@@ -250,7 +251,7 @@ describe("projects", () => {
   it("Medium refactor starts immediately, reduces techDebt by 150 clamped at 0, and is repeatable", () => {
     const c = content();
     shrinkStart(c);
-    const refactor = c.projects.find((p) => p.id === "medium-refactor")!;
+    const refactor = requireContract(c.projects.find((p) => p.id === "medium-refactor"));
     refactor.sizePoints = 2;
     const e = new Engine(c);
     for (let i = 0; i < 6; i++) e.tick();
@@ -278,7 +279,7 @@ describe("projects", () => {
   it("Large refactor spends 200 ideas, plans 1000 points, and reduces techDebt by 1000", () => {
     const c = content({ ideas: 250 });
     shrinkStart(c);
-    const refactor = c.projects.find((p) => p.id === "large-refactor")!;
+    const refactor = requireContract(c.projects.find((p) => p.id === "large-refactor"));
     refactor.sizePoints = 2;
     const e = new Engine(c);
     for (let i = 0; i < 6; i++) e.tick();
@@ -314,7 +315,7 @@ describe("projects", () => {
   it("unlocks Ship v1 after Launch beta and keeps v2 locked until v1 completes", () => {
     const c = content({ ideas: 2000 });
     shrinkStart(c);
-    const v1 = c.projects.find((p) => p.id === "ship-v1")!;
+    const v1 = requireContract(c.projects.find((p) => p.id === "ship-v1"));
     v1.sizePoints = 2;
     const e = new Engine(c);
     expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(false);
@@ -474,7 +475,7 @@ describe("projects", () => {
   it("lets an abandoned unique start again from zero and does not record completion", () => {
     const c = content();
     shrinkStart(c);
-    const v1 = c.projects.find((p) => p.id === "ship-v1")!;
+    const v1 = requireContract(c.projects.find((p) => p.id === "ship-v1"));
     v1.sizePoints = 10;
     v1.pursue = undefined;
     const e = new Engine(c);

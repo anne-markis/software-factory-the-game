@@ -50,7 +50,10 @@ export type PipelineStock = (typeof PIPELINE_STOCKS)[number];
 // delivery rates only. Discover cards do not raise plan.
 export type DeliveryRateId = "pull" | "finish" | "review" | "deploy";
 export const RATE_IDS: readonly DeliveryRateId[] = ["pull", "finish", "review", "deploy"];
-export type RateId = DeliveryRateId | "discover" | "plan";
+// ktlo is overhead reserved before contract finish. Like discover and plan,
+// it is not on the delivery line: "all" modifiers and debt/users drags
+// do not scale it. Cards change it by targeting "ktlo" exactly.
+export type RateId = DeliveryRateId | "discover" | "plan" | "ktlo";
 
 export type Effect =
   | {
@@ -231,9 +234,22 @@ export interface ChallengeDef {
   cooldownDays?: number;
 }
 
-export interface ProjectDef {
+// Always-on overhead (Company Keep the lights on). Not a contract: no
+// remaining, no payout, no offer row. Present in the catalog from the era
+// that introduces it, inherited after that. Cards scale basePerDay via
+// modifyRate target "ktlo". seats come out of In Progress capacity.
+export interface PermanentProjectDef {
   id: string;
   name: string;
+  permanent: true;
+  basePerDay: number;
+  seats: number;
+}
+
+export interface ContractProjectDef {
+  id: string;
+  name: string;
+  permanent?: false;
   sizePoints: number;
   upfrontCost: number;
   payoutPerPoint: number;
@@ -276,6 +292,23 @@ export interface ProjectDef {
   // versions raise organic user acquire so a version ship opens ceiling
   // headroom instead of filling the reputation-driven cap in one lump.
   stockFlowMods?: StockFlowMod[];
+}
+
+export type ProjectDef = ContractProjectDef | PermanentProjectDef;
+
+export function isPermanentProject(def: ProjectDef): def is PermanentProjectDef {
+  return def.permanent === true;
+}
+
+export function isContractProject(def: ProjectDef): def is ContractProjectDef {
+  return def.permanent !== true;
+}
+
+export function requireContract(def: ProjectDef | undefined): ContractProjectDef {
+  if (!def || !isContractProject(def)) {
+    throw new Error(`${def?.id ?? "project"} is not a contract`);
+  }
+  return def;
 }
 
 // Named work sitting in Plan after Pursue, before auto-Ready. progress
@@ -442,6 +475,9 @@ export interface GameContent {
   decisions: DecisionDef[];
   challenges: ChallengeDef[];
   projects: ProjectDef[];
+  // Offer ids dropped at this rung and inherited after it. The def stays in
+  // `projects` so an in-flight contract can still finish. Absent on fixtures.
+  retiredProjectIds?: readonly string[];
   // Active era id + catalog from content/eras.json. Resolved
   // decisions/challenges/projects include every prior rung (ADR 0008).
   // Always set by loadShippedContent / loadActiveContent. Optional on

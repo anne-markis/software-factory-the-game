@@ -112,7 +112,10 @@ resolved(megacorp) = resolved(company) + megacorp files
 - A later card may `requires` an inherited id; refs are the resolved
   catalog.
 - Do not retune an inherited id’s cost in a later file (owned upkeep
-  would change silently). Shop hide/retire is a future flag, not
+  would change silently). Do not omit an id to retire it.
+- A project offer leaves the shop by listing its id in that era’s
+  `retire-projects.json`. The def stays in the resolved catalog so a
+  contract already in flight can finish. Decision hide is still not
   omission.
 
 `start.json` is era-agnostic (seed stocks, always-on flows and drags).

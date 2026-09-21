@@ -1,5 +1,12 @@
 [
   {
+    "id": "ktlo",
+    "name": "Keep the lights on",
+    "permanent": true,
+    "basePerDay": 0.5,
+    "seats": 1
+  },
+  {
     "id": "small-crm",
     "name": "Small CRM build",
     "sizePoints": 5000,

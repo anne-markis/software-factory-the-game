@@ -7,9 +7,9 @@ import { startJson } from "./loadShippedContent";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
 import { unshippedWork, workLedgerIssues } from "./work";
-import type { GameContent, GameState, ProjectDef } from "./types";
+import type { ContractProjectDef, GameContent, GameState } from "./types";
 
-function sized(overrides: Partial<ProjectDef> & Pick<ProjectDef, "id" | "name" | "sizePoints">): ProjectDef {
+function sized(overrides: Partial<ContractProjectDef> & Pick<ContractProjectDef, "id" | "name" | "sizePoints">): ContractProjectDef {
   return {
     upfrontCost: 0,
     payoutPerPoint: 0,
@@ -19,7 +19,7 @@ function sized(overrides: Partial<ProjectDef> & Pick<ProjectDef, "id" | "name" |
   };
 }
 
-function content(projects: ProjectDef[], stockOverrides: Partial<GameContent["start"]["stocks"]> = {}): GameContent {
+function content(projects: ContractProjectDef[], stockOverrides: Partial<GameContent["start"]["stocks"]> = {}): GameContent {
   const start = parseStartConfig(startJson);
   Object.assign(start.stocks, stockOverrides);
   return { start, decisions: [], challenges: [], projects };

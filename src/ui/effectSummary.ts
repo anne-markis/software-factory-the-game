@@ -24,8 +24,10 @@ function signed(n: number): string {
   return n >= 0 ? `+${fmtNum(n)}` : fmtNum(n);
 }
 
-function rateLabel(target: "pull" | "finish" | "review" | "deploy" | "discover" | "plan" | "all"): string {
-  return target === "all" ? "all rates" : target;
+function rateLabel(target: "pull" | "finish" | "review" | "deploy" | "discover" | "plan" | "ktlo" | "all"): string {
+  if (target === "all") return "all rates";
+  if (target === "ktlo") return "KTLO";
+  return target;
 }
 
 // Short display labels for stock keys used in scaleStock/addToStock
