@@ -18,6 +18,14 @@ KTLO is a project row, not a new Delivery box. It sits in its own
 **On** control so the grid still lines up, and Abandon is not offered.
 In flight and In plan keep Abandon and Cancel.
 
+**Bugfix sprint leaves the catalog at the same moment.** When Studio
+crosses into Company and KTLO turns on, Bugfix sprint is no longer
+offered. A sprint already in flight stays on the board with Abandon,
+and it still pays out if it finishes. One that was only in the Available
+list is gone. Other Studio gigs (Back-burner feature) stay offered.
+The definition stays in the resolved catalog so the live row can still
+name itself; the shop simply stops listing it.
+
 The drain is finish points per day, taken before contract work. Seat
 hold is separate and fixed in this mock: KTLO occupies 1 In Progress
 seat whether or not a card has changed the rate. The open In Progress
@@ -33,5 +41,6 @@ Illustrative numbers, not a balance pass:
 | Finish left for contracts | 2.7/day | 2.4/day |
 | Seats | 1 of 4 | 1 of 4 |
 
-Studio never shows the row. Megacorp inherits the Company project, so
-the same row is already there when that era opens.
+Studio never shows the KTLO row, and Studio still offers Bugfix sprint.
+Megacorp inherits both: KTLO is already on, and Bugfix sprint stays off
+the offer list.
