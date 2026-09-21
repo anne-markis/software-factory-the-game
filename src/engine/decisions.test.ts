@@ -326,13 +326,34 @@ describe("decisions", () => {
     const byId = Object.fromEntries(defs.map((d) => [d.id, d]));
     expect(decisionTargetsExactRate(byId["agent-orchestration"]!, "review")).toBe(true);
     expect(decisionTargetsExactRate(byId["agent-orchestration"]!, "finish")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent-orchestration"]!, "plan")).toBe(true);
     expect(decisionTargetsExactRate(byId["agent"]!, "review")).toBe(true);
     expect(decisionTargetsExactRate(byId["agent"]!, "finish")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent"]!, "plan")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent-harness"]!, "plan")).toBe(true);
+    expect(decisionTargetsExactRate(byId["agent-ci-review"]!, "plan")).toBe(false);
     expect(decisionTargetsExactRate(byId["basic-dev"]!, "review")).toBe(true);
     expect(decisionTargetsExactRate(byId["agent-ci-review"]!, "review")).toBe(true);
     expect(decisionTargetsExactRate(byId["agent-ci-review"]!, "finish")).toBe(false);
     expect(decisionTargetsExactRate(byId["agent-harness"]!, "review")).toBe(false);
     expect(decisionTargetsExactRate(byId["hack-day"]!, "review")).toBe(false);
+  });
+
+  it("agents add plan like finish, and harness and orchestration multiply it", () => {
+    const e = new Engine(content());
+    expect(effectiveRate(e.getState(), "plan")).toBe(1);
+    e.applyDecision("agent");
+    expect(effectiveRate(e.getState(), "plan")).toBeCloseTo(1.2, 10);
+    e.applyDecision("agent");
+    e.applyDecision("agent-harness");
+    e.applyDecision("agent-orchestration");
+    // plan: (1 + 2 x 0.2) x 1.25 x 1.45. Pull and discover stay put.
+    expect(effectiveRate(e.getState(), "plan")).toBeCloseTo(1.4 * 1.25 * 1.45, 10);
+    expect(effectiveRate(e.getState(), "pull")).toBe(2);
+    expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
+    e.applyDecision("basic-dev");
+    // One human scales each agent's plan add by 1.1: (1 + 2 x 0.22) x 1.25 x 1.45.
+    expect(effectiveRate(e.getState(), "plan")).toBeCloseTo(1.44 * 1.25 * 1.45, 10);
   });
 
   it("orchestration raises review as well as finish", () => {

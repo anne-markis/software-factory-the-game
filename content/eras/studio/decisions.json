@@ -100,7 +100,7 @@
   {
     "id": "agent",
     "name": "Add coding agent",
-    "description": "Each agent finishes another 0.2 points of work a day, reviews 0.05/day, and adds a little more tech debt. Each human developer makes every agent's coding 10% faster. Buy as many as you can feed.",
+    "description": "Each agent finishes another 0.2 points of work a day, plans another 0.2/day, reviews 0.05/day, and adds a little more tech debt. Each human developer makes every agent's coding and planning 10% faster. Buy as many as you can feed.",
     "category": "ship-faster",
     "cost": {
       "oneTime": 10,
@@ -110,6 +110,13 @@
       {
         "type": "modifyRate",
         "target": "finish",
+        "op": "add",
+        "value": 0.2,
+        "scaleFromHumansPer": 0.1
+      },
+      {
+        "type": "modifyRate",
+        "target": "plan",
         "op": "add",
         "value": 0.2,
         "scaleFromHumansPer": 0.1
@@ -131,7 +138,7 @@
   {
     "id": "agent-harness",
     "name": "Agent harness",
-    "description": "Tests and guardrails around every agent you run: finishing work 25% faster and tech debt grows 30% slower. Ongoing cost to keep it running.",
+    "description": "Tests and guardrails around every agent you run: finishing and planning work 25% faster and tech debt grows 30% slower. Ongoing cost to keep it running.",
     "category": "tame-debt",
     "cost": {
       "oneTime": 250,
@@ -148,6 +155,12 @@
         "value": 1.25
       },
       {
+        "type": "modifyRate",
+        "target": "plan",
+        "op": "mul",
+        "value": 1.25
+      },
+      {
         "type": "modifyDebtMultiplier",
         "op": "mul",
         "value": 0.7
@@ -159,7 +172,7 @@
   {
     "id": "agent-orchestration",
     "name": "Agent orchestration",
-    "description": "A planner splits work across your agents and reviews what comes back: finishing work 45% faster and tech debt grows 45% slower. Needs at least two agents to coordinate.",
+    "description": "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster and tech debt grows 45% slower. Needs at least two agents to coordinate.",
     "category": "ship-faster",
     "cost": {
       "oneTime": 400,
@@ -172,6 +185,12 @@
       {
         "type": "modifyRate",
         "target": "finish",
+        "op": "mul",
+        "value": 1.45
+      },
+      {
+        "type": "modifyRate",
+        "target": "plan",
         "op": "mul",
         "value": 1.45
       },

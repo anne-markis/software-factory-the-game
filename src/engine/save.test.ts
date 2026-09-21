@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { effectiveRate } from "./modifiers";
 import { serialize, deserialize, SAVE_VERSION } from "./save";
 import { Engine, initialState } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
@@ -27,6 +28,66 @@ describe("save/load", () => {
     a.tick();
     b.tick();
     expect(b.getState()).toEqual(a.getState());
+  });
+
+  it("grants missing plan modifiers onto an owned agent ladder, once", () => {
+    const c = content();
+    const a = new Engine(c);
+    a.applyDecision("agent");
+    a.applyDecision("agent");
+    a.applyDecision("agent-harness");
+    a.applyDecision("agent-orchestration");
+    const freshPlan = effectiveRate(a.getState(), "plan");
+    expect(freshPlan).toBeCloseTo(1.4 * 1.25 * 1.45, 10);
+
+    const raw = structuredClone(a.getState()) as GameState;
+    raw.modifiers = raw.modifiers.filter((m) => m.target !== "plan");
+    expect(effectiveRate(raw, "plan")).toBe(1);
+
+    const b = new Engine(c, deserialize(serialize(raw)));
+    expect(effectiveRate(b.getState(), "plan")).toBeCloseTo(freshPlan, 10);
+    expect(effectiveRate(b.getState(), "finish")).toBeCloseTo(effectiveRate(a.getState(), "finish"), 10);
+    const planMods = b.getState().modifiers.filter((m) => m.target === "plan");
+    expect(planMods).toHaveLength(4); // two agent adds, harness mul, orchestration mul
+    expect(planMods.filter((m) => m.op === "add").every((m) => m.scaleFromHumansPer === 0.1)).toBe(true);
+
+    const again = new Engine(c, deserialize(serialize(b.getState())));
+    expect(again.getState().modifiers.filter((m) => m.target === "plan")).toHaveLength(4);
+    expect(effectiveRate(again.getState(), "plan")).toBeCloseTo(freshPlan, 10);
+  });
+
+  it("does not grant a base plan effect onto an instance bought under a synergy that omits plan", () => {
+    const c = content();
+    c.decisions = [
+      {
+        id: "provider",
+        name: "Provider",
+        description: "p",
+        category: "tame-debt",
+        cost: {},
+        effects: [],
+        removable: true,
+        unique: true,
+      },
+      {
+        id: "agent",
+        name: "Agent",
+        description: "a",
+        category: "ship-faster",
+        cost: {},
+        removable: true,
+        effects: [{ type: "modifyRate", target: "plan", op: "add", value: 0.2 }],
+        synergies: [{ ifOwned: "provider", effects: [{ type: "modifyRate", target: "finish", op: "add", value: 0.2 }] }],
+      },
+    ];
+    const e = new Engine(c);
+    e.applyDecision("provider");
+    e.applyDecision("agent");
+    const raw = e.getState() as GameState;
+    expect(raw.modifiers.some((m) => m.target === "plan")).toBe(false);
+    const b = new Engine(c, deserialize(serialize(raw)));
+    expect(b.getState().modifiers.some((m) => m.target === "plan")).toBe(false);
+    expect(effectiveRate(b.getState(), "plan")).toBe(1);
   });
 
   it("hydrates scaleFromHumansPer from content onto older agent modifiers", () => {

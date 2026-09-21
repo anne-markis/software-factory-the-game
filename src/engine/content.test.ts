@@ -246,12 +246,13 @@ describe("parseDecisions", () => {
     const defs = parseDecisions(decisionsJson);
 
     // agent is stackable: no `unique`, additive effects so N copies are
-    // worth N times one copy. +0.2 finish/day, a smaller +0.05 review/day,
-    // and +0.1 debt multiplier per copy.
+    // worth N times one copy. +0.2 finish/day, the same +0.2 plan/day,
+    // a smaller +0.05 review/day, and +0.1 debt multiplier per copy.
     const agent = defs.find((d) => d.id === "agent")!;
     expect(agent.unique).toBeUndefined();
     expect(agent.effects).toEqual([
       { type: "modifyRate", target: "finish", op: "add", value: 0.2, scaleFromHumansPer: 0.1 },
+      { type: "modifyRate", target: "plan", op: "add", value: 0.2, scaleFromHumansPer: 0.1 },
       { type: "modifyRate", target: "review", op: "add", value: 0.05 },
       { type: "modifyDebtMultiplier", op: "add", value: 0.1 },
     ]);
@@ -269,6 +270,7 @@ describe("parseDecisions", () => {
     expect(harness.requires).toEqual(["agent"]);
     expect(harness.effects).toEqual([
       { type: "modifyRate", target: "finish", op: "mul", value: 1.25 },
+      { type: "modifyRate", target: "plan", op: "mul", value: 1.25 },
       { type: "modifyDebtMultiplier", op: "mul", value: 0.7 },
     ]);
     expect(harness.synergies).toBeUndefined();
@@ -282,6 +284,7 @@ describe("parseDecisions", () => {
     expect(orch.requiresCounts).toEqual([{ id: "agent", count: 2 }]);
     expect(orch.effects).toEqual([
       { type: "modifyRate", target: "finish", op: "mul", value: 1.45 },
+      { type: "modifyRate", target: "plan", op: "mul", value: 1.45 },
       { type: "modifyRate", target: "review", op: "mul", value: 1.45 },
       { type: "modifyDebtMultiplier", op: "mul", value: 0.55 },
     ]);
@@ -350,15 +353,15 @@ describe("parseDecisions", () => {
 
     const agent = defs.find((d) => d.id === "agent")!;
     expect(agent.capacity).toBeUndefined();
-    expect(splitTargets(agent.effects)).toEqual(["finish", "review"]);
+    expect(splitTargets(agent.effects)).toEqual(["finish", "plan", "review"]);
 
     const harness = defs.find((d) => d.id === "agent-harness")!;
     expect(harness.capacity).toBeUndefined();
-    expect(splitTargets(harness.effects)).toEqual(["finish"]);
+    expect(splitTargets(harness.effects)).toEqual(["finish", "plan"]);
 
     const orch = defs.find((d) => d.id === "agent-orchestration")!;
     expect(orch.capacity).toBeUndefined();
-    expect(splitTargets(orch.effects)).toEqual(["finish", "review"]);
+    expect(splitTargets(orch.effects)).toEqual(["finish", "plan", "review"]);
 
     expect(defs.find((d) => d.id === "better-tooling")).toBeUndefined();
   });
