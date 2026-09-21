@@ -521,12 +521,13 @@ describe("simulation", () => {
     expect(r.budgetAtDay[2000]).toBeGreaterThan(r.budgetAtDay[500]!); // still climbing on subscription income
   });
 
-  // The agent ladder's payoff, measured in two halves. The locked
-  // agent knobs are all finish-side -- each agent adds +0.2 finish, the
-  // harness multiplies finish x1.25, orchestration x1.45 -- and throughput in
-  // tick.ts is the minimum across the three stages. So what the ladder buys
-  // depends entirely on which stage is binding, and the shop only makes sense if
-  // finish-side capacity can eventually reach the shipped stock.
+  // The agent ladder's payoff, measured in two halves. On the delivery line
+  // each agent adds +0.2 finish, the harness multiplies finish x1.25, and
+  // orchestration x1.45 (the same shape now also raises plan, which these
+  // probes do not pursue). Throughput in tick.ts is the minimum across the
+  // three stages. So what the ladder buys depends entirely on which stage is
+  // binding, and the shop only makes sense if finish-side capacity can
+  // eventually reach the shipped stock.
   //
   // Base rates are pull 2, finish 1, deploy 1 (the pull headroom this change added). Nothing in the lean shop permanently lifts pull, so pull's
   // extra point is what the ladder eats into. Deploy is the wall behind it, and

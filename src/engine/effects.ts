@@ -45,6 +45,39 @@ function humanDevInstances(state: GameState, content: GameContent) {
   });
 }
 
+/**
+ * Owned modifiers are snapshotted at purchase. A save that bought the agent
+ * ladder before plan was on those cards has no plan modifier to reload.
+ * Grant each owned instance the plan-targeted modifyRate from the effects it
+ * was bought under (base, or the synergy recorded on the instance). Gamble
+ * outcomes stay as stored. Idempotent: a later load does not stack a second copy.
+ */
+export function grantMissingPlanRates(state: GameState, content: GameContent): void {
+  for (const inst of state.decisions) {
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (!def) continue;
+    const syn = (def.synergies ?? []).find((s) => s.ifOwned === inst.appliedSynergyIfOwned);
+    const effects = syn?.effects ?? def.effects;
+    for (const effect of effects) {
+      if (effect.type !== "modifyRate" || effect.target !== "plan") continue;
+      const already = state.modifiers.some(
+        (m) => m.source === inst.instanceId && m.target === "plan" && m.op === effect.op,
+      );
+      if (already) continue;
+      pushModifier(
+        state,
+        inst.instanceId,
+        "plan",
+        effect.op,
+        effect.value,
+        effect.durationDays,
+        undefined,
+        effect.scaleFromHumansPer,
+      );
+    }
+  }
+}
+
 /** Copy human flags and scaleFromHumansPer from current content onto live state. */
 export function hydrateHumanScale(state: GameState, content: GameContent): void {
   for (const inst of state.decisions) {

@@ -288,7 +288,9 @@ describe("renderDecisions", () => {
     expect(ownedHtml).toMatch(/owned-item[\s\S]*tt-effects[\s\S]*capacity \+1/);
     expect(ownedHtml).toContain("finish +1.0 to -1.0, review +0.7 to +0.1");
     expect(ownedHtml).toContain("Add coding agent");
-    expect(ownedHtml).toContain("finish +0.2/day (+10%/human), review +0.05/day, debt +0.1");
+    expect(ownedHtml).toContain(
+      "finish +0.2/day (+10%/human), plan +0.2/day (+10%/human), review +0.05/day, debt +0.1",
+    );
     expect(ownedHtml).toContain('data-remove=');
   });
 
@@ -467,7 +469,7 @@ describe("renderDecisions", () => {
     // known long-ish entry -- assert it appears whole, not clipped to its first
     // sentence or an ellipsis (Release 20 removes the old 87-char truncation).
     const orchestrationDesc =
-      "A planner splits work across your agents and reviews what comes back: finishing work 45% faster and tech debt grows 45% slower. Needs at least two agents to coordinate.";
+      "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster and tech debt grows 45% slower. Needs at least two agents to coordinate.";
     expect(orchestrationDesc.length).toBeGreaterThan(110);
     expect(html).toContain(`<div class="tt-node-desc">${orchestrationDesc}</div>`);
     expect(html).not.toContain("...");
