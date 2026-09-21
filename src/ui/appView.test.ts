@@ -631,7 +631,7 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const h = mount();
     const side = h.root.querySelector(".side")!;
     const headings = Array.from(side.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toEqual(["Income / day", "Expenses / day", "Events", "Owned"]);
+    expect(headings).toEqual(["Income: $0", "Expenses: $0", "Events", "Owned"]);
     const details = Array.from(side.querySelectorAll<HTMLDetailsElement>("details.side-details"));
     expect(details).toHaveLength(4);
     expect(details.every((d) => d.open)).toBe(true);
@@ -645,8 +645,8 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(projectsIndex).toBe(0);
     expect(shopIndex).toBeGreaterThan(projectsIndex);
     expect(mainHeadings).not.toContain("Owned");
-    expect(mainHeadings).not.toContain("Income / day");
-    expect(mainHeadings).not.toContain("Expenses / day");
+    expect(mainHeadings).not.toContain("Income: $0");
+    expect(mainHeadings).not.toContain("Expenses: $0");
   });
 
   it("keeps Income/Expenses/Events/Owned details nodes and collapse state across ticks", () => {
@@ -685,6 +685,7 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(chart.textContent).toContain("Agents $0/day");
     expect(chart.textContent).toContain("Misc $20/day");
     expect(chart.querySelector(".income-bars")).toBeTruthy();
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $20");
   });
 
   it("puts subscription receipts on Income, while purchase stays in Events", () => {
@@ -697,6 +698,7 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const chart = h.root.querySelector('[data-section="income-chart"]')!;
     expect(chart.textContent).toContain("Recurring $75/day");
     expect(chart.textContent).toContain("Burst $0/day");
+    expect(h.root.querySelector('[data-section="income-title"]')!.textContent).toBe("Income: $75");
     expect(h.root.querySelector(".log")!.textContent).not.toMatch(/product sale burst|incomeFromStock/i);
   });
 
