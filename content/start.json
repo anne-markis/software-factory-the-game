@@ -14,9 +14,9 @@
     {
       "stock": "users",
       "condition": { "minCompletedProjects": 1 },
-      "acquirePerDay": 1.5,
+      "acquirePerDay": 3,
       "acquirePerStock": { "stock": "reputation", "perUnit": 0.1 },
-      "churnRatePerDay": 0.01
+      "churnRatePerDay": 0.003
     }
   ],
   "initialProject": {
