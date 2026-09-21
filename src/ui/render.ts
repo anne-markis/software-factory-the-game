@@ -1,7 +1,10 @@
 import type { Availability } from "../engine/decisions";
 import { pursueIdeaCost, type ProjectAvailability } from "../engine/projects";
 import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject, DailyIncome, DailyExpenses } from "../engine/types";
+import { isContractProject } from "../engine/types";
 import { effectiveRate } from "../engine/modifiers";
+import { permanentProjects } from "../engine/ktlo";
+import { effectiveCapacity } from "../engine/capacity";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { projectEffectChips, type ProjectChip, type ProjectEffectSource } from "./projectEffects";
 import { SECTION_ATTR } from "./domPatch";
@@ -389,8 +392,9 @@ function projectThead(): string {
   </tr></thead>`;
 }
 
-function groupRow(label: string, now = false): string {
-  return `<tr class="proj-group${now ? " proj-group-now" : ""}"><td colspan="8">${esc(label)}</td></tr>`;
+function groupRow(label: string, tone: "now" | "ktlo" | "plain" = "plain"): string {
+  const toneClass = tone === "now" ? " proj-group-now" : tone === "ktlo" ? " proj-group-ktlo" : "";
+  return `<tr class="proj-group${toneClass}"><td colspan="8">${esc(label)}</td></tr>`;
 }
 
 function moneyCell(n: number): string {
@@ -404,7 +408,8 @@ function chipsHtml(chips: ProjectChip[]): string {
 }
 
 function extrasForActive(p: ActiveProject, content: GameContent): ProjectEffectSource {
-  const catalog = content.projects.find((d) => d.id === p.defId);
+  const found = content.projects.find((d) => d.id === p.defId);
+  const catalog = found && isContractProject(found) ? found : undefined;
   const initial = content.start.initialProject.id === p.defId ? content.start.initialProject : undefined;
   return {
     reputationReward: p.reputationReward,
@@ -421,6 +426,33 @@ function stallChip(eta: string): string {
   return eta === "stalled" ? `<span class="proj-chip proj-chip-stall">stalled</span>` : "";
 }
 
+function permanentRows(state: Readonly<GameState>, content: GameContent): string {
+  const defs = permanentProjects(content);
+  if (defs.length === 0) return "";
+  const seatsTotal = effectiveCapacity(state, content);
+  const rows = defs
+    .map((def) => {
+      const rate = defs.length === 1 ? effectiveRate(state, "ktlo") : def.basePerDay;
+      const seatLabel = def.seats === 1 ? "1 seat" : `${def.seats} seats`;
+      return `<tr class="proj-ktlo" data-project-status="${esc(def.id)}">
+        <td class="proj-btn"><button type="button" disabled title="Cannot cancel">On</button></td>
+        <td>
+          <span class="proj-chip proj-chip-ktlo">always on</span>
+          <div class="proj-name"><strong>${esc(def.name)}</strong></div>
+          <div class="proj-sub">${fmt(rate)}/day of finish · ${def.seats} of ${fmt(seatsTotal)} seats · cannot cancel</div>
+        </td>
+        <td class="num">ongoing</td>
+        <td class="num">${PROJ_EMPTY}</td>
+        <td class="num">${PROJ_EMPTY}</td>
+        <td class="num">${PROJ_EMPTY}</td>
+        <td class="num">${PROJ_EMPTY}</td>
+        <td class="proj-fx"><span class="proj-chip">−${fmt(rate)} finish/day</span><span class="proj-chip">${seatLabel}</span></td>
+      </tr>`;
+    })
+    .join("");
+  return groupRow("Always on", "ktlo") + rows;
+}
+
 export function renderProjectsStatus(
   inFlight: readonly ActiveProject[],
   state: Readonly<GameState>,
@@ -431,7 +463,8 @@ export function renderProjectsStatus(
   const planRate = effectiveRate(state, "plan");
   const planRows = planning
     .map((item) => {
-      const def = content.projects.find((d) => d.id === item.defId);
+      const found = content.projects.find((d) => d.id === item.defId);
+      const def = found && isContractProject(found) ? found : undefined;
       const eta = formatProjectEta(item.size - item.progress, planRate, planN);
       const chips = def ? chipsHtml(projectEffectChips(def)) : "";
       return `<tr data-plan-status="${esc(item.defId)}">
@@ -450,7 +483,8 @@ export function renderProjectsStatus(
   const flightRows = inFlight
     .map((p) => {
       const eta = formatProjectEta(p.remaining, state.pointsPerDay, n);
-      const catalog = content.projects.find((d) => d.id === p.defId);
+      const found = content.projects.find((d) => d.id === p.defId);
+      const catalog = found && isContractProject(found) ? found : undefined;
       const chips = chipsHtml(projectEffectChips(extrasForActive(p, content)));
       return `<tr class="proj-now" data-project-status="${esc(p.defId)}">
         <td class="proj-btn"><button type="button" data-abandon="${esc(p.defId)}">Abandon</button></td>
@@ -468,9 +502,11 @@ export function renderProjectsStatus(
     })
     .join("");
 
+  const always = permanentRows(state, content);
   const body =
-    (n > 0 ? groupRow("In flight", true) + flightRows : "") +
-    (planN > 0 ? groupRow("In plan") + planRows : "");
+    always +
+    (n > 0 ? groupRow("In flight", "now") + flightRows : "") +
+    (planN > 0 ? groupRow("In plan", "plain") + planRows : "");
 
   return `<h3>Projects</h3>
     <table class="proj-table">

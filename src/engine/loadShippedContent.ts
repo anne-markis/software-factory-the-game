@@ -14,6 +14,7 @@ import studioProjects from "../../content/eras/studio/projects.json";
 import companyDecisions from "../../content/eras/company/decisions.json";
 import companyChallenges from "../../content/eras/company/challenges.json";
 import companyProjects from "../../content/eras/company/projects.json";
+import companyRetireProjects from "../../content/eras/company/retire-projects.json";
 
 import megacorpDecisions from "../../content/eras/megacorp/decisions.json";
 import megacorpChallenges from "../../content/eras/megacorp/challenges.json";
@@ -32,6 +33,7 @@ const ERA_BUNDLES: Record<string, EraBundleJson> = {
     decisions: companyDecisions,
     challenges: companyChallenges,
     projects: companyProjects,
+    retireProjects: companyRetireProjects,
   },
   megacorp: {
     decisions: megacorpDecisions,

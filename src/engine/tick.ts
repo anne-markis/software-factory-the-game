@@ -1,3 +1,4 @@
+import { isContractProject } from "./types";
 import type { ActiveProject, DailyExpenses, GameContent, GameState, StockFlowMod } from "./types";
 import type { Rng } from "./rng";
 import { sampleIndependentHits } from "./binomial";
@@ -8,6 +9,7 @@ import { detectMilestones } from "./milestones";
 import { attachInjectedWork, committedWork, unshippedWork } from "./work";
 import { advancePlan } from "./projects";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
+import { ktloSeatHold, productFinishRate, syncKtloBase } from "./ktlo";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -173,7 +175,8 @@ function runStockFlows(state: GameState, content: GameContent): void {
     }
     for (const id of state.completedProjectIds ?? []) {
       const def = content.projects.find((p) => p.id === id);
-      ({ acquirePerDay, churnRate } = applyStockFlowMods(def?.stockFlowMods, flow.stock, acquirePerDay, churnRate));
+      const mods = def && isContractProject(def) ? def.stockFlowMods : undefined;
+      ({ acquirePerDay, churnRate } = applyStockFlowMods(mods, flow.stock, acquirePerDay, churnRate));
     }
     const fromStock = flow.acquirePerStock ? state.stocks[flow.acquirePerStock.stock] * flow.acquirePerStock.perUnit : 0;
     const grossGain = acquirePerDay + fromStock;
@@ -281,11 +284,12 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
 
   challengePhase(state, rng, content);
 
+  syncKtloBase(state, content);
   const frozen = isDeliveryFrozen(state);
   const deployRate = frozen ? 0 : effectiveRate(state, "deploy");
   const reviewRate = frozen ? 0 : effectiveRate(state, "review");
-  const finishRate = frozen ? 0 : effectiveRate(state, "finish");
-  const capacity = effectiveCapacity(state, content);
+  const finishRate = frozen ? 0 : productFinishRate(state, content);
+  const capacity = Math.max(0, effectiveCapacity(state, content) - ktloSeatHold(content));
   // Ideas faucet: always-on from day 0, not a pipeline stage, not frozen
   // with delivery. Shop cards raise it via modifyRate add on discover.
   state.stocks.ideas = Math.max(0, state.stocks.ideas + effectiveRate(state, "discover"));

@@ -6,6 +6,7 @@ import { grantMissingPlanRates, hydrateHumanScale } from "./effects";
 import { rollChallenges, resolveChoice } from "./challenges";
 import { startProject, abandonProject, pursueProject, cancelPlan, takeProject, planStock, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
 import { eraCrossingIsSilent, evaluateNextEraEntry, formatEraEntryPredicate } from "./eras";
+import { syncKtloBase } from "./ktlo";
 
 export type LoadEraContent = (eraId: string) => GameContent;
 
@@ -118,6 +119,9 @@ export class Engine {
       if (restored.plan === undefined) {
         restored.plan = [];
       }
+      if (restored.baseRates.ktlo === undefined) {
+        restored.baseRates.ktlo = 0;
+      }
       if (restored.stocks.plan === undefined) {
         restored.stocks.plan = planStock(restored);
       }
@@ -161,6 +165,7 @@ export class Engine {
       this.rng = createRng(content.start.seed);
       this.state.rngState = this.rng.getState();
     }
+    syncKtloBase(this.state, this.content);
   }
 
   /**
@@ -194,6 +199,7 @@ export class Engine {
     if (!hit) return;
     this.content = this.loadEra(hit.era.id);
     this.state.eraId = hit.era.id;
+    syncKtloBase(this.state, this.content);
     if (!eraCrossingIsSilent(hit.era)) {
       log(
         this.state,

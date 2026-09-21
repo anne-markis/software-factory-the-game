@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isContractProject } from "./types";
 import type {
   StartConfig,
   DecisionDef,
@@ -38,7 +39,7 @@ const milestoneSchema = z
   .strict();
 
 const deliveryRate = z.enum(["pull", "finish", "review", "deploy"]);
-const rateTarget = z.enum(["pull", "finish", "review", "deploy", "discover", "plan", "all"]);
+const rateTarget = z.enum(["pull", "finish", "review", "deploy", "discover", "plan", "ktlo", "all"]);
 const stockName = z.enum(["backlog", "inProgress", "inReview", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas", "plan"]);
 
 // Stocks granted on project completion (Studio spine). Shared by
@@ -71,6 +72,7 @@ const startSchema = z
         deploy: z.number().min(0),
         discover: z.number().min(0),
         plan: z.number().min(0),
+        ktlo: z.number().min(0),
       })
       .strict(),
     // Founder In Progress seats. Separate from baseRates: speed is not capacity.
@@ -419,7 +421,7 @@ export function parseChallenges(
   return defs;
 }
 
-const projectSchema = z
+const contractProjectSchema = z
   .object({
     id: z.string(),
     name: z.string(),
@@ -443,6 +445,20 @@ const projectSchema = z
   })
   .strict();
 
+const permanentProjectSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    permanent: z.literal(true),
+    basePerDay: z.number().positive(),
+    seats: z.number().int().positive(),
+  })
+  .strict();
+
+const projectSchema = z.union([permanentProjectSchema, contractProjectSchema]);
+
+const retireProjectsSchema = z.array(z.string().min(1));
+
 export function parseProjects(
   json: unknown,
   source = "content/projects.json",
@@ -460,7 +476,7 @@ export function parseProjects(
     }
     rejectRedeclaredId(source, "project", def.id, priorIds);
     ids.add(def.id);
-    if (def.ideaCost !== undefined && def.pursue !== true) {
+    if (isContractProject(def) && def.ideaCost !== undefined && def.pursue !== true) {
       throw new Error(
         `Invalid content in ${source}: "${def.id}" has ideaCost but is not a Pursue offer`,
       );
@@ -532,7 +548,25 @@ export type EraBundleJson = {
   decisions: unknown;
   challenges: unknown;
   projects: unknown;
+  // Ids whose offers drop at this rung. Inherited forward. The project def
+  // stays in the resolved catalog.
+  retireProjects?: unknown;
 };
+
+export function parseRetireProjects(json: unknown, source: string): string[] {
+  const result = retireProjectsSchema.safeParse(json);
+  if (!result.success) fail(source, result.error);
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const id of result.data) {
+    if (seen.has(id)) {
+      throw new Error(`Invalid content in ${source}: duplicate retired project id "${id}"`);
+    }
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
 
 function bundleForEra(
   bundlesByEraId: Record<string, EraBundleJson>,
@@ -563,6 +597,7 @@ export function loadActiveContent(
   let decisions: DecisionDef[] = [];
   let challenges: ChallengeDef[] = [];
   let projects: ProjectDef[] = [];
+  const retiredProjectIds: string[] = [];
   for (let i = 0; i <= eraIndex; i++) {
     const id = eras.eras[i].id;
     const bundle = bundleForEra(bundlesByEraId, id);
@@ -570,12 +605,31 @@ export function loadActiveContent(
     decisions = [...decisions, ...parseDecisions(bundle.decisions, `${base}/decisions.json`, decisions)];
     challenges = [...challenges, ...parseChallenges(bundle.challenges, `${base}/challenges.json`, challenges)];
     projects = [...projects, ...parseProjects(bundle.projects, `${base}/projects.json`, projects)];
+    if (bundle.retireProjects !== undefined) {
+      for (const retiredId of parseRetireProjects(bundle.retireProjects, `${base}/retire-projects.json`)) {
+        if (retiredProjectIds.includes(retiredId)) {
+          throw new Error(
+            `Invalid content in ${base}/retire-projects.json: "${retiredId}" is already retired`,
+          );
+        }
+        retiredProjectIds.push(retiredId);
+      }
+    }
+  }
+  const projectIds = new Set(projects.map((p) => p.id));
+  for (const retiredId of retiredProjectIds) {
+    if (!projectIds.has(retiredId)) {
+      throw new Error(
+        `Invalid content in resolved catalog for era "${activeId}": retired project "${retiredId}" is not in the catalog`,
+      );
+    }
   }
   const content: GameContent = {
     start: parseStartConfig(startJson),
     decisions,
     challenges,
     projects,
+    retiredProjectIds,
     eraId: activeId,
     eras,
   };
@@ -598,6 +652,7 @@ export function validateContentGraph(content: GameContent): void {
     ? `resolved catalog for era "${content.eraId}"`
     : "content/projects.json";
   for (const def of content.projects) {
+    if (!isContractProject(def)) continue;
     const requiredId = def.requiresCompletedId;
     if (requiredId === undefined) continue;
     if (requiredId === def.id) {

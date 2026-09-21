@@ -17,6 +17,7 @@ import {
   projectsJson,
   startJson,
 } from "./loadShippedContent";
+import { requireContract } from "./types";
 import type { Effect, GameContent } from "./types";
 
 describe("parseStartConfig", () => {
@@ -32,7 +33,7 @@ describe("parseStartConfig", () => {
     expect(cfg.debtMultiplier).toBe(0.5);
     expect(cfg.baseCapacity).toBe(1);
     // Discover is the Ideas faucet: 0.5/day from day 0, not a delivery stage.
-    expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, review: 1, deploy: 1, discover: 0.5, plan: 1 });
+    expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, review: 1, deploy: 1, discover: 0.5, plan: 1, ktlo: 0 });
     // Studio lean challenge pool: a 35-day global gap, down from
     // 50 -- the pool shrank to three events, so a shorter gap keeps them from
     // disappearing entirely without crowding a short era.
@@ -711,7 +712,7 @@ describe("parseChallenges", () => {
 
   it("pins the Studio tiny gigs and unique version ladder", () => {
     const defs = parseProjects(projectsJson);
-    const bugfix = defs.find((p) => p.id === "gig-bugfix")!;
+    const bugfix = requireContract(defs.find((p) => p.id === "gig-bugfix"));
     expect(bugfix).toMatchObject({
       name: "Bugfix sprint",
       sizePoints: 100,
@@ -722,7 +723,7 @@ describe("parseChallenges", () => {
     });
     expect(bugfix.unique).toBeUndefined();
     expect(bugfix.pursue).toBeUndefined();
-    const refactor = defs.find((p) => p.id === "small-refactor")!;
+    const refactor = requireContract(defs.find((p) => p.id === "small-refactor"));
     expect(refactor).toMatchObject({
       name: "Small refactor",
       sizePoints: 50,
@@ -734,7 +735,7 @@ describe("parseChallenges", () => {
     expect(refactor.unique).toBeUndefined();
     expect(refactor.pursue).toBeUndefined();
     expect(refactor.completionStockGrants).toEqual([{ stock: "techDebt", amount: -50 }]);
-    const medium = defs.find((p) => p.id === "medium-refactor")!;
+    const medium = requireContract(defs.find((p) => p.id === "medium-refactor"));
     expect(medium).toMatchObject({
       name: "Medium refactor",
       sizePoints: 150,
@@ -747,7 +748,7 @@ describe("parseChallenges", () => {
     expect(medium.pursue).toBeUndefined();
     expect(medium.ideaCost).toBeUndefined();
     expect(medium.completionStockGrants).toEqual([{ stock: "techDebt", amount: -150 }]);
-    const large = defs.find((p) => p.id === "large-refactor")!;
+    const large = requireContract(defs.find((p) => p.id === "large-refactor"));
     expect(large).toMatchObject({
       name: "Large refactor",
       sizePoints: 1000,
@@ -760,7 +761,7 @@ describe("parseChallenges", () => {
     });
     expect(large.unique).toBeUndefined();
     expect(large.completionStockGrants).toEqual([{ stock: "techDebt", amount: -1000 }]);
-    const landing = defs.find((p) => p.id === "gig-landing-page")!;
+    const landing = requireContract(defs.find((p) => p.id === "gig-landing-page"));
     expect(landing).toMatchObject({
       name: "Back-burner feature",
       sizePoints: 150,
@@ -771,7 +772,7 @@ describe("parseChallenges", () => {
     });
     expect(landing.pursue).toBeUndefined();
     expect(defs.find((p) => p.id === "gig-plugin")).toBeUndefined();
-    const v1 = defs.find((p) => p.id === "ship-v1")!;
+    const v1 = requireContract(defs.find((p) => p.id === "ship-v1"));
     expect(v1).toMatchObject({
       name: "Ship v1",
       sizePoints: 400,
@@ -781,15 +782,15 @@ describe("parseChallenges", () => {
       requiresCompletedId: "launch-beta",
     });
     for (const id of ["ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
-      expect(defs.find((p) => p.id === id)!.pursue).toBe(true);
+      expect(requireContract(defs.find((p) => p.id === id)).pursue).toBe(true);
     }
     expect(v1.completionStockGrants).toEqual([{ stock: "users", amount: 20 }]);
     expect(v1.stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
     for (const id of ["ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
-      const def = defs.find((p) => p.id === id)!;
+      const def = requireContract(defs.find((p) => p.id === id));
       expect(def.stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
     }
-    expect(defs.find((p) => p.id === "ship-v5")!.requiresCompletedId).toBe("ship-v4");
+    expect(requireContract(defs.find((p) => p.id === "ship-v5")).requiresCompletedId).toBe("ship-v4");
     expect(defs.some((p) => p.id === "small-crm")).toBe(false);
   });
 
@@ -909,11 +910,11 @@ describe("parseChallenges", () => {
 describe("parseProjects", () => {
   it("parses reputationReward on every shipped Studio project", () => {
     const defs = parseProjects(projectsJson);
-    expect(defs.every((p) => typeof p.reputationReward === "number")).toBe(true);
-    expect(defs.find((p) => p.id === "gig-bugfix")!.reputationReward).toBe(1);
-    expect(defs.find((p) => p.id === "gig-landing-page")!.reputationReward).toBe(1);
-    expect(defs.find((p) => p.id === "ship-v1")!.reputationReward).toBe(2);
-    expect(defs.find((p) => p.id === "ship-v5")!.reputationReward).toBe(4);
+    expect(defs.every((p) => requireContract(p).reputationReward >= 0)).toBe(true);
+    expect(requireContract(defs.find((p) => p.id === "gig-bugfix")).reputationReward).toBe(1);
+    expect(requireContract(defs.find((p) => p.id === "gig-landing-page")).reputationReward).toBe(1);
+    expect(requireContract(defs.find((p) => p.id === "ship-v1")).reputationReward).toBe(2);
+    expect(requireContract(defs.find((p) => p.id === "ship-v5")).reputationReward).toBe(4);
   });
 
   it("keeps the old contract ladder as Company/Megacorp deltas, not Studio offers", () => {
@@ -931,25 +932,25 @@ describe("parseProjects", () => {
       "ship-v5",
     ]);
     const company = loadShippedContent("company");
-    const crm = company.projects.find((p) => p.id === "small-crm")!;
+    const crm = requireContract(company.projects.find((p) => p.id === "small-crm"));
     expect(crm.requiresReputation).toBeUndefined();
     expect(crm.pursue).toBe(true);
-    const big = company.projects.find((p) => p.id === "big-migration")!;
+    const big = requireContract(company.projects.find((p) => p.id === "big-migration"));
     expect(big.requiresCompleted).toBe(1);
     expect(big.requiresReputation).toBe(5);
     expect(big.pursue).toBe(true);
-    expect(company.projects.find((p) => p.id === "gig-bugfix")!.pursue).toBeUndefined();
-    expect(company.projects.find((p) => p.id === "gig-landing-page")!.pursue).toBeUndefined();
-    expect(company.projects.find((p) => p.id === "large-refactor")!.pursue).toBe(true);
+    expect(requireContract(company.projects.find((p) => p.id === "gig-bugfix")).pursue).toBeUndefined();
+    expect(requireContract(company.projects.find((p) => p.id === "gig-landing-page")).pursue).toBeUndefined();
+    expect(requireContract(company.projects.find((p) => p.id === "large-refactor")).pursue).toBe(true);
     expect(company.projects.some((p) => p.id === "gig-plugin")).toBe(false);
     expect(company.projects.some((p) => p.id === "mobile-app")).toBe(false);
     const mega = loadShippedContent("megacorp");
-    const ent = mega.projects.find((p) => p.id === "enterprise-replatform")!;
+    const ent = requireContract(mega.projects.find((p) => p.id === "enterprise-replatform"));
     expect(ent.requiresCompleted).toBe(2);
     expect(ent.requiresReputation).toBe(15);
     expect(ent.reputationReward).toBe(20);
     expect(ent.pursue).toBe(true);
-    expect(mega.projects.find((p) => p.id === "gig-bugfix")!.pursue).toBeUndefined();
+    expect(requireContract(mega.projects.find((p) => p.id === "gig-bugfix")).pursue).toBeUndefined();
   });
 
   it("rejects a negative reputationReward", () => {
@@ -964,7 +965,7 @@ describe("parseProjects", () => {
     const startOnly = parseProjects([
       { id: "x", name: "x", sizePoints: 1, upfrontCost: 0, payoutPerPoint: 1, completionBonus: 0, reputationReward: 0 },
     ]);
-    expect(startOnly[0]!.pursue).toBeUndefined();
+    expect(requireContract(startOnly[0]).pursue).toBeUndefined();
     const flagged = parseProjects([
       {
         id: "x",
@@ -977,8 +978,8 @@ describe("parseProjects", () => {
         pursue: true,
       },
     ]);
-    expect(flagged[0]!.pursue).toBe(true);
-    expect(flagged[0]!.ideaCost).toBeUndefined();
+    expect(requireContract(flagged[0]).pursue).toBe(true);
+    expect(requireContract(flagged[0]).ideaCost).toBeUndefined();
     expect(() =>
       parseProjects([
         {
@@ -1009,7 +1010,7 @@ describe("parseProjects", () => {
         ideaCost: 200,
       },
     ]);
-    expect(defs[0]!.ideaCost).toBe(200);
+    expect(requireContract(defs[0]).ideaCost).toBe(200);
     expect(() =>
       parseProjects([
         {
@@ -1054,7 +1055,7 @@ describe("parseProjects", () => {
         stockFlowMods: [{ stock: "users", acquirePerDayDelta: 1 }],
       },
     ]);
-    expect(defs[0]!.stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
+    expect(requireContract(defs[0]).stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
     expect(() =>
       parseProjects([
         {
@@ -1078,7 +1079,7 @@ describe("parseProjects", () => {
         reputationReward: 0, requiresReputation: 5,
       },
     ]);
-    expect(defs[0].requiresReputation).toBe(5);
+    expect(requireContract(defs[0]).requiresReputation).toBe(5);
     expect(() =>
       parseProjects([
         {
@@ -1240,9 +1241,11 @@ describe("per-era content layout", () => {
     ]);
     expect(company.projects.map((d) => d.id)).toEqual([
       ...studio.projects.map((d) => d.id),
+      "ktlo",
       "small-crm",
       "big-migration",
     ]);
+    expect(company.retiredProjectIds).toEqual(["gig-bugfix"]);
 
     const megacorp = loadShippedContent("megacorp");
     expect(megacorp.eraId).toBe("megacorp");
@@ -1252,6 +1255,7 @@ describe("per-era content layout", () => {
       ...company.projects.map((d) => d.id),
       "enterprise-replatform",
     ]);
+    expect(megacorp.retiredProjectIds).toEqual(["gig-bugfix"]);
   });
 
   it("loadActiveContent merges prior-era catalogs so later folders stay deltas", () => {

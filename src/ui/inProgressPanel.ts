@@ -1,6 +1,7 @@
 import type { DeliveryRateId, GameContent, GameState, Modifier } from "../engine/types";
 import { availability, decisionTargetsExactRate } from "../engine/decisions";
 import { debtDragMultiplier, effectiveRate, scaledModifierValue } from "../engine/modifiers";
+import { ktloSeatHold, permanentProjects } from "../engine/ktlo";
 import { esc, renderDecisionNode } from "./render";
 import type { ZoomStage } from "./loopDiagram";
 
@@ -179,12 +180,35 @@ function buildCapacityNodes(state: Readonly<GameState>, content: GameContent): C
   return nodes;
 }
 
+function ktloNodes(state: Readonly<GameState>, content: GameContent): ContributorNode[] {
+  const defs = permanentProjects(content);
+  if (defs.length === 0) return [];
+  const nodes: ContributorNode[] = defs.map((def) => ({ label: `Base ${def.basePerDay.toFixed(1)}/day`, dim: false }));
+  for (const m of state.modifiers) {
+    if (m.target !== "ktlo") continue;
+    const cleaned = cleanSourceLabel(m.source);
+    const expiry = m.expiresDay !== undefined ? ` (${m.expiresDay - state.day}d left)` : "";
+    nodes.push({ label: `${cleaned}: ${contribution(m.op, m.value, m.rampPerDay !== undefined)}${expiry}`, dim: false });
+  }
+  nodes.push({ label: `Reserved ${effectiveRate(state, "ktlo").toFixed(1)}/day`, dim: false });
+  return nodes;
+}
+
 function inProgressZoom(state: Readonly<GameState>, content: GameContent): string {
   const capacityNodes = buildCapacityNodes(state, content);
+  const seats = ktloSeatHold(content);
+  if (seats > 0) capacityNodes.push({ label: `KTLO holds ${seats} seat${seats === 1 ? "" : "s"}`, dim: false });
   const speedNodes = buildRateGroupNodes(state, content, "speed", "finish");
+  const ktlo = effectiveRate(state, "ktlo");
+  if (ktlo > 0) {
+    speedNodes.push({ label: `KTLO reserved -${ktlo.toFixed(1)}/day`, dim: false });
+    speedNodes.push({ label: `Contracts ${Math.max(0, effectiveRate(state, "finish") - ktlo).toFixed(1)}/day`, dim: false });
+  }
   const frictionNodes = buildRateGroupNodes(state, content, "friction", "finish");
   const leakNodes = buildLeakNodes(state, content);
   const friction = frictionNodes.length === 0 ? "" : renderCol("Friction", frictionNodes);
+  const ktloCol = ktloNodes(state, content);
+  const ktloHtml = ktloCol.length === 0 ? "" : renderCol("KTLO", ktloCol);
   return `
     <div class="stage-zoom" data-zoom-open="inProgress">
       <div class="stage-zoom-head">In Progress</div>
@@ -193,6 +217,7 @@ function inProgressZoom(state: Readonly<GameState>, content: GameContent): strin
         ${renderCol("Cycle speed", speedNodes)}
         ${friction}
         ${renderCol("Leak size", leakNodes)}
+        ${ktloHtml}
       </div>
     </div>`;
 }

@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mock — permanent KTLO</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fff;
+        --fg: #000;
+        --fg-dim: #666;
+        --border: #999;
+        --accent-amber: #a60;
+        --accent-red: #c00;
+        --desc: #444;
+        --chip-users: #246;
+        --note-bg: #f6f6f6;
+        --ktlo: #246;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #181818;
+          --fg: #e8e8e8;
+          --fg-dim: #aaa;
+          --border: #888;
+          --accent-amber: #e0a030;
+          --accent-red: #ff6b6b;
+          --desc: #c2c2c2;
+          --chip-users: #8ab4e8;
+          --note-bg: #242424;
+          --ktlo: #8ab4e8;
+        }
+      }
+      body {
+        font-family: ui-monospace, monospace;
+        max-width: 1280px;
+        margin: 1rem auto;
+        padding: 0 1rem 3rem;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      h1 { font-size: 1.6rem; margin: 0 0 0.5rem; }
+      h3 { margin: 0 0 0.35rem; font-size: 1rem; }
+      p { line-height: 1.45; color: var(--desc); max-width: 82ch; }
+      .lede { color: var(--fg); }
+      button { font-family: inherit; margin: 2px; }
+      button:disabled { opacity: 0.55; cursor: not-allowed; }
+      .panel { border: 1px solid var(--border); padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.75rem; }
+      .mock-bar {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+        margin: 0.75rem 0 1rem; padding-bottom: 0.6rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .mock-bar span { color: var(--fg-dim); font-size: 0.85rem; }
+      .seg { display: inline-flex; }
+      .seg button { margin: 0; }
+      .seg button[aria-pressed="true"] { font-weight: bold; }
+      .stats {
+        display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.5rem 1rem; font-size: 0.95rem; margin-bottom: 0.75rem;
+      }
+      .stat { display: inline-flex; gap: 0.5rem; }
+      .stat-label { color: var(--fg-dim); }
+      .stat-value { font-variant-numeric: tabular-nums; }
+      .cols { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1rem; align-items: start; }
+      .main { min-width: 0; }
+
+      .spine {
+        display: grid;
+        grid-template-columns: 1fr 2.4rem 1.15fr 2.4rem 1fr 2.4rem 1fr;
+        column-gap: 0.15rem;
+        align-items: start;
+        margin: 0.35rem 0 0.25rem;
+      }
+      .stage {
+        border: 1px solid var(--border);
+        min-height: 5.4rem;
+        padding: 0.4rem 0.3rem 0.35rem;
+        text-align: center;
+      }
+      .stage strong { display: block; font-size: 1.05rem; margin-top: 0.15rem; }
+      .stage .sub { color: var(--fg-dim); font-size: 0.72rem; font-style: italic; }
+      .stage.ktlo-seat { box-shadow: inset 0 -3px 0 var(--ktlo); }
+      .arrow {
+        text-align: center;
+        padding-top: 1.7rem;
+        color: var(--fg-dim);
+        font-size: 0.75rem;
+        line-height: 1.25;
+      }
+      .arrow b { color: var(--fg); font-weight: normal; }
+      .ktlo-note { color: var(--ktlo); }
+
+      .stage-zoom {
+        border: 1px dashed var(--border);
+        margin: 0.45rem 0 0.15rem;
+        padding: 0.5rem 0.75rem 0.55rem;
+        font-size: 0.85rem;
+      }
+      .stage-zoom-head { font-weight: bold; margin-bottom: 0.35rem; }
+      .stage-zoom-cols {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.35rem 1rem;
+      }
+      .stage-zoom-cols h4 { margin: 0 0 0.2rem; font-size: 0.85rem; }
+      .stage-zoom-cols p { margin: 0 0 0.12rem; max-width: none; color: var(--fg); }
+      .dim { color: var(--fg-dim); }
+      .ktlo-line { color: var(--ktlo); }
+
+      .proj-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.8rem; }
+      .proj-col-btn { width: 5.2rem; }
+      .proj-col-size { width: 6.4rem; }
+      .proj-col-ideas { width: 4.4rem; }
+      .proj-col-start { width: 5.4rem; }
+      .proj-col-rate { width: 4.4rem; }
+      .proj-col-done { width: 5.4rem; }
+      .proj-table th {
+        text-align: left; color: var(--fg-dim); font-weight: normal;
+        border-bottom: 1px solid var(--border);
+        padding: 0.2rem 0.45rem 0.3rem 0; white-space: nowrap;
+      }
+      .proj-table td {
+        padding: 0.4rem 0.45rem 0.4rem 0;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+      }
+      .proj-table td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .proj-group td {
+        padding: 0.55rem 0 0.25rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--fg-dim);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .proj-group-ktlo td { color: var(--ktlo); font-weight: bold; }
+      .proj-group-now td { color: var(--accent-amber); font-weight: bold; }
+      .proj-ktlo td { background: color-mix(in srgb, var(--ktlo) 12%, var(--bg)); }
+      .proj-ktlo td:first-child { box-shadow: inset 3px 0 0 var(--ktlo); }
+      .proj-now td { background: color-mix(in srgb, var(--accent-amber) 14%, var(--bg)); }
+      .proj-now td:first-child { box-shadow: inset 3px 0 0 var(--accent-amber); }
+      .proj-name { font-size: 0.95rem; color: var(--fg); }
+      .proj-left { font-weight: bold; }
+      .proj-sub { color: var(--fg-dim); font-size: 0.75rem; margin-top: 0.1rem; }
+      .proj-empty { color: var(--fg-dim); }
+      .proj-chip {
+        display: inline-block;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 0 0.28rem;
+        margin: 0 0.18rem 0.12rem 0;
+        font-size: 0.72rem;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        color: var(--fg-dim);
+      }
+      .proj-chip-ktlo {
+        color: var(--ktlo);
+        border-color: var(--ktlo);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 0.68rem;
+      }
+      .proj-chip-now {
+        color: var(--accent-amber);
+        border-color: var(--accent-amber);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 0.68rem;
+      }
+      .proj-chip-rep { color: var(--accent-amber); border-color: var(--accent-amber); }
+
+      .card {
+        border: 1px solid var(--border);
+        padding: 0.45rem 0.55rem;
+        font-size: 0.85rem;
+        margin-top: 0.35rem;
+      }
+      .card.owned { opacity: 0.72; }
+      .card .name { font-weight: bold; }
+      .card .meta { color: var(--fg-dim); font-size: 0.8rem; }
+      .card .fx { color: var(--ktlo); font-size: 0.8rem; margin-top: 0.2rem; }
+      .side h3 { margin-bottom: 0.2rem; }
+      .side p { font-size: 0.8rem; }
+
+      @media (max-width: 900px) {
+        .cols, .stage-zoom-cols, .stats { grid-template-columns: 1fr; }
+        .spine { grid-template-columns: 1fr; }
+        .arrow { padding: 0.15rem 0 0.15rem 0.5rem; text-align: left; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Software Factory</h1>
+    <p class="lede">Company mock. Keep the lights on is already on the schedule. It is not a Delivery stage. It is a project you cannot take off.</p>
+
+    <div class="mock-bar">
+      <span>KTLO rate</span>
+      <div class="seg" role="group" aria-label="KTLO rate">
+        <button type="button" id="base-btn" aria-pressed="true">Company base 0.5/day</button>
+        <button type="button" id="card-btn" aria-pressed="false">After On-call ×1.6</button>
+      </div>
+    </div>
+
+    <div class="stats" aria-label="Cockpit">
+      <div class="stat"><span class="stat-label">Day</span><span class="stat-value">418</span></div>
+      <div class="stat"><span class="stat-label">Backlog</span><span class="stat-value">186.4</span></div>
+      <div class="stat"><span class="stat-label">Budget</span><span class="stat-value">$1,240,000</span></div>
+      <div class="stat"><span class="stat-label">Points/Day</span><span class="stat-value">1.1</span></div>
+    </div>
+
+    <div class="cols">
+      <div class="main">
+        <div class="panel">
+          <h3>Delivery</h3>
+          <div class="spine" aria-label="Delivery loop">
+            <div class="stage">Ready<strong>42</strong></div>
+            <div class="arrow">→<br /><b>pull 2.0</b></div>
+            <div class="stage ktlo-seat">
+              In Progress
+              <strong>4</strong>
+              <div class="sub">1 seat KTLO</div>
+            </div>
+            <div class="arrow">→<br /><b id="finish-arrow">finish 2.7</b><br /><span class="ktlo-note" id="ktlo-arrow">KTLO 0.5</span></div>
+            <div class="stage">In Review<strong>6.2</strong></div>
+            <div class="arrow">→<br /><b>review 1.4</b></div>
+            <div class="stage">Done<strong>1.1</strong></div>
+          </div>
+          <p class="dim" style="font-size:0.75rem;margin:0.35rem 0 0">The finish arrow is what contracts receive. KTLO is named under it, not given its own box. Shipped is off this crop.</p>
+
+          <div class="stage-zoom">
+            <div class="stage-zoom-head">In Progress</div>
+            <div class="stage-zoom-cols">
+              <div>
+                <h4>Capacity</h4>
+                <p>Base 1</p>
+                <p>Senior developer +1</p>
+                <p>Coding agents +2</p>
+                <p class="ktlo-line">KTLO holds 1 seat</p>
+              </div>
+              <div>
+                <h4>Cycle speed</h4>
+                <p>Base 1.0/day</p>
+                <p>Senior developer +1.2/day</p>
+                <p>Coding agents +1.0/day</p>
+                <p class="ktlo-line" id="cycle-ktlo">KTLO reserved −0.5/day</p>
+                <p id="cycle-left"><strong>Contracts 2.7/day</strong></p>
+              </div>
+              <div>
+                <h4>KTLO</h4>
+                <p>Base 0.5/day</p>
+                <p id="ktlo-card" class="dim">No card yet</p>
+                <p class="ktlo-line" id="ktlo-reserved">Reserved 0.5/day</p>
+                <p class="dim">Taken before contract finish. Seat stays 1.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Projects</h3>
+          <table class="proj-table">
+            <colgroup>
+              <col class="proj-col-btn" />
+              <col />
+              <col class="proj-col-size" />
+              <col class="proj-col-ideas" />
+              <col class="proj-col-start" />
+              <col class="proj-col-rate" />
+              <col class="proj-col-done" />
+              <col />
+            </colgroup>
+            <thead>
+              <tr>
+                <th></th><th>Project</th><th>Size</th><th>Ideas</th><th>Start $</th><th>$/pt</th><th>Done $</th><th>Effects</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="proj-group proj-group-ktlo"><td colspan="8">Always on</td></tr>
+              <tr class="proj-ktlo">
+                <td class="proj-btn"><button type="button" disabled title="Cannot cancel">On</button></td>
+                <td>
+                  <span class="proj-chip proj-chip-ktlo">always on</span>
+                  <div class="proj-name"><strong>Keep the lights on</strong></div>
+                  <div class="proj-sub" id="ktlo-sub">0.5/day of finish · 1 of 4 seats · cannot cancel</div>
+                </td>
+                <td class="num">ongoing</td>
+                <td class="num"><span class="proj-empty">—</span></td>
+                <td class="num"><span class="proj-empty">—</span></td>
+                <td class="num"><span class="proj-empty">—</span></td>
+                <td class="num"><span class="proj-empty">—</span></td>
+                <td>
+                  <span class="proj-chip" id="ktlo-chip">−0.5 finish/day</span>
+                  <span class="proj-chip">1 seat</span>
+                </td>
+              </tr>
+              <tr class="proj-group proj-group-now"><td colspan="8">In flight</td></tr>
+              <tr class="proj-now">
+                <td class="proj-btn"><button type="button">Abandon</button></td>
+                <td>
+                  <span class="proj-chip proj-chip-now">in flight</span>
+                  <div class="proj-name"><strong>Bugfix sprint</strong></div>
+                  <div class="proj-sub" id="bug-eta">started in Studio · still running</div>
+                </td>
+                <td class="num"><span class="proj-left">36 left</span></td>
+                <td class="num"><span class="proj-empty">—</span></td>
+                <td class="num">$2,200</td>
+                <td class="num">$18</td>
+                <td class="num">$200</td>
+                <td><span class="proj-chip proj-chip-rep">+1 reputation</span></td>
+              </tr>
+              <tr class="proj-now">
+                <td class="proj-btn"><button type="button">Abandon</button></td>
+                <td>
+                  <span class="proj-chip proj-chip-now">in flight</span>
+                  <div class="proj-name"><strong>Enterprise renewal</strong></div>
+                  <div class="proj-sub" id="eta">~67 days</div>
+                </td>
+                <td class="num"><span class="proj-left">180 left</span></td>
+                <td class="num"><span class="proj-empty">—</span></td>
+                <td class="num">$40,000</td>
+                <td class="num">$220</td>
+                <td class="num">$80,000</td>
+                <td><span class="proj-chip proj-chip-rep">+4 reputation</span></td>
+              </tr>
+              <tr class="proj-group"><td colspan="8">In plan</td></tr>
+              <tr>
+                <td class="proj-btn"><button type="button">Cancel</button></td>
+                <td>
+                  <div class="proj-name"><strong>Platform rewrite</strong></div>
+                  <div class="proj-sub">~40 days to ready</div>
+                </td>
+                <td class="num">12 / 80</td>
+                <td class="num"><span class="proj-empty">—</span></td>
+                <td class="num">$25,000</td>
+                <td class="num">$180</td>
+                <td class="num">$50,000</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+          <table class="proj-table proj-table-offers">
+            <colgroup>
+              <col class="proj-col-btn" />
+              <col />
+              <col class="proj-col-size" />
+              <col class="proj-col-ideas" />
+              <col class="proj-col-start" />
+              <col class="proj-col-rate" />
+              <col class="proj-col-done" />
+              <col />
+            </colgroup>
+            <tbody>
+              <tr class="proj-group"><td colspan="8">Available</td></tr>
+              <tr>
+                <td class="proj-btn"><button type="button">Start</button></td>
+                <td><div class="proj-name"><strong>Back-burner feature</strong></div></td>
+                <td class="num">150 pts</td>
+                <td class="num"><span class="proj-empty">—</span></td>
+                <td class="num">$3,000</td>
+                <td class="num">$16</td>
+                <td class="num">$300</td>
+                <td><span class="proj-chip proj-chip-rep">+1 reputation</span></td>
+              </tr>
+              <tr>
+                <td class="proj-btn"><button type="button">Pursue</button></td>
+                <td><div class="proj-name"><strong>Small CRM build</strong></div></td>
+                <td class="num">5,000 pts</td>
+                <td class="num">5,000</td>
+                <td class="num">$2,000</td>
+                <td class="num">$21</td>
+                <td class="num">$1,500</td>
+                <td><span class="proj-chip proj-chip-rep">+5 reputation</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="dim" style="font-size:0.75rem;margin:0.45rem 0 0">Bugfix sprint is no longer offered. The one already in flight stays until it ships or you abandon it.</p>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="panel">
+          <h3>Alter the system</h3>
+          <div class="card" id="oncall-card">
+            <div class="name">On-call rotation</div>
+            <div class="meta" id="oncall-meta">$900 · $120/day</div>
+            <div class="fx">KTLO ×1.6</div>
+            <p>Pager coverage. The base lights-on rate goes up. Contracts keep whatever finish is left.</p>
+            <button type="button" id="buy" style="margin-top:0.35rem">Buy</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      const baseBtn = document.getElementById("base-btn");
+      const cardBtn = document.getElementById("card-btn");
+      const buy = document.getElementById("buy");
+      const card = document.getElementById("oncall-card");
+
+      function apply(withCard) {
+        const ktlo = withCard ? 0.8 : 0.5;
+        const left = (3.2 - ktlo).toFixed(1);
+        baseBtn.setAttribute("aria-pressed", withCard ? "false" : "true");
+        cardBtn.setAttribute("aria-pressed", withCard ? "true" : "false");
+        document.getElementById("finish-arrow").textContent = "finish " + left;
+        document.getElementById("ktlo-arrow").textContent = "KTLO " + ktlo.toFixed(1);
+        document.getElementById("cycle-ktlo").textContent = "KTLO reserved −" + ktlo.toFixed(1) + "/day";
+        document.getElementById("cycle-left").innerHTML = "<strong>Contracts " + left + "/day</strong>";
+        document.getElementById("ktlo-card").textContent = withCard ? "On-call rotation ×1.6" : "No card yet";
+        document.getElementById("ktlo-card").classList.toggle("dim", !withCard);
+        document.getElementById("ktlo-reserved").textContent = "Reserved " + ktlo.toFixed(1) + "/day";
+        document.getElementById("ktlo-sub").textContent =
+          ktlo.toFixed(1) + "/day of finish · 1 of 4 seats · cannot cancel";
+        document.getElementById("ktlo-chip").textContent = "−" + ktlo.toFixed(1) + " finish/day";
+        const share = Number(left) / 2;
+        document.getElementById("eta").textContent = "~" + Math.round(180 / share) + " days";
+        document.getElementById("bug-eta").textContent =
+          "started in Studio · ~" + Math.round(36 / share) + " days";
+        card.classList.toggle("owned", withCard);
+        document.getElementById("oncall-meta").textContent = withCard ? "Owned · $120/day" : "$900 · $120/day";
+        buy.hidden = withCard;
+      }
+
+      baseBtn.addEventListener("click", () => apply(false));
+      cardBtn.addEventListener("click", () => apply(true));
+      buy.addEventListener("click", () => apply(true));
+      if (new URLSearchParams(location.search).get("card") === "1") apply(true);
+    </script>
+  </body>
+</html>

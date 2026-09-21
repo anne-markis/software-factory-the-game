@@ -37,7 +37,7 @@ import {
 } from "./render";
 import { SECTION_ATTR } from "./domPatch";
 import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from "../engine/content";
-import { decisionsJson, projectsJson, startJson } from "../engine/loadShippedContent";
+import { decisionsJson, loadShippedContent, projectsJson, startJson } from "../engine/loadShippedContent";
 import { Engine, initialState } from "../engine/engine";
 import { projectAvailability } from "../engine/projects";
 import type { GameContent } from "../engine/types";
@@ -828,6 +828,30 @@ describe("renderProjectsStatus", () => {
     const one = renderProjectsStatus([...s.projects], s, c);
     expect(one).toContain("~100d");
     expect(one).not.toContain("~200d");
+  });
+
+  it("pins Keep the lights on above in-flight work and keeps a Studio bugfix sprint abandonable", () => {
+    const e = new Engine(loadShippedContent(), undefined, loadShippedContent);
+    e.startProject("gig-bugfix");
+    const companyBudget = loadShippedContent().eras!.eras.find((era) => era.id === "company")!.entryAnyOf![0].minBudget!;
+    e.getState().stocks.budget = companyBudget + 20;
+    e.tick();
+    const html = renderProjectsStatus([...e.getState().projects], e.getState(), e.getContent());
+    const always = html.indexOf("Always on");
+    const flight = html.indexOf("In flight");
+    expect(always).toBeGreaterThan(-1);
+    expect(always).toBeLessThan(flight);
+    expect(html).toContain("Keep the lights on");
+    expect(html).toContain("always on");
+    expect(html).toContain(">On<");
+    expect(html).toContain("0.5/day of finish");
+    expect(html).toContain("cannot cancel");
+    expect(html).not.toContain('data-abandon="ktlo"');
+    expect(html).toContain("Bugfix sprint");
+    expect(html).toContain('data-abandon="gig-bugfix"');
+    const offers = renderProjectOffers(e.availableProjects(), e.getState());
+    expect(offers).not.toContain("Bugfix sprint");
+    expect(offers).toContain("Back-burner feature");
   });
 });
 

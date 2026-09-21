@@ -96,7 +96,7 @@ drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 
 | type | Notes that are easy to get wrong |
 | --- | --- |
-| `modifyRate` | `target` is `pull` / `finish` / `review` / `deploy` / `discover` / `plan` / `all`. `all` is the delivery line (pull/finish/review/deploy), not discover or plan. Discover cards do not raise plan. Omit `durationDays` for permanent. Optional `scaleFromHumansPer` (add-op only) multiplies the addend by `1 + per ×` owned `human: true` instances, live — hire later still buffs existing modifiers; payroll loss drops it. Studio agents use `0.1`. Pull no longer fills In Progress; finish speed moves the Ready+In Progress pool into In Review. The In Review zoom Next lever offers any shop card whose authored `modifyRate` (base effects or gamble) targets **`review` exactly** — not `"all"`. Do not special-case card ids in UI. |
+| `modifyRate` | `target` is `pull` / `finish` / `review` / `deploy` / `discover` / `plan` / `ktlo` / `all`. `all` is the delivery line (pull/finish/review/deploy), not discover, plan, or ktlo. Discover cards do not raise plan. Omit `durationDays` for permanent. Optional `scaleFromHumansPer` (add-op only) multiplies the addend by `1 + per ×` owned `human: true` instances, live — hire later still buffs existing modifiers; payroll loss drops it. Studio agents use `0.1`. Pull no longer fills In Progress; finish speed moves the Ready+In Progress pool into In Review. The In Review zoom Next lever offers any shop card whose authored `modifyRate` (base effects or gamble) targets **`review` exactly** — not `"all"`. Do not special-case card ids in UI. |
 | `modifyDebtMultiplier` | Same `op` / `value` / optional `durationDays`; no `target`. |
 | `addToStock` | Any stock in the enum; result clamped at 0. Pipeline writes (`backlog` / `inProgress` / `inReview` / `done`) attach to one in-flight `remaining` (engine-picked when several are live; ADR 0009). Extra In Progress above seats spills to Ready on the next tick, and immediately when a shop buy or remove changes capacity. |
 | `scaleStock` | Immediate multiply, `factor >= 0` (`0` wipes). No duration, no Progress-panel modifier. |
@@ -184,6 +184,17 @@ Shape: `projectSchema`. The starting contract is `start.json`
   **Pursue** (spend Ideas = `sizePoints`, enter Plan). Omit or `false`
   is **Start** (no Ideas spend, write Ready immediately). Default Start
   so inherited gigs do not silently Pursue.
+- `permanent: true` — always-on overhead, not a contract. Fields are
+  `id`, `name`, `basePerDay` (the `ktlo` rate), and `seats` (taken out
+  of In Progress before contract work). No size, cost, or payout. It
+  is not offered and cannot be abandoned. It appears when its era’s
+  catalog is active and is inherited after that. Studio `baseRates.ktlo`
+  stays 0. Cards change the rate with `modifyRate` target `ktlo`
+  (`add` or `mul`). `"all"` does not include it.
+- `retire-projects.json` — optional array of project ids in an era
+  folder. Those offers disappear from that rung onward. The def stays
+  inherited, so a sprint already in flight still finishes or can be
+  abandoned. Do not redeclare the id in `projects.json`.
 - `reputationReward` — required (>= 0; `0` is legal).
 - `requiresReputation` — live floor, re-checked every call. A later
   reputation hit re-locks the contract.

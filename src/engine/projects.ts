@@ -1,11 +1,13 @@
-import type { GameContent, GameState, PlanItem, ProjectDef } from "./types";
+import type { ContractProjectDef, GameContent, GameState, PlanItem, ProjectDef } from "./types";
+import { isContractProject, isPermanentProject } from "./types";
+import { isRetiredProject } from "./ktlo";
 import { availability } from "./decisions";
 import { log } from "./tick";
 import { drainUnshippedWork, unshippedWork } from "./work";
 import { effectiveRate } from "./modifiers";
 
 export interface ProjectAvailability {
-  def: ProjectDef;
+  def: ContractProjectDef;
   startable: boolean;
   reason?: string;
 }
@@ -32,7 +34,7 @@ function projectName(content: GameContent, id: string): string {
   return content.projects.find((p) => p.id === id)?.name ?? id;
 }
 
-function blockReason(state: GameState, content: GameContent, def: ProjectDef): string | undefined {
+function blockReason(state: GameState, content: GameContent, def: ContractProjectDef): string | undefined {
   if (state.projects.some((p) => p.defId === def.id)) return "already in flight";
   if (planItems(state).some((p) => p.defId === def.id)) return "already in plan";
   if (def.unique && completedIds(state).includes(def.id)) return "already completed";
@@ -48,21 +50,27 @@ function blockReason(state: GameState, content: GameContent, def: ProjectDef): s
 }
 
 function isPursue(def: ProjectDef): boolean {
-  return def.pursue === true;
+  return isContractProject(def) && def.pursue === true;
 }
 
-export function pursueIdeaCost(def: ProjectDef): number {
+export function pursueIdeaCost(def: ContractProjectDef): number {
   if (!isPursue(def)) return 0;
   return def.ideaCost ?? def.sizePoints;
 }
 
-function cannotAfford(state: GameState, def: ProjectDef): boolean {
+function cannotAfford(state: GameState, def: ContractProjectDef): boolean {
   if (state.stocks.budget < def.upfrontCost) return true;
   return isPursue(def) && state.stocks.ideas < pursueIdeaCost(def);
 }
 
+function offeredContracts(content: GameContent): ContractProjectDef[] {
+  return content.projects.filter(
+    (def): def is ContractProjectDef => isContractProject(def) && !isRetiredProject(content, def.id),
+  );
+}
+
 export function projectAvailability(state: GameState, content: GameContent): ProjectAvailability[] {
-  return content.projects.map((def) => {
+  return offeredContracts(content).map((def) => {
     const blocked = blockReason(state, content, def);
     if (blocked) return { def, startable: false, reason: blocked };
     if (cannotAfford(state, def)) return { def, startable: false, reason: "cannot afford" };
@@ -70,7 +78,7 @@ export function projectAvailability(state: GameState, content: GameContent): Pro
   });
 }
 
-function enterReady(state: GameState, def: ProjectDef): void {
+function enterReady(state: GameState, def: ContractProjectDef): void {
   state.stocks.backlog += def.sizePoints;
   state.projects.push({
     defId: def.id,
@@ -85,7 +93,15 @@ function enterReady(state: GameState, def: ProjectDef): void {
   });
 }
 
+function rejectUnstartable(content: GameContent, defId: string): void {
+  const def = content.projects.find((p) => p.id === defId);
+  if (!def) return;
+  if (isPermanentProject(def)) throw new Error(`${def.name} is always on`);
+  if (isRetiredProject(content, def.id)) throw new Error(`${def.name} is no longer offered`);
+}
+
 export function startProject(state: GameState, content: GameContent, defId: string): void {
+  rejectUnstartable(content, defId);
   const entry = projectAvailability(state, content).find((p) => p.def.id === defId);
   if (!entry) throw new Error(`Unknown project: ${defId}`);
   if (!entry.startable) {
@@ -99,9 +115,10 @@ export function startProject(state: GameState, content: GameContent, defId: stri
 }
 
 export function pursueProject(state: GameState, content: GameContent, defId: string): void {
+  rejectUnstartable(content, defId);
   const def = content.projects.find((p) => p.id === defId);
   if (!def) throw new Error(`Unknown project: ${defId}`);
-  if (!isPursue(def)) throw new Error(`${def.name} starts, it is not pursued`);
+  if (!isContractProject(def) || !isPursue(def)) throw new Error(`${def.name} starts, it is not pursued`);
   const blocked = blockReason(state, content, def);
   if (blocked) throw new Error(`${def.name}: ${blocked}`);
   const ideas = pursueIdeaCost(def);
@@ -142,7 +159,7 @@ export function cancelPlan(state: GameState, defId: string): void {
 
 function enterReadyFromPlan(state: GameState, content: GameContent, item: PlanItem): void {
   const def = content.projects.find((p) => p.id === item.defId);
-  if (def) {
+  if (def && isContractProject(def)) {
     enterReady(state, def);
   } else {
     state.stocks.backlog += item.size;

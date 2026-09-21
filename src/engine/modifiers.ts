@@ -22,7 +22,7 @@ function applies(m: Modifier, rate: RateId): boolean {
   // Discover and plan are faucets before Ready, not delivery stages.
   // "all" / allRates stay the factory line (pull/finish/review/deploy) so
   // existing shop cards and challenges do not silently retune Ideas or Plan.
-  if (rate === "discover" || rate === "plan") return m.target === rate;
+  if (rate === "discover" || rate === "plan" || rate === "ktlo") return m.target === rate;
   return m.target === rate || m.target === "allRates";
 }
 
@@ -84,7 +84,7 @@ export function effectiveRate(state: GameState, rate: RateId): number {
   }
   // Debt and users-support drags slow delivery. Discover and plan must not
   // scale with shipped points (debt) or users.
-  if (rate !== "discover" && rate !== "plan") {
+  if (rate !== "discover" && rate !== "plan" && rate !== "ktlo") {
     value *= debtDragMultiplier(state);
     value *= stockDragMultiplier(state, rate);
   }
