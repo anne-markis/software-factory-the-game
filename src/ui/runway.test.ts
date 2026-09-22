@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { parseStartConfig, parseDecisions } from "../engine/content";
 import { decisionsJson, startJson } from "../engine/loadShippedContent";
 import { Engine } from "../engine/engine";
-import type { GameContent } from "../engine/types";
+import type { GameContent, GameState } from "../engine/types";
+import { activateDueInstances } from "../engine/tick";
 import { budgetRunwayDays, netRecurringBurnPerDay, RUNWAY_WARN_DAYS } from "./runway";
 
 function content(): GameContent {
@@ -39,7 +40,12 @@ describe("netRecurringBurnPerDay", () => {
       },
     ];
     const e = new Engine(c);
-    e.applyDecision("basic-dev"); // perDay 438
+    e.applyDecision("basic-dev"); // perDay 438 after they start
+    const s = e.getState() as GameState;
+    for (const inst of s.decisions) {
+      if (inst.activeOnDay !== undefined) inst.activeOnDay = s.day;
+    }
+    activateDueInstances(s, c);
     e.applyDecision("retainer"); // incomePerDay 8
     // 20 KTLO + 438 payroll - 8 income
     expect(netRecurringBurnPerDay(e.getState(), c)).toBe(450);

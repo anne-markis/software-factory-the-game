@@ -4,10 +4,19 @@ import { decisionTargetsExactRate } from "./decisions";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, startJson } from "./loadShippedContent";
 import { effectiveRate, effectiveDebtMultiplier } from "./modifiers";
-import type { GameContent } from "./types";
+import { activateDueInstances } from "./tick";
+import type { GameContent, GameState } from "./types";
 
 function content(): GameContent {
   return { start: parseStartConfig(startJson), decisions: parseDecisions(decisionsJson), challenges: [], projects: [] };
+}
+
+function settleHires(e: Engine): void {
+  const s = e.getState() as GameState;
+  for (const inst of s.decisions) {
+    if (inst.activeOnDay !== undefined && inst.activeOnDay > s.day) inst.activeOnDay = s.day;
+  }
+  activateDueInstances(s, e.getContent());
 }
 
 describe("decisions", () => {
@@ -34,11 +43,14 @@ describe("decisions", () => {
   it("resolves gambles deterministically from the seeded rng", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
+    const s0 = e.getState();
+    expect(s0.decisions).toHaveLength(1);
+    expect(s0.decisions[0].gambleLabel).toBeDefined();
+    expect(s0.modifiers.filter((m) => m.source === s0.decisions[0].instanceId)).toHaveLength(0);
+    settleHires(e);
     const s = e.getState();
-    expect(s.decisions).toHaveLength(1);
-    expect(s.decisions[0].gambleLabel).toBeDefined();
     // Hire writes two gambled modifiers: finish and review. The seat is
-    // DecisionDef.capacity, not a modifier.
+    // DecisionDef.capacity, not a modifier. Morale is addToStock, not a modifier.
     const mods = s.modifiers.filter((m) => m.source === s.decisions[0].instanceId);
     expect(mods).toHaveLength(2);
     expect(mods.some((m) => m.target === "review" && [0.7, 0.4, 0.1].includes(m.value))).toBe(true);
@@ -311,14 +323,14 @@ describe("decisions", () => {
 
   it("payroll failure removes the decision permanently during tick", () => {
     const c = content();
-    c.start.stocks.budget = 30;
     const e = new Engine(c);
-    e.applyDecision("basic-dev"); // no one-time cost
-    e.tick(); // day 1: burn 20 (30->10), pays 7 (10->3)
-    e.tick(); // day 2: burn 20 clamps 3->0, cannot pay 7, dev removed
-    const s = e.getState();
-    expect(s.decisions).toHaveLength(0);
-    expect(s.log.some((l) => l.message.includes("Payroll failed"))).toBe(true);
+    e.applyDecision("basic-dev");
+    settleHires(e);
+    const s = e.getState() as GameState;
+    s.stocks.budget = 30;
+    e.tick();
+    expect(e.getState().decisions).toHaveLength(0);
+    expect(e.getState().log.some((l) => l.message.includes("Payroll failed"))).toBe(true);
   });
 
   it("classifies review cards by exact modifyRate target, not all", () => {
@@ -352,6 +364,7 @@ describe("decisions", () => {
     expect(effectiveRate(e.getState(), "pull")).toBe(2);
     expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
     e.applyDecision("basic-dev");
+    settleHires(e);
     // One human scales each agent's plan add by 1.1: (1 + 2 x 0.22) x 1.25 x 1.45.
     expect(effectiveRate(e.getState(), "plan")).toBeCloseTo(1.44 * 1.25 * 1.45, 10);
   });
@@ -372,6 +385,7 @@ describe("decisions", () => {
     const e = new Engine(content());
     expect(effectiveRate(e.getState(), "review")).toBe(1);
     e.applyDecision("basic-dev");
+    settleHires(e);
     const hireReview = effectiveRate(e.getState(), "review") - 1;
     expect([0.7, 0.4, 0.1].some((v) => Math.abs(hireReview - v) < 1e-10)).toBe(true);
     const afterHire = effectiveRate(e.getState(), "review");

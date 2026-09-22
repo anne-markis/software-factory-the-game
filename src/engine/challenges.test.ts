@@ -5,6 +5,7 @@ import { applyDecision, removeDecision } from "./decisions";
 import { parseStartConfig, parseChallenges, parseDecisions } from "./content";
 import { challengesJson, decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
 import { createRng, hashRoll, type Rng } from "./rng";
+import { activateDueInstances } from "./tick";
 import type { GameContent, GameState } from "./types";
 
 // The challenge phase no longer draws from the shared rng stream: each
@@ -472,6 +473,8 @@ describe("rollChallenges", () => {
     const s = initialState(c);
     applyDecision(s, c, "basic-dev", createRng(1));
     const human = s.decisions.find((d) => d.defId === "basic-dev")!;
+    human.activeOnDay = s.day;
+    activateDueInstances(s, c);
     expect(human).toBeDefined();
     // Second non-human ownership stays so we can prove only the human left.
     applyDecision(s, c, "agent", createRng(2));
@@ -497,6 +500,8 @@ describe("rollChallenges", () => {
     const s = initialState(c);
     applyDecision(s, c, "basic-dev", createRng(1));
     const human = s.decisions.find((d) => d.defId === "basic-dev")!;
+    human.activeOnDay = s.day;
+    activateDueInstances(s, c);
     s.pendingChoices.push({
       challengeId: "key-dev-poached",
       expiresDay: 5,

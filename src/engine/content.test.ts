@@ -50,12 +50,29 @@ describe("parseStartConfig", () => {
     expect(cfg.initialProject.payoutPerPoint).toBe(0);
     expect(cfg.initialProject.completionBonus).toBe(800);
     expect(cfg.initialProject.reputationReward).toBe(1);
-    expect(cfg.initialProject.completionStockGrants).toEqual([{ stock: "users", amount: 30 }]);
+    expect(cfg.initialProject.completionStockGrants).toEqual([
+      { stock: "users", amount: 30 },
+      { stock: "morale", amount: 5 },
+    ]);
+    expect(cfg.stocks.morale).toBe(70);
+    expect(cfg.stockMax).toEqual({ morale: 100 });
+    expect(cfg.headcountRatioDrags).toEqual([
+      {
+        stock: "morale",
+        numerator: "agent",
+        denominator: "human",
+        founderCounts: true,
+        freeBand: 10,
+        drainPerExcess: 0.3,
+      },
+    ]);
+    expect(cfg.instanceChurn).toEqual([{ stock: "morale", flag: "human", safeBand: 40, maxRatePerDay: 0.02 }]);
     // Always-on support drag on users above a 25-user free band.
     expect(cfg.stockDrags).toEqual([
       { stock: "users", freeBand: 25, dragPerPoint: 0.004, maxDrag: 0.35, target: "all" },
     ]);
-    // Organic acquisition only after the first project completes.
+    // Organic acquisition only after the first project completes. Morale
+    // recovers from day 0; reputation only adds, never subtracts.
     expect(cfg.stockFlows).toEqual([
       {
         stock: "users",
@@ -63,6 +80,11 @@ describe("parseStartConfig", () => {
         acquirePerDay: 3,
         acquirePerStock: { stock: "reputation", perUnit: 0.1 },
         churnRatePerDay: 0.003,
+      },
+      {
+        stock: "morale",
+        acquirePerDay: 0.2,
+        acquirePerStock: { stock: "reputation", perUnit: 0.05 },
       },
     ]);
   });
@@ -339,7 +361,10 @@ describe("parseDecisions", () => {
     expect(dev.gamble![0].effects).toEqual([
       { type: "modifyRate", target: "finish", op: "add", value: 1.0 },
       { type: "modifyRate", target: "review", op: "add", value: 0.7 },
+      { type: "addToStock", stock: "morale", value: 4 },
     ]);
+    expect(dev.delayDays).toBe(14);
+    expect(dev.cost.oneTime).toBe(2000);
     for (const o of dev.gamble!) expect(splitTargets(o.effects)).toEqual(["finish", "review"]);
     expect(
       dev.gamble!.map((o) => {
@@ -354,10 +379,12 @@ describe("parseDecisions", () => {
 
     const agent = defs.find((d) => d.id === "agent")!;
     expect(agent.capacity).toBeUndefined();
+    expect(agent.agent).toBe(true);
     expect(splitTargets(agent.effects)).toEqual(["finish", "plan", "review"]);
 
     const harness = defs.find((d) => d.id === "agent-harness")!;
     expect(harness.capacity).toBeUndefined();
+    expect(harness.agent).not.toBe(true);
     expect(splitTargets(harness.effects)).toEqual(["finish", "plan"]);
 
     const orch = defs.find((d) => d.id === "agent-orchestration")!;
@@ -648,6 +675,7 @@ describe("parseChallenges", () => {
     expect(incident!.effects).toEqual([
       { type: "addToStock", stock: "budget", value: -8000 },
       { type: "scaleStock", stock: "users", factor: 0.985 },
+      { type: "addToStock", stock: "morale", value: -8 },
       { type: "modifyRate", target: "all", op: "mul", value: 0.8, durationDays: 3 },
     ]);
     expect(company.challenges.filter((c) => c.id === "prod-incident")).toHaveLength(1);

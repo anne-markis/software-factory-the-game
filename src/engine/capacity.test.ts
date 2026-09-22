@@ -5,6 +5,7 @@ import { applyEffects } from "./effects";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, startJson } from "./loadShippedContent";
 import { unshippedWork } from "./work";
+import { activateDueInstances } from "./tick";
 import type { DecisionDef, GameContent, GameState } from "./types";
 
 function shippedContent(): GameContent {
@@ -116,6 +117,14 @@ describe("effectiveCapacity", () => {
   });
 });
 
+function settleHires(e: Engine): void {
+  const s = e.getState() as GameState;
+  for (const inst of s.decisions) {
+    if (inst.activeOnDay !== undefined && inst.activeOnDay > s.day) inst.activeOnDay = s.day;
+  }
+  activateDueInstances(s, e.getContent());
+}
+
 describe("tick seats", () => {
   it("keeps In Progress at founder capacity while Ready waits", () => {
     const e = new Engine(shippedContent());
@@ -142,13 +151,15 @@ describe("tick seats", () => {
     expect(e.getState().stocks.inProgress).toBe(2);
   });
 
-  it("a hire fills the extra seat from Ready immediately, without finishing", () => {
+  it("a hire fills the extra seat from Ready when they start, without finishing", () => {
     const e = new Engine(shippedContent());
     e.tick();
     const before = e.getState();
     const ready = before.stocks.backlog;
     const done = before.stocks.done;
     e.applyDecision("basic-dev");
+    expect(e.getState().stocks.inProgress).toBe(1);
+    settleHires(e);
     const s = e.getState();
     expect(s.stocks.inProgress).toBe(2);
     expect(s.stocks.backlog).toBe(ready - 1);
@@ -166,6 +177,7 @@ describe("tick seats", () => {
     const e = new Engine(shippedContent());
     e.tick();
     e.applyDecision("basic-dev");
+    settleHires(e);
     expect(e.getState().stocks.inProgress).toBe(2);
     const ready = e.getState().stocks.backlog;
     const done = e.getState().stocks.done;
@@ -176,12 +188,15 @@ describe("tick seats", () => {
     expect(s.stocks.done).toBe(done);
   });
 
-  it("does not fill seats on hire while delivery is frozen", () => {
+  it("does not fill extra hire seats while delivery is frozen", () => {
     const content = shippedContent();
-    content.start.stocks.budget = 0;
     const e = new Engine(content);
+    e.tick();
+    expect(e.getState().stocks.inProgress).toBe(1);
     e.applyDecision("basic-dev");
-    expect(e.getState().stocks.inProgress).toBe(0);
-    expect(e.getState().stocks.backlog).toBe(300);
+    const s = e.getState() as GameState;
+    s.stocks.budget = 0;
+    settleHires(e);
+    expect(e.getState().stocks.inProgress).toBe(1);
   });
 });

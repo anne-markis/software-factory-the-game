@@ -1,7 +1,8 @@
 import type { GameContent, GameState } from "./types";
+import { instanceIsActive } from "./roster";
 
-function ownedCount(state: Pick<GameState, "decisions">, defId: string): number {
-  return state.decisions.filter((d) => d.defId === defId).length;
+function ownedCount(state: GameState, defId: string): number {
+  return state.decisions.filter((d) => d.defId === defId && instanceIsActive(d, state.day)).length;
 }
 
 /**
@@ -21,6 +22,7 @@ export function effectiveCapacity(state: GameState, content: GameContent): numbe
   let value = state.baseCapacity;
   const seenFromOwned = new Set<string>();
   for (const inst of state.decisions) {
+    if (!instanceIsActive(inst, state.day)) continue;
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
     value += def.capacity ?? 0;

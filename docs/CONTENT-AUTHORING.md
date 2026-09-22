@@ -44,8 +44,7 @@ Shape: `decisionSchema` in `src/engine/content.ts`. `id` must be unique
 across the **resolved** catalog. `category` is a closed enum (`DecisionCategory`
 in `src/engine/types.ts`). It is required authored metadata; the player shop
 is a flat single-column list and does not group by category. There are no
-decision `tags`. `human: true` is headcount for challenge predicates, not
-a track label.
+decision `tags`.
 
 Shop order is that resolved catalog's array order — Studio file order,
 then Company delta, then Megacorp delta (ADR 0008). There is no
@@ -55,6 +54,15 @@ affordability. Hidden cards (owned unique, unmet `requires` /
 the list is not regrouped. When a later-era file is non-empty, its cards
 appear after the inherited prior-rung array, in the order they sit in
 that file. To change player order, move the object in the JSON array.
+
+`human: true` is roster headcount (challenges, `scaleFromHumansPer`,
+morale quit). `agent: true` is the matching flag for coding-agent copies
+(agent:human overload). Harness / orchestration omit it. `delayDays`
+(integer >= 1) defers effects, capacity, payroll, and headcount until
+`day + delayDays`; the one-time cost and gamble still resolve at
+purchase. Pending instances count as owned for `unique` / `requires`.
+Studio's basic developer is `$2,000` + 14 days + `$438/day` after they
+start.
 
 Cost may be `{}`. `incomePerDay` / `incomeFromStock` / `burstFromStock`
 credit in the same income step **before** payroll that tick. Burst rolls
@@ -98,7 +106,7 @@ drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 | --- | --- |
 | `modifyRate` | `target` is `pull` / `finish` / `review` / `deploy` / `discover` / `plan` / `ktlo` / `all`. `all` is the delivery line (pull/finish/review/deploy), not discover, plan, or ktlo. Discover cards do not raise plan. Omit `durationDays` for permanent. Optional `scaleFromHumansPer` (add-op only) multiplies the addend by `1 + per ×` owned `human: true` instances, live — hire later still buffs existing modifiers; payroll loss drops it. Studio agents use `0.1`. Pull no longer fills In Progress; finish speed moves the Ready+In Progress pool into In Review. The In Review zoom Next lever offers any shop card whose authored `modifyRate` (base effects or gamble) targets **`review` exactly** — not `"all"`. Do not special-case card ids in UI. |
 | `modifyDebtMultiplier` | Same `op` / `value` / optional `durationDays`; no `target`. |
-| `addToStock` | Any stock in the enum; result clamped at 0. Pipeline writes (`backlog` / `inProgress` / `inReview` / `done`) attach to one in-flight `remaining` (engine-picked when several are live; ADR 0009). Extra In Progress above seats spills to Ready on the next tick, and immediately when a shop buy or remove changes capacity. |
+| `addToStock` | Any stock in the enum; result clamped at 0 and at `start.stockMax` when that stock is capped (Studio: morale 100). Pipeline writes (`backlog` / `inProgress` / `inReview` / `done`) attach to one in-flight `remaining` (engine-picked when several are live; ADR 0009). Extra In Progress above seats spills to Ready on the next tick, and immediately when a shop buy or remove changes capacity. |
 | `scaleStock` | Immediate multiply, `factor >= 0` (`0` wipes). No duration, no Progress-panel modifier. |
 | `sickness` | Challenge-only: needs `perHumanDev: true` so an `instanceId` exists. Schema-legal on a shop decision, but `applyDecision` never threads an instance, so it no-ops. A sick hire still occupies In Progress capacity. |
 | `removeHuman` | Challenge-only roster loss; purchase-time application does not pass `content`, so it no-ops on shop cards. Choice options with this effect require `condition.minHumanDevs >= 1`. |
@@ -241,7 +249,12 @@ generic same-shape slowdown keyed on any stock and a rate target.
 `stockFlows` are per-tick acquire/churn after shipping; optional
 `condition.minCompletedProjects`. Owned decision `stockFlowMods` and
 completed-project `stockFlowMods` add to a matching flow. Omit either
-array for `[]`.
+array for `[]`. `stockMax` is an optional per-stock ceiling (Studio:
+morale 100). `headcountRatioDrags` drain a stock when a flagged-instance
+ratio exceeds `freeBand` (Studio: agents per human, founder counts, onto
+morale). `instanceChurn` is a per-active-instance quit roll when a stock
+is below `safeBand` (Studio: morale → humans). Pending `delayDays`
+instances do not count for either.
 
 Numbers for these knobs live in `content/start.json`. Archetype log lines
 (`src/engine/archetypes.ts`) are engine-side; new cards are classified

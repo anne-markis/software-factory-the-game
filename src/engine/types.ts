@@ -29,6 +29,12 @@ export interface Stocks {
   // regen still refills Ready). Seeded at 0; filled at the plan rate while
   // named items sit in GameState.plan. Clamped at 0 like every other stock.
   plan: number;
+  // Morale: company-wide employee-loop quality stock. One number for every
+  // hired human type. Recovers slowly, reputation only helps (never a
+  // day-one drain for being unknown), agent overload drains, hire quality
+  // and incidents add/spend via addToStock. Low morale rolls quit on
+  // active humans. Optional stockMax (Studio: 100) caps it. Clamped at 0.
+  morale: number;
 }
 
 export type StockName = keyof Stocks;
@@ -140,6 +146,14 @@ export interface DecisionDef {
   description: string;
   category: DecisionCategory;
   human?: boolean;
+  // Headcount flag for agent:human ratio drains (start.headcountRatioDrags).
+  // Copied onto the instance like `human`. Coding-agent copies set this;
+  // harness / orchestration do not — they are not extra agents.
+  agent?: boolean;
+  // Calendar days after purchase before this instance is active: no
+  // effects, capacity, payroll, or headcount until `day + delayDays`.
+  // Gamble still resolves at purchase. Omit for immediate cards.
+  delayDays?: number;
   // In Progress seats this instance adds while owned. Omitted is 0. Not
   // keyed off `human`: a later card may grant capacity from other owned
   // ids (see capacityFromOwned) without those ids being people.
@@ -193,8 +207,17 @@ export interface DecisionInstance {
   sickFactor?: number;
   // Headcount flag copied from DecisionDef.human. effectiveRate counts these
   // for scaleFromHumansPer so modifiers stay content-free. The founder seat
-  // is not an instance, so it does not count.
+  // is not an instance, so it does not count. Pending (not yet active)
+  // humans still carry the flag; roster helpers skip them until arrival.
   human?: boolean;
+  // Copied from DecisionDef.agent. Ratio drains count these, not id prefixes.
+  agent?: boolean;
+  // First day this instance is active. Absent means active from purchase
+  // (legacy saves and cards without delayDays). Pending while day < this.
+  activeOnDay?: number;
+  // Effects rolled at purchase (base + gamble) to apply on the activation
+  // tick. Deleted after they land. Absent on immediate purchases.
+  pendingEffects?: Effect[];
 }
 
 export interface ChoiceOption {
@@ -404,6 +427,32 @@ export interface StockFlow {
   churnRatePerDay?: number;
 }
 
+export type HeadcountFlag = "human" | "agent";
+
+// Always-on drain: when flagged-instance ratio exceeds freeBand, subtract
+// drainPerExcess * (ratio - freeBand) from `stock` each tick. Studio uses
+// this for agent:human overload on morale. FounderCounts adds 1 to the
+// denominator (the founder is a human, not a DecisionInstance). Pending
+// instances do not count. Numbers live in start.json.
+export interface HeadcountRatioDrag {
+  stock: StockName;
+  numerator: HeadcountFlag;
+  denominator: HeadcountFlag;
+  founderCounts: boolean;
+  freeBand: number;
+  drainPerExcess: number;
+}
+
+// Per-tick independent quit roll on each active instance with `flag`.
+// p = 0 at stock >= safeBand; p = maxRatePerDay at stock 0; linear between.
+// Studio: morale, human, safeBand 40, max 2%/day. Not a stock drain.
+export interface InstanceChurn {
+  stock: StockName;
+  flag: HeadcountFlag;
+  safeBand: number;
+  maxRatePerDay: number;
+}
+
 export interface StartConfig {
   seed: number;
   stocks: Stocks;
@@ -420,6 +469,16 @@ export interface StartConfig {
   // Always-on stock flows (Studio organic user acquisition). Read from content
   // at tick time (tick has content). Optional; treated as [] when absent.
   stockFlows?: StockFlow[];
+  // Optional per-stock ceilings. applyEffects / flows / grants clamp to
+  // these after the 0-floor. Studio caps morale at 100. Copied onto
+  // GameState at init so applyEffects stays content-free.
+  stockMax?: Partial<Record<StockName, number>>;
+  // Always-on headcount-ratio drains (Studio agent:human morale overload).
+  // Read from content at tick time. Optional; treated as [] when absent.
+  headcountRatioDrags?: HeadcountRatioDrag[];
+  // Always-on per-instance quit rolls (Studio morale → human quit).
+  // Read from content at tick time. Optional; treated as [] when absent.
+  instanceChurn?: InstanceChurn[];
   // Tech-debt drag (Release 15, Limits to Growth): the debt stock pushes back
   // on throughput. freeDebt is the grace band (no drag at or below it),
   // dragPerPoint is the per-excess-point slowdown, maxDrag caps how much
@@ -552,6 +611,18 @@ export interface GameState {
   userAcquireFlow: number;
   userChurnFlow: number;
   userIncomeFlow: number;
+  // Realized employee-loop flows this tick. moraleRecoverFlow is the flat
+  // acquirePerDay on the morale stockFlow; moralePrideFlow is the
+  // acquirePerStock (reputation) term — help only, never negative.
+  // moraleOverloadFlow is the headcount-ratio drain (0 when under the band).
+  // employeeQuitRate is the per-human quit probability used this tick.
+  moraleRecoverFlow: number;
+  moralePrideFlow: number;
+  moraleOverloadFlow: number;
+  employeeQuitRate: number;
+  // Optional per-stock ceilings, copied from start.stockMax at init.
+  // applyEffects clamps writes through clampStock. {} when content omits.
+  stockMax: Partial<Record<StockName, number>>;
   nextInstanceId: number;
   nextModifierId: number;
   rngState: number;

@@ -153,8 +153,12 @@ describe("appView delivery-column stats layout", () => {
     expect(usersDetails.open).toBe(false);
     expect(usersDetails.tagName).toBe("DETAILS");
     expect(loops.contains(h.root.querySelector('[aria-label="User loop"]')!)).toBe(true);
+    expect(loops.contains(h.root.querySelector('[aria-label="Employee loop"]')!)).toBe(true);
+    const employeeDetails = loops.querySelector<HTMLDetailsElement>(".employee-loop-details")!;
+    expect(employeeDetails).toBeTruthy();
+    expect(employeeDetails.open).toBe(false);
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toEqual(["Delivery loop", "User loop"]);
+    expect(headings).toEqual(["Delivery loop", "User loop", "Employee loop"]);
     expect(headings).not.toContain("Delivery system");
     expect(headings).not.toContain("Progress system");
     expect(headings).not.toContain("Progress loop");
@@ -215,6 +219,25 @@ describe("appView delivery-column stats layout", () => {
     expect(h.root.textContent).not.toContain("slower");
     expect(h.root.querySelector(".debt-consequences")).toBeNull();
     expect(h.root.textContent).not.toContain("High tech debt");
+  });
+});
+
+describe("appView employee loop disclosure", () => {
+  it("starts collapsed and expands from the heading without saving", () => {
+    const h = mount();
+    const details = h.root.querySelector<HTMLDetailsElement>(".employee-loop-details")!;
+    const summary = details.querySelector("summary")!;
+    expect(details.open).toBe(false);
+    expect(details.querySelector('[aria-label="Employee loop"]')).not.toBeNull();
+
+    const actionsBefore = h.actions;
+    summary.click();
+    expect(details.open).toBe(true);
+    expect(h.actions).toBe(actionsBefore);
+
+    summary.click();
+    expect(details.open).toBe(false);
+    expect(h.actions).toBe(actionsBefore);
   });
 });
 
@@ -460,11 +483,9 @@ describe("appView node identity across renders", () => {
   it("keeps one decision's Buy button when another node's affordability flips", () => {
     const content = makeContent();
     content.start.stocks.budget = 500; // exactly affords test-suite ($500)
-    // richBudget: false so the start budget above is not overwritten — the
-    // flip from 500 → 499 is what rebuilds test-suite while basic-dev stays put.
     const h = mount({ content, richBudget: false });
 
-    const stable = h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!;
+    const stable = h.root.querySelector<HTMLElement>('[data-buy="agent"]')!;
     expect(stable).toBeTruthy();
     expect(stable.hasAttribute("disabled")).toBe(false);
 
@@ -475,7 +496,7 @@ describe("appView node identity across renders", () => {
     h.state.stocks.budget = 499;
     h.view.render();
 
-    expect(h.root.querySelector('[data-buy="basic-dev"]')).toBe(stable);
+    expect(h.root.querySelector('[data-buy="agent"]')).toBe(stable);
     const flipped = h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!;
     expect(flipped).not.toBe(flipping);
     expect(flipped.hasAttribute("disabled")).toBe(true);

@@ -38,6 +38,7 @@ const STOCK_LABELS: Record<string, string> = {
   inReview: "in review",
   // Singular for per-unit income/burst lines ("+$0.75/user/day").
   users: "user",
+  morale: "morale",
 };
 function stockLabel(stock: string): string {
   return STOCK_LABELS[stock] ?? stock;
@@ -172,26 +173,39 @@ const RATE_RANGE_ORDER = ["pull", "finish", "review", "deploy", "discover", "pla
 // emit one range per rate instead of collapsing to outcome labels.
 function summarizeGamblePerTarget(gamble: GambleOutcome[]): string | null {
   const maps: Array<Map<string, number>> = [];
+  const stockMaps: Array<Map<string, number>> = [];
   for (const outcome of gamble) {
     const byTarget = new Map<string, number>();
+    const byStock = new Map<string, number>();
     for (const effect of outcome.effects) {
+      if (effect.type === "addToStock") {
+        if (byStock.has(effect.stock)) return null;
+        byStock.set(effect.stock, effect.value);
+        continue;
+      }
       if (effect.type !== "modifyRate" || effect.op !== "add" || effect.durationDays !== undefined) return null;
       if (byTarget.has(effect.target)) return null;
       byTarget.set(effect.target, effect.value);
     }
     if (byTarget.size === 0) return null;
     maps.push(byTarget);
+    stockMaps.push(byStock);
   }
   const keys = [...maps[0]!.keys()].sort();
   if (maps.some((m) => m.size !== keys.length || keys.some((k) => !m.has(k)))) return null;
   const fmtRange = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}`;
   const ordered = RATE_RANGE_ORDER.filter((k) => keys.includes(k));
-  return ordered
+  const ratePart = ordered
     .map((target) => {
       const values = maps.map((m) => m.get(target)!);
       return `${rateLabel(target as (typeof RATE_RANGE_ORDER)[number])} ${fmtRange(Math.max(...values))} to ${fmtRange(Math.min(...values))}`;
-    })
-    .join(", ");
+    });
+  const stockKeys = [...new Set(stockMaps.flatMap((m) => [...m.keys()]))];
+  const stockPart = stockKeys.map((stock) => {
+    const values = stockMaps.map((m) => m.get(stock) ?? 0);
+    return `${stockLabel(stock)} ${fmtRange(Math.max(...values))} to ${fmtRange(Math.min(...values))}`;
+  });
+  return [...ratePart, ...stockPart].join(", ");
 }
 
 // Pure: same DecisionDef always yields the same string. Returns "" only for a

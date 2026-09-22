@@ -49,6 +49,7 @@ import {
 import { getBuildInfo } from "./buildInfo";
 import { loopDiagramSvg, renderDeliveryCarets, syncZoomCarets, type ZoomStage } from "./loopDiagram";
 import { usersLoopSvg } from "./usersLoop";
+import { employeeLoopSvg } from "./employeeLoop";
 import { renderStageZoom } from "./inProgressPanel";
 import { continuousDeployActive } from "../engine/continuousDeploy";
 import { createRegion, SECTION_ATTR } from "./domPatch";
@@ -97,8 +98,8 @@ export interface AppView {
 // unlike before -- are not churned by the driver at all. Section containers
 // are empty until the first render patches them.
 //
-  // Delivery loop is full width (six boxes). User loop sits on a second
-  // row as a collapsed <details> (expand to see Reputation → Users → income).
+  // Delivery loop is full width (six boxes). User loop and Employee loop
+  // sit on following rows as collapsed <details> panels.
   // In Progress / Done contributor zooms hang as a drawer under Delivery
   // (caret-only, collapsed until clicked).
   // Delivery-stats stay under Delivery so material stock numbers can
@@ -112,6 +113,7 @@ const DELIVERY_CARETS = "delivery-carets";
 const STAGE_ZOOM = "stage-zoom";
 const DELIVERY_STATS = "delivery-stats";
 const USERS_LOOP = "users-loop";
+const EMPLOYEE_LOOP = "employee-loop";
 const GAMBLE_REVEAL = "gamble-reveal";
 const STALL = "stall";
 const TIME_CONTROLS = "time-controls";
@@ -151,6 +153,10 @@ function pageScaffold(): string {
       <details class="panel users-loop-details">
         <summary><h3>User loop</h3></summary>
         <div ${SECTION_ATTR}="${USERS_LOOP}"></div>
+      </details>
+      <details class="panel employee-loop-details">
+        <summary><h3>Employee loop</h3></summary>
+        <div ${SECTION_ATTR}="${EMPLOYEE_LOOP}"></div>
       </details>
     </div>
     <div ${SECTION_ATTR}="${STALL}"></div>
@@ -266,6 +272,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     if (caretsHost) syncZoomCarets(caretsHost, openZoom);
     page.patch(STAGE_ZOOM, renderStageZoom(state, content, openZoom));
     page.patch(USERS_LOOP, usersLoopSvg(state, content));
+    page.patch(EMPLOYEE_LOOP, employeeLoopSvg(state, content));
     page.patch(GAMBLE_REVEAL, renderGambleReveal(gambleReveal));
     page.patch(STALL, renderStall(engine.isStalled(), engine.isDeliveryFrozen()));
     page.patch(TIME_CONTROLS, renderTimeControls(state.paused, deps.getSpeed(), SPEED_OPTIONS));
@@ -280,7 +287,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     page.patch(LOG_SECTION, renderLog(state.log));
     // Income / Expenses / Events / Owned sit in `.side` as static <details> chrome
     // (default open). Titles and charts patch in place so collapse survives ticks.
-    page.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content));
+    page.patch(OWNED_LIST_SECTION, renderOwnedList([...state.decisions], content, state.day));
   }
 
   function togglePause(): void {
@@ -308,6 +315,11 @@ export function mountAppView(deps: AppViewDeps): AppView {
       // would otherwise double-toggle after we set .open).
       ev.preventDefault();
       const details = target.closest<HTMLDetailsElement>(".users-loop-details")!;
+      details.open = !details.open;
+      return;
+    } else if (target.closest(".employee-loop-details > summary")) {
+      ev.preventDefault();
+      const details = target.closest<HTMLDetailsElement>(".employee-loop-details")!;
       details.open = !details.open;
       return;
     } else if (target.closest("[data-zoom]")) {

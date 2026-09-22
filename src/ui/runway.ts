@@ -1,5 +1,6 @@
 import type { GameContent, GameState } from "../engine/types";
 import { ktloBurnPerDay } from "../engine/ktlo";
+import { instanceIsActive } from "../engine/roster";
 
 // Days of runway at or below this threshold get a visual Budget warning.
 // Suggested ~10–14 days; pick the upper end so players see the
@@ -15,7 +16,7 @@ export function netRecurringBurnPerDay(state: Readonly<GameState>, content: Game
   for (const inst of state.decisions) {
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
-    payroll += def.cost.perDay ?? 0;
+    payroll += instanceIsActive(inst, state.day) ? (def.cost.perDay ?? 0) : 0;
     income += def.incomePerDay ?? 0;
     // Studio monetization: steady per-day income scaled by a stock
     // (subscription reads users) counts as recurring income at the current
