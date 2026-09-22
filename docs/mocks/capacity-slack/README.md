@@ -56,6 +56,6 @@ outflow so the cue has a pile to sit on. It is not a ticked save.
 | Raise finish above review | finish arrow rises | both drawings show the faster finish arrow and, once the pile qualifies, capacity-bound | same, plus slack only where a rate is unused |
 | Remove the last open seat | finish stops | finish arrow `0.0/day` | `0.0/day of <finish>` |
 
-Illustrative numbers, not a balance pass. Nothing here changes tick
-math, saves, or what a hire actually does. The live diagram still
-prints a KTLO seat; this mock does not.
+Illustrative numbers, not a balance pass. Nothing here changes review
+slack, debt, or what a hire actually does. Keep the lights on drags
+finish and does not take a seat.

@@ -26,11 +26,10 @@ list is gone. Other Studio gigs (Back-burner feature) stay offered.
 The definition stays in the resolved catalog so the live row can still
 name itself; the shop simply stops listing it.
 
-The drain is finish points per day, taken before contract work. Seat
-hold is separate and fixed in this mock: KTLO occupies 1 In Progress
-seat whether or not a card has changed the rate. The open In Progress
-zoom is where the base, the card multiplier, and the product finish
-left over are spelled out.
+The drain is finish points per day, taken before contract work. It does
+not take an In Progress seat. The open In Progress zoom is where the
+base, the card multiplier, and the product finish left over are spelled
+out.
 
 Illustrative numbers, not a balance pass:
 
@@ -39,7 +38,7 @@ Illustrative numbers, not a balance pass:
 | KTLO finish reserved | 0.5/day | 0.8/day |
 | Gross finish | 3.2/day | 3.2/day |
 | Finish left for contracts | 2.7/day | 2.4/day |
-| Seats | 1 of 4 | 1 of 4 |
+| In Progress seats | 4 of 4 | 4 of 4 |
 
 Studio never shows the KTLO row, and Studio still offers Bugfix sprint.
 Megacorp inherits both: KTLO is already on, and Bugfix sprint stays off

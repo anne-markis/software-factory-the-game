@@ -846,6 +846,7 @@ describe("renderProjectsStatus", () => {
     expect(html).toContain(">On<");
     expect(html).toContain("0.5/day of finish");
     expect(html).toContain("cannot cancel");
+    expect(html).not.toContain("seat");
     expect(html).not.toContain('data-abandon="ktlo"');
     expect(html).toContain("Bugfix sprint");
     expect(html).toContain('data-abandon="gig-bugfix"');

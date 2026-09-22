@@ -451,7 +451,6 @@ const permanentProjectSchema = z
     name: z.string(),
     permanent: z.literal(true),
     basePerDay: z.number().positive(),
-    seats: z.number().int().positive(),
   })
   .strict();
 

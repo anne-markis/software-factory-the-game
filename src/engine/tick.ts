@@ -9,7 +9,7 @@ import { detectMilestones } from "./milestones";
 import { attachInjectedWork, committedWork, unshippedWork } from "./work";
 import { advancePlan } from "./projects";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
-import { ktloSeatHold, productFinishRate, syncKtloBase } from "./ktlo";
+import { productFinishRate, syncKtloBase } from "./ktlo";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -289,7 +289,7 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   const deployRate = frozen ? 0 : effectiveRate(state, "deploy");
   const reviewRate = frozen ? 0 : effectiveRate(state, "review");
   const finishRate = frozen ? 0 : productFinishRate(state, content);
-  const capacity = Math.max(0, effectiveCapacity(state, content) - ktloSeatHold(content));
+  const capacity = effectiveCapacity(state, content);
   // Ideas faucet: always-on from day 0, not a pipeline stage, not frozen
   // with delivery. Shop cards raise it via modifyRate add on discover.
   state.stocks.ideas = Math.max(0, state.stocks.ideas + effectiveRate(state, "discover"));

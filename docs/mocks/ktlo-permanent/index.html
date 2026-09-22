@@ -218,10 +218,9 @@
           <div class="spine" aria-label="Delivery loop">
             <div class="stage">Ready<strong>42</strong></div>
             <div class="arrow">→<br /><b>pull 2.0</b></div>
-            <div class="stage ktlo-seat">
+            <div class="stage">
               In Progress
               <strong>4</strong>
-              <div class="sub">1 seat KTLO</div>
             </div>
             <div class="arrow">→<br /><b id="finish-arrow">finish 2.7</b><br /><span class="ktlo-note" id="ktlo-arrow">KTLO 0.5</span></div>
             <div class="stage">In Review<strong>6.2</strong></div>
@@ -238,7 +237,6 @@
                 <p>Base 1</p>
                 <p>Senior developer +1</p>
                 <p>Coding agents +2</p>
-                <p class="ktlo-line">KTLO holds 1 seat</p>
               </div>
               <div>
                 <h4>Cycle speed</h4>
@@ -253,7 +251,7 @@
                 <p>Base 0.5/day</p>
                 <p id="ktlo-card" class="dim">No card yet</p>
                 <p class="ktlo-line" id="ktlo-reserved">Reserved 0.5/day</p>
-                <p class="dim">Taken before contract finish. Seat stays 1.</p>
+                <p class="dim">Taken before contract finish. Seats stay with the work.</p>
               </div>
             </div>
           </div>
@@ -284,7 +282,7 @@
                 <td>
                   <span class="proj-chip proj-chip-ktlo">always on</span>
                   <div class="proj-name"><strong>Keep the lights on</strong></div>
-                  <div class="proj-sub" id="ktlo-sub">0.5/day of finish · 1 of 4 seats · cannot cancel</div>
+                  <div class="proj-sub" id="ktlo-sub">0.5/day of finish · cannot cancel</div>
                 </td>
                 <td class="num">ongoing</td>
                 <td class="num"><span class="proj-empty">—</span></td>
@@ -293,7 +291,6 @@
                 <td class="num"><span class="proj-empty">—</span></td>
                 <td>
                   <span class="proj-chip" id="ktlo-chip">−0.5 finish/day</span>
-                  <span class="proj-chip">1 seat</span>
                 </td>
               </tr>
               <tr class="proj-group proj-group-now"><td colspan="8">In flight</td></tr>
@@ -413,7 +410,7 @@
         document.getElementById("ktlo-card").classList.toggle("dim", !withCard);
         document.getElementById("ktlo-reserved").textContent = "Reserved " + ktlo.toFixed(1) + "/day";
         document.getElementById("ktlo-sub").textContent =
-          ktlo.toFixed(1) + "/day of finish · 1 of 4 seats · cannot cancel";
+          ktlo.toFixed(1) + "/day of finish · cannot cancel";
         document.getElementById("ktlo-chip").textContent = "−" + ktlo.toFixed(1) + " finish/day";
         const share = Number(left) / 2;
         document.getElementById("eta").textContent = "~" + Math.round(180 / share) + " days";
