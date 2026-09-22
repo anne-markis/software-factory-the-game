@@ -688,6 +688,30 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $20");
   });
 
+  it("rolls harness, orchestration, and agent CI review into Agents", () => {
+    const h = mount();
+    h.root.querySelector<HTMLElement>('[data-buy="agent"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="agent"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="agent-harness"]')!.click();
+    h.engine.tick();
+    h.view.render();
+    let chart = h.root.querySelector('[data-section="expenses-chart"]')!;
+    expect(chart.textContent).toContain("Human $0/day");
+    expect(chart.textContent).toContain("Agents $13/day");
+    expect(chart.textContent).toContain("Misc $20/day");
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $33");
+    h.root.querySelector<HTMLElement>('[data-buy="agent-orchestration"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="ci-cd"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="agent-ci-review"]')!.click();
+    h.engine.tick();
+    h.view.render();
+    chart = h.root.querySelector('[data-section="expenses-chart"]')!;
+    expect(chart.textContent).toContain("Agents $37/day");
+    expect(chart.textContent).toContain("Misc $20/day");
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $57");
+  });
+
   it("puts subscription receipts on Income, while purchase stays in Events", () => {
     const h = mount();
     h.root.querySelector<HTMLElement>('[data-buy="subscription"]')!.click();
