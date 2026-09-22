@@ -654,6 +654,25 @@ describe("parseChallenges", () => {
     expect(megacorp.challenges.find((c) => c.id === "prod-incident")).toEqual(incident);
   });
 
+  it("ships Weekend in the desert only as a Company delta, inherited into Megacorp", () => {
+    const studio = loadShippedContent("studio");
+    const company = loadShippedContent("company");
+    const megacorp = loadShippedContent("megacorp");
+    expect(studio.challenges.some((c) => c.id === "weekend-in-the-desert")).toBe(false);
+    const weekend = company.challenges.find((c) => c.id === "weekend-in-the-desert");
+    expect(weekend).toMatchObject({
+      name: "Weekend in the desert",
+      probabilityPerDay: 0.01,
+      condition: { minCompletedProjects: 1 },
+    });
+    expect(weekend!.cooldownDays).toBeUndefined();
+    expect(weekend!.choice).toBeUndefined();
+    expect(weekend!.effects).toEqual([{ type: "addToStock", stock: "ideas", value: 5000 }]);
+    expect(weekend!.description).toContain("Ideas +5000");
+    expect(company.challenges.filter((c) => c.id === "weekend-in-the-desert")).toHaveLength(1);
+    expect(megacorp.challenges.find((c) => c.id === "weekend-in-the-desert")).toEqual(weekend);
+  });
+
   it("pins the playtest-locked lean challenge rates (knobs)", () => {
     const defs = parseChallenges(challengesJson);
 
@@ -1226,6 +1245,7 @@ describe("per-era content layout", () => {
     expect(company.challenges.map((d) => d.id)).toEqual([
       ...studio.challenges.map((d) => d.id),
       "prod-incident",
+      "weekend-in-the-desert",
     ]);
     expect(company.projects.map((d) => d.id)).toEqual([
       ...studio.projects.map((d) => d.id),

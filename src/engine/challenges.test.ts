@@ -109,6 +109,18 @@ describe("rollChallenges", () => {
     expect(s.log.some((l) => l.message.includes("Production incident"))).toBe(false);
   });
 
+  it("does not put Weekend in the desert in the Studio pool", () => {
+    const c = content();
+    expect(c.challenges.some((ch) => ch.id === "weekend-in-the-desert")).toBe(false);
+    const s = initialState(c);
+    s.completedProjects = 1;
+    s.day = 71;
+    expect(hashRoll(SEED, 71, "weekend-in-the-desert")).toBeLessThan(0.01);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.ideas).toBe(100);
+    expect(s.log.some((l) => l.message.includes("Weekend in the desert"))).toBe(false);
+  });
+
   it("fires Production incident from the Company catalog on a pinned day", () => {
     // Day 26: scope-creep's roll is 0.7731 (miss), agent challenges are gated
     // out with no agent owned, prod-incident's roll is 0.0010 < 0.01.
@@ -199,6 +211,53 @@ describe("rollChallenges", () => {
     rollChallenges(crowded, noRng, c);
     expect(crowded.stocks.users).toBeCloseTo(197, 5);
     expect(crowded.stocks.reputation).toBe(0);
+  });
+
+  it("fires Weekend in the desert from the Company catalog on a pinned day", () => {
+    // Day 71: scope-creep 0.2910 and prod-incident 0.4885 both miss; agent
+    // challenges are gated out with no agent owned; weekend rolls 0.0069 < 0.01.
+    const c = loadShippedContent("company");
+    const s = initialState(c);
+    s.completedProjects = 1;
+    s.day = 71;
+    expect(hashRoll(SEED, 71, "scope-creep")).toBeGreaterThanOrEqual(0.01);
+    expect(hashRoll(SEED, 71, "prod-incident")).toBeGreaterThanOrEqual(0.01);
+    expect(hashRoll(SEED, 71, "weekend-in-the-desert")).toBeLessThan(0.01);
+    expect(s.stocks.ideas).toBe(100);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.ideas).toBe(5100);
+    expect(s.log.some((l) => l.message.includes("Weekend in the desert"))).toBe(true);
+    expect(s.log.some((l) => l.message.includes("Ideas +5000"))).toBe(true);
+  });
+
+  it("holds Weekend in the desert until a project has shipped", () => {
+    const c = loadShippedContent("company");
+    const s = initialState(c);
+    s.day = 71;
+    expect(hashRoll(SEED, 71, "weekend-in-the-desert")).toBeLessThan(0.01);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.ideas).toBe(100);
+    expect(s.lastChallengeDay).toBeUndefined();
+  });
+
+  it("lets Weekend in the desert fire again after global spacing with no per-event cooldown", () => {
+    // Day 114 is 43 days after the day-71 fire (past the 35-day global gap)
+    // and is another clean weekend hit: scope-creep 0.9883, prod-incident 0.7634.
+    const c = loadShippedContent("company");
+    const s = initialState(c);
+    s.completedProjects = 1;
+    s.day = 71;
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.ideas).toBe(5100);
+    expect(s.lastChallengeDay).toBe(71);
+
+    s.day = 114;
+    expect(hashRoll(SEED, 114, "scope-creep")).toBeGreaterThanOrEqual(0.01);
+    expect(hashRoll(SEED, 114, "prod-incident")).toBeGreaterThanOrEqual(0.01);
+    expect(hashRoll(SEED, 114, "weekend-in-the-desert")).toBeLessThan(0.01);
+    rollChallenges(s, noRng, c);
+    expect(s.stocks.ideas).toBe(10100);
+    expect(s.lastChallengeDay).toBe(114);
   });
 
   it("holds Production incident until a project has shipped, even in Company", () => {

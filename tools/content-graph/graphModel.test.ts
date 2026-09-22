@@ -228,6 +228,7 @@ describe("content graph model", () => {
     );
     expect(company?.nativeDecisionCount).toBe(0);
     expect(company?.ambientChallengeIds).toContain("challenge:company:prod-incident");
+    expect(company?.ambientChallengeIds).toContain("challenge:company:weekend-in-the-desert");
     expect(incident?.eraId).toBe("company");
     expect(
       model.nodes.filter((node) => node.kind === "challenge" && node.eraId === "megacorp"),

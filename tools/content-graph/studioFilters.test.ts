@@ -42,6 +42,7 @@ describe("content studio filters", () => {
     const ambient = visibleNodeIds(graph, { ...EMPTY_FILTERS, availability: "ambient" });
     expect(ambient.has("challenge:studio:scope-creep")).toBe(true);
     expect(ambient.has("challenge:company:prod-incident")).toBe(true);
+    expect(ambient.has("challenge:company:weekend-in-the-desert")).toBe(true);
     expect(ambient.has("challenge:studio:model-deprecation")).toBe(false);
     expect(ambient.has("decision:studio:agent")).toBe(false);
   });
