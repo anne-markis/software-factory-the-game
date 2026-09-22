@@ -52,13 +52,25 @@
       .readout { color: var(--fg); margin: 0.75rem 0 0; min-height: 2.8em; }
       svg { width: 100%; height: auto; display: block; }
       .diagram { border: 1px solid var(--border); padding: 0.25rem 0.35rem 0.15rem; }
+      .proj-row { display: flex; gap: 0.75rem; align-items: center; }
+      .proj-name { color: var(--chip-users); font-weight: bold; }
+      .proj-sub { color: var(--fg-dim); font-size: 0.85rem; margin-top: 0.15rem; }
     </style>
   </head>
   <body>
     <h1>Capacity slack</h1>
     <p class="lede">
-      Same picture as the line you sent. Ready is deep, finish is realizing 2.1/day, KTLO holds one seat and 0.5/day, continuous deploy is on, and debt drag tints the arrows. The steppers open with review at 4.0/day so the unused capacity is already on screen. Shipping math is unchanged. This only paints capacity you already paid for when it is not what the line is shipping.
+      Keep the lights on does not take a seat. It stays open, and that open project is what drags In Progress: −0.5/day of finish, on the arrow under the stage. The seat count is only seats. Review starts at 4.0/day so unused review capacity is on the slack drawing. Shipping math in this picture is unchanged.
     </p>
+    <div class="panel">
+      <div class="proj-row">
+        <button type="button" disabled>On</button>
+        <div>
+          <div class="proj-name">Keep the lights on</div>
+          <div class="proj-sub">always open · drags In Progress −0.5 finish/day · no seat</div>
+        </div>
+      </div>
+    </div>
     <div class="panel">
       <div class="controls">
         <div class="step">
@@ -89,8 +101,7 @@
     <div class="diagram" id="proposed"></div>
 
     <script>
-      const KTLO_SEATS = 1;
-      const KTLO_RATE = 0.5;
+      const KTLO_DRAG = 0.5;
       const READY = 1249;
       const SHIPPED = 30643.3;
 
@@ -182,22 +193,11 @@
 
       function diagram(slackMode) {
         const pic = picture();
-        const seatsAll = state.seats + KTLO_SEATS;
         const readyLines = [{ text: fmt(READY) }];
         const reviewLines = [{ text: fmt(pic.inReview) }];
         const shippedLines = [{ text: fmt(SHIPPED) }];
-        let progressLines;
-        let progressNote;
-        if (!slackMode) {
-          progressLines = [{ text: fmt(state.seats) }];
-          progressNote = `<text x="${stageX(1) + BOX_W / 2}" y="${Y + BOX_H + 16}" text-anchor="middle" font-size="11" font-style="italic" fill="var(--chip-users)">${KTLO_SEATS} seat KTLO</text>`;
-        } else {
-          progressLines = [
-            { text: `${state.seats} / ${seatsAll}` },
-            { text: "open / all seats", color: "var(--fg-dim)" },
-          ];
-          progressNote = `<text x="${stageX(1) + BOX_W / 2}" y="${Y + BOX_H + 16}" text-anchor="middle" font-size="11" font-style="italic" fill="var(--chip-users)">${state.seats} open · ${KTLO_SEATS} KTLO</text>`;
-        }
+        const progressLines = [{ text: fmt(state.seats) }];
+        const progressNote = `<text x="${stageX(1) + BOX_W / 2}" y="${Y + BOX_H + 16}" text-anchor="middle" font-size="11" font-style="italic" fill="var(--chip-users)">Keep the lights on</text>`;
 
         const boundNote = pic.bound
           ? `<text x="${stageX(2) + BOX_W / 2}" y="${Y + BOX_H + 16}" text-anchor="middle" font-size="11" font-style="italic" fill="currentColor">capacity-bound</text>`
@@ -214,7 +214,7 @@
         const arrows = [
           arrow(stageX(0) + BOX_W, stageX(1), pic.finishFlow, pic.finishFlow, false, null, markerPrefix),
           arrow(stageX(1) + BOX_W, stageX(2), pic.finishFlow, state.finish, slackMode, {
-            text: `KTLO ${rate(KTLO_RATE)}/day`,
+            text: `−${rate(KTLO_DRAG)}/day`,
             color: "var(--chip-users)",
           }, markerPrefix),
           arrow(stageX(2) + BOX_W, stageX(3), pic.reviewFlow, state.review, slackMode, {
@@ -261,9 +261,9 @@
         } else if (pic.bound) {
           bits.push(`Finish at ${rate(state.finish)}/day is ahead of review at ${rate(state.review)}/day, so In Review is capacity-bound. Both drawings show that.`);
         } else if (state.seats !== 1) {
-          bits.push(`Open seats are ${state.seats}. The arrows stay ${rate(ship)}/day. Slack visible counts them against the KTLO seat (${state.seats} / ${state.seats + KTLO_SEATS}).`);
+          bits.push(`Open seats are ${state.seats}. Keep the lights on still drags finish by ${rate(KTLO_DRAG)}/day, and the seat count does not include it.`);
         } else {
-          bits.push("Seats, finish, and review are matched, so both drawings read 2.1/day. Add review or a seat to see the slack.");
+          bits.push(`Keep the lights on stays open and drags finish by ${rate(KTLO_DRAG)}/day. Seats stay ${state.seats}.`);
         }
         document.getElementById("readout").textContent = bits.join(" ");
       }
