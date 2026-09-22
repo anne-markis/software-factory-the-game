@@ -35,9 +35,9 @@ describe("usersLoopSvg", () => {
     e.applyDecision("subscription");
     e.tick();
     const svg = usersLoopSvg(e.getState(), c);
-    expect(svg).toMatch(/1\.\d\/day/); // acquire rate on the arrow
-    // Flows run before income: 40 users + 1.6 acquire - 0.4 churn = 41.2, then $0.75 each.
-    expect(svg).toContain("$30.9");
+    expect(svg).toMatch(/3\.1\/day/); // acquire rate on the arrow
+    // Flows run before income: 40 users + 3.1 acquire - 0.12 churn = 42.98, then $0.75 each.
+    expect(svg).toContain("$32.2");
     expect(svg).toMatch(/−\d+%/);
     expect(svg).not.toMatch(/support drag/);
     expect(svg).not.toMatch(/free band/);

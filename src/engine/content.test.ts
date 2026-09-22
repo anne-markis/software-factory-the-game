@@ -60,9 +60,9 @@ describe("parseStartConfig", () => {
       {
         stock: "users",
         condition: { minCompletedProjects: 1 },
-        acquirePerDay: 1.5,
+        acquirePerDay: 3,
         acquirePerStock: { stock: "reputation", perUnit: 0.1 },
-        churnRatePerDay: 0.01,
+        churnRatePerDay: 0.003,
       },
     ]);
   });
@@ -647,7 +647,7 @@ describe("parseChallenges", () => {
     });
     expect(incident!.effects).toEqual([
       { type: "addToStock", stock: "budget", value: -8000 },
-      { type: "scaleStock", stock: "users", factor: 0.95 },
+      { type: "scaleStock", stock: "users", factor: 0.985 },
       { type: "modifyRate", target: "all", op: "mul", value: 0.8, durationDays: 3 },
     ]);
     expect(company.challenges.filter((c) => c.id === "prod-incident")).toHaveLength(1);

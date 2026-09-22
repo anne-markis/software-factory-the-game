@@ -194,9 +194,9 @@ describe("tick", () => {
         if (s.completedProjects >= 1) {
           completed = true;
           // The completion tick grants +30 users and then runs one organic
-          // day (grossGain 1.5 + reputation 1 * 0.1 = 1.6, churn 30 * 0.01 =
-          // 0.3): 30 + 1.6 - 0.3 = 31.3.
-          expect(s.stocks.users).toBeCloseTo(31.3, 5);
+          // day (grossGain 3 + reputation 1 * 0.1 = 3.1, churn 30 * 0.003 =
+          // 0.09): 30 + 3.1 - 0.09 = 33.01.
+          expect(s.stocks.users).toBeCloseTo(33.01, 5);
           expect(s.stocks.budget).toBeCloseTo(budgetBeforeCompletion - 20 + 800, 5); // +$800 bonus, -$20 burn
           expect(s.log.some((l) => l.message.includes("+30 users"))).toBe(true);
         } else {
@@ -206,8 +206,8 @@ describe("tick", () => {
       }
       expect(completed).toBe(true);
 
-      // Organic acquisition keeps growing users after launch (toward the ~160
-      // steady state: 1.6/day gain vs 1% churn).
+      // Organic acquisition keeps growing users after launch (toward the ~1033
+      // steady state: 3.1/day gain vs 0.3% churn).
       const afterCompletion = e.getState().stocks.users;
       e.tick();
       expect(e.getState().stocks.users).toBeGreaterThan(afterCompletion);
@@ -233,7 +233,7 @@ describe("tick", () => {
       const s = e.getState() as GameState;
       s.completedProjects = 1;
       s.completedProjectIds = ["launch-beta"];
-      s.stocks.users = 160;
+      s.stocks.users = 3.1 / 0.003;
       s.stocks.reputation = 1;
       s.stocks.backlog = 0;
       s.stocks.inProgress = 0;
@@ -241,7 +241,7 @@ describe("tick", () => {
       s.projects = [];
 
       e.tick();
-      expect(e.getState().userAcquireFlow).toBeCloseTo(1.6, 5);
+      expect(e.getState().userAcquireFlow).toBeCloseTo(3.1, 5);
       expect(e.getState().userAcquireFlow - e.getState().userChurnFlow).toBeCloseTo(0, 1);
 
       s.projects = [
@@ -257,7 +257,7 @@ describe("tick", () => {
       ];
       e.tick();
       expect(e.getState().completedProjectIds.includes("ship-v1")).toBe(false);
-      expect(e.getState().userAcquireFlow).toBeCloseTo(1.6, 5);
+      expect(e.getState().userAcquireFlow).toBeCloseTo(3.1, 5);
 
       // Remaining must equal the Done pile so surplus does not eat ship credit.
       s.projects[0]!.remaining = 0.5;
@@ -266,7 +266,7 @@ describe("tick", () => {
       expect(e.getState().completedProjectIds).toContain("ship-v1");
       const after = e.getState();
       expect(after.stocks.reputation).toBe(3);
-      expect(after.userAcquireFlow).toBeCloseTo(2.8, 5);
+      expect(after.userAcquireFlow).toBeCloseTo(4.3, 5);
       expect(after.userAcquireFlow - after.userChurnFlow).toBeGreaterThan(0.5);
 
       const usersAtV1 = after.stocks.users;
@@ -330,7 +330,7 @@ describe("tick", () => {
       const afterV2 = e.getState();
       expect(afterV2.completedProjectIds).toContain("ship-v2");
       expect(afterV2.stocks.users).toBeGreaterThan(usersBeforeV2 + 20);
-      expect(afterV2.userAcquireFlow).toBeCloseTo(4.0, 5);
+      expect(afterV2.userAcquireFlow).toBeCloseTo(5.5, 5);
       expect(afterV2.userAcquireFlow - afterV2.userChurnFlow).toBeGreaterThan(0.5);
     });
 
@@ -347,12 +347,12 @@ describe("tick", () => {
       s.stocks.users = 100;
       e.tick();
       expect(e.getState().stocks.reputation).toBe(50);
-      expect(e.getState().userAcquireFlow).toBeCloseTo(6.5, 5); // 1.5 + 50 × 0.1
+      expect(e.getState().userAcquireFlow).toBeCloseTo(8.0, 5); // 3 + 50 × 0.1
     });
 
-    it("completed v1–v5 at 0 reputation acquire at 6.5/day", () => {
+    it("completed v1–v5 at 0 reputation acquire at 8/day", () => {
       // Screenshot pin: Company idle after the product line, reputation 0,
-      // organic 1.5 plus five version acquire nudges, no reputation term.
+      // organic 3 plus five version acquire nudges, no reputation term.
       const content = loadShippedContent("company");
       content.challenges = [];
       const e = new Engine(content);
@@ -368,7 +368,7 @@ describe("tick", () => {
       s.stocks.users = 625.1;
       e.tick();
       expect(e.getState().stocks.reputation).toBe(0);
-      expect(e.getState().userAcquireFlow).toBeCloseTo(6.5, 5);
+      expect(e.getState().userAcquireFlow).toBeCloseTo(8.0, 5);
     });
 
     it("subscription incomeFromStock scales income with the users stock", () => {

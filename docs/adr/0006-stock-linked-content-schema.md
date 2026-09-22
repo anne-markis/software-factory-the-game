@@ -57,8 +57,8 @@ left as a footgun). Use `minTechDebt` for debt floors.
 ### Studio spine values (not sacred forever)
 
 Users stay 0 until Launch beta completes, then +30 users and +$800.
-Organic flow after `minCompletedProjects: 1`: `1.5 + reputation × 0.1`
-users/day, 1% churn. Support drag: free band 25, `dragPerPoint` 0.004,
+Organic flow after `minCompletedProjects: 1`: `3 + reputation × 0.1`
+users/day, 0.3% churn. Support drag: free band 25, `dragPerPoint` 0.004,
 `maxDrag` 0.35, target `"all"`. Subscription: `$0.75 / user / day`.
 One-time product: `p = 0.08` per user per day, `$1.20` per sale.
 

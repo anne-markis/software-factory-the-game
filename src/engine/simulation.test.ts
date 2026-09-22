@@ -104,8 +104,9 @@ describe("simulation", () => {
   // so budget(d) = 4760 - 20(d - 302), hitting 0 on day 540 and clamped after.
   //
   // USERS -- 0 until day 302, then grow from 30 toward the steady state where
-  // organic gain (1.5 + reputation 1 * 0.1 = 1.6/day) equals churn
-  // (users * 0.01), i.e. 160 users, and hold there.
+  // organic gain (3 + reputation 1 * 0.1 = 3.1/day) equals churn
+  // (users * 0.003), i.e. about 1033 users. By day 2000 the idle run is
+  // still a few users short of that cap.
   it("idle mechanism: $0/pt Launch beta, clean -$20/day burn with a +$800 completion bump, then drains to zero", () => {
     const c = fullContent();
     c.challenges = [];
@@ -137,7 +138,7 @@ describe("simulation", () => {
     expect(repBeforeCompletion).toBe(0);
     expect(completionDay).toBe(302);
     expect(repAfterCompletion).toBe(c.start.initialProject.reputationReward); // 1
-    expect(usersAfterCompletion).toBeCloseTo(31.3, 1); // 30 grant + first organic day (1.6 - 0.3 churn)
+    expect(usersAfterCompletion).toBeCloseTo(33.01, 1); // 30 grant + first organic day (3.1 - 0.09 churn)
     // Phase 1: exactly linear -$20/day, no payout during the $0/pt beta.
     expect(at[50]).toBe(9000);
     expect(at[100]).toBe(8000);
@@ -149,8 +150,8 @@ describe("simulation", () => {
     expect(firstZeroDay).toBe(540);
     expect(at[540]).toBe(0);
     expect(e.getState().stocks.budget).toBe(0); // clamped through day 2000
-    // Users grow to and hold the 160 steady state (1.6/day gain == 1% churn).
-    expect(e.getState().stocks.users).toBeCloseTo(160, 0);
+    // Users climb toward the 1033 steady state (3.1/day gain == 0.3% churn).
+    expect(e.getState().stocks.users).toBeCloseTo(1027, 0);
     expect(e.getState().stocks.reputation).toBe(1); // no challenges, so it never drops
   });
 
@@ -443,12 +444,13 @@ describe("simulation", () => {
   // (solvent + monetized), not challenge-knife-edge exact values.
   //
   // RE-PINNED for basic-dev payroll $7 → $438/day ($160k calendar). Two hires
-  // cost $876/day against ~$120/day subscription at the ~160-user steady
-  // state, so the old compounding surplus is gone. The probe still waits until
-  // after launch (beta still day 302), still turns users on, and still never
-  // zero-clamps -- unpaid $438 payroll sheds the hire instead of driving
-  // budget through 0. Cash hovers in the hundreds (observed 867 / 376 / 462
-  // at days 500 / 1000 / 2000) rather than climbing past $50k.
+  // cost $876/day. Organic users now climb toward ~1033 (3.1/day acquire,
+  // 0.3% churn) instead of parking at 160, so subscription income grows with
+  // them and the old "cash only falls" shape is gone. It still does not
+  // compound: payroll stays in the same range as late-run user income, and
+  // cash hovers in the hundreds (observed 480 / 1030 / 603 at days 500 / 1000
+  // / 2000; end users ~1027). Unpaid payroll still sheds a hire rather than
+  // clamping the budget to 0.
   it("human-heavy strategy: finishes the beta and stays solvent via monetization over 2000 days", () => {
     const r = runBuildProbe(
       [
@@ -463,12 +465,13 @@ describe("simulation", () => {
     );
     expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 302; launch-gated)
     expect(r.everBroke).toBe(false); // unpaid hire payroll sheds the person rather than clamping to $0
-    expect(r.peakUsers).toBeGreaterThan(100); // users economy switched on and grew (observed ~160)
-    // Hire payroll now consumes the old subscription surplus; cash stays solvent
-    // but does not compound (observed end ~462).
+    expect(r.endUsers).toBeGreaterThan(900); // climbs toward the ~1033 cap (observed ~1027)
+    // Hire payroll consumes the subscription surplus. Cash stays solvent and
+    // in the hundreds, not the old compounding tens of thousands.
     expect(r.endBudget).toBeGreaterThan(100);
     expect(r.endBudget).toBeLessThan(10000);
-    expect(r.budgetAtDay[2000]).toBeLessThan(r.budgetAtDay[500]!);
+    expect(r.budgetAtDay[500]).toBeLessThan(5000);
+    expect(r.budgetAtDay[2000]).toBeLessThan(5000);
   });
 
   // Automation-heavy build, RE-PINNED for the lean Studio shop.

@@ -124,7 +124,7 @@ describe("rollChallenges", () => {
     rollChallenges(s, noRng, c);
     expect(s.stocks.budget).toBe(992_000);
     expect(s.stocks.reputation).toBe(5); // incidents no longer spend reputation
-    expect(s.stocks.users).toBe(38); // 5% of 40
+    expect(s.stocks.users).toBeCloseTo(39.4, 5); // 1.5% of 40
     expect(s.modifiers.some((m) => m.target === "allRates" && m.value === 0.8)).toBe(true);
     expect(s.log.some((l) => l.message.includes("Production incident"))).toBe(true);
   });
@@ -150,7 +150,7 @@ describe("rollChallenges", () => {
     rollChallenges(s, noRng, c);
     expect(s.stocks.reputation).toBe(15);
     expect(s.stocks.budget).toBe(992_000);
-    expect(s.stocks.users).toBe(38);
+    expect(s.stocks.users).toBeCloseTo(39.4, 5);
     expect(s.log.some((l) => l.message.includes("Production incident"))).toBe(true);
   });
 
@@ -175,7 +175,7 @@ describe("rollChallenges", () => {
     s.stocks.shipped = 13506.6;
     s.stocks.ideas = 4205;
     e.tick();
-    expect(e.getState().userAcquireFlow).toBeCloseTo(8.0, 5); // 1.5 + 5 versions + 15 × 0.1
+    expect(e.getState().userAcquireFlow).toBeCloseTo(9.5, 5); // 3 + 5 versions + 15 × 0.1
     for (let i = 0; i < 800; i++) e.tick();
     expect(e.getState().stocks.reputation).toBe(15);
     expect(e.getState().projects).toHaveLength(0);
@@ -197,7 +197,7 @@ describe("rollChallenges", () => {
     crowded.stocks.users = 200;
     crowded.day = 26;
     rollChallenges(crowded, noRng, c);
-    expect(crowded.stocks.users).toBe(190);
+    expect(crowded.stocks.users).toBeCloseTo(197, 5);
     expect(crowded.stocks.reputation).toBe(0);
   });
 

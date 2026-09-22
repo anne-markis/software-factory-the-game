@@ -2,14 +2,14 @@
   {
     "id": "prod-incident",
     "name": "Production incident",
-    "description": "Something broke in production. More likely the more tech debt you carry. Costs $8,000, 5% of users churn, and delivery slows 20% for 3 days.",
+    "description": "Something broke in production. More likely the more tech debt you carry. Costs $8,000, 1.5% of users leave, and delivery slows 20% for 3 days.",
     "probabilityPerDay": 0.01,
     "probScaling": { "stat": "techDebt", "per": 500, "add": 0.01 },
     "condition": { "minCompletedProjects": 1 },
     "cooldownDays": 60,
     "effects": [
       { "type": "addToStock", "stock": "budget", "value": -8000 },
-      { "type": "scaleStock", "stock": "users", "factor": 0.95 },
+      { "type": "scaleStock", "stock": "users", "factor": 0.985 },
       { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.8, "durationDays": 3 }
     ]
   }
