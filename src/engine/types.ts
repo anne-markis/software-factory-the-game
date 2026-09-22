@@ -365,8 +365,9 @@ export interface DailyIncome {
 }
 
 // One tick of cash drain, split for the Expenses sparkline. human is
-// owned `human` payroll; agents is owned `agent` copies; misc is shop-floor
-// base burn plus every other perDay. Capped on GameState.expensesByDay.
+// owned `human` payroll; agents is the agent stack (copies plus harness /
+// orchestration / agent-CI-review); misc is shop-floor base burn plus every
+// other perDay. Capped on GameState.expensesByDay.
 export interface DailyExpenses {
   day: number;
   human: number;

@@ -143,8 +143,8 @@
       const incomeTotal = latestIncome.recurring + latestIncome.burst;
       const expDays = Array.from({ length: 14 }, (_, i) => ({
         human: i >= 4 ? 438 : 0,
-        agents: i >= 8 ? 16 : i >= 6 ? 8 : 0,
-        misc: 20 + (i >= 9 ? 17 : 0),
+        agents: i >= 9 ? 33 : i >= 8 ? 16 : i >= 6 ? 8 : 0,
+        misc: 20,
       }));
       const expMax = Math.max(...expDays.map((d) => d.human + d.agents + d.misc));
       const latestExp = expDays[expDays.length - 1];

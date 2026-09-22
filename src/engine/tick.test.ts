@@ -488,7 +488,7 @@ describe("tick", () => {
       expect(days.at(-1)!.day).toBe(e.getState().day);
     });
 
-    it("splits expenses into human, agent copies, and misc (shop floor plus other perDay)", () => {
+    it("splits expenses into human, the agent stack, and misc (shop floor plus other perDay)", () => {
       const content = ciCdContent();
       const e = new Engine(content);
       expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 0, agents: 0, misc: 20 });
@@ -496,7 +496,14 @@ describe("tick", () => {
       e.applyDecision("agent");
       e.applyDecision("agent");
       e.applyDecision("agent-harness");
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 8, misc: 25 });
+      // 2 agents ($8) + harness ($5); shop floor stays in misc.
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 13, misc: 20 });
+      e.applyDecision("agent-orchestration");
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 25, misc: 20 });
+      e.applyDecision("test-suite");
+      e.applyDecision("ci-cd");
+      e.applyDecision("agent-ci-review");
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 37, misc: 20 });
     });
 
     it("records expensesByDay on tick and caps it with income history", () => {

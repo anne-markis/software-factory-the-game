@@ -39,6 +39,11 @@ function recordDailyExpenses(state: GameState, split: Omit<DailyExpenses, "day">
   while (state.expensesByDay.length > INCOME_HISTORY_DAYS) state.expensesByDay.shift();
 }
 
+/** Agent copies plus the rest of the agent ladder (harness, orchestration, CI review). */
+function isAgentExpenseId(defId: string): boolean {
+  return defId === "agent" || defId.startsWith("agent-");
+}
+
 /** Owned per-day drain plus shop-floor burn, bucketed for the Expenses chart. */
 export function dailyExpenseSplit(
   state: Pick<GameState, "decisions" | "baseBurnPerDay">,
@@ -53,7 +58,7 @@ export function dailyExpenseSplit(
     const perDay = def.cost.perDay ?? 0;
     if (perDay <= 0) continue;
     if (def.human) human += perDay;
-    else if (def.id === "agent") agents += perDay;
+    else if (isAgentExpenseId(def.id)) agents += perDay;
     else misc += perDay;
   }
   return { human, agents, misc };
