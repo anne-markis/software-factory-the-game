@@ -237,13 +237,12 @@ export interface ChallengeDef {
 // Always-on overhead (Company Keep the lights on). Not a contract: no
 // remaining, no payout, no offer row. Present in the catalog from the era
 // that introduces it, inherited after that. Cards scale basePerDay via
-// modifyRate target "ktlo". seats come out of In Progress capacity.
+// modifyRate target "ktlo". It does not take an In Progress seat.
 export interface PermanentProjectDef {
   id: string;
   name: string;
   permanent: true;
   basePerDay: number;
-  seats: number;
 }
 
 export interface ContractProjectDef {

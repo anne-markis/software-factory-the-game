@@ -3,8 +3,7 @@
     "id": "ktlo",
     "name": "Keep the lights on",
     "permanent": true,
-    "basePerDay": 0.5,
-    "seats": 1
+    "basePerDay": 0.5
   },
   {
     "id": "small-crm",

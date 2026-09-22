@@ -13,12 +13,6 @@ export function syncKtloBase(state: GameState, content: GameContent): void {
   state.baseRates.ktlo = base;
 }
 
-export function ktloSeatHold(content: GameContent): number {
-  let seats = 0;
-  for (const def of permanentProjects(content)) seats += def.seats;
-  return seats;
-}
-
 /** Finish left for contracts after KTLO reserves its rate. */
 export function productFinishRate(state: GameState, content: GameContent): number {
   const finish = effectiveRate(state, "finish");

@@ -4,7 +4,6 @@ import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoi
 import { isContractProject } from "../engine/types";
 import { effectiveRate } from "../engine/modifiers";
 import { permanentProjects } from "../engine/ktlo";
-import { effectiveCapacity } from "../engine/capacity";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { projectEffectChips, type ProjectChip, type ProjectEffectSource } from "./projectEffects";
 import { SECTION_ATTR } from "./domPatch";
@@ -430,24 +429,22 @@ function stallChip(eta: string): string {
 function permanentRows(state: Readonly<GameState>, content: GameContent): string {
   const defs = permanentProjects(content);
   if (defs.length === 0) return "";
-  const seatsTotal = effectiveCapacity(state, content);
   const rows = defs
     .map((def) => {
       const rate = defs.length === 1 ? effectiveRate(state, "ktlo") : def.basePerDay;
-      const seatLabel = def.seats === 1 ? "1 seat" : `${def.seats} seats`;
       return `<tr class="proj-ktlo" data-project-status="${esc(def.id)}">
         <td class="proj-btn"><button type="button" disabled title="Cannot cancel">On</button></td>
         <td>
           <span class="proj-chip proj-chip-ktlo">always on</span>
           <div class="proj-name"><strong>${esc(def.name)}</strong></div>
-          <div class="proj-sub">${fmt(rate)}/day of finish · ${def.seats} of ${fmt(seatsTotal)} seats · cannot cancel</div>
+          <div class="proj-sub">${fmt(rate)}/day of finish · cannot cancel</div>
         </td>
         <td class="num">ongoing</td>
         <td class="num">${PROJ_EMPTY}</td>
         <td class="num">${PROJ_EMPTY}</td>
         <td class="num">${PROJ_EMPTY}</td>
         <td class="num">${PROJ_EMPTY}</td>
-        <td class="proj-fx"><span class="proj-chip">−${fmt(rate)} finish/day</span><span class="proj-chip">${seatLabel}</span></td>
+        <td class="proj-fx"><span class="proj-chip">−${fmt(rate)} finish/day</span></td>
       </tr>`;
     })
     .join("");

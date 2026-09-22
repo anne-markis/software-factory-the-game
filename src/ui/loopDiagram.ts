@@ -1,6 +1,5 @@
 import type { DeliveryRateId, GameContent, GameState } from "../engine/types";
 import { effectiveDebtMultiplier, effectiveRate } from "../engine/modifiers";
-import { ktloSeatHold } from "../engine/ktlo";
 import { continuousDeployActive } from "../engine/continuousDeploy";
 import { debtConsequenceTone, type DebtConsequenceTone } from "./debtConsequences";
 
@@ -170,7 +169,6 @@ function box(
   binding: boolean,
   stageKey: string,
   rateLabel?: string,
-  ktloFootnoteSeats = 0,
 ): string {
   const text = fmtStock(value);
   // Binding cue: thicker stroke + data attribute for tests / assistive tech.
@@ -187,17 +185,11 @@ function box(
       <text x="${x + BOX_W / 2}" y="${Y + 66}" text-anchor="middle" font-size="12" fill="currentColor" data-stage-rate="true">${rateLabel}</text>`
       : "";
   const cycle = stageKey === "inProgress" ? cycleGlyph(x) : "";
-  const ktloSeats = stageKey === "inProgress" ? (ktloFootnoteSeats ?? 0) : 0;
-  const ktloNote =
-    ktloSeats > 0 && !binding
-      ? `
-      <text x="${x + BOX_W / 2}" y="${Y + BOX_H + 14}" text-anchor="middle" font-size="10" font-style="italic" fill="var(--chip-users)" data-ktlo-seats="true">${ktloSeats} seat KTLO</text>`
-      : "";
   return `
       <g data-stage="${stageKey}">
       <rect x="${x}" y="${Y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"${strokeWidth}${dataAttr}/>
       <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="16" fill="currentColor">${label}</text>
-      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor" data-stage-value="true">${text}</text>${rate}${cycle}${cue}${ktloNote}
+      <text x="${x + BOX_W / 2}" y="${Y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor" data-stage-value="true">${text}</text>${rate}${cycle}${cue}
       </g>`;
 }
 
@@ -260,8 +252,6 @@ function deliveryLoop(
   const contentWidth = stages.length * BOX_W + (stages.length - 1) * GAP;
   const x0 = (VIEW_W - contentWidth) / 2;
   const dragTone = debtConsequenceTone(state);
-  const ktloSeats = ktloSeatHold(content);
-  const ktloRate = effectiveRate(state, "ktlo");
 
   const boxes = stages
     .map((stage, i) => {
@@ -273,7 +263,6 @@ function deliveryLoop(
         binding === stage.key,
         stage.key,
         rateLabel,
-        stage.key === "inProgress" ? ktloSeats : 0,
       );
     })
     .join("");
@@ -294,12 +283,7 @@ function deliveryLoop(
           ? `
       <text x="${(x1 + x2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">continuous deploy</text>`
           : "";
-      const ktloCaption =
-        flow === "finish" && ktloRate > 0
-          ? `
-      <text x="${(x1 + x2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic" fill="var(--chip-users)" data-ktlo-rate="true">KTLO ${fmtRate(ktloRate)}</text>`
-          : "";
-      return arrow(x1, x2, label, bindingOutflow, flowDrag) + cdCaption + ktloCaption;
+      return arrow(x1, x2, label, bindingOutflow, flowDrag) + cdCaption;
     })
     .join("");
 

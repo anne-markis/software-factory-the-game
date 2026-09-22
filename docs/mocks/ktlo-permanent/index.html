@@ -218,17 +218,16 @@
           <div class="spine" aria-label="Delivery loop">
             <div class="stage">Ready<strong>42</strong></div>
             <div class="arrow">→<br /><b>pull 2.0</b></div>
-            <div class="stage ktlo-seat">
+            <div class="stage">
               In Progress
               <strong>4</strong>
-              <div class="sub">1 seat KTLO</div>
             </div>
-            <div class="arrow">→<br /><b id="finish-arrow">finish 2.7</b><br /><span class="ktlo-note" id="ktlo-arrow">KTLO 0.5</span></div>
+            <div class="arrow">→<br /><b id="finish-arrow">finish 2.7</b></div>
             <div class="stage">In Review<strong>6.2</strong></div>
             <div class="arrow">→<br /><b>review 1.4</b></div>
             <div class="stage">Done<strong>1.1</strong></div>
           </div>
-          <p class="dim" style="font-size:0.75rem;margin:0.35rem 0 0">The finish arrow is what contracts receive. KTLO is named under it, not given its own box. Shipped is off this crop.</p>
+          <p class="dim" style="font-size:0.75rem;margin:0.35rem 0 0">The finish arrow is what contracts receive. The KTLO drag is already in the open In Progress panel. Shipped is off this crop.</p>
 
           <div class="stage-zoom">
             <div class="stage-zoom-head">In Progress</div>
@@ -238,22 +237,19 @@
                 <p>Base 1</p>
                 <p>Senior developer +1</p>
                 <p>Coding agents +2</p>
-                <p class="ktlo-line">KTLO holds 1 seat</p>
               </div>
               <div>
                 <h4>Cycle speed</h4>
                 <p>Base 1.0/day</p>
                 <p>Senior developer +1.2/day</p>
                 <p>Coding agents +1.0/day</p>
-                <p class="ktlo-line" id="cycle-ktlo">KTLO reserved −0.5/day</p>
-                <p id="cycle-left"><strong>Contracts 2.7/day</strong></p>
               </div>
               <div>
                 <h4>KTLO</h4>
                 <p>Base 0.5/day</p>
                 <p id="ktlo-card" class="dim">No card yet</p>
                 <p class="ktlo-line" id="ktlo-reserved">Reserved 0.5/day</p>
-                <p class="dim">Taken before contract finish. Seat stays 1.</p>
+                <p class="dim">Taken before contract finish. Seats stay with the work.</p>
               </div>
             </div>
           </div>
@@ -284,7 +280,7 @@
                 <td>
                   <span class="proj-chip proj-chip-ktlo">always on</span>
                   <div class="proj-name"><strong>Keep the lights on</strong></div>
-                  <div class="proj-sub" id="ktlo-sub">0.5/day of finish · 1 of 4 seats · cannot cancel</div>
+                  <div class="proj-sub" id="ktlo-sub">0.5/day of finish · cannot cancel</div>
                 </td>
                 <td class="num">ongoing</td>
                 <td class="num"><span class="proj-empty">—</span></td>
@@ -293,7 +289,6 @@
                 <td class="num"><span class="proj-empty">—</span></td>
                 <td>
                   <span class="proj-chip" id="ktlo-chip">−0.5 finish/day</span>
-                  <span class="proj-chip">1 seat</span>
                 </td>
               </tr>
               <tr class="proj-group proj-group-now"><td colspan="8">In flight</td></tr>
@@ -406,14 +401,11 @@
         baseBtn.setAttribute("aria-pressed", withCard ? "false" : "true");
         cardBtn.setAttribute("aria-pressed", withCard ? "true" : "false");
         document.getElementById("finish-arrow").textContent = "finish " + left;
-        document.getElementById("ktlo-arrow").textContent = "KTLO " + ktlo.toFixed(1);
-        document.getElementById("cycle-ktlo").textContent = "KTLO reserved −" + ktlo.toFixed(1) + "/day";
-        document.getElementById("cycle-left").innerHTML = "<strong>Contracts " + left + "/day</strong>";
         document.getElementById("ktlo-card").textContent = withCard ? "On-call rotation ×1.6" : "No card yet";
         document.getElementById("ktlo-card").classList.toggle("dim", !withCard);
         document.getElementById("ktlo-reserved").textContent = "Reserved " + ktlo.toFixed(1) + "/day";
         document.getElementById("ktlo-sub").textContent =
-          ktlo.toFixed(1) + "/day of finish · 1 of 4 seats · cannot cancel";
+          ktlo.toFixed(1) + "/day of finish · cannot cancel";
         document.getElementById("ktlo-chip").textContent = "−" + ktlo.toFixed(1) + " finish/day";
         const share = Number(left) / 2;
         document.getElementById("eta").textContent = "~" + Math.round(180 / share) + " days";
