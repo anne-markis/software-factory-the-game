@@ -88,19 +88,19 @@ describe("simulation", () => {
   // below the freeDebt 400 grace band -- and payout is $0 anyway, so even if
   // it did drag, it could not move the budget. Hence the exact linear pins.
   //
-  // PHASE 1 -- pre-completion, exactly linear: budget(d) = 10000 - 20d (no
-  // payout during the beta). Day 50 = 9000, 100 = 8000, 200 = 6000, 300 =
-  // 4000. This is the Studio solvency rule made concrete: the beta finishes
-  // (day 377) with the budget still comfortably positive (~4000 at day 300),
+  // PHASE 1 -- pre-completion, exactly linear: budget(d) = 25000 - 20d (no
+  // payout during the beta). Day 50 = 24000, 100 = 23000, 200 = 21000, 300 =
+  // 19000. This is the Studio solvency rule made concrete: the beta finishes
+  // (day 377) with the budget still comfortably positive (~19000 at day 300),
   // on starting resources alone, no gigs and no monetization.
   //
   // COMPLETION -- day 377 (300 points at 0.8 finish/day after the 0.2 KTLO
   // reserve; first ships day 3): +$800 bonus and +1 reputation land, budget
-  // jumps to 3260, and the beta's completionStockGrants add +30 users (the
+  // jumps to 18260, and the beta's completionStockGrants add +30 users (the
   // users economy switches on here; organic acquisition then runs the same tick).
   //
   // PHASE 2 -- post-completion tail: still -$20/day (no project, no income),
-  // so budget(d) = 3260 - 20(d - 377), hitting 0 on day 540 and clamped after.
+  // so budget(d) = 18260 - 20(d - 377), hitting 0 on day 1290 and clamped after.
   //
   // USERS -- 0 until day 377, then grow from 30 toward the steady state where
   // organic gain (3 + reputation 1 * 0.1 = 3.1/day) equals churn
@@ -129,7 +129,7 @@ describe("simulation", () => {
       }
       if (firstZeroDay === 0 && s.stocks.budget === 0) firstZeroDay = day;
       if (day === 300) { repBeforeCompletion = s.stocks.reputation; usersBeforeCompletion = s.stocks.users; }
-      if ([50, 100, 200, 300, 377, 540].includes(day)) at[day] = s.stocks.budget;
+      if ([50, 100, 200, 300, 377, 1290].includes(day)) at[day] = s.stocks.budget;
     }
     // Users and reputation stay at 0 through the whole beta, then step up the
     // moment it completes -- nothing invents users offstage before launch.
@@ -139,15 +139,15 @@ describe("simulation", () => {
     expect(repAfterCompletion).toBe(c.start.initialProject.reputationReward); // 1
     expect(usersAfterCompletion).toBeCloseTo(33.01, 1); // 30 grant + first organic day (3.1 - 0.09 churn)
     // Phase 1: exactly linear -$20/day, no payout during the $0/pt beta.
-    expect(at[50]).toBe(9000);
-    expect(at[100]).toBe(8000);
-    expect(at[200]).toBe(6000);
-    expect(at[300]).toBe(4000); // solvency rule: beta finishes with budget to spare
+    expect(at[50]).toBe(24000);
+    expect(at[100]).toBe(23000);
+    expect(at[200]).toBe(21000);
+    expect(at[300]).toBe(19000); // solvency rule: beta finishes with budget to spare
     // Completion bump: +$800 bonus lands on day 377 (0.8 product finish after KTLO).
-    expect(at[377]).toBe(3260); // (10000 - 20*377) + 800
-    // Phase 2: clean -$20/day tail to zero. 3260 / 20 = 163 -> day 540.
-    expect(firstZeroDay).toBe(540);
-    expect(at[540]).toBe(0);
+    expect(at[377]).toBe(18260); // (25000 - 20*377) + 800
+    // Phase 2: clean -$20/day tail to zero. 18260 / 20 = 913 -> day 1290.
+    expect(firstZeroDay).toBe(1290);
+    expect(at[1290]).toBe(0);
     expect(e.getState().stocks.budget).toBe(0); // clamped through day 2000
     // Users climb toward the 1033 steady state (3.1/day gain == 0.3% churn).
     expect(e.getState().stocks.users).toBeCloseTo(1026, 0);
@@ -198,9 +198,9 @@ describe("simulation", () => {
     }
     expect(completionDay).toBe(377);
     expect(sawUsers).toBe(true); // the users economy did switch on at launch
-    expect(budgetAt300).toBeLessThan(4200); // pre-completion glide, well off 10,000 (observed 4000: no cash event reaches an idle Studio)
+    expect(budgetAt300).toBeLessThan(19200); // pre-completion glide, well off 25,000 (observed 19000: no cash event reaches an idle Studio)
     expect(budgetAt300).toBeGreaterThan(0); // no instant death
-    expect(e.getState().stocks.budget).toBeLessThan(100); // broke by day 2000 (observed 0, first clamp ~day 540)
+    expect(e.getState().stocks.budget).toBeLessThan(100); // broke by day 2000 (observed 0, first clamp ~day 1290)
   });
 
   // Smart-strategy probe: a modest, sensible plan (test-suite day 1, ci-cd

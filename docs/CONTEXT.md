@@ -14,7 +14,7 @@ not authoring context; describe the current system here, not old issues.
 They mark how big the factory is (what it can afford, what problems that
 scale invites), not which capability fantasy the player picked.
 
-- **Studio** — short tutorial-scale opening (~$10k start). Hires *and* early
+- **Studio** — short tutorial-scale opening (~$25k start). Hires *and* early
   agents belong here; do not gate “AI” as its own era.
 - **Company** — where most playtime will live: same loop, higher cost of
   play, homing in on the dark factory (deeper agentic investment,

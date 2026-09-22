@@ -122,11 +122,11 @@ describe("tick", () => {
   // nothing and the budget is pure base-burn drawdown until completion.
   it("pays revenue per shipped point and charges KTLO cash (Launch beta pays $0/pt)", () => {
     const e = new Engine(withKtlo(testContent()));
-    e.tick(); // no shipping yet: 10000 - 20 KTLO
-    expect(e.getState().stocks.budget).toBe(9980);
+    e.tick(); // no shipping yet: 25000 - 20 KTLO
+    expect(e.getState().stocks.budget).toBe(24980);
     e.tick();
-    e.tick(); // 10000 - 3*20 KTLO + $0/pt
-    expect(e.getState().stocks.budget).toBe(10000 - 60 + 0);
+    e.tick(); // 25000 - 3*20 KTLO + $0/pt
+    expect(e.getState().stocks.budget).toBe(25000 - 60 + 0);
   });
 
   // Release 17: reputation is paid at the same completion point as the
@@ -564,8 +564,8 @@ describe("tick", () => {
     it("ships a pre-existing done stock in full immediately; that same tick's review output waits until next tick", () => {
       const content = ciCdContent();
       const e = new Engine(content);
-      e.applyDecision("test-suite"); // budget 10000 -> 9500
-      e.applyDecision("ci-cd"); // budget 9500 -> 8750
+      e.applyDecision("test-suite"); // budget 25000 -> 24500
+      e.applyDecision("ci-cd"); // budget 24500 -> 23750
       const state = e.getState() as GameState;
       state.stocks.done = 5;
       state.stocks.inReview = 1000;
@@ -942,7 +942,7 @@ describe("tick", () => {
       const plan = effectiveRate(e.getState(), "plan");
       e.applyDecision("user-interviews");
       expect(e.getState().stocks.ideas).toBe(300);
-      expect(e.getState().stocks.budget).toBe(9000);
+      expect(e.getState().stocks.budget).toBe(24000);
       expect(effectiveRate(e.getState(), "pull")).toBe(pull);
       expect(effectiveRate(e.getState(), "discover")).toBe(discover);
       expect(effectiveRate(e.getState(), "plan")).toBe(plan);

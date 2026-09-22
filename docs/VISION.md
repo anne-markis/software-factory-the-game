@@ -56,7 +56,7 @@ teaches a distinct systems idea, and until fun no longer fights the model.
 
 1. **One long arc: scale eras → far future (Paperclips cadence).**
    Settled early ladder: **Studio → Company → Megacorp → …**. Studio is
-   short/tutorial (~$10k start; hires *and* early agents belong here —
+   short/tutorial (~$25k start; hires *and* early agents belong here —
    do not gate “AI” as its own era). **Company** is where most playtime
    lives: the same delivery loop at a higher cost of play, not a more
    realistic firm. Lesson and fun outrank org-chart completeness. The

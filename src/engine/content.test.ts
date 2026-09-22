@@ -29,7 +29,7 @@ describe("parseStartConfig", () => {
     expect(cfg.stocks.users).toBe(0);
     expect(cfg.stocks.ideas).toBe(100);
     expect(cfg.stocks.plan).toBe(0);
-    expect(cfg.stocks.budget).toBe(10000);
+    expect(cfg.stocks.budget).toBe(25000);
     expect(cfg.debtMultiplier).toBe(0.2);
     expect(cfg.baseCapacity).toBe(1);
     // Discover is the Ideas faucet: 0.5/day from day 0, not a delivery stage.

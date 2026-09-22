@@ -65,7 +65,7 @@ describe("applyEffects", () => {
   it("addToStock changes the stock immediately, clamped at zero", () => {
     const s = freshState();
     applyEffects(s, [{ type: "addToStock", stock: "budget", value: -100 }], "src-1");
-    expect(s.stocks.budget).toBe(9900);
+    expect(s.stocks.budget).toBe(24900);
     applyEffects(s, [{ type: "addToStock", stock: "techDebt", value: -5 }], "src-1");
     expect(s.stocks.techDebt).toBe(0);
     applyEffects(s, [{ type: "addToStock", stock: "backlog", value: 200 }], "src-1");
@@ -86,7 +86,7 @@ describe("applyEffects", () => {
     s.stocks.techDebt = 200;
     applyEffects(s, [{ type: "scaleStock", stock: "techDebt", factor: 1.5 }], "src-1");
     expect(s.stocks.techDebt).toBe(300); // factor > 1 grows the stock
-    expect(s.stocks.budget).toBe(10000); // still untouched throughout
+    expect(s.stocks.budget).toBe(25000); // still untouched throughout
   });
 
   it("sickness marks the instance from context", () => {
