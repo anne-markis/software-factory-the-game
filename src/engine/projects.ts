@@ -26,7 +26,7 @@ export function planStock(state: Pick<GameState, "plan">): number {
 }
 
 /** Full sizes of named Plan items (unfilled remainder plus filled progress). */
-export function planCommittedWork(state: Pick<GameState, "plan">): number {
+export function planCommittedWork(state: Partial<Pick<GameState, "plan">>): number {
   return (state.plan ?? []).reduce((sum, p) => sum + p.size, 0);
 }
 

@@ -323,9 +323,9 @@ describe("projects", () => {
     expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(false);
     for (let i = 0; i < 6; i++) e.tick();
     expect(e.getState().completedProjectIds).toEqual(["launch-beta"]);
-    expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(true);
+    expect(e.getState().plan.some((p) => p.defId === "ship-v1")).toBe(true);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.reason).toBe("already in plan");
     expect(e.availableProjects().find((p) => p.def.id === "ship-v2")!.startable).toBe(false);
-    e.pursueProject("ship-v1");
     (e.getState() as GameState).debtMultiplierBase = 0; // isolate the ladder from debt refill
     for (let i = 0; i < 20 && e.getState().completedProjects < 2; i++) e.tick();
     expect(e.getState().completedProjectIds).toEqual(["launch-beta", "ship-v1"]);
