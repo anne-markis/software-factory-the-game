@@ -7,6 +7,7 @@ import type { GameContent, GameState } from "../engine/types";
 import { budgetRunwayDays, RUNWAY_WARN_DAYS } from "./runway";
 import { unshippedWork } from "../engine/work";
 import { debtConsequenceTone, debtToneClass, formatThroughputValue } from "./debtConsequences";
+import { formatIdeaToValue } from "./ideaToValue";
 
 // Local copies — avoid a render.ts ↔ gameFeel.ts import cycle (render
 // delegates row HTML here for the shared flash path).
@@ -66,6 +67,13 @@ export function cockpitStatViews(state: Readonly<GameState>, content: GameConten
       value: formatThroughputValue(state),
       widthClass: "v-rate",
       valueClass: debtToneClass(debtConsequenceTone(state)),
+      material: true,
+    },
+    {
+      stat: "ideaToValue",
+      label: "Idea→Value",
+      value: formatIdeaToValue(state),
+      widthClass: "v-eta",
       material: true,
     },
   ];

@@ -50,13 +50,13 @@
          the patched time-controls block) so pause/speed flips never rebuild it. */
       .chrome-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.5rem; }
       .chrome-row #reset { margin-left: auto; }
-      /* Top stats bar (Day / Backlog / Budget / Points/Day): fixed 4-column
-         grid so Budget + runway cannot paint into Points/Day.
+      /* Top stats bar (Day / Backlog / Budget / Points/Day / Idea→Value):
+         fixed 5-column grid so Budget + runway cannot paint into neighbors.
          minmax(0, 1fr) lets each track shrink; .stat min-width:0 + overflow
          clips long runway strings inside the cell. tabular-nums + value
          min-widths keep tick updates from reflowing the loops below.
           moved flow/quality stocks under the Delivery loop. */
-      .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem 1rem; align-items: baseline; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
+      .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem 1rem; align-items: baseline; white-space: nowrap; font-size: 0.95rem; margin-bottom: 1rem; }
       .stat { display: inline-flex; align-items: baseline; gap: 0.5rem; min-width: 0; overflow: hidden; }
       .stat-label { color: var(--fg-dim); }
       .stat-value { display: inline-block; font-variant-numeric: tabular-nums; text-align: right; }
@@ -66,7 +66,7 @@
       /* Budget may append "(N days)" runway. No ch min-width: a wide
          right-aligned slot wasted space after the label and clipped the
          amount. Left-align so a tight column keeps the $
-         visible and clips the runway suffix first. The 4-column grid
+         visible and clips the runway suffix first. The 5-column grid
          keeps neighbors stable. */
       .stat-value.v-budget { min-width: 0; text-align: left; }
       /* low runway telegraph — reuse the existing danger red
@@ -82,6 +82,9 @@
       /* Points/Day may append " (-N%)" once debt is dragging. min-width is
          a floor for the bare number; the suffix grows the slot. */
       .stat-value.v-rate { min-width: 5ch; text-align: left; }
+      /* Idea→Value: "~Nd" or "—". Left-align like Points/Day so a tight
+         fifth column keeps the tilde visible if days grow large. */
+      .stat-value.v-eta { min-width: 5ch; text-align: left; }
       /* brief pulse when a material cockpit/delivery number
          changes. Amber underline + opacity (existing risk tone), single
          shot — presence without a new effect language. prefers-reduced-motion

@@ -20,10 +20,11 @@ export function fmt(n: number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
-// Top bar keeps the cockpit glanceables: clock, work waiting, money, and
-// throughput. Flow-stage and quality stocks live under the Delivery loop
-// (see renderDeliveryStats) so they sit next to the diagram they describe.
-// Markup is shared with gameFeel.syncStatRow (in-place flash).
+// Top bar keeps the cockpit glanceables: clock, work waiting, money,
+// throughput, and idea→value lead time. Flow-stage and quality stocks live
+// under the Delivery loop (see renderDeliveryStats) so they sit next to the
+// diagram they describe. Markup is shared with gameFeel.syncStatRow
+// (in-place flash).
 export function renderStats(state: Readonly<GameState>, content: GameContent): string {
   return statsRowHtml(cockpitStatViews(state, content), "stats");
 }

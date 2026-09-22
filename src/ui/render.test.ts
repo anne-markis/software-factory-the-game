@@ -63,7 +63,7 @@ describe("esc", () => {
 });
 
 describe("renderStats", () => {
-  // top bar keeps Day / Backlog / Budget / Points/Day only.
+  // top bar keeps Day / Backlog / Budget / Points/Day / Idea→Value.
   it("renders the top-bar stats as label + width-classed value spans (no flow/quality stocks)", () => {
     const c = content();
     const e = new Engine(c);
@@ -75,11 +75,40 @@ describe("renderStats", () => {
     expect(html).toContain('<span class="stat-label">Backlog</span> <span class="stat-value v-flow">');
     expect(html).toContain('<span class="stat-label">Budget</span> <span class="stat-value v-budget">$');
     expect(html).toContain('<span class="stat-label">Points/Day</span> <span class="stat-value v-rate">');
+    expect(html).toContain(
+      '<span class="stat" data-stat="ideaToValue"><span class="stat-label">Idea→Value</span> <span class="stat-value v-eta">',
+    );
     expect(html).not.toContain("In Progress");
     expect(html).not.toContain(">Done<");
     expect(html).not.toContain("Shipped");
     expect(html).not.toContain("Tech Debt");
     expect(html).not.toContain("Reputation");
+  });
+
+  it("shows Idea→Value as an em dash when Points/Day is 0", () => {
+    const c = content();
+    const e = new Engine(c);
+    const html = renderStats(e.getState(), c);
+    expect(html).toContain('data-stat="ideaToValue"');
+    expect(html).toContain('<span class="stat-value v-eta">—</span>');
+  });
+
+  it("shows Idea→Value as ~Nd when Points/Day is positive", () => {
+    const c = content();
+    const e = new Engine(c);
+    const state = e.getState() as import("../engine/types").GameState;
+    state.pointsPerDay = 10;
+    state.stocks.ideas = 50;
+    state.stocks.plan = 0;
+    // Fresh seed puts the initial project in Ready; pin unshipped for a
+    // stable assertion.
+    state.stocks.backlog = 50;
+    state.stocks.inProgress = 0;
+    state.stocks.inReview = 0;
+    state.stocks.done = 0;
+    const html = renderStats(state, c);
+    // 50 + 0 + 50 = 100 / 10 = 10 days
+    expect(html).toContain('<span class="stat-value v-eta">~10d</span>');
   });
 
   // Budget must telegraph runway before payroll wipe.

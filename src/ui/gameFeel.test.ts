@@ -79,7 +79,30 @@ describe("gameFeel stat flash", () => {
   it("does not put Era in the cockpit stats bar", () => {
     const content = makeContent();
     const views = cockpitStatViews(initialState(content), content);
-    expect(views.map((v) => v.label)).toEqual(["Day", "Backlog", "Budget", "Points/Day"]);
+    expect(views.map((v) => v.label)).toEqual(["Day", "Backlog", "Budget", "Points/Day", "Idea→Value"]);
+  });
+
+  it("shows Idea→Value as ~Nd from the idea pile through unshipped work", () => {
+    const content = makeContent();
+    const state = initialState(content);
+    state.pointsPerDay = 10;
+    state.stocks.ideas = 50;
+    state.stocks.plan = 20;
+    // initialState seeds 300 in Ready; keep that so the assertion is explicit.
+    expect(state.stocks.backlog).toBe(300);
+    const eta = cockpitStatViews(state, content).find((v) => v.label === "Idea→Value")!;
+    // 50 + 20 + 300 = 370 / 10 → ~37d
+    expect(eta.value).toBe("~37d");
+    expect(eta.stat).toBe("ideaToValue");
+    expect(eta.widthClass).toBe("v-eta");
+    expect(eta.material).toBe(true);
+  });
+
+  it("shows Idea→Value as an em dash when Points/Day is 0", () => {
+    const content = makeContent();
+    const state = initialState(content);
+    const eta = cockpitStatViews(state, content).find((v) => v.label === "Idea→Value")!;
+    expect(eta.value).toBe("—");
   });
 
   it("cockpit Backlog is unshipped work, not the Ready-stage stock (ADR 0009)", () => {
