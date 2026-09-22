@@ -211,7 +211,7 @@ describe("appView delivery-column stats layout", () => {
     expect(afterRate.classList.contains("debt-warn")).toBe(true);
     expect(h.root.querySelectorAll('[data-debt-drag="warn"]')).toHaveLength(4);
     expect(h.root.querySelector("[data-debt-hot]")).toBeNull();
-    expect(h.root.textContent).toContain("debt +0.5/pt");
+    expect(h.root.textContent).toContain("debt +0.2/pt");
     expect(h.root.textContent).not.toContain("slower");
     expect(h.root.querySelector(".debt-consequences")).toBeNull();
     expect(h.root.textContent).not.toContain("High tech debt");

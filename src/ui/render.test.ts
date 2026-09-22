@@ -289,7 +289,7 @@ describe("renderDecisions", () => {
     expect(ownedHtml).toContain("finish +1.0 to -1.0, review +0.7 to +0.1");
     expect(ownedHtml).toContain("Add coding agent");
     expect(ownedHtml).toContain(
-      "finish +0.2/day (+10%/human), plan +0.2/day (+10%/human), review +0.05/day, debt +0.1",
+      "finish +0.2/day (+10%/human), plan +0.2/day (+10%/human), review +0.05/day, debt +0.04",
     );
     expect(ownedHtml).toContain('data-remove=');
   });

@@ -259,7 +259,7 @@ describe("detectArchetypes", () => {
     // which would have made the shipped Studio shop archetype-blind.
     const defs = parseDecisions(decisionsJson);
     const agent = defs.find((d) => d.id === "agent")!;
-    expect(agent.effects).toContainEqual({ type: "modifyDebtMultiplier", op: "add", value: 0.1 });
+    expect(agent.effects).toContainEqual({ type: "modifyDebtMultiplier", op: "add", value: 0.04 });
     const c = content();
     const s = initialState(c);
     s.decisions.push({ instanceId: "i-a", defId: "agent" }, { instanceId: "i-b", defId: "agent" });

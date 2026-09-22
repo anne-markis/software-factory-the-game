@@ -123,7 +123,7 @@ describe("summarizeDecisionEffects", () => {
     const decisions = parseDecisions(decisionsJson);
     const agent = decisions.find((d) => d.id === "agent")!;
     expect(summarizeDecisionEffects(agent)).toBe(
-      "finish +0.2/day (+10%/human), plan +0.2/day (+10%/human), review +0.05/day, debt +0.1",
+      "finish +0.2/day (+10%/human), plan +0.2/day (+10%/human), review +0.05/day, debt +0.04",
     );
     const harness = decisions.find((d) => d.id === "agent-harness")!;
     expect(summarizeDecisionEffects(harness)).toBe("finish x1.25, plan x1.25, debt x0.7");

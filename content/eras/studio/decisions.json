@@ -130,7 +130,7 @@
       {
         "type": "modifyDebtMultiplier",
         "op": "add",
-        "value": 0.1
+        "value": 0.04
       }
     ],
     "removable": true

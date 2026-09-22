@@ -85,7 +85,7 @@ describe("simulation", () => {
   // bump when the beta completes. Challenges are stripped to isolate this.
   //
   // Tech-debt drag never engages here: the beta is only 300 points, so idle
-  // ships at most ~150 techDebt (0.5/pt) before the pipeline empties -- far
+  // ships at most ~60 techDebt (0.2/pt) before the pipeline empties -- far
   // below the freeDebt 400 grace band -- and payout is $0 anyway, so even if
   // it did drag, it could not move the budget. Hence the exact linear pins.
   //

@@ -72,9 +72,9 @@ describe("tick", () => {
     const e = new Engine(testContent());
     e.tick();
     e.tick();
-    e.tick(); // one point shipped (first ship is day 3), debt multiplier 0.5
+    e.tick(); // one point shipped (first ship is day 3), debt multiplier 0.2
     const s = e.getState();
-    expect(s.stocks.techDebt).toBe(0.5);
+    expect(s.stocks.techDebt).toBe(0.2);
     expect(s.completedProjects).toBe(0);
     expect(s.stocks.backlog).toBe(296);
   });
@@ -92,7 +92,7 @@ describe("tick", () => {
     g.stocks.done = 10;
     g.completedProjects = 0; // gate closed
     gated.tick();
-    expect(gated.getState().stocks.techDebt).toBeCloseTo(0.5, 10); // debt still accrues
+    expect(gated.getState().stocks.techDebt).toBeCloseTo(0.2, 10); // debt still accrues
     expect(gated.getState().stocks.backlog).toBe(0); // ...but no refill while gate is closed
 
     const open = new Engine(testContent());
@@ -102,7 +102,7 @@ describe("tick", () => {
     o.stocks.done = 10;
     o.completedProjects = 1; // gate open
     open.tick();
-    expect(open.getState().stocks.backlog).toBeCloseTo(0.5, 10); // debt gain refilled the backlog
+    expect(open.getState().stocks.backlog).toBeCloseTo(0.2, 10); // debt gain refilled the backlog
   });
 
   // Studio spine: the Launch beta is a $0-ish client fiction --
@@ -963,8 +963,8 @@ describe("tick", () => {
       s.stocks.done = 10;
       s.stocks.ideas = 100;
       e.tick();
-      // Deploy 1 of the 10 Done; debt multiplier 0.5 -> 0.5 refilled into Ready.
-      expect(e.getState().stocks.backlog).toBeCloseTo(0.5, 10);
+      // Deploy 1 of the 10 Done; debt multiplier 0.2 -> 0.2 refilled into Ready.
+      expect(e.getState().stocks.backlog).toBeCloseTo(0.2, 10);
       expect(e.getState().stocks.ideas).toBeCloseTo(100.5, 10);
     });
 

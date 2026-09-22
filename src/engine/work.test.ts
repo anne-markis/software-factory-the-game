@@ -139,9 +139,9 @@ describe("work ledger (ADR 0009)", () => {
     s.stocks.done = 10;
     s.projects[0]!.remaining = 10; // in sync with the pipeline
     e.tick();
-    // Deploy 1: remaining 9, then 0.5 debt attaches onto the same contract.
-    expect(e.getState().projects[0]!.remaining).toBeCloseTo(9.5, 10);
-    expect(unshippedWork(e.getState())).toBeCloseTo(9.5, 10);
+    // Deploy 1: remaining 9, then 0.2 debt attaches onto the same contract.
+    expect(e.getState().projects[0]!.remaining).toBeCloseTo(9.2, 10);
+    expect(unshippedWork(e.getState())).toBeCloseTo(9.2, 10);
   });
 
   it("scope creep on an in-flight project grows remaining, so extra work delays completion", () => {
