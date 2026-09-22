@@ -279,3 +279,90 @@ describe("Pursue, Plan, Cancel, auto-Ready", () => {
     expect(() => e.cancelPlan("plan-a")).toThrow(/not in plan/i);
   });
 });
+
+const UNIQUE_V1 = sized({
+  id: "ship-next",
+  name: "Ship next",
+  sizePoints: 400,
+  pursue: true,
+  unique: true,
+  requiresCompletedId: "launch-beta",
+});
+const OPTIONAL_PURSUE = sized({
+  id: "optional-refactor",
+  name: "Optional refactor",
+  sizePoints: 1000,
+  pursue: true,
+  ideaCost: 200,
+});
+
+describe("auto-pursue unique offers", () => {
+  it("queues a unique Pursue into Plan once the predecessor is done and Ideas suffice", () => {
+    const e = new Engine(content([UNIQUE_V1], { ideas: 400 }));
+    const s = e.getState() as GameState;
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.budget = 0;
+    e.tick();
+    const after = e.getState();
+    expect(after.plan).toHaveLength(1);
+    expect(after.plan[0]).toMatchObject({ defId: "ship-next", progress: 1, size: 400 });
+    // Discover +0.5 then spend 400 from the 400.5 wallet.
+    expect(after.stocks.ideas).toBeCloseTo(0.5, 10);
+    expect(after.log.some((l) => l.message.startsWith("Pursuing: Ship next"))).toBe(true);
+  });
+
+  it("does not auto-pursue unique work before its predecessor completes", () => {
+    const e = new Engine(content([UNIQUE_V1], { ideas: 400 }));
+    e.tick();
+    expect(e.getState().plan).toEqual([]);
+    expect(e.getState().stocks.ideas).toBeCloseTo(400.5, 10);
+  });
+
+  it("does not auto-pursue a repeatable Pursue during the first project", () => {
+    const e = new Engine(content([OPTIONAL_PURSUE], { ideas: 250 }));
+    e.tick();
+    expect(e.getState().plan).toEqual([]);
+    expect(e.getState().stocks.ideas).toBeCloseTo(250.5, 10);
+  });
+
+  it("does not re-queue a unique the player Cancelled, and a later manual Pursue still works", () => {
+    const e = new Engine(content([UNIQUE_V1], { ideas: 800 }));
+    const s0 = e.getState() as GameState;
+    s0.completedProjects = 1;
+    s0.completedProjectIds = ["launch-beta"];
+    s0.stocks.budget = 0;
+    e.tick();
+    expect(e.getState().plan.map((p) => p.defId)).toEqual(["ship-next"]);
+    e.cancelPlan("ship-next");
+    expect(e.getState().plan).toEqual([]);
+    expect(e.getState().declinedPlanIds).toEqual(["ship-next"]);
+
+    e.tick();
+    expect(e.getState().plan).toEqual([]);
+
+    e.pursueProject("ship-next");
+    expect(e.getState().plan.map((p) => p.defId)).toEqual(["ship-next"]);
+    expect(e.getState().declinedPlanIds).toEqual([]);
+  });
+
+  it("does not branch on eraId when auto-pursuing", () => {
+    const src = readFileSync(join(__dirname, "tick.ts"), "utf-8");
+    expect(src).not.toMatch(/\beraId\b/);
+
+    const studio = new Engine(content([UNIQUE_V1], { ideas: 400 }));
+    const other = new Engine(content([UNIQUE_V1], { ideas: 400 }));
+    for (const e of [studio, other]) {
+      const s = e.getState() as GameState;
+      s.completedProjects = 1;
+      s.completedProjectIds = ["launch-beta"];
+      s.stocks.budget = 0;
+    }
+    (other.getState() as GameState).eraId = "company";
+    studio.tick();
+    other.tick();
+    expect(other.getState().plan[0]?.defId).toBe("ship-next");
+    expect(studio.getState().plan[0]?.defId).toBe("ship-next");
+    expect(other.getState().plan[0]!.progress).toBeCloseTo(studio.getState().plan[0]!.progress, 10);
+  });
+});

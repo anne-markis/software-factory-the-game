@@ -51,6 +51,7 @@ export function initialState(content: GameContent): GameState {
       },
     ],
     plan: [],
+    declinedPlanIds: [],
     completedProjects: 0,
     completedProjectIds: [],
     pendingChoices: [],
@@ -128,6 +129,9 @@ export class Engine {
       }
       if (restored.plan === undefined) {
         restored.plan = [];
+      }
+      if (restored.declinedPlanIds === undefined) {
+        restored.declinedPlanIds = [];
       }
       if (restored.baseRates.ktlo === undefined) {
         restored.baseRates.ktlo = 0;

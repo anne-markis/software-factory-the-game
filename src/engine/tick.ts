@@ -14,7 +14,7 @@ import { continuousDeployActive } from "./continuousDeploy";
 import { detectArchetypes } from "./archetypes";
 import { detectMilestones } from "./milestones";
 import { attachInjectedWork, committedWork, unshippedWork } from "./work";
-import { advancePlan } from "./projects";
+import { advancePlan, autoPursue } from "./projects";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { ktloBurnPerDay, productFinishRate, syncKtloBase } from "./ktlo";
 import { applyEffects, clampStock } from "./effects";
@@ -383,6 +383,10 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   // Ideas faucet: always-on from day 0, not a pipeline stage, not frozen
   // with delivery. Shop cards raise it via modifyRate add on discover.
   state.stocks.ideas = Math.max(0, state.stocks.ideas + effectiveRate(state, "discover"));
+  // Unique Pursue offers spend today's Ideas into Plan (the Ideas→Plan
+  // fill). Same-tick discover can unlock a pursue. AdvancePlan still runs
+  // later so a newly queued item can fill today.
+  autoPursue(state, content);
 
   // Downstream first: ship Done, then review into Done, then finish into
   // In Review. Speed (finishRate) is how much leaves the Ready+In Progress

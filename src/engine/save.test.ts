@@ -222,6 +222,21 @@ describe("save/load", () => {
     expect(b.getState().baseRates.plan).toBe(c.start.baseRates.plan);
   });
 
+  it("round-trips declinedPlanIds and Engine backfills a missing list", () => {
+    const c = content();
+    const a = new Engine(c);
+    (a.getState() as GameState).declinedPlanIds = ["ship-v1"];
+    const restored = deserialize(serialize(a.getState()));
+    expect(restored.declinedPlanIds).toEqual(["ship-v1"]);
+
+    const raw = JSON.parse(serialize(a.getState()));
+    delete raw.state.declinedPlanIds;
+    const missing = deserialize(JSON.stringify(raw));
+    expect(missing.declinedPlanIds).toEqual([]);
+    const b = new Engine(c, missing);
+    expect(b.getState().declinedPlanIds).toEqual([]);
+  });
+
   // Release-7 bug fix: main.ts only autosaved every 10 days, so the paused
   // flag (part of saved state) was usually stale on reload and the game
   // would un-pause itself. The fix is event-driven saving in the UI layer

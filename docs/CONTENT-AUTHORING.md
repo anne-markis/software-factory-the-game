@@ -187,7 +187,9 @@ Shape: `projectSchema`. The starting contract is `start.json`
   `validateContentGraph`. Prefer this when optional gigs must not skip a
   sequence.
 - `unique` — cannot start again after completion. Omit for repeatable
-  gigs.
+  gigs. Unique **and** Pursue: the tick auto-enters Plan once the offer is
+  legal and Ideas/money suffice (Studio Ship v1–v5). Repeatable Pursue
+  stays a player click.
 - `pursue` — optional boolean, same style as `unique`. `true` is
   **Pursue** (spend Ideas = `sizePoints`, enter Plan). Omit or `false`
   is **Start** (no Ideas spend, write Ready immediately). Default Start
@@ -221,7 +223,8 @@ Shape: `projectSchema`. The starting contract is `start.json`
   reputation, or grants. Uniques that were not completed can start again.
 - Cancel — drops a **Plan** item. That item's Plan progress is discarded,
   not refunded to Ideas. Other Plan items and in-flight remaining are
-  untouched. Different from Abandon.
+  untouched. Different from Abandon. A cancelled unique is not auto-queued
+  again; a later manual Pursue still works.
 
 Availability order: in-flight → already in plan → unique already-completed
 → count floor → specific id → reputation → afford

@@ -21,9 +21,10 @@ export interface Stocks {
   // band it also applies a support drag on delivery rates (start.stockDrags).
   // Clamped at 0 like every other stock.
   users: number;
-  // Ideas: the idea-to-value pile. Seeded at 100 and filled by the
-  // discover rate from day 0. Not a pipeline stage (tech-debt regen still
-  // refills Ready). Clamped at 0 like every other stock.
+  // Ideas: discover-faucet wallet. Seeded at 100 and filled by the
+  // discover rate from day 0. Unique Pursue offers auto-spend from this
+  // pile into Plan; leftover Ideas are not in the Idea→Value clock.
+  // Not a pipeline stage (tech-debt regen still refills Ready). Clamped at 0.
   ideas: number;
   // Plan: sum of named Plan-item progress. Not a pipeline stage (tech-debt
   // regen still refills Ready). Seeded at 0; filled at the plan rate while
@@ -298,7 +299,8 @@ export interface ContractProjectDef {
   unique?: boolean;
   // When true, the offer is Pursue (spend Ideas, enter Plan). Omit or false
   // is Start (no Ideas spend, write Ready immediately). Default must stay
-  // Start so inherited gigs do not silently Pursue.
+  // Start so inherited gigs do not silently Pursue. Unique Pursue offers
+  // auto-enter Plan once legal; repeatable Pursue stays a player click.
   pursue?: boolean;
   // Ideas spent on Pursue. Independent of sizePoints (effort / Plan size).
   // Omit on a Pursue offer to spend sizePoints, matching older catalog cards
@@ -573,9 +575,14 @@ export interface GameState {
   decisions: DecisionInstance[];
   projects: ActiveProject[];
   // Named Plan items (Pursue → Plan → auto-Ready). Empty means the 1/day
-  // plan capacity is unused. Legacy saves predate the field; Engine
-  // backfills [] (and stocks.plan / baseRates.plan from content).
+  // plan capacity is unused. Unique Pursue offers auto-enter here once
+  // legal. Legacy saves predate the field; Engine backfills [] (and
+  // stocks.plan / baseRates.plan from content).
   plan: PlanItem[];
+  // Unique Pursue ids the player Cancelled. Auto-pursue skips these so a
+  // Cancel is not re-queued next tick. Manual Pursue still works and
+  // clears the id. Legacy saves predate the field; backfill [].
+  declinedPlanIds: string[];
   completedProjects: number;
   // Ids of projects that have ever completed this game (the start project
   // plus catalog defs). Used by requiresCompletedId and unique. Counted

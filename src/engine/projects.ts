@@ -25,6 +25,20 @@ export function planStock(state: Pick<GameState, "plan">): number {
   return (state.plan ?? []).reduce((sum, p) => sum + p.progress, 0);
 }
 
+/** Full sizes of named Plan items (unfilled remainder plus filled progress). */
+export function planCommittedWork(state: Pick<GameState, "plan">): number {
+  return (state.plan ?? []).reduce((sum, p) => sum + p.size, 0);
+}
+
+function declinedPlanIds(state: GameState): string[] {
+  if (!state.declinedPlanIds) state.declinedPlanIds = [];
+  return state.declinedPlanIds;
+}
+
+function isAutoPursue(def: ContractProjectDef): boolean {
+  return def.pursue === true && def.unique === true;
+}
+
 function syncPlanStock(state: GameState): void {
   state.stocks.plan = planStock(state);
 }
@@ -130,6 +144,7 @@ export function pursueProject(state: GameState, content: GameContent, defId: str
   }
   state.stocks.ideas -= ideas;
   state.stocks.budget -= def.upfrontCost;
+  state.declinedPlanIds = declinedPlanIds(state).filter((id) => id !== def.id);
   planItems(state).push({
     defId: def.id,
     name: def.name,
@@ -138,6 +153,21 @@ export function pursueProject(state: GameState, content: GameContent, defId: str
   });
   syncPlanStock(state);
   log(state, `Pursuing: ${def.name} (−${ideas} ideas, −$${def.upfrontCost})`);
+}
+
+/**
+ * Unique Pursue offers enter Plan without a click once they are legal and
+ * Ideas/money suffice. Repeatable Pursue (refactors, later-era gigs) stays
+ * player-chosen so the opening factory does not dump optional work onto
+ * the first contract. Cancelled uniques are not re-queued; a later manual
+ * Pursue still works.
+ */
+export function autoPursue(state: GameState, content: GameContent): void {
+  for (const entry of projectAvailability(state, content)) {
+    if (!entry.startable || !isAutoPursue(entry.def)) continue;
+    if (declinedPlanIds(state).includes(entry.def.id)) continue;
+    pursueProject(state, content, entry.def.id);
+  }
 }
 
 export function takeProject(state: GameState, content: GameContent, defId: string): void {
@@ -153,6 +183,7 @@ export function cancelPlan(state: GameState, defId: string): void {
   if (idx < 0) throw new Error(`${defId} is not in plan`);
   const item = items[idx]!;
   items.splice(idx, 1);
+  if (!declinedPlanIds(state).includes(defId)) declinedPlanIds(state).push(defId);
   syncPlanStock(state);
   log(state, `Cancelled plan: ${item.name} (${item.progress} progress discarded)`);
 }

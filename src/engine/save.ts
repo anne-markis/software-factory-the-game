@@ -136,6 +136,9 @@ export function deserialize(json: string): GameState {
   if (state.plan === undefined) {
     state.plan = [];
   }
+  if (state.declinedPlanIds === undefined) {
+    state.declinedPlanIds = [];
+  }
   // Defensive default for the users stock. The SAVE_VERSION bumps
   // mean genuine pre-v2 saves are rejected before reaching here, so this only
   // guards hand-built or in-flight current-version states missing the field: 0

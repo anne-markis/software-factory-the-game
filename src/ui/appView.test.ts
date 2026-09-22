@@ -827,6 +827,20 @@ describe("appView click delegation on the stable root", () => {
     expect(h.actions).toBe(1);
   });
 
+  it("auto-pursues Ship v1 into Plan on the next tick once Launch beta is done and Ideas suffice", () => {
+    const h = mount();
+    const s = h.engine.getState() as GameState;
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.ideas = 400;
+    s.stocks.budget = 0;
+    h.engine.tick();
+    h.view.render();
+    expect(h.engine.getState().plan.some((p) => p.defId === "ship-v1")).toBe(true);
+    expect(h.root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("Ship v1");
+    expect(h.root.querySelector('[data-project="ship-v1"]')).toBeNull();
+  });
+
   it("starts a Start gig while Plan is filling", () => {
     const h = mount();
     const s = h.engine.getState() as GameState;

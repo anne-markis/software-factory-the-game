@@ -545,6 +545,17 @@ describe("Start vs Pursue offers", () => {
     expect(ready.reason).toBeUndefined();
   });
 
+  it("auto-pursues Ship v1 from the Studio catalog once Launch beta is done", () => {
+    const e = new Engine(content({ ideas: 400 }));
+    const s = e.getState() as GameState;
+    s.completedProjects = 1;
+    s.completedProjectIds = ["launch-beta"];
+    s.stocks.budget = 0;
+    e.tick();
+    expect(e.getState().plan.some((p) => p.defId === "ship-v1")).toBe(true);
+    expect(e.getState().plan.some((p) => p.defId === "large-refactor")).toBe(false);
+  });
+
   it("Start still works on Back-burner feature while something is in Plan", () => {
     const e = new Engine(content({ ideas: 200 }));
     e.pursueProject("large-refactor");
