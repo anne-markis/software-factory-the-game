@@ -86,7 +86,7 @@ describe("budgetRunwayDays", () => {
     const c = content();
     const e = new Engine(c);
     const days = budgetRunwayDays(e.getState(), c);
-    expect(days).toBe(500); // 10000 / 20
+    expect(days).toBe(1250); // 25000 / 20
     expect(days!).toBeGreaterThan(RUNWAY_WARN_DAYS);
   });
 });

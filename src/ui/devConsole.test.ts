@@ -85,7 +85,7 @@ describe("cheat mutators (ledger-safe)", () => {
     const e = new Engine(loadShippedContent());
     const snap = peekCheats(e.getState());
     expect(snap.era).toBe("studio");
-    expect(snap.budget).toBe(10000);
+    expect(snap.budget).toBe(25000);
     expect(snap.unshipped).toBe(300);
     expect(snap.remaining[0]).toEqual({ name: "Launch beta", points: 300 });
   });
@@ -137,7 +137,7 @@ describe("installDevConsole", () => {
     const e = new Engine(loadShippedContent());
     let saves = 0;
     installDevConsole({ engine: e, render: () => {}, save: () => { saves++; } });
-    expect(window.sf!.budget()).toBe(10000);
+    expect(window.sf!.budget()).toBe(25000);
     expect(window.sf!.points()).toBe(300);
     expect(window.sf!.era()).toBe("studio");
     expect(saves).toBe(0);

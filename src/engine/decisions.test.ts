@@ -15,7 +15,7 @@ describe("decisions", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
     const s = e.getState();
-    expect(s.stocks.budget).toBe(9500);
+    expect(s.stocks.budget).toBe(24500);
     // test-suite's setup slowdown halves every rate: base pull 2 -> 1, finish 1 -> 0.5.
     expect(effectiveRate(s, "pull")).toBe(1);
     expect(effectiveRate(s, "finish")).toBe(0.5);

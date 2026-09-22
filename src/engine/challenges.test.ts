@@ -94,7 +94,7 @@ describe("rollChallenges", () => {
     s.day = 149;
     expect(hashRoll(SEED, 149, "runaway-agent-loop")).toBeLessThan(0.008);
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(10000);
+    expect(s.stocks.budget).toBe(25000);
   });
 
   it("does not put Production incident in the Studio pool", () => {
@@ -105,7 +105,7 @@ describe("rollChallenges", () => {
     s.day = 26;
     expect(hashRoll(SEED, 26, "prod-incident")).toBeLessThan(0.01);
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(10000);
+    expect(s.stocks.budget).toBe(25000);
     expect(s.log.some((l) => l.message.includes("Production incident"))).toBe(false);
   });
 
@@ -318,13 +318,13 @@ describe("rollChallenges", () => {
     low.day = 20;
     low.stocks.techDebt = 0;
     rollChallenges(low, noRng, c);
-    expect(low.stocks.budget).toBe(10000); // p 0: never
+    expect(low.stocks.budget).toBe(25000); // p 0: never
 
     const high = initialState(c);
     high.day = 20;
     high.stocks.techDebt = 1000;
     rollChallenges(high, noRng, c);
-    expect(high.stocks.budget).toBe(9900); // p 1.0: always
+    expect(high.stocks.budget).toBe(24900); // p 1.0: always
   });
 
   it("reports debt-scaled challenge odds only when conditions hold", () => {
@@ -370,7 +370,7 @@ describe("rollChallenges", () => {
     rollChallenges(s, noRng, c);
     expect(s.pendingChoices).toHaveLength(1);
     expect(s.pendingChoices[0].expiresDay).toBe(23); // day 20 + expiresInDays 3
-    expect(s.stocks.budget).toBe(10000); // nothing applied yet
+    expect(s.stocks.budget).toBe(25000); // nothing applied yet
 
     s.day = 23;
     rollChallenges(s, noRng, c); // expiry pass runs first, applies the default
@@ -400,7 +400,7 @@ describe("rollChallenges", () => {
     const s = initialState(c);
     s.pendingChoices.push({ challengeId: "fixture-choice", expiresDay: 10 });
     resolveChoice(s, c, "fixture-choice", "pay");
-    expect(s.stocks.budget).toBe(9700); // 10000 - 300
+    expect(s.stocks.budget).toBe(24700); // 25000 - 300
     expect(s.pendingChoices).toHaveLength(0);
   });
 
@@ -426,7 +426,7 @@ describe("rollChallenges", () => {
     const s = initialState(c);
     s.pendingChoices.push({ challengeId: "fixture-choice", expiresDay: 10 });
     resolveChoice(s, c, "fixture-choice", "degrade");
-    expect(s.stocks.budget).toBe(10000); // no cash paid
+    expect(s.stocks.budget).toBe(25000); // no cash paid
     expect(s.modifiers.some((m) => m.target === "finish" && m.op === "mul" && m.value === 0.7)).toBe(true);
   });
 
@@ -620,8 +620,8 @@ describe("rollChallenges", () => {
     const a = run([original]);
     const b = run([extra, original]);
 
-    expect(a.budget).toBe(9900); // chalX fired: -100
-    expect(b.budget).toBe(9900); // identical despite the inserted challenge
+    expect(a.budget).toBe(24900); // chalX fired: -100
+    expect(b.budget).toBe(24900); // identical despite the inserted challenge
     expect(a.rngAdvanced).toBe(false); // challenge phase never advances the shared stream
     expect(b.rngAdvanced).toBe(false);
   });
@@ -702,18 +702,18 @@ describe("challenge cooldowns", () => {
 
     s.day = 20;
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9990);
+    expect(s.stocks.budget).toBe(24990);
     expect(s.challengeLastFired["test-cooldown"]).toBe(20);
 
     for (let day = 21; day <= 24; day++) {
       s.day = day;
       rollChallenges(s, noRng, c);
-      expect(s.stocks.budget).toBe(9990); // unchanged: still cooling down
+      expect(s.stocks.budget).toBe(24990); // unchanged: still cooling down
     }
 
     s.day = 25;
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9980);
+    expect(s.stocks.budget).toBe(24980);
     expect(s.challengeLastFired["test-cooldown"]).toBe(25);
   });
 
@@ -748,7 +748,7 @@ describe("challenge cooldowns", () => {
     expect(s.challengeLastFired["test-choice-cooldown"]).toBeUndefined();
 
     resolveChoice(s, c, "test-choice-cooldown", "opt-a");
-    expect(s.stocks.budget).toBe(9990);
+    expect(s.stocks.budget).toBe(24990);
     expect(s.challengeLastFired["test-choice-cooldown"]).toBe(20); // resolution starts the clock
 
     for (let day = 21; day <= 23; day++) {
@@ -794,7 +794,7 @@ describe("challenge cooldowns", () => {
     s.day = 23;
     rollChallenges(s, noRng, c); // expiry pass applies the default, then the per-def loop is now cooling down
     expect(s.pendingChoices).toHaveLength(0);
-    expect(s.stocks.budget).toBe(9980);
+    expect(s.stocks.budget).toBe(24980);
     expect(s.challengeLastFired["test-choice-expiry-cooldown"]).toBe(23); // clock starts at the expiry day
 
     s.day = 26; // 26 < 23 + 4
@@ -845,21 +845,21 @@ describe("global event spacing (challengeSpacingDays)", () => {
 
     s.day = 20;
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9900); // challengeA fired
+    expect(s.stocks.budget).toBe(24900); // challengeA fired
     expect(s.stocks.backlog).toBe(300); // challengeB never got a turn: same-tick break (Studio start backlog 300)
     expect(s.lastChallengeDay).toBe(20);
 
     for (let day = 21; day <= 29; day++) {
       s.day = day;
       rollChallenges(s, noRng, c);
-      expect(s.stocks.budget).toBe(9900); // gap active: no challenge rolled at all
+      expect(s.stocks.budget).toBe(24900); // gap active: no challenge rolled at all
       expect(s.stocks.backlog).toBe(300);
       expect(s.lastChallengeDay).toBe(20); // untouched while the gap holds
     }
 
     s.day = 30;
     rollChallenges(s, noRng, c); // day 30 >= lastChallengeDay(20) + spacingDays(10): gap clears
-    expect(s.stocks.budget).toBe(9800); // challengeA fires again
+    expect(s.stocks.budget).toBe(24800); // challengeA fires again
     expect(s.lastChallengeDay).toBe(30);
   });
 
@@ -897,7 +897,7 @@ describe("global event spacing (challengeSpacingDays)", () => {
     s.day = 23; // inside the gap (23 < 20 + 10)
     rollChallenges(s, noRng, c); // expiry pass runs regardless of the gap
     expect(s.pendingChoices).toHaveLength(0);
-    expect(s.stocks.budget).toBe(9700); // default applied: -300
+    expect(s.stocks.budget).toBe(24700); // default applied: -300
     expect(s.lastChallengeDay).toBe(20); // expiry-default does NOT reset the gap
 
     for (let day = 24; day <= 29; day++) {
@@ -924,13 +924,13 @@ describe("global event spacing (challengeSpacingDays)", () => {
 
     s.day = 20;
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9900); // challengeA fired
+    expect(s.stocks.budget).toBe(24900); // challengeA fired
     expect(s.stocks.backlog).toBe(350); // challengeB ALSO fired: no break when spacing is 0 (Studio start backlog 300)
     expect(s.lastChallengeDay).toBe(20); // still tracked even though it's inert at spacing 0
 
     s.day = 21; // day after a fire: would be blocked at spacing > 0, but 0 disables the gap
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9800); // fires again immediately, same as pre-Release-9 behavior
+    expect(s.stocks.budget).toBe(24800); // fires again immediately, same as pre-Release-9 behavior
   });
 });
 
@@ -962,7 +962,7 @@ describe("lacksDecision condition", () => {
     const s = initialState(c);
     s.day = 20;
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9950);
+    expect(s.stocks.budget).toBe(24950);
   });
 
   it("never rolls once the decision is owned", () => {
@@ -973,9 +973,9 @@ describe("lacksDecision condition", () => {
       projects: [],
     };
     const s = initialState(c);
-    applyDecision(s, c, "agent", createRng(1)); // $10 oneTime cost: budget -> 9990
+    applyDecision(s, c, "agent", createRng(1)); // $10 oneTime cost: budget -> 24990
     s.day = 20;
     rollChallenges(s, noRng, c);
-    expect(s.stocks.budget).toBe(9990); // unchanged by the challenge: condition gates it out entirely
+    expect(s.stocks.budget).toBe(24990); // unchanged by the challenge: condition gates it out entirely
   });
 });

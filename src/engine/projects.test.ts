@@ -24,7 +24,7 @@ describe("projects", () => {
     const e = new Engine(content());
     e.startProject("gig-landing-page");
     const s = e.getState();
-    expect(s.stocks.budget).toBe(7000); // Back-burner feature charges $3,000 upfront
+    expect(s.stocks.budget).toBe(22000); // Back-burner feature charges $3,000 upfront
     expect(s.stocks.backlog).toBe(450); // Studio start backlog 300 + landing page 150
     expect(s.projects).toHaveLength(2);
   });
