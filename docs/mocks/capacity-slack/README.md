@@ -7,9 +7,9 @@ wired to the engine.
 shipping the same amount. The arrows print realized flow, so unused
 review capacity does not move a number that reads as output.
 
-**KTLO:** Keep the lights on does not take a seat. The project stays
-open, and that is what drags In Progress (−0.5 finish/day). The seat
-count on the box is only seats.
+**KTLO:** Keep the lights on does not take a seat. Its finish drag
+(−0.5/day) is in the open In Progress panel, with cycle speed and leak,
+not on the arrow.
 
 This folder is **one mock**. The steppers redraw the same snapshot two
 ways: **Today** and **Slack visible**. They open with review at 4.0/day
@@ -25,9 +25,8 @@ still tints the flow arrows amber. The dashed return is still
 `debt +0.3/pt`.
 
 Above the diagrams, Keep the lights on is an always-open project row.
-It is On, it cannot be read as a seat, and it names the −0.5/day drag.
-The same drag sits under the In Progress → In Review arrow. The In
-Progress box is labeled with the project name, not with a seat hold.
+It is On, and it does not take a seat. The −0.5/day drag is not drawn
+on the arrow.
 
 **Today** shows the open-seat stock and realized flow. A matched line
 reads 2.1/day on every arrow.

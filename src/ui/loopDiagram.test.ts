@@ -12,7 +12,7 @@ import { Engine, initialState } from "../engine/engine";
 import { tick } from "../engine/tick";
 import { createRng } from "../engine/rng";
 import { parseStartConfig, parseDecisions } from "../engine/content";
-import { decisionsJson, startJson } from "../engine/loadShippedContent";
+import { decisionsJson, loadShippedContent, startJson } from "../engine/loadShippedContent";
 import type { GameContent, GameState } from "../engine/types";
 
 function emptyContent(): GameContent {
@@ -176,6 +176,13 @@ describe("loopDiagramSvg", () => {
     expect(stageRate(svg, "ideas")).toBe("0.5/day");
     expect(stageRate(svg, "plan")).toBe("1.0/day");
     expect(svg.match(/<line /g)).toHaveLength(5); // Ideas→Plan, Plan→Ready, pull, finish, review
+  });
+
+  it("leaves the KTLO finish drag off the arrow", () => {
+    const content = loadShippedContent("company");
+    const svg = loopDiagramSvg(initialState(content), content);
+    expect(svg).not.toContain("data-ktlo-rate");
+    expect(svg).not.toContain("KTLO");
   });
 
   it("routes the dashed debt path to Ready, not Ideas", () => {

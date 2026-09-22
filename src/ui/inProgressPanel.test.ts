@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { renderStageZoom } from "./inProgressPanel";
 import { Engine } from "../engine/engine";
 import { parseStartConfig, parseDecisions } from "../engine/content";
-import { decisionsJson, startJson } from "../engine/loadShippedContent";
+import { decisionsJson, loadShippedContent, startJson } from "../engine/loadShippedContent";
 import type { GameContent } from "../engine/types";
 
 function content(): GameContent {
@@ -325,6 +325,16 @@ describe("renderStageZoom", () => {
     e.applyDecision("ci-cd");
     const afterCiCd = panel(e.getState(), c, "inReview");
     expect(afterCiCd).toContain('data-buy="agent-ci-review"');
+  });
+
+  it("puts the KTLO finish drag in Cycle speed, beside Leak size", () => {
+    const c = loadShippedContent("company");
+    const e = new Engine(c);
+    const html = panel(e.getState(), c);
+    expect(inSpeedGroup(html, "KTLO reserved -0.5/day")).toBe(true);
+    expect(inSpeedGroup(html, "Contracts")).toBe(true);
+    expect(html).toContain("Leak size");
+    expect(html).not.toContain("KTLO holds");
   });
 });
 

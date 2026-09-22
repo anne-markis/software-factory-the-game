@@ -60,7 +60,7 @@
   <body>
     <h1>Capacity slack</h1>
     <p class="lede">
-      Keep the lights on does not take a seat. It stays open, and that open project is what drags In Progress: −0.5/day of finish, on the arrow under the stage. The seat count is only seats. Review starts at 4.0/day so unused review capacity is on the slack drawing. Shipping math in this picture is unchanged.
+      Keep the lights on does not take a seat. The −0.5/day finish drag is in the open In Progress panel, with cycle speed and leak, not on the arrow. Review starts at 4.0/day so unused review capacity is on the slack drawing. Shipping math in this picture is unchanged.
     </p>
     <div class="panel">
       <div class="proj-row">
@@ -197,7 +197,7 @@
         const reviewLines = [{ text: fmt(pic.inReview) }];
         const shippedLines = [{ text: fmt(SHIPPED) }];
         const progressLines = [{ text: fmt(state.seats) }];
-        const progressNote = `<text x="${stageX(1) + BOX_W / 2}" y="${Y + BOX_H + 16}" text-anchor="middle" font-size="11" font-style="italic" fill="var(--chip-users)">Keep the lights on</text>`;
+        const progressNote = "";
 
         const boundNote = pic.bound
           ? `<text x="${stageX(2) + BOX_W / 2}" y="${Y + BOX_H + 16}" text-anchor="middle" font-size="11" font-style="italic" fill="currentColor">capacity-bound</text>`
@@ -213,10 +213,7 @@
         const markerPrefix = slackMode ? "prop" : "today";
         const arrows = [
           arrow(stageX(0) + BOX_W, stageX(1), pic.finishFlow, pic.finishFlow, false, null, markerPrefix),
-          arrow(stageX(1) + BOX_W, stageX(2), pic.finishFlow, state.finish, slackMode, {
-            text: `−${rate(KTLO_DRAG)}/day`,
-            color: "var(--chip-users)",
-          }, markerPrefix),
+          arrow(stageX(1) + BOX_W, stageX(2), pic.finishFlow, state.finish, slackMode, null, markerPrefix),
           arrow(stageX(2) + BOX_W, stageX(3), pic.reviewFlow, state.review, slackMode, {
             text: "continuous deploy",
             color: "currentColor",

@@ -252,7 +252,6 @@ function deliveryLoop(
   const contentWidth = stages.length * BOX_W + (stages.length - 1) * GAP;
   const x0 = (VIEW_W - contentWidth) / 2;
   const dragTone = debtConsequenceTone(state);
-  const ktloRate = effectiveRate(state, "ktlo");
 
   const boxes = stages
     .map((stage, i) => {
@@ -284,12 +283,7 @@ function deliveryLoop(
           ? `
       <text x="${(x1 + x2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic" fill="currentColor">continuous deploy</text>`
           : "";
-      const ktloCaption =
-        flow === "finish" && ktloRate > 0
-          ? `
-      <text x="${(x1 + x2) / 2}" y="${Y + BOX_H / 2 + 16}" text-anchor="middle" font-size="10" font-style="italic" fill="var(--chip-users)" data-ktlo-rate="true">KTLO ${fmtRate(ktloRate)}</text>`
-          : "";
-      return arrow(x1, x2, label, bindingOutflow, flowDrag) + cdCaption + ktloCaption;
+      return arrow(x1, x2, label, bindingOutflow, flowDrag) + cdCaption;
     })
     .join("");
 
