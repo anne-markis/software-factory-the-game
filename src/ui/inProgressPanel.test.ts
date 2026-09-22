@@ -56,7 +56,7 @@ describe("renderStageZoom", () => {
     expect(svg).toContain("Capacity");
     expect(svg).toContain("Cycle speed");
     expect(svg).toContain("Base 1.0/day");
-    expect(svg).toContain("Base x0.5");
+    expect(svg).toContain("Base x0.2");
     expect(svg).not.toContain("The inner system's pace sets outer throughput");
     expect(svg).not.toContain("Rework leak");
     expect(svg).not.toContain("Context switch");
@@ -78,7 +78,7 @@ describe("renderStageZoom", () => {
 
     // test-suite's permanent debtMultiplier x0.5 lands under Leak size.
     expect(inLeakGroup(svg, "Add test suite: x0.5")).toBe(true);
-    expect(svg).toContain("Base x0.5");
+    expect(svg).toContain("Base x0.2");
   });
 
   it("shows only a debt-paydown card's temporary slowdown under Friction (scaleStock creates no modifier, Release 16)", () => {

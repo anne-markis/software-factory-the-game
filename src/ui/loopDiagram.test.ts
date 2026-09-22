@@ -99,7 +99,7 @@ describe("loopDiagramSvg", () => {
     // that is 0 even though finish/review/deploy capacity is 1.0/day. Plan's
     // 1.0/day is capacity on the box, not an arrow.
     expect(svg.match(/0\.0\/day/g)).toHaveLength(4);
-    expect(svg).toContain("debt +0.5/pt");
+    expect(svg).toContain("debt +0.2/pt");
     expect(svg).not.toContain("slower");
     expect(svg).not.toContain("data-debt-drag");
     expect(svg).not.toContain("data-debt-hot");
@@ -210,7 +210,7 @@ describe("loopDiagramSvg", () => {
     const svg = loopDiagramSvg(state, content);
     expect(svg.match(/data-debt-drag="warn"/g)).toHaveLength(4);
     expect(svg).not.toContain("data-debt-hot");
-    expect(svg).toContain("debt +0.5/pt");
+    expect(svg).toContain("debt +0.2/pt");
     expect(svg).not.toContain("slower");
     expect(svg).not.toContain("-15%");
     // Ideas and Plan are not debt-dragged; their connecting arrows stay clean.

@@ -19,7 +19,7 @@ describe("decisions", () => {
     // test-suite's setup slowdown halves every rate: base pull 2 -> 1, finish 1 -> 0.5.
     expect(effectiveRate(s, "pull")).toBe(1);
     expect(effectiveRate(s, "finish")).toBe(0.5);
-    expect(effectiveDebtMultiplier(s)).toBe(0.25);
+    expect(effectiveDebtMultiplier(s)).toBe(0.1);
   });
 
   it("enforces requires and affordability", () => {
@@ -81,11 +81,11 @@ describe("decisions", () => {
     e.applyDecision("agent");
     const s = e.getState();
     // agent is not unique, so three instances coexist -- each with its own
-    // +0.2 finish and +0.1 debt-multiplier modifier.
+    // +0.2 finish and +0.04 debt-multiplier modifier.
     expect(s.decisions.filter((d) => d.defId === "agent")).toHaveLength(3);
     expect(effectiveRate(s, "finish")).toBeCloseTo(base + 0.6);
-    // debtMultiplier: base 0.5 + 3 x 0.1
-    expect(effectiveDebtMultiplier(s)).toBeCloseTo(0.8);
+    // debtMultiplier: base 0.2 + 3 x 0.04
+    expect(effectiveDebtMultiplier(s)).toBeCloseTo(0.32);
     // Other rates are untouched: agents write code, they do not run releases.
     expect(effectiveRate(s, "deploy")).toBeCloseTo(base);
   });
@@ -144,10 +144,10 @@ describe("decisions", () => {
     const s = e.getState();
     // finish: (1 base + 2 x 0.2) x 1.25 x 1.45
     expect(effectiveRate(s, "finish")).toBeCloseTo(1.4 * 1.25 * 1.45);
-    // debt: (0.5 base + 2 x 0.1) x 0.7 x 0.55 -- the pair more than cancels
+    // debt: (0.2 base + 2 x 0.04) x 0.7 x 0.55 -- the pair more than cancels
     // the debt two agents add, which is the point of buying them.
-    expect(effectiveDebtMultiplier(s)).toBeCloseTo(0.7 * 0.7 * 0.55);
-    expect(effectiveDebtMultiplier(s)).toBeLessThan(0.5); // below the un-agented base
+    expect(effectiveDebtMultiplier(s)).toBeCloseTo(0.28 * 0.7 * 0.55);
+    expect(effectiveDebtMultiplier(s)).toBeLessThan(0.2); // below the un-agented base
   });
 
   it("gates agent-orchestration on owning at least two agents (requiresCounts)", () => {

@@ -58,7 +58,7 @@ describe("applyEffects", () => {
   it("modifyDebtMultiplier changes effective debt multiplier", () => {
     const s = freshState();
     applyEffects(s, [{ type: "modifyDebtMultiplier", op: "mul", value: 0.5 }], "src-1");
-    expect(effectiveDebtMultiplier(s)).toBe(0.25);
+    expect(effectiveDebtMultiplier(s)).toBe(0.1);
     expect(s.modifiers[0].expiresDay).toBeUndefined();
   });
 

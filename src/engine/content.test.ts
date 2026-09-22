@@ -30,7 +30,7 @@ describe("parseStartConfig", () => {
     expect(cfg.stocks.ideas).toBe(100);
     expect(cfg.stocks.plan).toBe(0);
     expect(cfg.stocks.budget).toBe(10000);
-    expect(cfg.debtMultiplier).toBe(0.5);
+    expect(cfg.debtMultiplier).toBe(0.2);
     expect(cfg.baseCapacity).toBe(1);
     // Discover is the Ideas faucet: 0.5/day from day 0, not a delivery stage.
     expect(cfg.baseRates).toEqual({ pull: 2, finish: 1, review: 1, deploy: 1, discover: 0.5, plan: 1, ktlo: 0 });
@@ -248,14 +248,14 @@ describe("parseDecisions", () => {
 
     // agent is stackable: no `unique`, additive effects so N copies are
     // worth N times one copy. +0.2 finish/day, the same +0.2 plan/day,
-    // a smaller +0.05 review/day, and +0.1 debt multiplier per copy.
+    // a smaller +0.05 review/day, and +0.04 debt multiplier per copy.
     const agent = defs.find((d) => d.id === "agent")!;
     expect(agent.unique).toBeUndefined();
     expect(agent.effects).toEqual([
       { type: "modifyRate", target: "finish", op: "add", value: 0.2, scaleFromHumansPer: 0.1 },
       { type: "modifyRate", target: "plan", op: "add", value: 0.2, scaleFromHumansPer: 0.1 },
       { type: "modifyRate", target: "review", op: "add", value: 0.05 },
-      { type: "modifyDebtMultiplier", op: "add", value: 0.1 },
+      { type: "modifyDebtMultiplier", op: "add", value: 0.04 },
     ]);
     // No synergies: harness and orchestration are global multipliers now, so
     // an agent bought before them still gets their benefit.
