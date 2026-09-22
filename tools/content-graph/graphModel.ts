@@ -104,12 +104,13 @@ function formatCurrency(value: number): string {
 }
 
 export function formatDecisionCost(decision: DecisionDef): string {
+  const perHuman = decision.agent ? "/human" : "";
   const parts: string[] = [];
   if (decision.cost.oneTime !== undefined) {
-    parts.push(`${formatCurrency(decision.cost.oneTime)} once`);
+    parts.push(`${formatCurrency(decision.cost.oneTime)}${perHuman} once`);
   }
   if (decision.cost.perDay !== undefined) {
-    parts.push(`${formatCurrency(decision.cost.perDay)}/day`);
+    parts.push(`${formatCurrency(decision.cost.perDay)}${perHuman}/day`);
   }
   return parts.length > 0 ? parts.join(" + ") : "Free";
 }

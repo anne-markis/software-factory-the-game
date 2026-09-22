@@ -57,7 +57,12 @@ that file. To change player order, move the object in the JSON array.
 
 `human: true` is roster headcount (challenges, `scaleFromHumansPer`,
 morale quit). `agent: true` is the matching flag for coding-agent copies
-(agent:human overload). Harness / orchestration omit it. `delayDays`
+(agent:human overload). Those copies do not share a seat: authored
+`oneTime` and `perDay` are multiplied by active humans plus the founder.
+The multiplier is live, so a hire starting later raises existing agent
+payroll, and a departure lowers it. Pending hires do not count until they
+start. Harness / orchestration / agent CI review omit `agent` and stay one
+shared bill. `delayDays`
 (integer >= 1) defers effects, capacity, payroll, and headcount until
 `day + delayDays`; the one-time cost and gamble still resolve at
 purchase. Pending instances count as owned for `unique` / `requires`.

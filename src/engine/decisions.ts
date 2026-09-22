@@ -2,6 +2,7 @@ import type { DecisionDef, DecisionInstance, Effect, GameContent, GameState, Gam
 import type { Rng } from "./rng";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { applyEffects } from "./effects";
+import { agentSeatCount, scaledDecisionCost } from "./agentCost";
 import { instanceIsActive } from "./roster";
 import { isDeliveryFrozen, log } from "./tick";
 
@@ -54,7 +55,7 @@ export function availability(state: GameState, content: GameContent): Availabili
     if (missing.length > 0) {
       return { def, purchasable: false, code: "missing-requires" as const, reason: `requires ${missing.join(", ")}` };
     }
-    const oneTime = def.cost.oneTime ?? 0;
+    const oneTime = scaledDecisionCost(def, agentSeatCount(state), "oneTime");
     if (state.stocks.budget < oneTime) {
       return { def, purchasable: false, code: "cannot-afford" as const, reason: "cannot afford" };
     }
@@ -87,7 +88,7 @@ export function applyDecision(state: GameState, content: GameContent, defId: str
     );
   }
   const def = entry.def;
-  state.stocks.budget -= def.cost.oneTime ?? 0;
+  state.stocks.budget -= scaledDecisionCost(def, agentSeatCount(state), "oneTime");
 
   // Synergy ownership is evaluated at purchase time only; removing the
   // synergy provider later does not revert instances purchased under it. The

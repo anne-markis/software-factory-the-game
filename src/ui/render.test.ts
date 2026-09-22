@@ -321,7 +321,7 @@ describe("renderDecisions", () => {
     const ownedHtml = renderOwnedList([...e.getState().decisions], content());
     expect(ownedHtml).toContain("owned-item");
     expect(ownedHtml).toContain('<div class="owned-cost">$2000 once + 14 days + $438/day</div>');
-    expect(ownedHtml).toContain('<div class="owned-cost">$10 once + $4/day</div>');
+    expect(ownedHtml).toContain('<div class="owned-cost">$10/human once + $4/human/day</div>');
     // Gamble range (basic-dev) and the agent's deterministic effects both
     // reuse the shop's .tt-effects line inside the Owned panel.
     expect(ownedHtml).toMatch(/owned-item[\s\S]*tt-effects[\s\S]*capacity \+1/);

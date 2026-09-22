@@ -9,6 +9,7 @@ import type {
 } from "./types";
 import type { Rng } from "./rng";
 import { sampleIndependentHits } from "./binomial";
+import { agentSeatCount, scaledDecisionCost } from "./agentCost";
 import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
 import { continuousDeployActive } from "./continuousDeploy";
 import { detectArchetypes } from "./archetypes";
@@ -65,7 +66,7 @@ export function dailyExpenseSplit(
     if (!instanceIsActive(inst, state.day)) continue;
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
-    const perDay = def.cost.perDay ?? 0;
+    const perDay = scaledDecisionCost(def, agentSeatCount(state), "perDay");
     if (perDay <= 0) continue;
     if (def.human) human += perDay;
     else if (isAgentExpenseId(def.id)) agents += perDay;
@@ -263,6 +264,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     }
   }
   recordDailyIncome(state, recurringIncome, burstIncome);
+  const seats = agentSeatCount({ decisions: snapshot, day: state.day });
   recordDailyExpenses(state, dailyExpenseSplit({ decisions: snapshot, day: state.day }, content));
   // Clamp at 0 deliberately per the design spec: budget never goes negative.
   // Insolvency also freezes delivery (isDeliveryFrozen) and removes unpaid
@@ -272,7 +274,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     if (!instanceIsActive(inst, state.day)) continue;
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
-    const perDay = def.cost.perDay ?? 0;
+    const perDay = scaledDecisionCost(def, seats, "perDay");
     if (perDay === 0) continue;
     if (state.stocks.budget >= perDay) {
       state.stocks.budget -= perDay;

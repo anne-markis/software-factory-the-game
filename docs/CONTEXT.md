@@ -89,7 +89,9 @@ progress (the Delivery-diagram Plan pile). Plan fills at `start.baseRates.plan`
 capacity, unused. Shop cards raise it with `modifyRate` targeting
 `plan`. Studio agents add `+0.2/day` (scaled `+10%` per human, same as
 finish); agent harness multiplies plan by `1.25` and agent orchestration
-by `1.45`. A save that already owns those cards gains the missing plan
+by `1.45`. Coding-agent setup and daily cost are charged once per human
+(the founder counts; pending hires do not). Harness, orchestration, and
+agent CI review stay a single shared bill. A save that already owns those cards gains the missing plan
 modifiers on load. Discover cards do not raise plan. Plan is not a pipeline stage,
 is not frozen at `$0`, and is not slowed by debt or users-support drag.
 When an item’s progress hits size it **auto-enters Ready** (same ledger

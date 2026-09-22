@@ -36,11 +36,14 @@ export function renderDeliveryStats(state: Readonly<GameState>): string {
 }
 
 function costLine(def: DecisionDef): string {
+  // Coding agents bill once per human. The shop shows the authored rate;
+  // the engine multiplies it by the current seat count at purchase and payroll.
+  const perHuman = def.agent ? "/human" : "";
   return (
     [
-      def.cost.oneTime ? `$${def.cost.oneTime} once` : "",
+      def.cost.oneTime ? `$${def.cost.oneTime}${perHuman} once` : "",
       def.delayDays ? `${def.delayDays} days` : "",
-      def.cost.perDay ? `$${def.cost.perDay}/day` : "",
+      def.cost.perDay ? `$${def.cost.perDay}${perHuman}/day` : "",
     ]
       .filter(Boolean)
       .join(" + ") || "free"
