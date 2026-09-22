@@ -327,13 +327,12 @@ describe("renderStageZoom", () => {
     expect(afterCiCd).toContain('data-buy="agent-ci-review"');
   });
 
-  it("puts the KTLO finish drag in Cycle speed, beside Leak size", () => {
+  it("keeps the KTLO finish drag in the KTLO column, not Cycle speed", () => {
     const c = loadShippedContent("company");
     const e = new Engine(c);
     const html = panel(e.getState(), c);
-    expect(inSpeedGroup(html, "KTLO reserved -0.5/day")).toBe(true);
-    expect(inSpeedGroup(html, "Contracts")).toBe(true);
-    expect(html).toContain("Leak size");
+    expect(indexBetween(html, "Reserved 0.5/day", "KTLO")).toBe(true);
+    expect(inSpeedGroup(html, "KTLO")).toBe(false);
     expect(html).not.toContain("KTLO holds");
   });
 });

@@ -197,11 +197,6 @@ function ktloNodes(state: Readonly<GameState>, content: GameContent): Contributo
 function inProgressZoom(state: Readonly<GameState>, content: GameContent): string {
   const capacityNodes = buildCapacityNodes(state, content);
   const speedNodes = buildRateGroupNodes(state, content, "speed", "finish");
-  const ktlo = effectiveRate(state, "ktlo");
-  if (ktlo > 0) {
-    speedNodes.push({ label: `KTLO reserved -${ktlo.toFixed(1)}/day`, dim: false });
-    speedNodes.push({ label: `Contracts ${Math.max(0, effectiveRate(state, "finish") - ktlo).toFixed(1)}/day`, dim: false });
-  }
   const frictionNodes = buildRateGroupNodes(state, content, "friction", "finish");
   const leakNodes = buildLeakNodes(state, content);
   const friction = frictionNodes.length === 0 ? "" : renderCol("Friction", frictionNodes);

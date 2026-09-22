@@ -227,7 +227,7 @@
             <div class="arrow">→<br /><b>review 1.4</b></div>
             <div class="stage">Done<strong>1.1</strong></div>
           </div>
-          <p class="dim" style="font-size:0.75rem;margin:0.35rem 0 0">The finish arrow is what contracts receive. The KTLO drag is in the open In Progress panel, with cycle speed and leak. Shipped is off this crop.</p>
+          <p class="dim" style="font-size:0.75rem;margin:0.35rem 0 0">The finish arrow is what contracts receive. The KTLO drag is already in the open In Progress panel. Shipped is off this crop.</p>
 
           <div class="stage-zoom">
             <div class="stage-zoom-head">In Progress</div>
@@ -243,8 +243,6 @@
                 <p>Base 1.0/day</p>
                 <p>Senior developer +1.2/day</p>
                 <p>Coding agents +1.0/day</p>
-                <p class="ktlo-line" id="cycle-ktlo">KTLO reserved −0.5/day</p>
-                <p id="cycle-left"><strong>Contracts 2.7/day</strong></p>
               </div>
               <div>
                 <h4>KTLO</h4>
@@ -403,8 +401,6 @@
         baseBtn.setAttribute("aria-pressed", withCard ? "false" : "true");
         cardBtn.setAttribute("aria-pressed", withCard ? "true" : "false");
         document.getElementById("finish-arrow").textContent = "finish " + left;
-        document.getElementById("cycle-ktlo").textContent = "KTLO reserved −" + ktlo.toFixed(1) + "/day";
-        document.getElementById("cycle-left").innerHTML = "<strong>Contracts " + left + "/day</strong>";
         document.getElementById("ktlo-card").textContent = withCard ? "On-call rotation ×1.6" : "No card yet";
         document.getElementById("ktlo-card").classList.toggle("dim", !withCard);
         document.getElementById("ktlo-reserved").textContent = "Reserved " + ktlo.toFixed(1) + "/day";

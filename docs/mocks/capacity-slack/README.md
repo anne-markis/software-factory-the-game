@@ -8,8 +8,7 @@ shipping the same amount. The arrows print realized flow, so unused
 review capacity does not move a number that reads as output.
 
 **KTLO:** Keep the lights on does not take a seat. Its finish drag
-(−0.5/day) is in the open In Progress panel, with cycle speed and leak,
-not on the arrow.
+(−0.5/day) is already in the open In Progress panel, not on the arrow.
 
 This folder is **one mock**. The steppers redraw the same snapshot two
 ways: **Today** and **Slack visible**. They open with review at 4.0/day
