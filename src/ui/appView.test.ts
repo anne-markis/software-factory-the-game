@@ -117,12 +117,12 @@ function pauseButton(root: HTMLElement): HTMLElement {
 }
 
 describe("appView delivery-column stats layout", () => {
-  it("keeps Day/Backlog/Budget/Points/Day in the top bar and places the other stocks under Delivery loop", () => {
+  it("keeps Day/Backlog/Budget/Points/Day/Idea→Value in the top bar and places the other stocks under Delivery loop", () => {
     const h = mount();
     const top = h.root.querySelector(".stats")!;
     expect(top).toBeTruthy();
     const topLabels = Array.from(top.querySelectorAll(".stat-label")).map((el) => el.textContent);
-    expect(topLabels).toEqual(["Day", "Backlog", "Budget", "Points/Day"]);
+    expect(topLabels).toEqual(["Day", "Backlog", "Budget", "Points/Day", "Idea→Value"]);
 
     const deliveryCol = h.root.querySelector(".delivery-column")!;
     expect(deliveryCol).toBeTruthy();
