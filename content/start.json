@@ -4,7 +4,6 @@
   "baseRates": { "pull": 2, "finish": 1, "review": 1, "deploy": 1, "discover": 0.5, "plan": 1, "ktlo": 0 },
   "baseCapacity": 1,
   "debtMultiplier": 0.2,
-  "baseBurnPerDay": 20,
   "contextSwitchFactor": 0.85,
   "debtDrag": { "freeDebt": 400, "dragPerPoint": 0.00015, "maxDrag": 0.4 },
   "stockDrags": [

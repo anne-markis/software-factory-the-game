@@ -8,7 +8,12 @@ import { unshippedWork, workLedgerIssues } from "./work";
 import type { GameContent, GameState } from "./types";
 
 function content(): GameContent {
-  return { start: parseStartConfig(startJson), decisions: parseDecisions(decisionsJson), challenges: [], projects: [] };
+  return {
+    start: parseStartConfig(startJson),
+    decisions: parseDecisions(decisionsJson),
+    challenges: [],
+    projects: [{ id: "ktlo", name: "Keep the lights on", permanent: true, basePerDay: 0.5, perDay: 20 }],
+  };
 }
 
 describe("save/load", () => {
@@ -420,6 +425,17 @@ describe("save/load", () => {
     expect(restored.expensesByDay).toEqual([]);
   });
 
+  it("renames a legacy expenses misc bucket to ktlo", () => {
+    const c = content();
+    const a = new Engine(c);
+    a.tick();
+    const raw = JSON.parse(serialize(a.getState()));
+    raw.state.expensesByDay = [{ day: 1, human: 0, agents: 4, misc: 20 }];
+    const restored = deserialize(JSON.stringify(raw));
+    expect(restored.expensesByDay).toEqual([{ day: 1, human: 0, agents: 4, ktlo: 20 }]);
+    expect("misc" in (restored.expensesByDay[0] as object)).toBe(false);
+  });
+
   it("round-trips expensesByDay", () => {
     const c = content();
     const a = new Engine(c);
@@ -427,7 +443,7 @@ describe("save/load", () => {
     a.tick();
     const restored = deserialize(serialize(a.getState()));
     expect(restored.expensesByDay).toEqual(a.getState().expensesByDay);
-    expect(restored.expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, misc: 20 });
+    expect(restored.expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, ktlo: 20 });
   });
 
   it("loads a legacy save without lastChallengeDay fine (stays undefined, no default needed)", () => {

@@ -23,7 +23,6 @@ export function initialState(content: GameContent): GameState {
     baseRates: { ...s.baseRates },
     baseCapacity: s.baseCapacity,
     debtMultiplierBase: s.debtMultiplier,
-    baseBurnPerDay: s.baseBurnPerDay,
     contextSwitchFactor: s.contextSwitchFactor,
     debtDragFreeDebt: s.debtDrag.freeDebt,
     debtDragPerPoint: s.debtDrag.dragPerPoint,

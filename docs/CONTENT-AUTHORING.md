@@ -185,13 +185,14 @@ Shape: `projectSchema`. The starting contract is `start.json`
   is **Start** (no Ideas spend, write Ready immediately). Default Start
   so inherited gigs do not silently Pursue.
 - `permanent: true` — always-on overhead, not a contract. Fields are
-  `id`, `name`, and `basePerDay` (the `ktlo` rate, taken out of finish
-  before contract work). It does not take an In Progress seat. No size,
-  cost, or payout. It
+  `id`, `name`, `basePerDay` (the `ktlo` rate, taken out of finish
+  before contract work), and `perDay` (cash drain, shown on Expenses as
+  KTLO). It does not take an In Progress seat. No size or payout. It
   is not offered and cannot be abandoned. It appears when its era’s
-  catalog is active and is inherited after that. Studio `baseRates.ktlo`
-  stays 0. Cards change the rate with `modifyRate` target `ktlo`
-  (`add` or `mul`). `"all"` does not include it.
+  catalog is active and is inherited after that. Studio ships Keep the
+  lights on; `start.baseRates.ktlo` is the seed (0) and `syncKtloBase`
+  copies `basePerDay` on load. Cards change the rate with `modifyRate`
+  target `ktlo` (`add` or `mul`). `"all"` does not include it.
 - `retire-projects.json` — optional array of project ids in an era
   folder. Those offers disappear from that rung onward. The def stays
   inherited, so a sprint already in flight still finishes or can be

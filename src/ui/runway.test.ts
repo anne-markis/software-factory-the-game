@@ -6,11 +6,16 @@ import type { GameContent } from "../engine/types";
 import { budgetRunwayDays, netRecurringBurnPerDay, RUNWAY_WARN_DAYS } from "./runway";
 
 function content(): GameContent {
-  return { start: parseStartConfig(startJson), decisions: parseDecisions(decisionsJson), challenges: [], projects: [] };
+  return {
+    start: parseStartConfig(startJson),
+    decisions: parseDecisions(decisionsJson),
+    challenges: [],
+    projects: [{ id: "ktlo", name: "Keep the lights on", permanent: true, basePerDay: 0.5, perDay: 20 }],
+  };
 }
 
 describe("netRecurringBurnPerDay", () => {
-  it("is base burn alone on a fresh game", () => {
+  it("is KTLO cash alone on a fresh game", () => {
     const e = new Engine(content());
     expect(netRecurringBurnPerDay(e.getState(), content())).toBe(20);
   });
@@ -36,7 +41,7 @@ describe("netRecurringBurnPerDay", () => {
     const e = new Engine(c);
     e.applyDecision("basic-dev"); // perDay 438
     e.applyDecision("retainer"); // incomePerDay 8
-    // 20 base + 438 payroll - 8 income
+    // 20 KTLO + 438 payroll - 8 income
     expect(netRecurringBurnPerDay(e.getState(), c)).toBe(450);
   });
 
@@ -50,7 +55,7 @@ describe("netRecurringBurnPerDay", () => {
     s.stocks.users = 0;
     expect(netRecurringBurnPerDay(e.getState(), c)).toBe(20); // 0 users -> no income yet
     s.stocks.users = 100;
-    // 20 base burn - (100 users * 0.75) = 20 - 75 = -55 (net income)
+    // 20 KTLO - (100 users * 0.75) = 20 - 75 = -55 (net income)
     expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-55);
   });
 });
@@ -68,7 +73,7 @@ describe("budgetRunwayDays", () => {
 
   it("returns null when net burn is not positive", () => {
     const c = content();
-    c.start.baseBurnPerDay = 0;
+    c.projects = [];
     const e = new Engine(c);
     e.applyDecision("subscription"); // recurring income, no payroll
     const s = e.getState() as import("../engine/types").GameState;

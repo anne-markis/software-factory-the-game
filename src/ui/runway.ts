@@ -1,11 +1,12 @@
 import type { GameContent, GameState } from "../engine/types";
+import { ktloBurnPerDay } from "../engine/ktlo";
 
 // Days of runway at or below this threshold get a visual Budget warning.
 // Suggested ~10–14 days; pick the upper end so players see the
 // telegraph with a little reaction time at 5x.
 export const RUNWAY_WARN_DAYS = 14;
 
-// Recurring cash drain only: base burn + owned per-day upkeep, minus owned
+// Recurring cash drain only: KTLO cash + owned per-day upkeep, minus owned
 // incomePerDay. Shipping revenue and one-time costs are excluded —
 // recurring burn is the cliff that blindsided the player.
 export function netRecurringBurnPerDay(state: Readonly<GameState>, content: GameContent): number {
@@ -26,7 +27,7 @@ export function netRecurringBurnPerDay(state: Readonly<GameState>, content: Game
       income += state.stocks[def.incomeFromStock.stock] * def.incomeFromStock.perUnit;
     }
   }
-  return state.baseBurnPerDay + payroll - income;
+  return ktloBurnPerDay(content) + payroll - income;
 }
 
 // Whole days until budget cannot cover another day of recurring burn.

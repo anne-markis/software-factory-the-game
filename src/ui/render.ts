@@ -233,10 +233,10 @@ export function renderIncomeTitle(incomeByDay: readonly DailyIncome[]): string {
   return `Income: $${fmt(total)}`;
 }
 
-/** Latest-day human + agents + misc, for the always-visible Expenses heading. */
+/** Latest-day human + agents + ktlo, for the always-visible Expenses heading. */
 export function renderExpensesTitle(expensesByDay: readonly DailyExpenses[]): string {
   const latest = expensesByDay[expensesByDay.length - 1];
-  const total = latest ? latest.human + latest.agents + latest.misc : 0;
+  const total = latest ? latest.human + latest.agents + latest.ktlo : 0;
   return `Expenses: $${fmt(total)}`;
 }
 
@@ -319,29 +319,29 @@ export function renderIncomeChart(incomeByDay: readonly DailyIncome[]): string {
   </div>`;
 }
 
-/** Stacked human/agents/misc sparkline for the last recorded days. */
+/** Stacked human/agents/ktlo sparkline for the last recorded days. */
 export function renderExpensesChart(expensesByDay: readonly DailyExpenses[]): string {
-  const spent = expensesByDay.some((d) => d.human > 0 || d.agents > 0 || d.misc > 0);
+  const spent = expensesByDay.some((d) => d.human > 0 || d.agents > 0 || d.ktlo > 0);
   if (!spent) {
     return `<div class="income-empty">No expenses yet.</div>`;
   }
-  const max = Math.max(...expensesByDay.map((d) => d.human + d.agents + d.misc), 0);
+  const max = Math.max(...expensesByDay.map((d) => d.human + d.agents + d.ktlo), 0);
   const latest = expensesByDay[expensesByDay.length - 1]!;
   const bars = expensesByDay
     .map((d) => {
       const humanH = incomeBarHeight(d.human, max);
       const agentsH = incomeBarHeight(d.agents, max);
-      const miscH = incomeBarHeight(d.misc, max);
-      const title = `Day ${d.day}: human $${fmt(d.human)}/day, agents $${fmt(d.agents)}/day, misc $${fmt(d.misc)}/day`;
-      return `<div class="income-col" title="${esc(title)}"><div class="income-stack"><div class="income-seg exp-misc" style="height:${miscH}"></div><div class="income-seg exp-agents" style="height:${agentsH}"></div><div class="income-seg exp-human" style="height:${humanH}"></div></div></div>`;
+      const ktloH = incomeBarHeight(d.ktlo, max);
+      const title = `Day ${d.day}: human $${fmt(d.human)}/day, agents $${fmt(d.agents)}/day, ktlo $${fmt(d.ktlo)}/day`;
+      return `<div class="income-col" title="${esc(title)}"><div class="income-stack"><div class="income-seg exp-ktlo" style="height:${ktloH}"></div><div class="income-seg exp-agents" style="height:${agentsH}"></div><div class="income-seg exp-human" style="height:${humanH}"></div></div></div>`;
     })
     .join("");
-  return `<div class="income-chart" role="img" aria-label="Expenses per day last ${expensesByDay.length} days, human, agents, and misc">
+  return `<div class="income-chart" role="img" aria-label="Expenses per day last ${expensesByDay.length} days, human, agents, and KTLO">
     <div class="income-bars">${bars}</div>
     <div class="income-legend">
       <span><span class="income-swatch exp-human"></span> Human $${fmt(latest.human)}/day</span>
       <span><span class="income-swatch exp-agents"></span> Agents $${fmt(latest.agents)}/day</span>
-      <span><span class="income-swatch exp-misc"></span> Misc $${fmt(latest.misc)}/day</span>
+      <span><span class="income-swatch exp-ktlo"></span> KTLO $${fmt(latest.ktlo)}/day</span>
     </div>
   </div>`;
 }
@@ -437,14 +437,14 @@ function permanentRows(state: Readonly<GameState>, content: GameContent): string
         <td>
           <span class="proj-chip proj-chip-ktlo">always on</span>
           <div class="proj-name"><strong>${esc(def.name)}</strong></div>
-          <div class="proj-sub">${fmt(rate)}/day of finish · cannot cancel</div>
+          <div class="proj-sub">${fmt(rate)}/day of finish · $${fmt(def.perDay)}/day · cannot cancel</div>
         </td>
         <td class="num">ongoing</td>
         <td class="num">${PROJ_EMPTY}</td>
         <td class="num">${PROJ_EMPTY}</td>
         <td class="num">${PROJ_EMPTY}</td>
         <td class="num">${PROJ_EMPTY}</td>
-        <td class="proj-fx"><span class="proj-chip">−${fmt(rate)} finish/day</span></td>
+        <td class="proj-fx"><span class="proj-chip">−${fmt(rate)} finish/day</span><span class="proj-chip">$${fmt(def.perDay)}/day</span></td>
       </tr>`;
     })
     .join("");

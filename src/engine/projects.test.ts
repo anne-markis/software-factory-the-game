@@ -162,7 +162,8 @@ describe("projects", () => {
     expect(after.projects[0].defId).toBe("launch-beta");
     // 1 shipped: 0.2 to the small contract, leftover 0.8 onto the survivor.
     expect(after.projects[0].remaining).toBeCloseTo(9.2, 10);
-    expect(after.stocks.budget).toBeCloseTo(budgetBefore - c.start.baseBurnPerDay + 25, 10);
+    // Catalog overwrite drops KTLO, so the day's cash is the bonus alone.
+    expect(after.stocks.budget).toBeCloseTo(budgetBefore + 25, 10);
   });
 
   it("pays mixed payoutPerPoint from both contracts before either completes", () => {
@@ -193,8 +194,9 @@ describe("projects", () => {
     const after = e.getState();
     expect(after.projects).toHaveLength(2);
     expect(after.completedProjects).toBe(0);
-    // 0.5 at $8 and 0.5 at $18, minus the day's burn.
-    expect(after.stocks.budget).toBeCloseTo(budgetBefore - c.start.baseBurnPerDay + 13, 10);
+    // 0.5 at $8 and 0.5 at $18. This fixture overwrites the catalog, so there
+    // is no KTLO cash drain.
+    expect(after.stocks.budget).toBeCloseTo(budgetBefore + 13, 10);
   });
 
   it("rejects starting a project already in flight", () => {

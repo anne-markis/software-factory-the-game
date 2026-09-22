@@ -107,6 +107,12 @@ export function deserialize(json: string): GameState {
   if (state.expensesByDay === undefined) {
     state.expensesByDay = [];
   }
+  for (const row of state.expensesByDay) {
+    const legacy = row as { ktlo?: number; misc?: number };
+    if (legacy.ktlo === undefined) legacy.ktlo = legacy.misc ?? 0;
+    delete legacy.misc;
+  }
+  delete (state as { baseBurnPerDay?: number }).baseBurnPerDay;
   // Completed-id set for unique versions / requiresCompletedId. Content-free
   // like milestonesSeen, so it defaults here. SAVE_VERSION 4 rejects genuine
   // v3 saves; this only guards hand-built current-version states.

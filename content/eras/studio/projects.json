@@ -1,5 +1,12 @@
 [
   {
+    "id": "ktlo",
+    "name": "Keep the lights on",
+    "permanent": true,
+    "basePerDay": 0.2,
+    "perDay": 20
+  },
+  {
     "id": "gig-bugfix",
     "name": "Bugfix sprint",
     "sizePoints": 100,

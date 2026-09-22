@@ -7,7 +7,7 @@ shows today's total, so a collapsed rail still answers "how much is coming
 in / going out?"
 
 - Income title uses latest-day `recurring + burst`
-- Expenses title uses latest-day `human + agents + misc`
+- Expenses title uses latest-day `human + agents + ktlo`
 - Sparkline + per-bucket `/day` legend stay inside the open body
 - Events and Owned titles stay as they are
 

@@ -92,18 +92,18 @@ describe("simulation", () => {
   // PHASE 1 -- pre-completion, exactly linear: budget(d) = 10000 - 20d (no
   // payout during the beta). Day 50 = 9000, 100 = 8000, 200 = 6000, 300 =
   // 4000. This is the Studio solvency rule made concrete: the beta finishes
-  // (day 302) with the budget still comfortably positive (~4000 at day 300),
+  // (day 377) with the budget still comfortably positive (~4000 at day 300),
   // on starting resources alone, no gigs and no monetization.
   //
-  // COMPLETION -- day 302 (300 points ship one per day, first ships day 3):
-  // +$800 bonus and +1 reputation land, budget jumps to 4760, and the beta's
-  // completionStockGrants add +30 users (the users economy switches on here;
-  // organic acquisition then runs the same tick).
+  // COMPLETION -- day 377 (300 points at 0.8 finish/day after the 0.2 KTLO
+  // reserve; first ships day 3): +$800 bonus and +1 reputation land, budget
+  // jumps to 3260, and the beta's completionStockGrants add +30 users (the
+  // users economy switches on here; organic acquisition then runs the same tick).
   //
   // PHASE 2 -- post-completion tail: still -$20/day (no project, no income),
-  // so budget(d) = 4760 - 20(d - 302), hitting 0 on day 540 and clamped after.
+  // so budget(d) = 3260 - 20(d - 377), hitting 0 on day 540 and clamped after.
   //
-  // USERS -- 0 until day 302, then grow from 30 toward the steady state where
+  // USERS -- 0 until day 377, then grow from 30 toward the steady state where
   // organic gain (3 + reputation 1 * 0.1 = 3.1/day) equals churn
   // (users * 0.003), i.e. about 1033 users. By day 2000 the idle run is
   // still a few users short of that cap.
@@ -130,13 +130,13 @@ describe("simulation", () => {
       }
       if (firstZeroDay === 0 && s.stocks.budget === 0) firstZeroDay = day;
       if (day === 300) { repBeforeCompletion = s.stocks.reputation; usersBeforeCompletion = s.stocks.users; }
-      if ([50, 100, 200, 300, 302, 540].includes(day)) at[day] = s.stocks.budget;
+      if ([50, 100, 200, 300, 377, 540].includes(day)) at[day] = s.stocks.budget;
     }
     // Users and reputation stay at 0 through the whole beta, then step up the
     // moment it completes -- nothing invents users offstage before launch.
     expect(usersBeforeCompletion).toBe(0);
     expect(repBeforeCompletion).toBe(0);
-    expect(completionDay).toBe(302);
+    expect(completionDay).toBe(377);
     expect(repAfterCompletion).toBe(c.start.initialProject.reputationReward); // 1
     expect(usersAfterCompletion).toBeCloseTo(33.01, 1); // 30 grant + first organic day (3.1 - 0.09 churn)
     // Phase 1: exactly linear -$20/day, no payout during the $0/pt beta.
@@ -144,14 +144,14 @@ describe("simulation", () => {
     expect(at[100]).toBe(8000);
     expect(at[200]).toBe(6000);
     expect(at[300]).toBe(4000); // solvency rule: beta finishes with budget to spare
-    // Completion bump: +$800 bonus lands on day 302 (one extra pipeline day for In Review).
-    expect(at[302]).toBe(4760); // (10000 - 20*302) + 800
-    // Phase 2: clean -$20/day tail to zero. 4760 / 20 = 238 -> day 540.
+    // Completion bump: +$800 bonus lands on day 377 (0.8 product finish after KTLO).
+    expect(at[377]).toBe(3260); // (10000 - 20*377) + 800
+    // Phase 2: clean -$20/day tail to zero. 3260 / 20 = 163 -> day 540.
     expect(firstZeroDay).toBe(540);
     expect(at[540]).toBe(0);
     expect(e.getState().stocks.budget).toBe(0); // clamped through day 2000
     // Users climb toward the 1033 steady state (3.1/day gain == 0.3% churn).
-    expect(e.getState().stocks.users).toBeCloseTo(1027, 0);
+    expect(e.getState().stocks.users).toBeCloseTo(1026, 0);
     expect(e.getState().stocks.reputation).toBe(1); // no challenges, so it never drops
   });
 
@@ -164,7 +164,7 @@ describe("simulation", () => {
   // (minCompletedProjects 1). After the beta there is no in-flight project, so
   // scope creep is unattributed surplus (ADR 0009) and cannot change the beta's
   // completion day. The idle trajectory is nearly the challenge-free one: the
-  // beta still completes on day 302 and the +$800 bonus is still the only
+  // beta still completes on day 377 and the +$800 bonus is still the only
   // income the run ever sees.
   //
   // RE-PINNED for content wave (release 8, task 4.5): challenge rolls are now
@@ -197,7 +197,7 @@ describe("simulation", () => {
       if (s.stocks.users > 0) sawUsers = true;
       if (day === 300) budgetAt300 = s.stocks.budget;
     }
-    expect(completionDay).toBe(302);
+    expect(completionDay).toBe(377);
     expect(sawUsers).toBe(true); // the users economy did switch on at launch
     expect(budgetAt300).toBeLessThan(4200); // pre-completion glide, well off 10,000 (observed 4000: no cash event reaches an idle Studio)
     expect(budgetAt300).toBeGreaterThan(0); // no instant death
@@ -632,13 +632,13 @@ describe("simulation", () => {
   //   d1-d2 subscription + one-time-product (one-time cost, no upkeep, and
   //           worth nothing yet at 0 users -- the setup a Studio player makes
   //           before there is anything to sell)
-  //   d302 Launch beta completes: +$800, +1 reputation, +30 users, and the
+  //   d377 Launch beta completes: +$800, +1 reputation, +30 users, and the
   //           users economy (and with it the subscription) switches on
-  //   d302-05 the agent ladder, one card a day, in the order the gates imply:
+  //   d377-80 the agent ladder, one card a day, in the order the gates imply:
   //           agent, agent, then the harness, then orchestration -- which is
   //           only offered once the second agent lands (requiresCounts 2x)
-  //   end solvent the whole way after launch (budget bottoms out at ~3129
-  //           and ends ~11925 at day 500) with all six cards still owned
+  //   end solvent the whole way after launch (budget bottoms out at ~1713
+  //           and ends ~16872 at day 500) with all six cards still owned
   //
   // The pre-launch-spend version of this session is the one that hurts, and it
   // is measured in the automation-heavy probe above rather than duplicated here.
@@ -683,17 +683,17 @@ describe("simulation", () => {
     expect(buys).toEqual([
       "d1:subscription",
       "d2:one-time-product",
-      "d302:agent",
-      "d303:agent",
-      "d304:agent-harness",
-      "d305:agent-orchestration",
+      "d377:agent",
+      "d378:agent",
+      "d379:agent-harness",
+      "d380:agent-orchestration",
     ]);
     expect(orchestrationOfferedWithOneAgent).toBe(false);
-    expect(completedDay).toBe(302);
+    expect(completedDay).toBe(377);
     const s = e.getState();
     expect(s.decisions.filter((d) => d.defId === "agent")).toHaveLength(2); // stackable, and both survived payroll
-    expect(minBudgetAfterLaunch).toBeGreaterThan(1000); // never near the zero clamp (observed ~3129)
-    expect(s.stocks.budget).toBeGreaterThan(10000); // subscription outruns the ladder's upkeep (observed ~11,925)
+    expect(minBudgetAfterLaunch).toBeGreaterThan(1000); // never near the zero clamp (observed ~1713)
+    expect(s.stocks.budget).toBeGreaterThan(10000); // subscription outruns the ladder's upkeep (observed ~16,872)
     // Only the lean pool can fire, and scope-creep waits for the launch
     // (minCompletedProjects 1) rather than a calendar day.
     for (const id of Object.keys(s.challengeLastFired)) {

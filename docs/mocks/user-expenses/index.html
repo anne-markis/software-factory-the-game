@@ -41,7 +41,7 @@
       .income-seg.income-burst, .income-swatch.income-burst { background: var(--accent-amber); }
       .income-seg.exp-human, .income-swatch.exp-human { background: var(--fg); }
       .income-seg.exp-agents, .income-swatch.exp-agents { background: var(--accent-amber); }
-      .income-seg.exp-misc, .income-swatch.exp-misc { background: var(--chip-users); }
+      .income-seg.exp-ktlo, .income-swatch.exp-ktlo { background: var(--chip-users); }
       .income-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; margin-top: 0.4rem; font-size: 0.8rem; color: var(--fg-dim); }
       .income-swatch { display: inline-block; width: 0.65rem; height: 0.65rem; margin-right: 0.25rem; vertical-align: -0.05rem; border: 1px solid var(--border); }
     </style>
@@ -49,7 +49,7 @@
   <body>
     <p class="mock-chrome">Software Factory · static mock · locked G</p>
     <h1>Expenses under Income</h1>
-    <p>Same caret panel, 14 stacked day-bars, latest-day legend. Human / agents / misc replace Recurring / Burst.</p>
+    <p>Same caret panel, 14 stacked day-bars, latest-day legend. Human / agents / KTLO replace Recurring / Burst.</p>
     <div class="rail" id="rail"></div>
     <script>
       function pct(n, max) {
@@ -74,13 +74,13 @@
       const expDays = Array.from({ length: 14 }, (_, i) => ({
         human: i >= 4 ? 438 : 0,
         agents: i >= 9 ? 33 : i >= 8 ? 16 : i >= 6 ? 8 : 0,
-        misc: 20,
+        ktlo: 20,
       }));
-      const expMax = Math.max(...expDays.map((d) => d.human + d.agents + d.misc));
+      const expMax = Math.max(...expDays.map((d) => d.human + d.agents + d.ktlo));
       const latest = expDays[expDays.length - 1];
       document.getElementById("rail").innerHTML =
         panel("Income / day", chart(incomeDays, [["income-burst", "burst"], ["income-recurring", "recurring"]], incomeMax, swatch("income-recurring", "Recurring $225/day") + swatch("income-burst", "Burst $0/day"), "Income per day")) +
-        panel("Expenses / day", chart(expDays, [["exp-misc", "misc"], ["exp-agents", "agents"], ["exp-human", "human"]], expMax, swatch("exp-human", `Human $${latest.human}/day`) + swatch("exp-agents", `Agents $${latest.agents}/day`) + swatch("exp-misc", `Misc $${latest.misc}/day`), "Expenses per day"));
+        panel("Expenses / day", chart(expDays, [["exp-ktlo", "ktlo"], ["exp-agents", "agents"], ["exp-human", "human"]], expMax, swatch("exp-human", `Human $${latest.human}/day`) + swatch("exp-agents", `Agents $${latest.agents}/day`) + swatch("exp-ktlo", `KTLO $${latest.ktlo}/day`), "Expenses per day"));
     </script>
   </body>
 </html>

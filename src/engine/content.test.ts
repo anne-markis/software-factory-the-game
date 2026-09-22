@@ -17,7 +17,7 @@ import {
   projectsJson,
   startJson,
 } from "./loadShippedContent";
-import { requireContract } from "./types";
+import { isContractProject, requireContract } from "./types";
 import type { Effect, GameContent } from "./types";
 
 describe("parseStartConfig", () => {
@@ -910,7 +910,7 @@ describe("parseChallenges", () => {
 describe("parseProjects", () => {
   it("parses reputationReward on every shipped Studio project", () => {
     const defs = parseProjects(projectsJson);
-    expect(defs.every((p) => requireContract(p).reputationReward >= 0)).toBe(true);
+    expect(defs.filter(isContractProject).every((p) => p.reputationReward >= 0)).toBe(true);
     expect(requireContract(defs.find((p) => p.id === "gig-bugfix")).reputationReward).toBe(1);
     expect(requireContract(defs.find((p) => p.id === "gig-landing-page")).reputationReward).toBe(1);
     expect(requireContract(defs.find((p) => p.id === "ship-v1")).reputationReward).toBe(2);
@@ -920,6 +920,7 @@ describe("parseProjects", () => {
   it("keeps the old contract ladder as Company/Megacorp deltas, not Studio offers", () => {
     const studio = loadShippedContent();
     expect(studio.projects.map((p) => p.id)).toEqual([
+      "ktlo",
       "gig-bugfix",
       "gig-landing-page",
       "small-refactor",
@@ -1241,7 +1242,6 @@ describe("per-era content layout", () => {
     ]);
     expect(company.projects.map((d) => d.id)).toEqual([
       ...studio.projects.map((d) => d.id),
-      "ktlo",
       "small-crm",
       "big-migration",
     ]);

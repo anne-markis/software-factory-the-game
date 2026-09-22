@@ -4,10 +4,16 @@ import { applyEffects } from "./effects";
 import { parseStartConfig, parseChallenges, parseProjects } from "./content";
 import { challengesJson, projectsJson, startJson } from "./loadShippedContent";
 import { attachInjectedWork, committedWork, isPipelineStock, surplusGrewWhileInFlight, surplusWork, unshippedWork, workLedgerIssues } from "./work";
+import { isContractProject } from "./types";
 import type { GameContent, GameState } from "./types";
 
 function testContent(): GameContent {
-  return { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+  return {
+    start: parseStartConfig(startJson),
+    decisions: [],
+    challenges: [],
+    projects: parseProjects(projectsJson).filter(isContractProject),
+  };
 }
 
 function addPeer(s: GameState, remaining = 100): void {

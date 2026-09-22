@@ -48,7 +48,7 @@
       .income-seg.income-burst, .income-swatch.income-burst { background: var(--accent-amber); }
       .income-seg.exp-human, .income-swatch.exp-human { background: var(--fg); }
       .income-seg.exp-agents, .income-swatch.exp-agents { background: var(--accent-amber); }
-      .income-seg.exp-misc, .income-swatch.exp-misc { background: var(--chip-users); }
+      .income-seg.exp-ktlo, .income-swatch.exp-ktlo { background: var(--chip-users); }
       .income-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; margin-top: 0.4rem; font-size: 0.8rem; color: var(--fg-dim); }
       .income-swatch { display: inline-block; width: 0.65rem; height: 0.65rem; margin-right: 0.25rem; vertical-align: -0.05rem; border: 1px solid var(--border); }
       table { border-collapse: collapse; font-size: 0.85rem; margin: 0.5rem 0 0; }
@@ -144,11 +144,11 @@
       const expDays = Array.from({ length: 14 }, (_, i) => ({
         human: i >= 4 ? 438 : 0,
         agents: i >= 9 ? 33 : i >= 8 ? 16 : i >= 6 ? 8 : 0,
-        misc: 20,
+        ktlo: 20,
       }));
-      const expMax = Math.max(...expDays.map((d) => d.human + d.agents + d.misc));
+      const expMax = Math.max(...expDays.map((d) => d.human + d.agents + d.ktlo));
       const latestExp = expDays[expDays.length - 1];
-      const expTotal = latestExp.human + latestExp.agents + latestExp.misc;
+      const expTotal = latestExp.human + latestExp.agents + latestExp.ktlo;
 
       const incomeChart = chart(
         incomeDays,
@@ -160,11 +160,11 @@
       );
       const expChart = chart(
         expDays,
-        [["exp-misc", "misc"], ["exp-agents", "agents"], ["exp-human", "human"]],
+        [["exp-ktlo", "ktlo"], ["exp-agents", "agents"], ["exp-human", "human"]],
         expMax,
         swatch("exp-human", `Human $${latestExp.human}/day`) +
           swatch("exp-agents", `Agents $${latestExp.agents}/day`) +
-          swatch("exp-misc", `Misc $${latestExp.misc}/day`),
+          swatch("exp-ktlo", `KTLO $${latestExp.ktlo}/day`),
         "Expenses per day",
       );
 
