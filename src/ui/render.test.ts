@@ -40,7 +40,8 @@ import { parseStartConfig, parseDecisions, parseChallenges, parseProjects } from
 import { decisionsJson, loadShippedContent, projectsJson, startJson } from "../engine/loadShippedContent";
 import { Engine, initialState } from "../engine/engine";
 import { projectAvailability } from "../engine/projects";
-import type { GameContent } from "../engine/types";
+import type { GameContent, GameState } from "../engine/types";
+import { activateDueInstances } from "../engine/tick";
 
 function content(): GameContent {
   return {
@@ -129,8 +130,12 @@ describe("renderStats", () => {
   it("marks Budget with budget-low when runway is at or under 14 days", () => {
     const c = content();
     const e = new Engine(c);
-    e.applyDecision("basic-dev"); // +$438/day → burn 458
-    const state = e.getState();
+    e.applyDecision("basic-dev"); // +$438/day after they start → burn 458
+    const state = e.getState() as GameState;
+    for (const inst of state.decisions) {
+      if (inst.activeOnDay !== undefined) inst.activeOnDay = state.day;
+    }
+    activateDueInstances(state, c);
     state.stocks.budget = 4580; // exactly 10 days
     const html = renderStats(state, c);
     expect(html).toContain('class="stat-value v-budget budget-low">$4,580 (10d)</span>');
@@ -315,12 +320,13 @@ describe("renderDecisions", () => {
     e.applyDecision("agent");
     const ownedHtml = renderOwnedList([...e.getState().decisions], content());
     expect(ownedHtml).toContain("owned-item");
-    expect(ownedHtml).toContain('<div class="owned-cost">$438/day</div>');
+    expect(ownedHtml).toContain('<div class="owned-cost">$2000 once + 14 days + $438/day</div>');
     expect(ownedHtml).toContain('<div class="owned-cost">$10 once + $4/day</div>');
     // Gamble range (basic-dev) and the agent's deterministic effects both
     // reuse the shop's .tt-effects line inside the Owned panel.
     expect(ownedHtml).toMatch(/owned-item[\s\S]*tt-effects[\s\S]*capacity \+1/);
-    expect(ownedHtml).toContain("finish +1.0 to -1.0, review +0.7 to +0.1");
+    expect(ownedHtml).toContain("finish +1.0 to -1.0, review +0.7 to +0.1, morale +4.0 to -15.0");
+    expect(ownedHtml).toContain("joining in 14 days");
     expect(ownedHtml).toContain("Add coding agent");
     expect(ownedHtml).toContain(
       "finish +0.2/day (+10%/human), plan +0.2/day (+10%/human), review +0.05/day, debt +0.04",

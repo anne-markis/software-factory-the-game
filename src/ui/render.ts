@@ -37,7 +37,11 @@ export function renderDeliveryStats(state: Readonly<GameState>): string {
 
 function costLine(def: DecisionDef): string {
   return (
-    [def.cost.oneTime ? `$${def.cost.oneTime} once` : "", def.cost.perDay ? `$${def.cost.perDay}/day` : ""]
+    [
+      def.cost.oneTime ? `$${def.cost.oneTime} once` : "",
+      def.delayDays ? `${def.delayDays} days` : "",
+      def.cost.perDay ? `$${def.cost.perDay}/day` : "",
+    ]
       .filter(Boolean)
       .join(" + ") || "free"
   );
@@ -248,7 +252,7 @@ export function logPanelScaffold(): string {
 // Owned is an action list: only removable instances, each with Remove,
 // plus the cost/effects summary so a player trimming upkeep does not
 // have to scroll Alter the system matching names card by card.
-export function renderOwnedList(ownedInstances: DecisionInstance[], content: GameContent): string {
+export function renderOwnedList(ownedInstances: DecisionInstance[], content: GameContent, day = 0): string {
   // Newest acquisitions first (engine stores oldest-first; same as Events).
   const ownedList = [...ownedInstances]
     .reverse()
@@ -257,8 +261,10 @@ export function renderOwnedList(ownedInstances: DecisionInstance[], content: Gam
       if (!def?.removable) return "";
       const outcome = inst.gambleLabel ? ` [${esc(inst.gambleLabel)}]` : "";
       const sick = inst.sickUntilDay !== undefined ? " (sick)" : "";
+      const remaining = inst.activeOnDay !== undefined ? inst.activeOnDay - day : 0;
+      const joining = remaining > 0 ? ` (joining in ${remaining} day${remaining === 1 ? "" : "s"})` : "";
       return `<div class="owned-item">
-      <div class="owned-item-head">${esc(def.name)}${outcome}${sick} <button data-remove="${esc(inst.instanceId)}">Remove</button></div>
+      <div class="owned-item-head">${esc(def.name)}${outcome}${sick}${joining} <button data-remove="${esc(inst.instanceId)}">Remove</button></div>
       <div class="owned-cost">${esc(costLine(def))}</div>
       ${effectsLine(def)}
     </div>`;

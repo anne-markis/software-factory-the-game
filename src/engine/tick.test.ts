@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { Engine } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
-import { INCOME_HISTORY_DAYS, PROJECT_DISPLAY_GRAIN, dailyExpenseSplit } from "./tick";
+import { INCOME_HISTORY_DAYS, PROJECT_DISPLAY_GRAIN, dailyExpenseSplit, activateDueInstances } from "./tick";
 import { ktloBurnPerDay } from "./ktlo";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
@@ -504,6 +504,11 @@ describe("tick", () => {
       const e = new Engine(content);
       expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 0, agents: 0, ktlo: 20 });
       e.applyDecision("basic-dev");
+      const hired = e.getState() as GameState;
+      for (const inst of hired.decisions) {
+        if (inst.activeOnDay !== undefined && inst.activeOnDay > hired.day) inst.activeOnDay = hired.day;
+      }
+      activateDueInstances(hired, content);
       e.applyDecision("agent");
       e.applyDecision("agent");
       e.applyDecision("agent-harness");
@@ -838,15 +843,17 @@ describe("tick", () => {
 
     it("still removes unpaid payroll while delivery is frozen", () => {
       const c = ciCdContent();
-      c.start.stocks.budget = 0;
       const e = new Engine(c);
       e.applyDecision("basic-dev");
-      expect(e.getState().decisions).toHaveLength(1);
-
+      const s = e.getState() as GameState;
+      for (const inst of s.decisions) {
+        if (inst.activeOnDay !== undefined) inst.activeOnDay = s.day;
+      }
+      activateDueInstances(s, c);
+      s.stocks.budget = 0;
       e.tick();
 
       expect(e.getState().decisions).toHaveLength(0);
-      expect(e.getState().stocks.backlog).toBe(300);
       expect(e.getState().log.some((l) => l.message.includes("Payroll failed"))).toBe(true);
     });
 

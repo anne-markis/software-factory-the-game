@@ -99,6 +99,18 @@ export function deserialize(json: string): GameState {
   if (state.userIncomeFlow === undefined) {
     state.userIncomeFlow = 0;
   }
+  if (state.moraleRecoverFlow === undefined) {
+    state.moraleRecoverFlow = 0;
+  }
+  if (state.moralePrideFlow === undefined) {
+    state.moralePrideFlow = 0;
+  }
+  if (state.moraleOverloadFlow === undefined) {
+    state.moraleOverloadFlow = 0;
+  }
+  if (state.employeeQuitRate === undefined) {
+    state.employeeQuitRate = 0;
+  }
   // Income sparkline buffer. Content-free like log; [] is the correct
   // empty chart until the next tick records a day.
   if (state.incomeByDay === undefined) {

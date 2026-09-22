@@ -3,9 +3,11 @@ import type { Rng } from "./rng";
 import { hashRoll } from "./rng";
 import { applyEffects } from "./effects";
 import { log } from "./tick";
+import { instanceIsActive } from "./roster";
 
 function humanDevInstances(state: GameState, content: GameContent) {
   return state.decisions.filter((inst) => {
+    if (!instanceIsActive(inst, state.day)) return false;
     const def = content.decisions.find((d) => d.id === inst.defId);
     return def?.human === true;
   });

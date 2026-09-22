@@ -1,4 +1,5 @@
 import type { GameState, Modifier, RateId } from "./types";
+import { instanceIsActive } from "./roster";
 
 export function pruneExpired(state: GameState): void {
   state.modifiers = state.modifiers.filter((m) => m.expiresDay === undefined || m.expiresDay > state.day);
@@ -60,12 +61,12 @@ export function stockDragMultiplier(state: GameState, rate: RateId): number {
   return mul;
 }
 
-export function humanHeadcount(state: Pick<GameState, "decisions">): number {
-  return state.decisions.filter((d) => d.human === true).length;
+export function humanHeadcount(state: Pick<GameState, "decisions" | "day">): number {
+  return state.decisions.filter((d) => d.human === true && instanceIsActive(d, state.day)).length;
 }
 
 /** Add-op contribution after live human-headcount scale, before sickness. */
-export function scaledModifierValue(state: Pick<GameState, "decisions">, m: Modifier): number {
+export function scaledModifierValue(state: Pick<GameState, "decisions" | "day">, m: Modifier): number {
   if (m.op !== "add" || m.scaleFromHumansPer === undefined) return m.value;
   const raw = m.value * (1 + m.scaleFromHumansPer * humanHeadcount(state));
   return Math.round(raw * 1e10) / 1e10;

@@ -3,10 +3,19 @@ import { renderStageZoom } from "./inProgressPanel";
 import { Engine } from "../engine/engine";
 import { parseStartConfig, parseDecisions } from "../engine/content";
 import { decisionsJson, loadShippedContent, startJson } from "../engine/loadShippedContent";
-import type { GameContent } from "../engine/types";
+import type { GameContent, GameState } from "../engine/types";
+import { activateDueInstances } from "../engine/tick";
 
 function content(): GameContent {
   return { start: parseStartConfig(startJson), decisions: parseDecisions(decisionsJson), challenges: [], projects: [] };
+}
+
+function settleHires(e: Engine): void {
+  const s = e.getState() as GameState;
+  for (const inst of s.decisions) {
+    if (inst.activeOnDay !== undefined && inst.activeOnDay > s.day) inst.activeOnDay = s.day;
+  }
+  activateDueInstances(s, e.getContent());
 }
 
 // The three contributor-group headers always appear in this order in the
@@ -118,6 +127,7 @@ describe("renderStageZoom", () => {
   it("shows an owned dev's gamble contribution under Cycle speed, and moves it to Friction if forced negative", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
+    settleHires(e);
     const s = e.getState() as MutableState;
     const inst = s.decisions[0];
     // A hire writes one finish modifier (the seat is DecisionDef.capacity).
@@ -153,6 +163,7 @@ describe("renderStageZoom", () => {
   it("dims a sick instance's node under Cycle speed", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
+    settleHires(e);
     const s = e.getState() as MutableState;
     const inst = s.decisions[0];
     const mod = s.modifiers.find((m) => m.source === inst.instanceId)!;
@@ -269,6 +280,7 @@ describe("renderStageZoom", () => {
   it("renders negative contributions with a bare minus, not +-", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
+    settleHires(e);
     const s = e.getState() as MutableState;
     // Target the finish modifier -- the one the panel surfaces (Release 15
     // hires now split into pull + finish add modifiers).

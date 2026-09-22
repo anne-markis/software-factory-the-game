@@ -1,5 +1,12 @@
 import { isContractProject } from "./types";
-import type { ActiveProject, DailyExpenses, GameContent, GameState, StockFlowMod } from "./types";
+import type {
+  ActiveProject,
+  DailyExpenses,
+  GameContent,
+  GameState,
+  HeadcountFlag,
+  StockFlowMod,
+} from "./types";
 import type { Rng } from "./rng";
 import { sampleIndependentHits } from "./binomial";
 import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
@@ -10,6 +17,8 @@ import { attachInjectedWork, committedWork, unshippedWork } from "./work";
 import { advancePlan } from "./projects";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { ktloBurnPerDay, productFinishRate, syncKtloBase } from "./ktlo";
+import { applyEffects, clampStock } from "./effects";
+import { instanceIsActive } from "./roster";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -46,13 +55,14 @@ function isAgentExpenseId(defId: string): boolean {
 
 /** Owned per-day drain plus KTLO cash, bucketed for the Expenses chart. */
 export function dailyExpenseSplit(
-  state: Pick<GameState, "decisions">,
+  state: Pick<GameState, "decisions" | "day">,
   content: GameContent,
 ): Omit<DailyExpenses, "day"> {
   let human = 0;
   let agents = 0;
   let ktlo = ktloBurnPerDay(content);
   for (const inst of state.decisions) {
+    if (!instanceIsActive(inst, state.day)) continue;
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
     const perDay = def.cost.perDay ?? 0;
@@ -85,9 +95,9 @@ function completeProject(state: GameState, p: ActiveProject): void {
   // every other stock write. Log a users grant when non-zero so the beta
   // launch reads clearly.
   for (const grant of p.completionStockGrants ?? []) {
-    state.stocks[grant.stock] = Math.max(0, state.stocks[grant.stock] + grant.amount);
-    if (grant.stock === "users" && grant.amount !== 0) {
-      log(state, `${p.name}: +${grant.amount} users`);
+    state.stocks[grant.stock] = clampStock(state, grant.stock, state.stocks[grant.stock] + grant.amount);
+    if ((grant.stock === "users" || grant.stock === "morale") && grant.amount !== 0) {
+      log(state, `${p.name}: +${grant.amount} ${grant.stock}`);
     }
   }
   state.completedProjects += 1;
@@ -168,6 +178,8 @@ function applyStockFlowMods(
 function runStockFlows(state: GameState, content: GameContent): void {
   state.userAcquireFlow = 0;
   state.userChurnFlow = 0;
+  state.moraleRecoverFlow = 0;
+  state.moralePrideFlow = 0;
   for (const flow of content.start.stockFlows ?? []) {
     if (flow.condition?.minCompletedProjects !== undefined && state.completedProjects < flow.condition.minCompletedProjects) {
       continue;
@@ -190,7 +202,11 @@ function runStockFlows(state: GameState, content: GameContent): void {
       state.userAcquireFlow += grossGain;
       state.userChurnFlow += churnAmount;
     }
-    state.stocks[flow.stock] = Math.max(0, state.stocks[flow.stock] + grossGain - churnAmount);
+    if (flow.stock === "morale") {
+      state.moraleRecoverFlow += acquirePerDay;
+      state.moralePrideFlow += fromStock;
+    }
+    state.stocks[flow.stock] = clampStock(state, flow.stock, state.stocks[flow.stock] + grossGain - churnAmount);
   }
 }
 
@@ -209,6 +225,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
   let burstIncome = 0;
   state.userIncomeFlow = 0;
   for (const inst of snapshot) {
+    if (!instanceIsActive(inst, state.day)) continue;
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
     if (def.incomePerDay) {
@@ -246,12 +263,13 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     }
   }
   recordDailyIncome(state, recurringIncome, burstIncome);
-  recordDailyExpenses(state, dailyExpenseSplit({ decisions: snapshot }, content));
+  recordDailyExpenses(state, dailyExpenseSplit({ decisions: snapshot, day: state.day }, content));
   // Clamp at 0 deliberately per the design spec: budget never goes negative.
   // Insolvency also freezes delivery (isDeliveryFrozen) and removes unpaid
   // payroll; it is not a negative balance.
   state.stocks.budget = Math.max(0, state.stocks.budget - ktloBurnPerDay(content) + totalIncome);
   for (const inst of snapshot) {
+    if (!instanceIsActive(inst, state.day)) continue;
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
     const perDay = def.cost.perDay ?? 0;
@@ -271,10 +289,77 @@ export function isDeliveryFrozen(state: Pick<GameState, "stocks">): boolean {
   return state.stocks.budget <= 0;
 }
 
+function flaggedActiveCount(state: GameState, content: GameContent, flag: HeadcountFlag): number {
+  return state.decisions.filter((inst) => {
+    if (!instanceIsActive(inst, state.day)) return false;
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    return def?.[flag] === true;
+  }).length;
+}
+
+export function activateDueInstances(state: GameState, content: GameContent): void {
+  let activated = false;
+  for (const inst of state.decisions) {
+    if (inst.pendingEffects === undefined) continue;
+    if (!instanceIsActive(inst, state.day)) continue;
+    applyEffects(state, inst.pendingEffects, inst.instanceId, { instanceId: inst.instanceId, content });
+    delete inst.pendingEffects;
+    activated = true;
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (def) log(state, `${def.name} started`);
+  }
+  if (activated && !isDeliveryFrozen(state)) {
+    applySeatCapacity(state, effectiveCapacity(state, content), 0);
+  }
+}
+
+function applyHeadcountRatioDrags(state: GameState, content: GameContent): void {
+  state.moraleOverloadFlow = 0;
+  for (const drag of content.start.headcountRatioDrags ?? []) {
+    const numerator = flaggedActiveCount(state, content, drag.numerator);
+    let denominator = flaggedActiveCount(state, content, drag.denominator);
+    if (drag.founderCounts && drag.denominator === "human") denominator += 1;
+    const ratio = numerator / Math.max(1, denominator);
+    const excess = Math.max(0, ratio - drag.freeBand);
+    const drain = excess * drag.drainPerExcess;
+    if (drain <= 0) continue;
+    if (drag.stock === "morale") state.moraleOverloadFlow += drain;
+    state.stocks[drag.stock] = clampStock(state, drag.stock, state.stocks[drag.stock] - drain);
+  }
+}
+
+function applyInstanceChurn(state: GameState, content: GameContent, rng: Rng): void {
+  state.employeeQuitRate = 0;
+  let quit = false;
+  for (const rule of content.start.instanceChurn ?? []) {
+    const level = state.stocks[rule.stock];
+    const p = level >= rule.safeBand ? 0 : ((rule.safeBand - level) / rule.safeBand) * rule.maxRatePerDay;
+    if (rule.flag === "human") state.employeeQuitRate = Math.max(state.employeeQuitRate, p);
+    if (p <= 0) continue;
+    const targets = state.decisions.filter((inst) => {
+      if (!instanceIsActive(inst, state.day)) return false;
+      const def = content.decisions.find((d) => d.id === inst.defId);
+      return def?.[rule.flag] === true;
+    });
+    for (const inst of targets) {
+      if (rng.next() >= p) continue;
+      const def = content.decisions.find((d) => d.id === inst.defId);
+      state.decisions = state.decisions.filter((d) => d.instanceId !== inst.instanceId);
+      state.modifiers = state.modifiers.filter((m) => m.source !== inst.instanceId);
+      if (def) log(state, `Quit: ${def.name}`);
+      quit = true;
+    }
+  }
+  if (quit && !isDeliveryFrozen(state)) {
+    applySeatCapacity(state, effectiveCapacity(state, content), 0);
+  }
+}
+
 export function tick(state: GameState, rng: Rng, content: GameContent, challengePhase: ChallengePhase): void {
   if (state.paused) return;
   state.day += 1;
   pruneExpired(state);
+  activateDueInstances(state, content);
 
   // Ramp growth runs after pruneExpired (so a modifier expiring this tick
   // doesn't grow first) and before challengePhase, so any challenge effect
@@ -353,6 +438,7 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   // this tick's completedProjects, so they turn on the same tick the beta
   // completes. Deterministic; see runStockFlows.
   runStockFlows(state, content);
+  applyHeadcountRatioDrags(state, content);
 
   // Archetype narration reads this tick's settled techDebt (drag) and the
   // owned decision set; each fires at most once per game. Runs before
@@ -361,6 +447,7 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   detectArchetypes(state, content, log);
   detectMilestones(state, content, log);
 
+  applyInstanceChurn(state, content, rng);
   chargeUpkeep(state, content, rng);
 
   state.pointsPerDay = shippedFlow;

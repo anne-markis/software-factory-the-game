@@ -51,7 +51,7 @@ authoring instructions.
 Every named quantity the engine writes is a **stock** (`Stocks` in
 `src/engine/types.ts`). Pipeline stocks: `backlog`, `inProgress`, `inReview`, `done`,
 `shipped`. Resource / identity stocks: `budget`, `techDebt`, `reputation`,
-`users`, `ideas`, `plan`. All clamp at a minimum of 0. Budget at `$0` freezes `pull` /
+`users`, `ideas`, `plan`, `morale`. All clamp at a minimum of 0. Budget at `$0` freezes `pull` /
 `finish` / `review` / `deploy` for that tick (in-flight remaining does not burn
 down). Day, income netting, and payroll failure still run; delivery
 resumes on the next tick after budget is positive again. This is
@@ -61,6 +61,15 @@ separate from **stall** (pipeline empty and nothing affordable).
 Launch beta project completes (`completionStockGrants`), then grows via
 always-on **stock flows** and can slow delivery via **stock drag**.
 Monetization decisions *read* users; they do not invent a second population.
+
+**Morale** is the employee-loop quality stock. It seeds at 70 and caps at
+100 (`start.stockMax`). One company-wide number for every hired human type:
+it recovers slowly, reputation only *helps* (being unknown does not drain
+it), agent overload above 10 agents per human (founder counts) drains it,
+and hire quality / incidents add or spend via `addToStock`. Low morale
+rolls a per-human quit chance on **active** hires. Headcount itself stays
+as `human: true` instances, not a second stock. Pending recruits (see
+`delayDays`) do not count until they start.
 
 **Ideas** is the idea-to-value pile. It seeds at 100 and fills from day 0
 at the `discover` rate (`start.baseRates.discover`, 0.5/day). Discover is

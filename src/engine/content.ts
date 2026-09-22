@@ -26,6 +26,7 @@ const stocksSchema = z
     users: z.number().min(0),
     ideas: z.number().min(0),
     plan: z.number().min(0),
+    morale: z.number().min(0),
   })
   .strict();
 
@@ -40,7 +41,8 @@ const milestoneSchema = z
 
 const deliveryRate = z.enum(["pull", "finish", "review", "deploy"]);
 const rateTarget = z.enum(["pull", "finish", "review", "deploy", "discover", "plan", "ktlo", "all"]);
-const stockName = z.enum(["backlog", "inProgress", "inReview", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas", "plan"]);
+const stockName = z.enum(["backlog", "inProgress", "inReview", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas", "plan", "morale"]);
+const headcountFlag = z.enum(["human", "agent"]);
 
 // Stocks granted on project completion (Studio spine). Shared by
 // ProjectDef and StartConfig.initialProject.
@@ -114,6 +116,36 @@ const startSchema = z
             acquirePerDay: z.number().min(0).optional(),
             acquirePerStock: z.object({ stock: stockName, perUnit: z.number() }).strict().optional(),
             churnRatePerDay: z.number().min(0).optional(),
+          })
+          .strict(),
+      )
+      .optional(),
+    // Optional per-stock ceilings (Studio: morale 100).
+    stockMax: z.record(stockName, z.number().positive()).optional(),
+    // Agent:human (or any flag pair) drain onto a stock.
+    headcountRatioDrags: z
+      .array(
+        z
+          .object({
+            stock: stockName,
+            numerator: headcountFlag,
+            denominator: headcountFlag,
+            founderCounts: z.boolean(),
+            freeBand: z.number().min(0),
+            drainPerExcess: z.number().gt(0),
+          })
+          .strict(),
+      )
+      .optional(),
+    // Per-instance quit rolls keyed on a stock (Studio: morale → humans).
+    instanceChurn: z
+      .array(
+        z
+          .object({
+            stock: stockName,
+            flag: headcountFlag,
+            safeBand: z.number().gt(0),
+            maxRatePerDay: z.number().gt(0).lte(1),
           })
           .strict(),
       )
@@ -233,6 +265,8 @@ const decisionSchema = z
     description: z.string(),
     category: decisionCategory,
     human: z.boolean().optional(),
+    agent: z.boolean().optional(),
+    delayDays: z.number().int().min(1).optional(),
     capacity: z.number().min(0).optional(),
     capacityFromOwned: z
       .array(z.object({ id: z.string(), per: z.number() }).strict())

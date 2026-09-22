@@ -53,11 +53,13 @@
   {
     "id": "basic-dev",
     "name": "Hire basic developer",
-    "description": "Adds a developer, hopefully a strong one. It's a gamble, and they're gone for good if payroll fails. Reviewing PRs is part of the job.",
+    "description": "Adds a developer, hopefully a strong one. It's a gamble, and they're gone for good if payroll fails. Reviewing PRs is part of the job. Recruiting takes 14 days and $2,000 up front; payroll starts when they do.",
     "category": "ship-faster",
     "human": true,
+    "delayDays": 14,
     "capacity": 1,
     "cost": {
+      "oneTime": 2000,
       "perDay": 438
     },
     "effects": [],
@@ -67,7 +69,8 @@
         "label": "Strong hire",
         "effects": [
           { "type": "modifyRate", "target": "finish", "op": "add", "value": 1.0 },
-          { "type": "modifyRate", "target": "review", "op": "add", "value": 0.7 }
+          { "type": "modifyRate", "target": "review", "op": "add", "value": 0.7 },
+          { "type": "addToStock", "stock": "morale", "value": 4 }
         ]
       },
       {
@@ -75,7 +78,8 @@
         "label": "Decent hire",
         "effects": [
           { "type": "modifyRate", "target": "finish", "op": "add", "value": 0.5 },
-          { "type": "modifyRate", "target": "review", "op": "add", "value": 0.4 }
+          { "type": "modifyRate", "target": "review", "op": "add", "value": 0.4 },
+          { "type": "addToStock", "stock": "morale", "value": 1 }
         ]
       },
       {
@@ -83,7 +87,8 @@
         "label": "Net-negative hire",
         "effects": [
           { "type": "modifyRate", "target": "finish", "op": "add", "value": -0.5 },
-          { "type": "modifyRate", "target": "review", "op": "add", "value": 0.1 }
+          { "type": "modifyRate", "target": "review", "op": "add", "value": 0.1 },
+          { "type": "addToStock", "stock": "morale", "value": -8 }
         ]
       },
       {
@@ -91,7 +96,8 @@
         "label": "Disaster hire",
         "effects": [
           { "type": "modifyRate", "target": "finish", "op": "add", "value": -1.0 },
-          { "type": "modifyRate", "target": "review", "op": "add", "value": 0.1 }
+          { "type": "modifyRate", "target": "review", "op": "add", "value": 0.1 },
+          { "type": "addToStock", "stock": "morale", "value": -15 }
         ]
       }
     ],
@@ -102,6 +108,7 @@
     "name": "Add coding agent",
     "description": "Each agent finishes another 0.2 points of work a day, plans another 0.2/day, reviews 0.05/day, and adds a little more tech debt. Each human developer makes every agent's coding and planning 10% faster. Buy as many as you can feed.",
     "category": "ship-faster",
+    "agent": true,
     "cost": {
       "oneTime": 10,
       "perDay": 4

@@ -5,6 +5,7 @@ import { Engine, initialState } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
 import { unshippedWork, workLedgerIssues } from "./work";
+import { activateDueInstances } from "./tick";
 import type { GameContent, GameState } from "./types";
 
 function content(): GameContent {
@@ -247,7 +248,13 @@ describe("save/load", () => {
   it("defaults missing id counters from existing ids (legacy save shape)", () => {
     const c = content();
     const a = new Engine(c);
-    a.applyDecision("basic-dev"); // creates inst-1, review modifier, finish modifier
+    a.applyDecision("basic-dev"); // creates inst-1; modifiers land on arrival
+    const s = a.getState() as GameState;
+    for (const inst of s.decisions) {
+      if (inst.activeOnDay !== undefined) inst.activeOnDay = s.day;
+    }
+    activateDueInstances(s, c);
+    // Hire writes finish + review modifiers.
     const raw = JSON.parse(serialize(a.getState()));
     delete raw.state.nextModifierId;
     delete raw.state.nextInstanceId;

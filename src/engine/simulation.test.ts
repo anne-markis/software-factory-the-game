@@ -465,12 +465,13 @@ describe("simulation", () => {
     expect(r.completedProjects).toBeGreaterThanOrEqual(1); // finished the Launch beta (observed day 302; launch-gated)
     expect(r.everBroke).toBe(false); // unpaid hire payroll sheds the person rather than clamping to $0
     expect(r.endUsers).toBeGreaterThan(900); // climbs toward the ~1033 cap (observed ~1027)
-    // Hire payroll consumes the subscription surplus. Cash stays solvent and
-    // in the hundreds, not the old compounding tens of thousands.
+    // Hire payroll starts after the 14-day delay. Subscription still
+    // compounds during recruiting, so cash sits higher than the old
+    // immediate-payroll hundreds but stays well below idle-with-no-hires.
     expect(r.endBudget).toBeGreaterThan(100);
-    expect(r.endBudget).toBeLessThan(10000);
-    expect(r.budgetAtDay[500]).toBeLessThan(5000);
-    expect(r.budgetAtDay[2000]).toBeLessThan(5000);
+    expect(r.endBudget).toBeLessThan(80000);
+    expect(r.budgetAtDay[500]).toBeLessThan(50000);
+    expect(r.budgetAtDay[2000]).toBeLessThan(80000);
   });
 
   // Automation-heavy build, RE-PINNED for the lean Studio shop.

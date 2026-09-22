@@ -2,6 +2,7 @@ import type { DecisionDef, DecisionInstance, Effect, GameContent, GameState, Gam
 import type { Rng } from "./rng";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { applyEffects } from "./effects";
+import { instanceIsActive } from "./roster";
 import { isDeliveryFrozen, log } from "./tick";
 
 export type AvailabilityCode = "missing-requires" | "cannot-afford" | "already-owned";
@@ -99,16 +100,31 @@ export function applyDecision(state: GameState, content: GameContent, defId: str
   const instanceId = `inst-${state.nextInstanceId++}`;
   const instance: DecisionInstance = { instanceId, defId: def.id };
   if (def.human) instance.human = true;
+  if (def.agent) instance.agent = true;
   if (synergy) instance.appliedSynergyIfOwned = synergy.ifOwned;
 
-  applyEffects(state, effects, instanceId);
+  const queued: Effect[] = [...effects];
+  let gambleLabel: string | undefined;
   if (gamble) {
     const outcome = rollGamble(gamble, rng);
+    gambleLabel = outcome.label;
     instance.gambleLabel = outcome.label;
-    applyEffects(state, outcome.effects, instanceId);
-    log(state, `${def.name}: ${outcome.label}`);
+    queued.push(...outcome.effects);
+  }
+
+  const delay = def.delayDays;
+  if (delay) {
+    instance.activeOnDay = state.day + delay;
+    instance.pendingEffects = queued;
+    log(
+      state,
+      gambleLabel
+        ? `${def.name}: ${gambleLabel}, joining in ${delay} days`
+        : `Purchased: ${def.name}, joining in ${delay} days`,
+    );
   } else {
-    log(state, `Purchased: ${def.name}`);
+    applyEffects(state, queued, instanceId);
+    log(state, gambleLabel ? `${def.name}: ${gambleLabel}` : `Purchased: ${def.name}`);
   }
   state.decisions.push(instance);
   rebalanceSeats(state, content);

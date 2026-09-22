@@ -1,6 +1,7 @@
-import type { Effect, GameContent, GameState, Modifier, ModifierTarget } from "./types";
+import type { Effect, GameContent, GameState, Modifier, ModifierTarget, StockName } from "./types";
 import { log } from "./tick";
 import { attachInjectedWork, isPipelineStock } from "./work";
+import { instanceIsActive } from "./roster";
 
 export interface EffectContext {
   instanceId?: string;
@@ -40,9 +41,17 @@ function pushModifier(
 
 function humanDevInstances(state: GameState, content: GameContent) {
   return state.decisions.filter((inst) => {
+    if (!instanceIsActive(inst, state.day)) return false;
     const def = content.decisions.find((d) => d.id === inst.defId);
     return def?.human === true;
   });
+}
+
+/** Clamp a stock write: never below 0, never above GameState.stockMax when set. */
+export function clampStock(state: Pick<GameState, "stockMax">, stock: StockName, value: number): number {
+  const floor = Math.max(0, value);
+  const cap = state.stockMax?.[stock];
+  return cap === undefined ? floor : Math.min(cap, floor);
 }
 
 /**
@@ -84,6 +93,8 @@ export function hydrateHumanScale(state: GameState, content: GameContent): void 
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (def?.human === true) inst.human = true;
     else delete inst.human;
+    if (def?.agent === true) inst.agent = true;
+    else delete inst.agent;
     if (!def) continue;
     const syn = (def.synergies ?? []).find((s) => s.ifOwned === inst.appliedSynergyIfOwned);
     const effects = syn?.effects ?? def.effects;
@@ -121,7 +132,7 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         break;
       case "addToStock": {
         const before = state.stocks[effect.stock];
-        state.stocks[effect.stock] = Math.max(0, before + effect.value);
+        state.stocks[effect.stock] = clampStock(state, effect.stock, before + effect.value);
         if (isPipelineStock(effect.stock)) attachInjectedWork(state, state.stocks[effect.stock] - before);
         break;
       }
@@ -137,7 +148,7 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // in-flight remaining (engine-picked when several are live) moves by
         // the actual clamped delta.
         const before = state.stocks[effect.stock];
-        state.stocks[effect.stock] = Math.max(0, before * effect.factor);
+        state.stocks[effect.stock] = clampStock(state, effect.stock, before * effect.factor);
         if (isPipelineStock(effect.stock)) attachInjectedWork(state, state.stocks[effect.stock] - before);
         break;
       }

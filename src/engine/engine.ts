@@ -64,6 +64,11 @@ export function initialState(content: GameContent): GameState {
     userAcquireFlow: 0,
     userChurnFlow: 0,
     userIncomeFlow: 0,
+    moraleRecoverFlow: 0,
+    moralePrideFlow: 0,
+    moraleOverloadFlow: 0,
+    employeeQuitRate: 0,
+    stockMax: { ...(s.stockMax ?? {}) },
     nextInstanceId: 1,
     nextModifierId: 1,
     rngState: 0,
@@ -104,6 +109,12 @@ export class Engine {
       // access.
       if (restored.stocks.reputation === undefined) {
         restored.stocks.reputation = content.start.stocks.reputation;
+      }
+      if (restored.stocks.morale === undefined) {
+        restored.stocks.morale = content.start.stocks.morale;
+      }
+      if (restored.stockMax === undefined) {
+        restored.stockMax = { ...(content.start.stockMax ?? {}) };
       }
       // Studio spine: users stock and always-on stockDrags config.
       // The SAVE_VERSION bump to 2 means real legacy saves are rejected before
