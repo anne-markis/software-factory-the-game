@@ -9,7 +9,7 @@ import { detectMilestones } from "./milestones";
 import { attachInjectedWork, committedWork, unshippedWork } from "./work";
 import { advancePlan } from "./projects";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
-import { productFinishRate, syncKtloBase } from "./ktlo";
+import { ktloBurnPerDay, productFinishRate, syncKtloBase } from "./ktlo";
 
 // Release 3 replaces this stub with real challenge rolling.
 export type ChallengePhase = (state: GameState, rng: Rng, content: GameContent) => void;
@@ -39,24 +39,29 @@ function recordDailyExpenses(state: GameState, split: Omit<DailyExpenses, "day">
   while (state.expensesByDay.length > INCOME_HISTORY_DAYS) state.expensesByDay.shift();
 }
 
-/** Owned per-day drain plus shop-floor burn, bucketed for the Expenses chart. */
+/** Agent copies plus the rest of the agent ladder (harness, orchestration, CI review). */
+function isAgentExpenseId(defId: string): boolean {
+  return defId === "agent" || defId.startsWith("agent-");
+}
+
+/** Owned per-day drain plus KTLO cash, bucketed for the Expenses chart. */
 export function dailyExpenseSplit(
-  state: Pick<GameState, "decisions" | "baseBurnPerDay">,
+  state: Pick<GameState, "decisions">,
   content: GameContent,
 ): Omit<DailyExpenses, "day"> {
   let human = 0;
   let agents = 0;
-  let misc = state.baseBurnPerDay;
+  let ktlo = ktloBurnPerDay(content);
   for (const inst of state.decisions) {
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;
     const perDay = def.cost.perDay ?? 0;
     if (perDay <= 0) continue;
     if (def.human) human += perDay;
-    else if (def.id === "agent") agents += perDay;
-    else misc += perDay;
+    else if (isAgentExpenseId(def.id)) agents += perDay;
+    else ktlo += perDay;
   }
-  return { human, agents, misc };
+  return { human, agents, ktlo };
 }
 
 // Attribute shipped points equally across in-flight remainings, pay revenue
@@ -191,7 +196,7 @@ function runStockFlows(state: GameState, content: GameContent): void {
 
 function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
   const snapshot = [...state.decisions];
-  // Net total incomePerDay against baseBurnPerDay in the same step, before
+  // Net total incomePerDay against KTLO cash in the same step, before
   // the zero-floor clamp below. Crediting income after an already-clamped
   // burn would throw the burn deficit away entirely once budget had been
   // driven to 0, turning any owned income decision into a permanent,
@@ -241,11 +246,11 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
     }
   }
   recordDailyIncome(state, recurringIncome, burstIncome);
-  recordDailyExpenses(state, dailyExpenseSplit({ decisions: snapshot, baseBurnPerDay: state.baseBurnPerDay }, content));
+  recordDailyExpenses(state, dailyExpenseSplit({ decisions: snapshot }, content));
   // Clamp at 0 deliberately per the design spec: budget never goes negative.
   // Insolvency also freezes delivery (isDeliveryFrozen) and removes unpaid
   // payroll; it is not a negative balance.
-  state.stocks.budget = Math.max(0, state.stocks.budget - state.baseBurnPerDay + totalIncome);
+  state.stocks.budget = Math.max(0, state.stocks.budget - ktloBurnPerDay(content) + totalIncome);
   for (const inst of snapshot) {
     const def = content.decisions.find((d) => d.id === inst.defId);
     if (!def) continue;

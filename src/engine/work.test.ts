@@ -4,10 +4,16 @@ import { applyEffects } from "./effects";
 import { parseStartConfig, parseChallenges, parseProjects } from "./content";
 import { challengesJson, projectsJson, startJson } from "./loadShippedContent";
 import { attachInjectedWork, committedWork, isPipelineStock, surplusGrewWhileInFlight, surplusWork, unshippedWork, workLedgerIssues } from "./work";
+import { isContractProject } from "./types";
 import type { GameContent, GameState } from "./types";
 
 function testContent(): GameContent {
-  return { start: parseStartConfig(startJson), decisions: [], challenges: [], projects: parseProjects(projectsJson) };
+  return {
+    start: parseStartConfig(startJson),
+    decisions: [],
+    challenges: [],
+    projects: parseProjects(projectsJson).filter(isContractProject),
+  };
 }
 
 function addPeer(s: GameState, remaining = 100): void {
@@ -296,7 +302,7 @@ describe("work ledger conservation across every mutation path", () => {
     s.stocks.inReview = 0;
     s.stocks.done = 0;
     const surplusBefore = surplusWork(s);
-    e.startProject("gig-bugfix");
+    e.startProject("gig-landing-page");
     expect(surplusWork(e.getState())).toBeCloseTo(surplusBefore, 8);
     expect(workLedgerIssues(e.getState())).toEqual([]);
   });

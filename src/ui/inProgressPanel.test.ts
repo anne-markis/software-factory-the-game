@@ -331,7 +331,7 @@ describe("renderStageZoom", () => {
     const c = loadShippedContent("company");
     const e = new Engine(c);
     const html = panel(e.getState(), c);
-    expect(indexBetween(html, "Reserved 0.5/day", "KTLO")).toBe(true);
+    expect(indexBetween(html, "Reserved 0.2/day", "KTLO")).toBe(true);
     expect(inSpeedGroup(html, "KTLO")).toBe(false);
     expect(html).not.toContain("KTLO holds");
   });

@@ -78,7 +78,6 @@ const startSchema = z
     // Founder In Progress seats. Separate from baseRates: speed is not capacity.
     baseCapacity: z.number().min(0),
     debtMultiplier: z.number().min(0),
-    baseBurnPerDay: z.number().min(0),
     contextSwitchFactor: z.number().gt(0).lte(1),
     // freeDebt >= 0 (grace band), dragPerPoint > 0 (drag must actually bite),
     // maxDrag in (0, 1) (a cap that neither vanishes nor stalls throughput).
@@ -451,6 +450,7 @@ const permanentProjectSchema = z
     name: z.string(),
     permanent: z.literal(true),
     basePerDay: z.number().positive(),
+    perDay: z.number().min(0),
   })
   .strict();
 

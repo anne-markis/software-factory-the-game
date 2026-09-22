@@ -484,13 +484,13 @@ describe("appView node identity across renders", () => {
 
   it("keeps the same project Start button node across ticks even while an in-flight project's remaining points change", () => {
     const h = mount();
-    const before = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
+    const before = h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!;
     expect(before).toBeTruthy();
     const remainingBefore = h.root.querySelector('[data-project-status="launch-beta"]')!.textContent!;
     for (let i = 0; i < 10; i++) {
       h.engine.tick();
       h.view.render();
-      expect(h.root.querySelector('[data-project="gig-bugfix"]')).toBe(before);
+      expect(h.root.querySelector('[data-project="gig-landing-page"]')).toBe(before);
     }
     // The volatile in-flight row beside the button did update.
     const remainingAfter = h.root.querySelector('[data-project-status="launch-beta"]')!.textContent!;
@@ -503,13 +503,13 @@ describe("appView node identity across renders", () => {
     s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 0, size: 1000 }];
     s.stocks.plan = 0;
     h.view.render();
-    const start = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
-    const pursue = h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!;
+    const start = h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!;
+    const other = h.root.querySelector<HTMLElement>('[data-project="small-refactor"]')!;
     s.plan[0]!.progress = 4;
     s.stocks.plan = 4;
     h.view.render();
-    expect(h.root.querySelector('[data-project="gig-bugfix"]')).toBe(start);
-    expect(h.root.querySelector('[data-project="gig-landing-page"]')).toBe(pursue);
+    expect(h.root.querySelector('[data-project="gig-landing-page"]')).toBe(start);
+    expect(h.root.querySelector('[data-project="small-refactor"]')).toBe(other);
     expect(h.root.querySelector('[data-plan-status="large-refactor"]')!.textContent).toContain("4 / 1,000");
   });
 
@@ -683,9 +683,33 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const chart = h.root.querySelector('[data-section="expenses-chart"]')!;
     expect(chart.textContent).toContain("Human $0/day");
     expect(chart.textContent).toContain("Agents $0/day");
-    expect(chart.textContent).toContain("Misc $20/day");
+    expect(chart.textContent).toContain("KTLO $20/day");
     expect(chart.querySelector(".income-bars")).toBeTruthy();
     expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $20");
+  });
+
+  it("rolls harness, orchestration, and agent CI review into Agents", () => {
+    const h = mount();
+    h.root.querySelector<HTMLElement>('[data-buy="agent"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="agent"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="agent-harness"]')!.click();
+    h.engine.tick();
+    h.view.render();
+    let chart = h.root.querySelector('[data-section="expenses-chart"]')!;
+    expect(chart.textContent).toContain("Human $0/day");
+    expect(chart.textContent).toContain("Agents $13/day");
+    expect(chart.textContent).toContain("KTLO $20/day");
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $33");
+    h.root.querySelector<HTMLElement>('[data-buy="agent-orchestration"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="ci-cd"]')!.click();
+    h.root.querySelector<HTMLElement>('[data-buy="agent-ci-review"]')!.click();
+    h.engine.tick();
+    h.view.render();
+    chart = h.root.querySelector('[data-section="expenses-chart"]')!;
+    expect(chart.textContent).toContain("Agents $37/day");
+    expect(chart.textContent).toContain("KTLO $20/day");
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $57");
   });
 
   it("puts subscription receipts on Income, while purchase stays in Events", () => {
@@ -757,8 +781,8 @@ describe("appView click delegation on the stable root", () => {
 
   it("starts a project through data-project", () => {
     const h = mount();
-    h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!.click();
-    expect(h.engine.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
+    h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!.click();
+    expect(h.engine.getState().projects.some((p) => p.defId === "gig-landing-page")).toBe(true);
     expect(h.actions).toBe(1);
   });
 
@@ -788,11 +812,11 @@ describe("appView click delegation on the stable root", () => {
     s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 10, size: 1000 }];
     s.stocks.plan = 10;
     h.view.render();
-    const start = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
+    const start = h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!;
     expect(start.textContent).toBe("Start");
     expect(start.hasAttribute("disabled")).toBe(false);
     start.click();
-    expect(h.engine.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
+    expect(h.engine.getState().projects.some((p) => p.defId === "gig-landing-page")).toBe(true);
     expect(h.engine.getState().plan).toHaveLength(1);
     expect(h.engine.getState().plan[0]!.defId).toBe("large-refactor");
     expect(h.actions).toBe(1);

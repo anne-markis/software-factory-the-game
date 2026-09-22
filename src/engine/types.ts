@@ -234,15 +234,16 @@ export interface ChallengeDef {
   cooldownDays?: number;
 }
 
-// Always-on overhead (Company Keep the lights on). Not a contract: no
-// remaining, no payout, no offer row. Present in the catalog from the era
-// that introduces it, inherited after that. Cards scale basePerDay via
-// modifyRate target "ktlo". It does not take an In Progress seat.
+// Always-on overhead (Keep the lights on). Not a contract: no remaining,
+// no payout, no offer row. Present from Studio, inherited after that.
+// Cards scale basePerDay via modifyRate target "ktlo". perDay is the cash
+// drain (replaces the old start.baseBurnPerDay). It does not take a seat.
 export interface PermanentProjectDef {
   id: string;
   name: string;
   permanent: true;
   basePerDay: number;
+  perDay: number;
 }
 
 export interface ContractProjectDef {
@@ -365,13 +366,14 @@ export interface DailyIncome {
 }
 
 // One tick of cash drain, split for the Expenses sparkline. human is
-// owned `human` payroll; agents is owned `agent` copies; misc is shop-floor
-// base burn plus every other perDay. Capped on GameState.expensesByDay.
+// owned `human` payroll; agents is the agent stack (copies plus harness /
+// orchestration / agent-CI-review); ktlo is Keep the lights on plus any
+// other non-human, non-agent perDay. Capped on GameState.expensesByDay.
 export interface DailyExpenses {
   day: number;
   human: number;
   agents: number;
-  misc: number;
+  ktlo: number;
 }
 
 // Always-on stock drag (Studio spine / ADR 0006). Mirrors the
@@ -410,7 +412,6 @@ export interface StartConfig {
   // agents do not (they only change finish speed). See effectiveCapacity.
   baseCapacity: number;
   debtMultiplier: number;
-  baseBurnPerDay: number;
   contextSwitchFactor: number;
   // Always-on stock drags (Studio support drag). Copied into GameState at
   // init like debtDrag, so effectiveRate can apply them without content.
@@ -496,7 +497,6 @@ export interface GameState {
   baseRates: Record<RateId, number>;
   baseCapacity: number;
   debtMultiplierBase: number;
-  baseBurnPerDay: number;
   contextSwitchFactor: number;
   // Tech-debt drag config, copied from content.start.debtDrag at init (the
   // contextSwitchFactor pattern). Legacy saves predate these three fields; the

@@ -13,6 +13,13 @@ export function syncKtloBase(state: GameState, content: GameContent): void {
   state.baseRates.ktlo = base;
 }
 
+/** Cash drain on Keep the lights on (and any other permanent project). */
+export function ktloBurnPerDay(content: GameContent): number {
+  let n = 0;
+  for (const def of permanentProjects(content)) n += def.perDay;
+  return n;
+}
+
 /** Finish left for contracts after KTLO reserves its rate. */
 export function productFinishRate(state: GameState, content: GameContent): number {
   const finish = effectiveRate(state, "finish");

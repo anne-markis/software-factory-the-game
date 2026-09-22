@@ -5,6 +5,7 @@ import { Engine } from "./engine";
 import { parseStartConfig, parseDecisions } from "./content";
 import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
 import { INCOME_HISTORY_DAYS, PROJECT_DISPLAY_GRAIN, dailyExpenseSplit } from "./tick";
+import { ktloBurnPerDay } from "./ktlo";
 import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
 import { unshippedWork, surplusWork } from "./work";
@@ -18,6 +19,16 @@ export function testContent(): GameContent {
 // continuous-deploy probes below are isolated from random events.
 function ciCdContent(): GameContent {
   return { start: parseStartConfig(startJson), decisions: parseDecisions(decisionsJson), challenges: [], projects: [] };
+}
+
+function withKtlo(content: GameContent): GameContent {
+  return {
+    ...content,
+    projects: [
+      ...content.projects,
+      { id: "ktlo", name: "Keep the lights on", permanent: true, basePerDay: 0.2, perDay: 20 },
+    ],
+  };
 }
 
 describe("tick", () => {
@@ -109,12 +120,12 @@ describe("tick", () => {
   // payoutPerPoint is 0 (money comes from the completion bonus + users
   // monetization, not per-point client revenue), so shipping a beta point pays
   // nothing and the budget is pure base-burn drawdown until completion.
-  it("pays revenue per shipped point and charges base burn (Launch beta pays $0/pt)", () => {
-    const e = new Engine(testContent());
-    e.tick(); // no shipping yet: 10000 - 20 burn (release-7 baseBurnPerDay)
+  it("pays revenue per shipped point and charges KTLO cash (Launch beta pays $0/pt)", () => {
+    const e = new Engine(withKtlo(testContent()));
+    e.tick(); // no shipping yet: 10000 - 20 KTLO
     expect(e.getState().stocks.budget).toBe(9980);
     e.tick();
-    e.tick(); // ships 1 point at $0 (launch-beta payoutPerPoint): 10000 - 3*20 burn + 0
+    e.tick(); // 10000 - 3*20 KTLO + $0/pt
     expect(e.getState().stocks.budget).toBe(10000 - 60 + 0);
   });
 
@@ -197,7 +208,7 @@ describe("tick", () => {
           // day (grossGain 3 + reputation 1 * 0.1 = 3.1, churn 30 * 0.003 =
           // 0.09): 30 + 3.1 - 0.09 = 33.01.
           expect(s.stocks.users).toBeCloseTo(33.01, 5);
-          expect(s.stocks.budget).toBeCloseTo(budgetBeforeCompletion - 20 + 800, 5); // +$800 bonus, -$20 burn
+          expect(s.stocks.budget).toBeCloseTo(budgetBeforeCompletion - ktloBurnPerDay(content) + 800, 5);
           expect(s.log.some((l) => l.message.includes("+30 users"))).toBe(true);
         } else {
           expect(usersBefore).toBe(0);
@@ -396,18 +407,18 @@ describe("tick", () => {
     });
 
     it("subscription earns nothing at zero users (useless until launch)", () => {
-      const content = ciCdContent();
+      const content = withKtlo(ciCdContent());
       content.start.stocks.backlog = 0;
       const e = new Engine(content);
       e.applyDecision("subscription");
       const before = e.getState().stocks.budget; // users still 0
       e.tick();
-      // Pure base burn, no stock income: 0 users * 0.75 = 0.
-      expect(e.getState().stocks.budget).toBe(before - content.start.baseBurnPerDay);
+      // Pure KTLO cash, no stock income: 0 users * 0.75 = 0.
+      expect(e.getState().stocks.budget).toBe(before - ktloBurnPerDay(content));
     });
 
     it("one-time-product consumes no RNG and pays nothing while users are 0", () => {
-      const content = ciCdContent();
+      const content = withKtlo(ciCdContent());
       content.start.stocks.backlog = 0;
       const withOtp = new Engine(content);
       const withoutOtp = new Engine(content);
@@ -420,7 +431,7 @@ describe("tick", () => {
         withoutOtp.tick();
         expect(withOtp.getState().stocks.users).toBe(0);
         expect(withOtp.getState().userIncomeFlow).toBe(0);
-        expect(withOtp.getState().stocks.budget).toBe(before - content.start.baseBurnPerDay);
+        expect(withOtp.getState().stocks.budget).toBe(before - ktloBurnPerDay(content));
         expect(withOtp.getState().log.some((l) => l.message.includes("product sale burst"))).toBe(false);
         expect(withOtp.getState().incomeByDay.at(-1)?.burst).toBe(0);
         expect(withOtp.getState().rngState).toBe(withoutOtp.getState().rngState);
@@ -488,23 +499,30 @@ describe("tick", () => {
       expect(days.at(-1)!.day).toBe(e.getState().day);
     });
 
-    it("splits expenses into human, agent copies, and misc (shop floor plus other perDay)", () => {
-      const content = ciCdContent();
+    it("splits expenses into human, the agent stack, and KTLO", () => {
+      const content = withKtlo(ciCdContent());
       const e = new Engine(content);
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 0, agents: 0, misc: 20 });
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 0, agents: 0, ktlo: 20 });
       e.applyDecision("basic-dev");
       e.applyDecision("agent");
       e.applyDecision("agent");
       e.applyDecision("agent-harness");
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 8, misc: 25 });
+      // 2 agents ($8) + harness ($5); KTLO stays $20.
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 13, ktlo: 20 });
+      e.applyDecision("agent-orchestration");
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 25, ktlo: 20 });
+      e.applyDecision("test-suite");
+      e.applyDecision("ci-cd");
+      e.applyDecision("agent-ci-review");
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 37, ktlo: 20 });
     });
 
     it("records expensesByDay on tick and caps it with income history", () => {
-      const content = ciCdContent();
+      const content = withKtlo(ciCdContent());
       const e = new Engine(content);
       e.applyDecision("agent");
       e.tick();
-      expect(e.getState().expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, misc: 20 });
+      expect(e.getState().expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, ktlo: 20 });
       for (let i = 0; i < INCOME_HISTORY_DAYS + 2; i++) e.tick();
       const days = e.getState().expensesByDay;
       expect(days).toHaveLength(INCOME_HISTORY_DAYS);
@@ -698,7 +716,7 @@ describe("tick", () => {
       e.tick();
       const after = e.getState();
       expect(after.completedProjectIds).toContain("small-refactor");
-      expect(after.stocks.budget).toBeCloseTo(budgetBefore - after.baseBurnPerDay, 8);
+      expect(after.stocks.budget).toBeCloseTo(budgetBefore - ktloBurnPerDay(testContent()), 8);
     });
 
     it("lets debt attach lift remaining back over the grain instead of snapping", () => {
@@ -721,7 +739,7 @@ describe("tick", () => {
     });
   });
 
-  // chargeUpkeep used to clamp budget to 0 against baseBurnPerDay
+  // chargeUpkeep used to clamp budget to 0 against KTLO cash
   // BEFORE crediting income, instead of netting burn against income in the
   // same step. Once budget had already been driven to 0, that clamp threw away
   // the burn deficit entirely, so any owned income decision got added on top
@@ -732,7 +750,7 @@ describe("tick", () => {
   // for either income shape.
   describe("insolvency does not monetize owned income decisions", () => {
     it("stabilizes budget at 0, not at the income amount, once burn has driven the player insolvent", () => {
-      const content = ciCdContent();
+      const content = withKtlo(ciCdContent());
       // No pipeline flow at all, so no shipped-point revenue can leak into
       // budget and contaminate the probe: this isolates chargeUpkeep's
       // burn-vs-income netting from attributeShipped entirely.
