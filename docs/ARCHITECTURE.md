@@ -52,7 +52,9 @@ creep, any `addToStock` / `scaleStock` on `backlog` / `inProgress` /
 (engine-picked arbitrarily if several are live; not split, not player-
 chosen). The
 cockpit Backlog hero metric is unshipped work (`backlog + inProgress +
-inReview + done`), not the Ready-stage stock. The Delivery diagram paints Ideas and Plan left of Ready, then Ready →
+inReview + done`), not the Ready-stage stock. Cockpit **Idea→Value** is
+named Plan item sizes plus that unshipped work, not the idle Ideas wallet.
+The Delivery diagram paints Ideas and Plan left of Ready, then Ready →
 In Progress → In Review → Done → Shipped. Ready is still `stocks.backlog`.
 
 **In Progress is capacity**, not a waiting queue. Seats are

@@ -71,7 +71,7 @@ rolls a per-human quit chance on **active** hires. Headcount itself stays
 as `human: true` instances, not a second stock. Pending recruits (see
 `delayDays`) do not count until they start.
 
-**Ideas** is the idea-to-value pile. It seeds at 100 and fills from day 0
+**Ideas** is the discover-faucet wallet. It seeds at 100 and fills from day 0
 at the `discover` rate (`start.baseRates.discover`, 0.5/day). Discover is
 not a pipeline stage, is not frozen at `$0`, and does not scale with
 reputation, users, or shipped points. The Delivery diagram shows the pile
@@ -80,7 +80,8 @@ and the current discover capacity from day 0. Shop cards raise it with
 Studio: **Hack day** is a repeatable day-0 spend ($500 once): `+50` Ideas
 immediately and delivery `x0.3` for one felt day. **User interviews** is a
 repeatable day-0 spend ($1000 once) that grants `+200` Ideas and does not
-touch delivery, discover, or plan.
+touch delivery, discover, or plan. Cockpit **Idea→Value** does not include
+this wallet; it is named Plan item sizes plus unshipped pipeline work.
 
 **Plan** is named work after Pursue and before Ready. `GameState.plan` holds
 items (`id`, `name`, `progress`, `size`); `stocks.plan` is the sum of

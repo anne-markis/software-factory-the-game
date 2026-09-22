@@ -99,22 +99,23 @@ describe("renderStats", () => {
     expect(html).toContain('<span class="stat-value v-eta">—</span>');
   });
 
-  it("shows Idea→Value as ~Nd when Points/Day is positive", () => {
+  it("shows Idea→Value as ~Nd from Plan plus unshipped work", () => {
     const c = content();
     const e = new Engine(c);
     const state = e.getState() as import("../engine/types").GameState;
     state.pointsPerDay = 10;
     state.stocks.ideas = 50;
     state.stocks.plan = 0;
+    state.plan = [];
     // Fresh seed puts the initial project in Ready; pin unshipped for a
-    // stable assertion.
+    // stable assertion. Idle Ideas (50) must not lengthen the clock.
     state.stocks.backlog = 50;
     state.stocks.inProgress = 0;
     state.stocks.inReview = 0;
     state.stocks.done = 0;
     const html = renderStats(state, c);
-    // 50 + 0 + 50 = 100 / 10 = 10 days
-    expect(html).toContain('<span class="stat-value v-eta">~10d</span>');
+    // 0 plan + 50 unshipped = 50 / 10 = 5 days
+    expect(html).toContain('<span class="stat-value v-eta">~5d</span>');
   });
 
   // Budget must telegraph runway before payroll wipe.

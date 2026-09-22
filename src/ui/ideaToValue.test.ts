@@ -21,12 +21,31 @@ function stocks(partial: Partial<GameState["stocks"]> = {}): GameState["stocks"]
 }
 
 describe("ideaToValuePoints", () => {
-  it("sums Ideas, Plan, and unshipped pipeline work", () => {
+  it("sums named Plan sizes and unshipped pipeline work, ignoring idle Ideas", () => {
     expect(
       ideaToValuePoints({
         stocks: stocks({ ideas: 310, plan: 48, backlog: 80, inProgress: 2, inReview: 18, done: 4 }),
+        plan: [{ defId: "late", name: "Late", progress: 48, size: 400 }],
       }),
-    ).toBe(462);
+    ).toBe(504);
+  });
+
+  it("at a one-project start counts only the seeded Ready work, not the Ideas wallet", () => {
+    expect(
+      ideaToValuePoints({
+        stocks: stocks({ ideas: 100, plan: 0, backlog: 300 }),
+        plan: [],
+      }),
+    ).toBe(300);
+  });
+
+  it("counts a Plan item's full size, not just filled progress", () => {
+    expect(
+      ideaToValuePoints({
+        stocks: stocks({ ideas: 0, plan: 10, backlog: 300 }),
+        plan: [{ defId: "v1", name: "Ship v1", progress: 10, size: 400 }],
+      }),
+    ).toBe(700);
   });
 });
 
@@ -48,13 +67,14 @@ describe("ideaToValueDays", () => {
 });
 
 describe("formatIdeaToValue", () => {
-  it("shows ~Nd", () => {
+  it("shows ~Nd from Plan onward, not idle Ideas", () => {
     expect(
       formatIdeaToValue({
         stocks: stocks({ ideas: 310, plan: 48, backlog: 80, inProgress: 2, inReview: 18, done: 4 }),
+        plan: [{ defId: "late", name: "Late", progress: 48, size: 400 }],
         pointsPerDay: 6.4,
       }),
-    ).toBe("~73d");
+    ).toBe("~79d");
   });
 
   it("shows an em dash when ship rate is ~0", () => {
