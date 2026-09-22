@@ -558,13 +558,14 @@ describe("simulation", () => {
     return e;
   }
 
-  // Half one: before ci-cd, the ladder ships no more than an idle factory --
-  // deploy's 1.0/day is the wall. That is not a lie in the shop as long as the
-  // player can SEE what they bought, and they can: the pile moves. Idle piles up
-  // In Progress (finish is the constraint); the ladder drains In Progress and
-  // piles up Done instead (deploy is now the constraint). The loop diagram reads
-  // a growing box as the bottleneck, so this is the game pointing at the
-  // test-suite -> ci-cd branch as the next thing to buy.
+  // Half one: idle is now finish-bound at 0.8 (1.0 finish minus the 0.2 KTLO
+  // reserve), so the ladder does ship more -- it lifts finish past deploy's
+  // 1.0/day wall. That is not a lie in the shop as long as the player can SEE
+  // what they bought, and they can: the pile moves. Idle stays on the finish
+  // constraint; the ladder drains In Progress and piles up In Review (deploy
+  // is now the constraint). The loop diagram reads a growing box as the
+  // bottleneck, so this is the game pointing at the test-suite -> ci-cd
+  // branch as the next thing to buy.
   it("without continuous deploy, the agent ladder moves the bottleneck from finish to In Review rather than shipping more", () => {
     const idle = ladderBuild({ ladder: false, continuousDeploy: false });
     const ladder = ladderBuild({ ladder: true, continuousDeploy: false });
@@ -581,7 +582,7 @@ describe("simulation", () => {
     }
     const i = idle.getState();
     const l = ladder.getState();
-    expect(l.stocks.shipped).toBe(i.stocks.shipped); // deploy-bound at 1/day
+    expect(l.stocks.shipped).toBeGreaterThan(i.stocks.shipped); // idle finish-bound at 0.8; ladder hits deploy 1/day
     expect(l.stocks.budget).toBeLessThan(i.stocks.budget);
     expect(i.stocks.inProgress).toBe(1);
     expect(i.stocks.inReview).toBeLessThan(2);
@@ -602,7 +603,7 @@ describe("simulation", () => {
     const c = coding.getState();
     expect(effectiveRate(c, "review")).toBeCloseTo(1.2, 4);
     expect(c.stocks.shipped).toBeGreaterThan(i.stocks.shipped);
-    expect(i.pointsPerDay).toBeCloseTo(1, 5);
+    expect(i.pointsPerDay).toBeCloseTo(0.8, 5);
     expect(c.pointsPerDay).toBeCloseTo(1.2, 5);
     expect(c.stocks.inReview).toBeGreaterThan(50);
   });
@@ -618,7 +619,7 @@ describe("simulation", () => {
     const l = ladder.getState();
     expect(effectiveRate(l, "review")).toBeCloseTo(1.2 * 1.45, 4);
     expect(l.stocks.shipped).toBeGreaterThan(i.stocks.shipped);
-    expect(i.pointsPerDay).toBeCloseTo(1, 5);
+    expect(i.pointsPerDay).toBeCloseTo(0.8, 5);
     expect(l.pointsPerDay).toBeCloseTo(1.2 * 1.45, 5);
     expect(l.stocks.inReview).toBeGreaterThan(50);
     expect(l.stocks.backlog + l.stocks.inProgress).toBeCloseTo(0, 5);
@@ -916,13 +917,13 @@ describe("simulation", () => {
     // isStalled() is actually meant to capture.
     c.challenges = [];
     c.decisions = [];
-    c.projects = []; // $0 tiny gigs would otherwise keep a relief valve open
+    c.projects = c.projects.filter((p) => p.permanent === true); // keep KTLO cash; drop $0 gigs
     c.start.debtMultiplier = 0;
     c.start.stocks.backlog = 3;
-    // $20/day burn. The 3-point pipe needs ~5 days to drain; a tick that
-    // starts at $0 now freezes delivery, so $10 would freeze mid-pipe and
-    // stall would never fire. $100 covers the drain, then clamps to 0.
-    c.start.stocks.budget = 100;
+    // $20/day KTLO. The 3-point pipe needs ~7 days at 0.8 finish; a tick that
+    // starts at $0 now freezes delivery, so $100 would freeze mid-pipe and
+    // stall would never fire. $200 covers the drain, then clamps to 0.
+    c.start.stocks.budget = 200;
     c.start.initialProject.sizePoints = 3;
     // Zero the payout so completing the initial project does not inject cash.
     c.start.initialProject.completionBonus = 0;

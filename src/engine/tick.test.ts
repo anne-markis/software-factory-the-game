@@ -208,7 +208,7 @@ describe("tick", () => {
           // day (grossGain 3 + reputation 1 * 0.1 = 3.1, churn 30 * 0.003 =
           // 0.09): 30 + 3.1 - 0.09 = 33.01.
           expect(s.stocks.users).toBeCloseTo(33.01, 5);
-          expect(s.stocks.budget).toBeCloseTo(budgetBeforeCompletion - 20 + 800, 5); // +$800 bonus, -$20 burn
+          expect(s.stocks.budget).toBeCloseTo(budgetBeforeCompletion - ktloBurnPerDay(content) + 800, 5);
           expect(s.log.some((l) => l.message.includes("+30 users"))).toBe(true);
         } else {
           expect(usersBefore).toBe(0);
