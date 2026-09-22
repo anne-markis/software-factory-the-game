@@ -121,8 +121,8 @@ describe("renderStats", () => {
     const c = content();
     const e = new Engine(c);
     const html = renderStats(e.getState(), c);
-    // Fresh game: $25,000 / $20/day = 1,250 days; healthy, no warning class.
-    expect(html).toContain('class="stat-value v-budget">$25,000 (1,250d)</span>');
+    // Fresh game: $25,000 / $20/day = 1250 days; healthy, no warning class.
+    expect(html).toContain('class="stat-value v-budget">$25,000 (1250d)</span>');
     expect(html).not.toContain("budget-low");
   });
 
