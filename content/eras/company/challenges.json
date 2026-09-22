@@ -12,5 +12,13 @@
       { "type": "scaleStock", "stock": "users", "factor": 0.985 },
       { "type": "modifyRate", "target": "all", "op": "mul", "value": 0.8, "durationDays": 3 }
     ]
+  },
+  {
+    "id": "weekend-in-the-desert",
+    "name": "Weekend in the desert",
+    "description": "You disappeared into the desert for a weekend and came back with a notebook full of product ideas. Ideas +5000.",
+    "probabilityPerDay": 0.01,
+    "condition": { "minCompletedProjects": 1 },
+    "effects": [{ "type": "addToStock", "stock": "ideas", "value": 5000 }]
   }
 ]
