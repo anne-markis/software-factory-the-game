@@ -843,30 +843,30 @@ describe("renderProjectsStatus", () => {
     expect(s.pointsPerDay).toBe(1);
 
     s.projects.push({
-      defId: "gig-bugfix",
-      name: "Bugfix sprint",
+      defId: "gig-landing-page",
+      name: "Back-burner feature",
       remaining: 100,
-      payoutPerPoint: 18,
-      completionBonus: 200,
+      payoutPerPoint: 16,
+      completionBonus: 300,
       reputationReward: 1,
     });
     const two = renderProjectsStatus([...s.projects], s, c);
     expect(two).toContain("Launch beta");
-    expect(two).toContain("Bugfix sprint");
+    expect(two).toContain("Back-burner feature");
     expect(two.match(/100 left/g)).toHaveLength(2);
     expect(two.match(/~200d/g)).toHaveLength(2);
     expect(s.pointsPerDay).toBe(1);
     expect(two).not.toContain("efficiency");
 
-    s.projects = s.projects.filter((p) => p.defId !== "gig-bugfix");
+    s.projects = s.projects.filter((p) => p.defId !== "gig-landing-page");
     const one = renderProjectsStatus([...s.projects], s, c);
     expect(one).toContain("~100d");
     expect(one).not.toContain("~200d");
   });
 
-  it("pins Keep the lights on above in-flight work and keeps a Studio bugfix sprint abandonable", () => {
+  it("pins Keep the lights on above in-flight work and keeps a Studio gig abandonable", () => {
     const e = new Engine(loadShippedContent(), undefined, loadShippedContent);
-    e.startProject("gig-bugfix");
+    e.startProject("gig-landing-page");
     const companyBudget = loadShippedContent().eras!.eras.find((era) => era.id === "company")!.entryAnyOf![0].minBudget!;
     e.getState().stocks.budget = companyBudget + 20;
     e.tick();
@@ -883,11 +883,12 @@ describe("renderProjectsStatus", () => {
     expect(html).toContain("cannot cancel");
     expect(html).not.toContain("seat");
     expect(html).not.toContain('data-abandon="ktlo"');
-    expect(html).toContain("Bugfix sprint");
-    expect(html).toContain('data-abandon="gig-bugfix"');
+    expect(html).not.toContain("Bugfix sprint");
+    expect(html).toContain("Back-burner feature");
+    expect(html).toContain('data-abandon="gig-landing-page"');
     const offers = renderProjectOffers(e.availableProjects(), e.getState());
     expect(offers).not.toContain("Bugfix sprint");
-    expect(offers).toContain("Back-burner feature");
+    expect(offers).not.toContain("Back-burner feature");
   });
 });
 
@@ -906,15 +907,14 @@ describe("renderProjectOffers", () => {
     const c = studioProjects();
     const e = new Engine(c);
     const html = renderProjectOffers(e.availableProjects(), e.getState());
-    expect(html).toContain('data-project="gig-bugfix" ');
-    expect(html).toContain("Bugfix sprint");
-    expect(html).toContain("$2,200");
+    expect(html).toContain('data-project="gig-landing-page" ');
+    expect(html).not.toContain("Bugfix sprint");
     expect(html).toContain("Back-burner feature");
     expect(html).toContain("$3,000");
     expect(html).not.toContain("$200 start");
-    expect(html).toContain("100 pts");
-    expect(html).toContain("$18");
-    expect(html).toContain("$200");
+    expect(html).toContain("150 pts");
+    expect(html).toContain("$16");
+    expect(html).toContain("$300");
     expect(html).toContain("+1 rep");
     expect(html).not.toMatch(/100 · \$0 ·/);
     expect(html).not.toMatch(/efficiency/i);
@@ -989,8 +989,8 @@ describe("renderProjectOffers", () => {
     s.stocks.ideas = 400;
     s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 3, size: 1000 }];
     const html = renderProjectOffers(projectAvailability(s, c), s);
-    expect(html).toContain('data-project="gig-bugfix" >Start<');
-    expect(html).not.toContain('data-project="gig-bugfix" disabled');
+    expect(html).toContain('data-project="gig-landing-page" >Start<');
+    expect(html).not.toContain('data-project="gig-landing-page" disabled');
     expect(html).toContain('data-project="ship-v1" >Pursue<');
     expect(html).not.toContain('data-project="large-refactor"');
   });
@@ -1031,8 +1031,8 @@ describe("renderProjectOffers", () => {
     // Next ladder step is unlocked and still shown.
     expect(html).toContain('data-project="ship-v2"');
     // Repeatable gigs remain offerable after any completions.
-    expect(html).toContain('data-project="gig-bugfix"');
-    expect(projectAvailability(s, c).find((p) => p.def.id === "gig-bugfix")!.startable).toBe(true);
+    expect(html).toContain('data-project="gig-landing-page"');
+    expect(projectAvailability(s, c).find((p) => p.def.id === "gig-landing-page")!.startable).toBe(true);
   });
 
   it("labels Ideas on Pursue, omits $0 money, and chips debt / users effects", () => {
@@ -1062,16 +1062,16 @@ describe("renderProjectOffers", () => {
     const c = studioProjects();
     const s = initialState(c);
     s.projects.push({
-      defId: "gig-bugfix",
-      name: "Bugfix sprint",
-      remaining: 100,
-      payoutPerPoint: 18,
-      completionBonus: 200,
+      defId: "gig-landing-page",
+      name: "Back-burner feature",
+      remaining: 150,
+      payoutPerPoint: 16,
+      completionBonus: 300,
       reputationReward: 1,
     });
     const html = renderProjectOffers(projectAvailability(s, c), s);
-    expect(html).not.toContain('data-project="gig-bugfix"');
-    expect(html).toContain('data-project="gig-landing-page"');
+    expect(html).not.toContain('data-project="gig-landing-page"');
+    expect(html).toContain('data-project="small-refactor"');
   });
 
   it("does not change as in-flight work progresses, so the Start buttons survive the tick", () => {

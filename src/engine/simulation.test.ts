@@ -16,7 +16,6 @@ const STUDIO_FOLLOW_ON = [
   "ship-v3",
   "ship-v4",
   "ship-v5",
-  "gig-bugfix",
   "gig-landing-page",
 ];
 

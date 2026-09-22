@@ -17,7 +17,8 @@ describe("KTLO", () => {
     expect(studioKtlo && isPermanentProject(studioKtlo) && studioKtlo.basePerDay).toBe(0.2);
     expect(studioKtlo && isPermanentProject(studioKtlo) && studioKtlo.perDay).toBe(20);
     expect(studio.getState().baseRates.ktlo).toBeCloseTo(0.2);
-    expect(studio.availableProjects().some((p) => p.def.id === "gig-bugfix")).toBe(true);
+    expect(studio.availableProjects().some((p) => p.def.id === "gig-bugfix")).toBe(false);
+    expect(studio.availableProjects().some((p) => p.def.id === "gig-landing-page")).toBe(true);
 
     const company = new Engine(loadShippedContent("company"));
     const ktlo = company.getContent().projects.find((p) => p.id === "ktlo");
@@ -30,7 +31,8 @@ describe("KTLO", () => {
 
     const mega = loadShippedContent("megacorp");
     expect(mega.projects.some((p) => p.id === "ktlo")).toBe(true);
-    expect(mega.retiredProjectIds).toEqual(["gig-bugfix"]);
+    expect(mega.retiredProjectIds ?? []).toEqual([]);
+    expect(mega.projects.some((p) => p.id === "gig-bugfix")).toBe(false);
   });
 
   it("reserves finish before contract work and leaves every seat for that work", () => {
@@ -58,22 +60,21 @@ describe("KTLO", () => {
     expect(effectiveRate(s, "ktlo")).toBeCloseTo(0.32);
   });
 
-  it("drops Bugfix sprint from offers at the crossing and leaves one already in flight", () => {
+  it("keeps an in-flight Studio gig across the Company crossing", () => {
     const e = new Engine(loadShippedContent(), undefined, loadShippedContent);
-    e.startProject("gig-bugfix");
-    const before = e.getState().projects.find((p) => p.defId === "gig-bugfix")!.remaining;
+    e.startProject("gig-landing-page");
+    const before = e.getState().projects.find((p) => p.defId === "gig-landing-page")!.remaining;
     (e.getState() as GameState).stocks.budget = COMPANY_CLEAR;
     e.tick();
     expect(e.getState().eraId).toBe("company");
     expect(e.getState().baseRates.ktlo).toBeCloseTo(0.2);
-    const live = e.getState().projects.find((p) => p.defId === "gig-bugfix");
+    const live = e.getState().projects.find((p) => p.defId === "gig-landing-page");
     expect(live).toBeDefined();
     expect(live!.remaining).toBe(before);
     expect(e.availableProjects().some((p) => p.def.id === "gig-bugfix")).toBe(false);
     expect(e.availableProjects().some((p) => p.def.id === "gig-landing-page")).toBe(true);
-    expect(() => e.startProject("gig-bugfix")).toThrow(/no longer offered/);
-    e.abandonProject("gig-bugfix");
-    expect(e.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(false);
+    e.abandonProject("gig-landing-page");
+    expect(e.getState().projects.some((p) => p.defId === "gig-landing-page")).toBe(false);
     expect(workLedgerIssues(e.getState())).toEqual([]);
   });
 });

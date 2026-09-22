@@ -484,13 +484,13 @@ describe("appView node identity across renders", () => {
 
   it("keeps the same project Start button node across ticks even while an in-flight project's remaining points change", () => {
     const h = mount();
-    const before = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
+    const before = h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!;
     expect(before).toBeTruthy();
     const remainingBefore = h.root.querySelector('[data-project-status="launch-beta"]')!.textContent!;
     for (let i = 0; i < 10; i++) {
       h.engine.tick();
       h.view.render();
-      expect(h.root.querySelector('[data-project="gig-bugfix"]')).toBe(before);
+      expect(h.root.querySelector('[data-project="gig-landing-page"]')).toBe(before);
     }
     // The volatile in-flight row beside the button did update.
     const remainingAfter = h.root.querySelector('[data-project-status="launch-beta"]')!.textContent!;
@@ -503,13 +503,13 @@ describe("appView node identity across renders", () => {
     s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 0, size: 1000 }];
     s.stocks.plan = 0;
     h.view.render();
-    const start = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
-    const pursue = h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!;
+    const start = h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!;
+    const other = h.root.querySelector<HTMLElement>('[data-project="small-refactor"]')!;
     s.plan[0]!.progress = 4;
     s.stocks.plan = 4;
     h.view.render();
-    expect(h.root.querySelector('[data-project="gig-bugfix"]')).toBe(start);
-    expect(h.root.querySelector('[data-project="gig-landing-page"]')).toBe(pursue);
+    expect(h.root.querySelector('[data-project="gig-landing-page"]')).toBe(start);
+    expect(h.root.querySelector('[data-project="small-refactor"]')).toBe(other);
     expect(h.root.querySelector('[data-plan-status="large-refactor"]')!.textContent).toContain("4 / 1,000");
   });
 
@@ -781,8 +781,8 @@ describe("appView click delegation on the stable root", () => {
 
   it("starts a project through data-project", () => {
     const h = mount();
-    h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!.click();
-    expect(h.engine.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
+    h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!.click();
+    expect(h.engine.getState().projects.some((p) => p.defId === "gig-landing-page")).toBe(true);
     expect(h.actions).toBe(1);
   });
 
@@ -812,11 +812,11 @@ describe("appView click delegation on the stable root", () => {
     s.plan = [{ defId: "large-refactor", name: "Large refactor", progress: 10, size: 1000 }];
     s.stocks.plan = 10;
     h.view.render();
-    const start = h.root.querySelector<HTMLElement>('[data-project="gig-bugfix"]')!;
+    const start = h.root.querySelector<HTMLElement>('[data-project="gig-landing-page"]')!;
     expect(start.textContent).toBe("Start");
     expect(start.hasAttribute("disabled")).toBe(false);
     start.click();
-    expect(h.engine.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
+    expect(h.engine.getState().projects.some((p) => p.defId === "gig-landing-page")).toBe(true);
     expect(h.engine.getState().plan).toHaveLength(1);
     expect(h.engine.getState().plan[0]!.defId).toBe("large-refactor");
     expect(h.actions).toBe(1);

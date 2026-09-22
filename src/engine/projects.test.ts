@@ -22,10 +22,10 @@ function shrinkStart(c: GameContent, size = 2): void {
 describe("projects", () => {
   it("startProject charges upfront cost and adds points to backlog", () => {
     const e = new Engine(content());
-    e.startProject("gig-bugfix");
+    e.startProject("gig-landing-page");
     const s = e.getState();
-    expect(s.stocks.budget).toBe(7800); // Bugfix sprint charges $2,200 upfront
-    expect(s.stocks.backlog).toBe(400); // Studio start backlog 300 + bugfix 100
+    expect(s.stocks.budget).toBe(7000); // Back-burner feature charges $3,000 upfront
+    expect(s.stocks.backlog).toBe(450); // Studio start backlog 300 + landing page 150
     expect(s.projects).toHaveLength(2);
   });
 
@@ -34,7 +34,7 @@ describe("projects", () => {
     const pullAlone = effectiveRate(e.getState(), "pull");
     const finishAlone = effectiveRate(e.getState(), "finish");
     const deployAlone = effectiveRate(e.getState(), "deploy");
-    e.startProject("gig-bugfix");
+    e.startProject("gig-landing-page");
     expect(effectiveRate(e.getState(), "pull")).toBeCloseTo(pullAlone);
     expect(effectiveRate(e.getState(), "finish")).toBeCloseTo(finishAlone);
     expect(effectiveRate(e.getState(), "deploy")).toBeCloseTo(deployAlone);
@@ -201,8 +201,8 @@ describe("projects", () => {
 
   it("rejects starting a project already in flight", () => {
     const e = new Engine(content());
-    e.startProject("gig-bugfix");
-    expect(() => e.startProject("gig-bugfix")).toThrow(/already in flight/);
+    e.startProject("gig-landing-page");
+    expect(() => e.startProject("gig-landing-page")).toThrow(/already in flight/);
   });
 
   it("allows restarting a repeatable gig after completion", () => {
@@ -211,8 +211,8 @@ describe("projects", () => {
     const e = new Engine(c);
     for (let i = 0; i < 6; i++) e.tick(); // complete the tiny initial project
     expect(e.getState().completedProjects).toBe(1);
-    e.startProject("gig-bugfix");
-    e.getState().projects.forEach((p) => expect(p.defId).toBe("gig-bugfix"));
+    e.startProject("gig-landing-page");
+    e.getState().projects.forEach((p) => expect(p.defId).toBe("gig-landing-page"));
   });
 
   // Small refactor burns techDebt via completionStockGrants (−50),
@@ -507,7 +507,7 @@ describe("projects", () => {
 
   it("throws when abandoning a project that is not in flight", () => {
     const e = new Engine(content());
-    expect(() => e.abandonProject("gig-bugfix")).toThrow(/not in flight/);
+    expect(() => e.abandonProject("gig-landing-page")).toThrow(/not in flight/);
   });
 
   it("isStalled when pipeline is empty and nothing is affordable", () => {
@@ -545,14 +545,14 @@ describe("Start vs Pursue offers", () => {
     expect(ready.reason).toBeUndefined();
   });
 
-  it("Start still works on Bugfix sprint while something is in Plan", () => {
+  it("Start still works on Back-burner feature while something is in Plan", () => {
     const e = new Engine(content({ ideas: 200 }));
     e.pursueProject("large-refactor");
     expect(e.getState().plan.some((p) => p.defId === "large-refactor")).toBe(true);
     const ideasAfterPursue = e.getState().stocks.ideas;
-    e.startProject("gig-bugfix");
+    e.startProject("gig-landing-page");
     const s = e.getState();
-    expect(s.projects.some((p) => p.defId === "gig-bugfix")).toBe(true);
+    expect(s.projects.some((p) => p.defId === "gig-landing-page")).toBe(true);
     expect(s.stocks.ideas).toBe(ideasAfterPursue);
     expect(s.plan.some((p) => p.defId === "large-refactor")).toBe(true);
   });
@@ -567,9 +567,9 @@ describe("Start vs Pursue offers", () => {
     expect(e.getState().plan).toEqual([]);
     expect(e.getState().stocks.ideas).toBe(400);
 
-    expect(() => e.pursueProject("gig-bugfix")).toThrow(/start/i);
+    expect(() => e.pursueProject("gig-landing-page")).toThrow(/start/i);
     expect(e.getState().plan).toEqual([]);
-    expect(e.getState().projects.some((p) => p.defId === "gig-bugfix")).toBe(false);
+    expect(e.getState().projects.some((p) => p.defId === "gig-landing-page")).toBe(false);
   });
 
   it("omitted pursue defaults to Start so inherited gigs do not silently Pursue", () => {

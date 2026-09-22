@@ -302,7 +302,7 @@ describe("work ledger conservation across every mutation path", () => {
     s.stocks.inReview = 0;
     s.stocks.done = 0;
     const surplusBefore = surplusWork(s);
-    e.startProject("gig-bugfix");
+    e.startProject("gig-landing-page");
     expect(surplusWork(e.getState())).toBeCloseTo(surplusBefore, 8);
     expect(workLedgerIssues(e.getState())).toEqual([]);
   });
