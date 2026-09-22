@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mock — capacity slack on the delivery line</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fff;
+        --fg: #000;
+        --fg-dim: #666;
+        --border: #999;
+        --accent-amber: #a60;
+        --accent-red: #c00;
+        --desc: #444;
+        --chip-users: #246;
+        --note-bg: #f6f6f6;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #181818;
+          --fg: #e8e8e8;
+          --fg-dim: #aaa;
+          --border: #888;
+          --accent-amber: #e0a030;
+          --accent-red: #ff6b6b;
+          --desc: #c2c2c2;
+          --chip-users: #8ab4e8;
+          --note-bg: #242424;
+        }
+      }
+      body {
+        font-family: ui-monospace, monospace;
+        max-width: 1100px;
+        margin: 1rem auto;
+        padding: 0 1rem 3rem;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      h1 { font-size: 1.6rem; margin: 0 0 0.5rem; }
+      h2 { font-size: 1rem; margin: 1.25rem 0 0.35rem; }
+      p { line-height: 1.45; color: var(--desc); max-width: 82ch; }
+      .lede { color: var(--fg); }
+      button { font-family: inherit; margin: 0; }
+      button:disabled { opacity: 0.4; }
+      .panel { border: 1px solid var(--border); padding: 0.6rem 0.8rem 0.8rem; margin: 0 0 0.75rem; background: var(--note-bg); }
+      .controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; }
+      .step { display: inline-flex; align-items: center; gap: 0.35rem; }
+      .step b { font-variant-numeric: tabular-nums; min-width: 3.2ch; text-align: right; }
+      .step span { color: var(--fg-dim); }
+      .readout { color: var(--fg); margin: 0.75rem 0 0; min-height: 2.8em; }
+      svg { width: 100%; height: auto; display: block; }
+      .diagram { border: 1px solid var(--border); padding: 0.25rem 0.35rem 0.15rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Capacity slack</h1>
+    <p class="lede">
+      Same picture as the line you sent. Ready is deep, finish is realizing 2.1/day, KTLO holds one seat and 0.5/day, continuous deploy is on, and debt drag tints the arrows. The steppers open with review at 4.0/day so the unused capacity is already on screen. Shipping math is unchanged. This only paints capacity you already paid for when it is not what the line is shipping.
+    </p>
+    <div class="panel">
+      <div class="controls">
+        <div class="step">
+          <span>Open seats</span>
+          <button type="button" id="seats-dec" aria-label="Remove an open seat">−</button>
+          <b id="seats-val">1</b>
+          <button type="button" id="seats-inc" aria-label="Add an open seat">+</button>
+        </div>
+        <div class="step">
+          <span>Finish</span>
+          <button type="button" id="finish-dec" aria-label="Remove finish capacity">−</button>
+          <b id="finish-val">2.1</b>
+          <button type="button" id="finish-inc" aria-label="Add finish capacity">+</button>
+        </div>
+        <div class="step">
+          <span>Review</span>
+          <button type="button" id="review-dec" aria-label="Remove review capacity">−</button>
+          <b id="review-val">4.0</b>
+          <button type="button" id="review-inc" aria-label="Add review capacity">+</button>
+        </div>
+      </div>
+      <p class="readout" id="readout"></p>
+    </div>
+
+    <h2>Today</h2>
+    <div class="diagram" id="today"></div>
+    <h2>Slack visible</h2>
+    <div class="diagram" id="proposed"></div>
+
+    <script>
+      const KTLO_SEATS = 1;
+      const KTLO_RATE = 0.5;
+      const READY = 1249;
+      const SHIPPED = 30643.3;
+
+      const state = { seats: 1, finish: 2.1, review: 4.0 };
+
+      const BOX_W = 168;
+      const BOX_H = 104;
+      const GAP = 132;
+      const Y = 28;
+      const STAGES = ["backlog", "inProgress", "inReview", "shipped"];
+      const VIEW_W = STAGES.length * BOX_W + (STAGES.length - 1) * GAP + 24;
+      const VIEW_H = 210;
+
+      function fmt(n) {
+        return n.toLocaleString("en-US", { maximumFractionDigits: 1, minimumFractionDigits: 0 });
+      }
+      function rate(n) {
+        return n.toFixed(1);
+      }
+
+      function picture() {
+        const finishFlow = state.seats <= 0 ? 0 : state.finish;
+        const reviewFlow = Math.min(state.review, finishFlow);
+        const inflowAhead = state.finish >= 1.5 * state.review && state.seats > 0 && state.review > 0;
+        const inReview = inflowAhead ? state.review * 3 : reviewFlow;
+        const bound = inflowAhead && inReview >= state.review * 3;
+        return { finishFlow, reviewFlow, inReview, bound };
+      }
+
+      function stageX(i) {
+        return 12 + i * (BOX_W + GAP);
+      }
+
+      function arrow(x1, x2, realized, capacity, slackMode, below, markerPrefix) {
+        const mid = Y + BOX_H / 2;
+        const end = x2 - 8;
+        const slack = slackMode && capacity - realized > 0.049;
+        const amber = "var(--accent-amber)";
+        const dim = "var(--fg-dim)";
+        let stroke = "";
+        if (!slack) {
+          stroke = `<line x1="${x1}" y1="${mid}" x2="${end}" y2="${mid}" stroke="${amber}" marker-end="url(#${markerPrefix}-amber)"/>`;
+        } else {
+          const span = end - x1;
+          const used = capacity > 0 ? Math.max(0, Math.min(1, realized / capacity)) : 0;
+          const split = x1 + span * used;
+          stroke = `<line x1="${x1}" y1="${mid}" x2="${end}" y2="${mid}" stroke="${dim}" marker-end="url(#${markerPrefix}-dim)"/>`;
+          if (split > x1 + 0.5) {
+            stroke += `<line x1="${x1}" y1="${mid}" x2="${split}" y2="${mid}" stroke="${amber}" stroke-width="2.5"/>`;
+          }
+        }
+        const label = slack
+          ? `<tspan fill="${amber}">${rate(realized)}/day</tspan><tspan fill="${dim}"> of ${rate(capacity)}</tspan>`
+          : `<tspan fill="${amber}">${rate(realized)}/day</tspan>`;
+        const caption = below
+          ? `<text x="${(x1 + x2) / 2}" y="${mid + 18}" text-anchor="middle" font-size="11" font-style="italic" fill="${below.color}">${below.text}</text>`
+          : "";
+        return `${stroke}<text x="${(x1 + x2) / 2}" y="${mid - 10}" text-anchor="middle" font-size="13">${label}</text>${caption}`;
+      }
+
+      function box(i, label, valueLines, extra) {
+        const x = stageX(i);
+        const lines = valueLines
+          .map((line, idx) => {
+            const weight = idx === 0 ? ` font-weight="bold" font-size="20"` : ` font-size="12"`;
+            const fill = line.color ?? "currentColor";
+            return `<text x="${x + BOX_W / 2}" y="${Y + 48 + idx * 16}" text-anchor="middle"${weight} fill="${fill}">${line.text}</text>`;
+          })
+          .join("");
+        return `
+          <g>
+            <rect x="${x}" y="${Y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"/>
+            <text x="${x + BOX_W / 2}" y="${Y + 24}" text-anchor="middle" font-size="16" fill="currentColor">${label}</text>
+            ${lines}
+            ${extra ?? ""}
+          </g>`;
+      }
+
+      function cycle(i) {
+        const cx = stageX(i) + BOX_W / 2;
+        const cy = Y + BOX_H - 16;
+        return `<ellipse cx="${cx}" cy="${cy}" rx="18" ry="6" fill="none" stroke="currentColor"/>`;
+      }
+
+      function caret(i) {
+        const x = stageX(i) + BOX_W - 18;
+        return `<text x="${x}" y="${Y + 16}" font-size="12" fill="currentColor">▾</text>`;
+      }
+
+      function diagram(slackMode) {
+        const pic = picture();
+        const seatsAll = state.seats + KTLO_SEATS;
+        const readyLines = [{ text: fmt(READY) }];
+        const reviewLines = [{ text: fmt(pic.inReview) }];
+        const shippedLines = [{ text: fmt(SHIPPED) }];
+        let progressLines;
+        let progressNote;
+        if (!slackMode) {
+          progressLines = [{ text: fmt(state.seats) }];
+          progressNote = `<text x="${stageX(1) + BOX_W / 2}" y="${Y + BOX_H + 16}" text-anchor="middle" font-size="11" font-style="italic" fill="var(--chip-users)">${KTLO_SEATS} seat KTLO</text>`;
+        } else {
+          progressLines = [
+            { text: `${state.seats} / ${seatsAll}` },
+            { text: "open / all seats", color: "var(--fg-dim)" },
+          ];
+          progressNote = `<text x="${stageX(1) + BOX_W / 2}" y="${Y + BOX_H + 16}" text-anchor="middle" font-size="11" font-style="italic" fill="var(--chip-users)">${state.seats} open · ${KTLO_SEATS} KTLO</text>`;
+        }
+
+        const boundNote = pic.bound
+          ? `<text x="${stageX(2) + BOX_W / 2}" y="${Y + BOX_H + 16}" text-anchor="middle" font-size="11" font-style="italic" fill="currentColor">capacity-bound</text>`
+          : "";
+
+        const boxes = [
+          box(0, "Ready", readyLines),
+          box(1, "In Progress", progressLines, cycle(1) + caret(1)),
+          box(2, "In Review", reviewLines, caret(2)),
+          box(3, "Shipped", shippedLines),
+        ].join("");
+
+        const markerPrefix = slackMode ? "prop" : "today";
+        const arrows = [
+          arrow(stageX(0) + BOX_W, stageX(1), pic.finishFlow, pic.finishFlow, false, null, markerPrefix),
+          arrow(stageX(1) + BOX_W, stageX(2), pic.finishFlow, state.finish, slackMode, {
+            text: `KTLO ${rate(KTLO_RATE)}/day`,
+            color: "var(--chip-users)",
+          }, markerPrefix),
+          arrow(stageX(2) + BOX_W, stageX(3), pic.reviewFlow, state.review, slackMode, {
+            text: "continuous deploy",
+            color: "currentColor",
+          }, markerPrefix),
+        ].join("");
+
+        const loopY = Y + BOX_H + 52;
+        const startX = stageX(3) + BOX_W / 2;
+        const endX = stageX(0) + BOX_W / 2;
+        const debt = `
+          <path d="M ${startX} ${Y + BOX_H} V ${loopY} H ${endX} V ${Y + BOX_H + 8}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#${markerPrefix}-fg)"/>
+          <text x="${(startX + endX) / 2}" y="${loopY - 6}" text-anchor="middle" font-size="12" fill="currentColor">debt +0.3/pt</text>`;
+
+        const strokeW = pic.bound ? ` stroke-width="2.5"` : "";
+        const boundBox = pic.bound
+          ? `<rect x="${stageX(2)}" y="${Y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"${strokeW}/>`
+          : "";
+
+        return `
+          <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" role="img" aria-label="${slackMode ? "Delivery line with unused capacity labeled" : "Delivery line as it ships today"}">
+            <defs>
+              <marker id="${markerPrefix}-fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+              <marker id="${markerPrefix}-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent-amber)"/></marker>
+              <marker id="${markerPrefix}-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--fg-dim)"/></marker>
+            </defs>
+            ${boxes}${boundBox}${progressNote}${boundNote}${arrows}${debt}
+          </svg>`;
+      }
+
+      function readout() {
+        const pic = picture();
+        const ship = pic.reviewFlow;
+        const reviewSlack = state.review - pic.reviewFlow > 0.049;
+        const finishSlack = state.finish - pic.finishFlow > 0.049;
+        const bits = [`Shipped output is ${rate(ship)}/day.`];
+        if (state.seats <= 0) {
+          bits.push(`Open seats are 0, so finish realizes 0. Slack visible writes that as ${rate(pic.finishFlow)} of ${rate(state.finish)}/day.`);
+        } else if (reviewSlack) {
+          bits.push(`Review can do ${rate(state.review)}/day. Today the ship arrow still reads ${rate(ship)}/day. Slack visible reads ${rate(ship)} of ${rate(state.review)}/day.`);
+        } else if (finishSlack) {
+          bits.push(`Finish capacity is ${rate(state.finish)}/day and none of it is moving.`);
+        } else if (pic.bound) {
+          bits.push(`Finish at ${rate(state.finish)}/day is ahead of review at ${rate(state.review)}/day, so In Review is capacity-bound. Both drawings show that.`);
+        } else if (state.seats !== 1) {
+          bits.push(`Open seats are ${state.seats}. The arrows stay ${rate(ship)}/day. Slack visible counts them against the KTLO seat (${state.seats} / ${state.seats + KTLO_SEATS}).`);
+        } else {
+          bits.push("Seats, finish, and review are matched, so both drawings read 2.1/day. Add review or a seat to see the slack.");
+        }
+        document.getElementById("readout").textContent = bits.join(" ");
+      }
+
+      function render() {
+        document.getElementById("seats-val").textContent = String(state.seats);
+        document.getElementById("finish-val").textContent = rate(state.finish);
+        document.getElementById("review-val").textContent = rate(state.review);
+        document.getElementById("seats-dec").disabled = state.seats <= 0;
+        document.getElementById("seats-inc").disabled = state.seats >= 8;
+        document.getElementById("finish-dec").disabled = state.finish <= 0;
+        document.getElementById("finish-inc").disabled = state.finish >= 8;
+        document.getElementById("review-dec").disabled = state.review <= 0;
+        document.getElementById("review-inc").disabled = state.review >= 8;
+        document.getElementById("today").innerHTML = diagram(false);
+        document.getElementById("proposed").innerHTML = diagram(true);
+        readout();
+      }
+
+      function step(key, delta, min, max) {
+        const next = Math.round((state[key] + delta) * 10) / 10;
+        state[key] = Math.max(min, Math.min(max, next));
+        render();
+      }
+
+      document.getElementById("seats-dec").onclick = () => step("seats", -1, 0, 8);
+      document.getElementById("seats-inc").onclick = () => step("seats", 1, 0, 8);
+      document.getElementById("finish-dec").onclick = () => step("finish", -0.5, 0, 8);
+      document.getElementById("finish-inc").onclick = () => step("finish", 0.5, 0, 8);
+      document.getElementById("review-dec").onclick = () => step("review", -0.5, 0, 8);
+      document.getElementById("review-inc").onclick = () => step("review", 0.5, 0, 8);
+      render();
+    </script>
+  </body>
+</html>
