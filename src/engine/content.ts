@@ -472,8 +472,9 @@ const contractProjectSchema = z
     // Ideas spent on Pursue. Independent of sizePoints. Omit = spend sizePoints.
     ideaCost: z.number().min(0).optional(),
     completionStockGrants: completionStockGrantsSchema,
-    // Same shape as DecisionDef.stockFlowMods. Applied while this id is in
-    // completedProjectIds (not while in-flight).
+    // Same shape as DecisionDef.stockFlowMods. Applied once per
+    // completedProjectIds entry (not while in-flight). Repeatable ships
+    // record every completion, so the nudge stacks.
     stockFlowMods: stockFlowModSchema,
   })
   .strict();

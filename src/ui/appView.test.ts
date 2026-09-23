@@ -818,7 +818,7 @@ describe("appView click delegation on the stable root", () => {
     expect(pursue.textContent).toBe("Pursue");
     pursue.click();
     expect(h.engine.getState().plan.some((p) => p.defId === "ship-v1")).toBe(true);
-    expect(h.engine.getState().stocks.ideas).toBe(0);
+    expect(h.engine.getState().stocks.ideas).toBe(200);
     expect(h.engine.getState().projects.some((p) => p.defId === "ship-v1")).toBe(false);
     expect(h.root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("Ship v1");
     expect(h.root.querySelector('[data-plan-status="ship-v1"]')!.textContent).toContain("0 / 400");

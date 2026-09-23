@@ -816,18 +816,29 @@ describe("parseChallenges", () => {
       payoutPerPoint: 0,
       unique: true,
       pursue: true,
+      ideaCost: 200,
       requiresCompletedId: "launch-beta",
     });
-    for (const id of ["ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
-      expect(requireContract(defs.find((p) => p.id === id)).pursue).toBe(true);
-    }
+    const next = requireContract(defs.find((p) => p.id === "ship-vnext"));
+    expect(next).toMatchObject({
+      name: "Ship next big feature",
+      sizePoints: 600,
+      upfrontCost: 0,
+      payoutPerPoint: 0,
+      completionBonus: 1500,
+      reputationReward: 2,
+      pursue: true,
+      ideaCost: 200,
+      requiresCompletedId: "ship-v1",
+    });
+    expect(next.unique).toBeUndefined();
     expect(v1.completionStockGrants).toEqual([{ stock: "users", amount: 20 }]);
+    expect(next.completionStockGrants).toEqual([{ stock: "users", amount: 25 }]);
     expect(v1.stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
-    for (const id of ["ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
-      const def = requireContract(defs.find((p) => p.id === id));
-      expect(def.stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
+    expect(next.stockFlowMods).toEqual([{ stock: "users", acquirePerDayDelta: 1 }]);
+    for (const id of ["ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
+      expect(defs.find((p) => p.id === id)).toBeUndefined();
     }
-    expect(requireContract(defs.find((p) => p.id === "ship-v5")).requiresCompletedId).toBe("ship-v4");
     expect(defs.some((p) => p.id === "small-crm")).toBe(false);
   });
 
@@ -950,7 +961,7 @@ describe("parseProjects", () => {
     expect(defs.filter(isContractProject).every((p) => p.reputationReward >= 0)).toBe(true);
     expect(requireContract(defs.find((p) => p.id === "gig-landing-page")).reputationReward).toBe(1);
     expect(requireContract(defs.find((p) => p.id === "ship-v1")).reputationReward).toBe(2);
-    expect(requireContract(defs.find((p) => p.id === "ship-v5")).reputationReward).toBe(4);
+    expect(requireContract(defs.find((p) => p.id === "ship-vnext")).reputationReward).toBe(2);
   });
 
   it("keeps the old contract ladder as Company/Megacorp deltas, not Studio offers", () => {
@@ -962,10 +973,7 @@ describe("parseProjects", () => {
       "medium-refactor",
       "large-refactor",
       "ship-v1",
-      "ship-v2",
-      "ship-v3",
-      "ship-v4",
-      "ship-v5",
+      "ship-vnext",
     ]);
     const company = loadShippedContent("company");
     const crm = requireContract(company.projects.find((p) => p.id === "small-crm"));

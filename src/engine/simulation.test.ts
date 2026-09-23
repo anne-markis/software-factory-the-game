@@ -12,10 +12,7 @@ function fullContent(): GameContent {
 
 const STUDIO_FOLLOW_ON = [
   "ship-v1",
-  "ship-v2",
-  "ship-v3",
-  "ship-v4",
-  "ship-v5",
+  "ship-vnext",
   "gig-landing-page",
 ];
 
@@ -310,7 +307,7 @@ describe("simulation", () => {
         e.applyDecision("basic-dev");
         hires += 1;
       }
-      // Continuation: version ladder first, then a tiny gig as cash relief.
+      // Continuation: critical path first, then a tiny gig as cash relief.
       startNextStudioWork(e);
       for (const pc of [...s.pendingChoices]) {
         const def = content.challenges.find((c) => c.id === pc.challengeId)!;
@@ -466,12 +463,14 @@ describe("simulation", () => {
     expect(r.everBroke).toBe(false); // unpaid hire payroll sheds the person rather than clamping to $0
     expect(r.endUsers).toBeGreaterThan(900); // climbs toward the ~1033 cap (observed ~1027)
     // Hire payroll starts after the 14-day delay. Subscription still
-    // compounds during recruiting, so cash sits higher than the old
-    // immediate-payroll hundreds but stays well below idle-with-no-hires.
+    // compounds during recruiting. Ship next big feature is a flat 200
+    // Ideas and a $1,500 bonus, so this build finishes more product work
+    // than the old v2–v5 ladder and ends higher (observed ~82k) while
+    // staying well below the pre-payroll six-figure climb.
     expect(r.endBudget).toBeGreaterThan(100);
-    expect(r.endBudget).toBeLessThan(80000);
+    expect(r.endBudget).toBeLessThan(120000);
     expect(r.budgetAtDay[500]).toBeLessThan(50000);
-    expect(r.budgetAtDay[2000]).toBeLessThan(80000);
+    expect(r.budgetAtDay[2000]).toBeLessThan(120000);
   });
 
   // Automation-heavy build, RE-PINNED for the lean Studio shop.

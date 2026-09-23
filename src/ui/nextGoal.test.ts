@@ -74,9 +74,10 @@ describe("nextMilestoneGoal", () => {
 
 describe("nextContractGoal", () => {
   it("skips startable gigs and surfaces the nearest version-ladder gate", () => {
-    // Fresh game: tiny gigs are startable (tutorial upfront, starting cash covers). Ship v1–v5 wait on
-    // the prior version (v1 on Launch beta). Sort is reputation, then
-    // completed-count, then id — ship-v1 wins among the locked versions.
+    // Fresh game: tiny gigs are startable (tutorial upfront, starting cash covers).
+    // Ship v1 waits on Launch beta; Ship next big feature waits on Ship v1.
+    // Sort is reputation, then completed-count, then id — ship-vnext sorts
+    // after ship-v1, so the nearer gate wins.
     const e = new Engine(content);
     const g = nextContractGoal(e.getState(), content);
     expect(g).not.toBeNull();
@@ -91,14 +92,14 @@ describe("nextContractGoal", () => {
       s.stocks.budget = 100_000;
     });
     const g = nextContractGoal(e.getState(), content);
-    expect(g?.id).toBe("ship-v2");
+    expect(g?.id).toBe("ship-vnext");
     expect(g?.reason).toMatch(/requires completed Ship v1/);
   });
 
   it("returns null when no progression-locked contracts remain", () => {
     const e = engineWith((s) => {
-      s.completedProjects = 6;
-      s.completedProjectIds = ["launch-beta", "ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"];
+      s.completedProjects = 2;
+      s.completedProjectIds = ["launch-beta", "ship-v1"];
       s.stocks.budget = 100_000;
     });
     expect(nextContractGoal(e.getState(), content)).toBeNull();
@@ -155,8 +156,8 @@ describe("selectNextGoal / renderNextGoal", () => {
   it("shows the top-out state when milestones and contract gates are cleared", () => {
     const e = engineWith((s) => {
       s.stocks.reputation = 70;
-      s.completedProjects = 6;
-      s.completedProjectIds = ["launch-beta", "ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"];
+      s.completedProjects = 2;
+      s.completedProjectIds = ["launch-beta", "ship-v1"];
       s.stocks.budget = 100_000;
     });
     const sel = selectNextGoal(e.getState(), content);

@@ -216,10 +216,12 @@ Shape: `projectSchema`. The starting contract is `start.json`
 - `completionStockGrants` — `{ stock, amount }` copied onto the in-flight
   project at start.
 - `stockFlowMods` — same shape as on decisions (`{ stock, acquirePerDayDelta?,
-  churnRateDelta? }`). Applied every tick **while this project id is in
-  `completedProjectIds`**, not while in-flight. Studio versions raise organic
-  user acquire this way so a version ship opens ceiling headroom instead of
-  filling the reputation-driven churn cap in one lump.
+  churnRateDelta? }`). Applied every tick **once per
+  `completedProjectIds` entry**, not while in-flight. A unique ship records
+  one entry. A repeatable ship records every completion, so the nudge
+  stacks. Ship v1 and Ship next big feature raise organic user acquire this
+  way so each ship opens ceiling headroom instead of filling the
+  reputation-driven churn cap in one lump.
 - Abandon — player can drop any in-flight contract, including the starter.
   Already-credited `payoutPerPoint` and `stocks.shipped` stay. Remaining is
   discarded and pulled from Ready, then In Progress, then In Review, then Done. No bonus,

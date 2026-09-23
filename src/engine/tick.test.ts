@@ -345,6 +345,66 @@ describe("tick", () => {
       expect(afterV2.userAcquireFlow - afterV2.userChurnFlow).toBeGreaterThan(0.5);
     });
 
+    it("a repeatable feature records every completion so acquire nudges stack", () => {
+      const content = testContent();
+      content.start.debtMultiplier = 0;
+      content.projects = [
+        {
+          id: "ship-vnext",
+          name: "Ship next big feature",
+          sizePoints: 1,
+          upfrontCost: 0,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 2,
+          pursue: true,
+          ideaCost: 200,
+          completionStockGrants: [{ stock: "users", amount: 25 }],
+          stockFlowMods: [{ stock: "users", acquirePerDayDelta: 1 }],
+        },
+      ];
+      const e = new Engine(content);
+      const s = e.getState() as GameState;
+      s.completedProjects = 1;
+      s.completedProjectIds = ["launch-beta"];
+      s.stocks.users = 3.1 / 0.003;
+      s.stocks.reputation = 1;
+      s.stocks.backlog = 0;
+      s.stocks.inProgress = 0;
+      s.stocks.done = 0.5;
+      s.projects = [
+        {
+          defId: "ship-vnext",
+          name: "Ship next big feature",
+          remaining: 0.5,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 2,
+          completionStockGrants: [{ stock: "users", amount: 25 }],
+        },
+      ];
+      e.tick();
+      expect(e.getState().completedProjectIds).toEqual(["launch-beta", "ship-vnext"]);
+      expect(e.getState().userAcquireFlow).toBeCloseTo(4.3, 5);
+
+      const again = e.getState() as GameState;
+      again.stocks.done = 0.5;
+      again.projects = [
+        {
+          defId: "ship-vnext",
+          name: "Ship next big feature",
+          remaining: 0.5,
+          payoutPerPoint: 0,
+          completionBonus: 0,
+          reputationReward: 2,
+          completionStockGrants: [{ stock: "users", amount: 25 }],
+        },
+      ];
+      e.tick();
+      expect(e.getState().completedProjectIds).toEqual(["launch-beta", "ship-vnext", "ship-vnext"]);
+      expect(e.getState().userAcquireFlow).toBeCloseTo(5.5, 5);
+    });
+
     it("organic user acquire reads reputation but does not spend it", () => {
       const content = testContent();
       const e = new Engine(content);
@@ -361,15 +421,16 @@ describe("tick", () => {
       expect(e.getState().userAcquireFlow).toBeCloseTo(8.0, 5); // 3 + 50 × 0.1
     });
 
-    it("completed v1–v5 at 0 reputation acquire at 8/day", () => {
+    it("Ship v1 plus four feature ships at 0 reputation acquire at 8/day", () => {
       // Screenshot pin: Company idle after the product line, reputation 0,
-      // organic 3 plus five version acquire nudges, no reputation term.
+      // organic 3 plus five acquire nudges (v1 and four feature ships), no
+      // reputation term.
       const content = loadShippedContent("company");
       content.challenges = [];
       const e = new Engine(content);
       const s = e.getState() as GameState;
       s.completedProjects = 6;
-      s.completedProjectIds = ["launch-beta", "ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"];
+      s.completedProjectIds = ["launch-beta", "ship-v1", "ship-vnext", "ship-vnext", "ship-vnext", "ship-vnext"];
       s.projects = [];
       s.plan = [];
       s.stocks.backlog = 0;

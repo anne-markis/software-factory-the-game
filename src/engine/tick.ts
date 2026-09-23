@@ -103,7 +103,10 @@ function completeProject(state: GameState, p: ActiveProject): void {
   }
   state.completedProjects += 1;
   if (!state.completedProjectIds) state.completedProjectIds = [];
-  if (!state.completedProjectIds.includes(p.defId)) state.completedProjectIds.push(p.defId);
+  // Every completion is recorded. Unique offers finish once, so their id
+  // appears once. A repeatable offer (Ship next big feature) appears once
+  // per completion, and stockFlowMods stack once per entry.
+  state.completedProjectIds.push(p.defId);
   log(state, `Project complete: ${p.name} (+$${p.completionBonus} bonus, +${p.reputationReward} reputation)`);
 }
 
@@ -159,9 +162,10 @@ function snapCompleteBelowDisplayGrain(state: GameState): void {
 // rng): grossGain (flat acquirePerDay plus acquirePerStock.perUnit per point
 // of another stock, e.g. reputation) minus churn (stocks[stock] *
 // churnRatePerDay), clamped at 0. stockFlowMods from owned decisions and
-// from completed projects (completedProjectIds) add to the flow's
-// acquirePerDay / churnRatePerDay. Studio decisions ship none; Studio
-// versions raise user acquire. Base churn only.
+// from completed projects (one application per completedProjectIds entry)
+// add to the flow's acquirePerDay / churnRatePerDay. Studio decisions ship
+// none; Ship v1 and each Ship next big feature raise user acquire. Base
+// churn only.
 function applyStockFlowMods(
   mods: readonly StockFlowMod[] | undefined,
   flowStock: string,
