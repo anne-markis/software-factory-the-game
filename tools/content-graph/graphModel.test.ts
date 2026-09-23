@@ -43,6 +43,9 @@ describe("content graph model", () => {
     expect(formatDecisionCost(decision({ oneTime: 1250.5, perDay: 2.25 }))).toBe(
       "$1,250.5 once + $2.25/day",
     );
+    expect(formatDecisionCost({ ...decision({ oneTime: 10, perDay: 4 }), agent: true })).toBe(
+      "$10/human once + $4/human/day",
+    );
     expect(
       formatEraEntryPredicate({
         minBudget: 12345.67,

@@ -512,14 +512,15 @@ describe("tick", () => {
       e.applyDecision("agent");
       e.applyDecision("agent");
       e.applyDecision("agent-harness");
-      // 2 agents ($8) + harness ($5); KTLO stays $20.
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 13, ktlo: 20 });
+      // Founder + 1 hire: each coding agent is $4 × 2. Harness stays $5.
+      // 2×$8 + $5; KTLO stays $20.
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 21, ktlo: 20 });
       e.applyDecision("agent-orchestration");
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 25, ktlo: 20 });
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 33, ktlo: 20 });
       e.applyDecision("test-suite");
       e.applyDecision("ci-cd");
       e.applyDecision("agent-ci-review");
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 37, ktlo: 20 });
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 45, ktlo: 20 });
     });
 
     it("records expensesByDay on tick and caps it with income history", () => {

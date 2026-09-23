@@ -284,6 +284,7 @@ describe("parseDecisions", () => {
     expect(agent.synergies).toBeUndefined();
     expect(agent.description).toMatch(/each agent/i);
     expect(agent.description).toMatch(/10%/);
+    expect(agent.description).toMatch(/do not share/i);
 
     // agent-harness: one global multiplier pair, unique, gated on owning any
     // agent. Its old shape (empty effects + a synergy on agent) meant only

@@ -49,6 +49,9 @@ describe("netRecurringBurnPerDay", () => {
     e.applyDecision("retainer"); // incomePerDay 8
     // 20 KTLO + 438 payroll - 8 income
     expect(netRecurringBurnPerDay(e.getState(), c)).toBe(450);
+    e.applyDecision("agent");
+    // Founder + the active hire: the agent's $4/day is charged twice.
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(458);
   });
 
   // Studio spine: subscription income scales with the users stock,
