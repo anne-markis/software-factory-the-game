@@ -452,7 +452,7 @@ describe("appView node identity across renders", () => {
       expect(pauseButton(h.root)).toBe(before);
     }
     // The render really did run: the day counter moved with the ticks.
-    expect(h.root.querySelector(".stat-value.v-day")!.textContent).toBe("10");
+    expect(h.root.querySelector(".stat-value.v-day")!.textContent).toBe("10 (0 years)");
   });
 
   it("keeps the same speed button nodes across ticks", () => {
