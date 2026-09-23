@@ -75,7 +75,7 @@ describe("nextMilestoneGoal", () => {
 describe("nextContractGoal", () => {
   it("skips startable gigs and surfaces the nearest version-ladder gate", () => {
     // Fresh game: tiny gigs are startable (tutorial upfront, starting cash covers).
-    // Ship v1 waits on Launch beta; Ship next big feature waits on Ship v1.
+    // Ship v1 waits on Launch beta; Ship next feature waits on Ship v1.
     // Sort is reputation, then completed-count, then id — ship-vnext sorts
     // after ship-v1, so the nearer gate wins.
     const e = new Engine(content);

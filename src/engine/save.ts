@@ -1,6 +1,8 @@
 import type { GameState } from "./types";
 
-// Bumped to 9 to replace Ship v2–v5 with the repeatable Ship next big
+// Bumped to 10 to drop the client ladder (small-crm, big-migration,
+// enterprise-replatform) and to key Abandon/Cancel on project instance ids.
+// A v9 save can still name those contracts. Bumped to 9 to replace Ship v2–v5 with the repeatable Ship next
 // feature: a v8 save can still have those ids in flight, in Plan, or in
 // completedProjectIds, and there is nothing to migrate them to. Bumped to 8 to retire better-tooling from the Studio shop: a v7 save can
 // still own that id, and there is nothing to migrate it to. Bumped to 7 for
@@ -25,7 +27,7 @@ import type { GameState } from "./types";
 // deserialize rejects mismatched versions, and the UI's loadGame swallows that
 // error and starts fresh, so old saves are wiped silently rather than resumed
 // into an inconsistent state.
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 export function serialize(state: Readonly<GameState>): string {
   return JSON.stringify({ version: SAVE_VERSION, state });

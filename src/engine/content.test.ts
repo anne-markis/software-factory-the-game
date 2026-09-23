@@ -821,13 +821,14 @@ describe("parseChallenges", () => {
     });
     const next = requireContract(defs.find((p) => p.id === "ship-vnext"));
     expect(next).toMatchObject({
-      name: "Ship next big feature",
+      name: "Ship next feature",
       sizePoints: 600,
       upfrontCost: 0,
       payoutPerPoint: 0,
       completionBonus: 1500,
       reputationReward: 2,
       pursue: true,
+      parallel: true,
       ideaCost: 200,
       requiresCompletedId: "ship-v1",
     });
@@ -964,7 +965,7 @@ describe("parseProjects", () => {
     expect(requireContract(defs.find((p) => p.id === "ship-vnext")).reputationReward).toBe(2);
   });
 
-  it("keeps the old contract ladder as Company/Megacorp deltas, not Studio offers", () => {
+  it("keeps Company and Megacorp on the Studio release, without client contracts", () => {
     const studio = loadShippedContent();
     expect(studio.projects.map((p) => p.id)).toEqual([
       "ktlo",
@@ -976,25 +977,16 @@ describe("parseProjects", () => {
       "ship-vnext",
     ]);
     const company = loadShippedContent("company");
-    const crm = requireContract(company.projects.find((p) => p.id === "small-crm"));
-    expect(crm.requiresReputation).toBeUndefined();
-    expect(crm.pursue).toBe(true);
-    const big = requireContract(company.projects.find((p) => p.id === "big-migration"));
-    expect(big.requiresCompleted).toBe(1);
-    expect(big.requiresReputation).toBe(5);
-    expect(big.pursue).toBe(true);
-    expect(company.projects.some((p) => p.id === "gig-bugfix")).toBe(false);
-    expect(requireContract(company.projects.find((p) => p.id === "gig-landing-page")).pursue).toBeUndefined();
+    expect(company.projects.map((p) => p.id)).toEqual(studio.projects.map((p) => p.id));
+    expect(company.projects.some((p) => p.id === "small-crm")).toBe(false);
+    expect(company.projects.some((p) => p.id === "big-migration")).toBe(false);
+    expect(company.retiredProjectIds).toEqual(["gig-landing-page"]);
+    expect(requireContract(company.projects.find((p) => p.id === "ship-vnext")).parallel).toBe(true);
     expect(requireContract(company.projects.find((p) => p.id === "large-refactor")).pursue).toBe(true);
-    expect(company.projects.some((p) => p.id === "gig-plugin")).toBe(false);
-    expect(company.projects.some((p) => p.id === "mobile-app")).toBe(false);
     const mega = loadShippedContent("megacorp");
-    const ent = requireContract(mega.projects.find((p) => p.id === "enterprise-replatform"));
-    expect(ent.requiresCompleted).toBe(2);
-    expect(ent.requiresReputation).toBe(15);
-    expect(ent.reputationReward).toBe(20);
-    expect(ent.pursue).toBe(true);
-    expect(mega.projects.some((p) => p.id === "gig-bugfix")).toBe(false);
+    expect(mega.projects.map((p) => p.id)).toEqual(company.projects.map((p) => p.id));
+    expect(mega.projects.some((p) => p.id === "enterprise-replatform")).toBe(false);
+    expect(mega.retiredProjectIds).toEqual(["gig-landing-page"]);
   });
 
   it("rejects a negative reputationReward", () => {
@@ -1243,9 +1235,12 @@ describe("per-era content layout", () => {
     expect(eras.startingEraId).toBe("studio");
     expect(eras.eras.map((e) => e.id)).toEqual(["studio", "company", "megacorp"]);
     expect(eras.eras[0].entryAnyOf).toBeUndefined();
+    expect(eras.eras[0].parallelCopies).toBe(1);
     expect(eras.eras[1].entryAnyOf).toEqual([{ minBudget: 500000 }]);
+    expect(eras.eras[1].parallelCopies).toBe(2);
     expect(eras.eras[1].silentEntry).toBeUndefined();
     expect(eras.eras[2].entryAnyOf).toEqual([{ minBudget: 10000000 }]);
+    expect(eras.eras[2].parallelCopies).toBe(3);
     expect(eras.eras[2].silentEntry).toBeUndefined();
   });
 
@@ -1284,22 +1279,15 @@ describe("per-era content layout", () => {
       "prod-incident",
       "weekend-in-the-desert",
     ]);
-    expect(company.projects.map((d) => d.id)).toEqual([
-      ...studio.projects.map((d) => d.id),
-      "small-crm",
-      "big-migration",
-    ]);
-    expect(company.retiredProjectIds).toEqual([]);
+    expect(company.projects.map((d) => d.id)).toEqual(studio.projects.map((d) => d.id));
+    expect(company.retiredProjectIds).toEqual(["gig-landing-page"]);
 
     const megacorp = loadShippedContent("megacorp");
     expect(megacorp.eraId).toBe("megacorp");
     expect(megacorp.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
     expect(megacorp.challenges.map((d) => d.id)).toEqual(company.challenges.map((d) => d.id));
-    expect(megacorp.projects.map((d) => d.id)).toEqual([
-      ...company.projects.map((d) => d.id),
-      "enterprise-replatform",
-    ]);
-    expect(megacorp.retiredProjectIds).toEqual([]);
+    expect(megacorp.projects.map((d) => d.id)).toEqual(company.projects.map((d) => d.id));
+    expect(megacorp.retiredProjectIds).toEqual(["gig-landing-page"]);
   });
 
   it("loadActiveContent merges prior-era catalogs so later folders stay deltas", () => {

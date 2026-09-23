@@ -373,23 +373,23 @@ export function mountAppView(deps: AppViewDeps): AppView {
       engine.removeDecision(target.dataset.remove);
     } else if (target.closest("[data-abandon]")) {
       const el = target.closest<HTMLElement>("[data-abandon]")!;
-      const defId = el.dataset.abandon;
-      if (!defId) return;
-      const name = engine.getState().projects.find((p) => p.defId === defId)?.name ?? "this project";
+      const key = el.dataset.instance || el.dataset.abandon;
+      if (!key) return;
+      const name = engine.getState().projects.find((p) => p.instanceId === key || p.defId === key)?.name ?? "this project";
       if (!confirm(`Abandon ${name}? Remaining work is discarded. Already shipped pay is kept.`)) {
         return;
       }
       try {
-        engine.abandonProject(defId);
+        engine.abandonProject(key);
       } catch (err) {
         deps.onError((err as Error).message);
       }
     } else if (target.closest("[data-cancel]")) {
       const el = target.closest<HTMLElement>("[data-cancel]")!;
-      const defId = el.dataset.cancel;
-      if (!defId) return;
+      const key = el.dataset.instance || el.dataset.cancel;
+      if (!key) return;
       try {
-        engine.cancelPlan(defId);
+        engine.cancelPlan(key);
       } catch (err) {
         deps.onError((err as Error).message);
       }

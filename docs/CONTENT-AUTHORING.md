@@ -28,7 +28,9 @@ inherited id.
 `eras.json` `entryAnyOf` is an OR of AND-paths (`minBudget`,
 `minReputation`, `minCompletedProjects`, `minUsers`). The tick evaluates
 the **next** rung only, at end of day. The starting era must not declare
-`entryAnyOf`. Omit `silentEntry` (or set it true) for a quiet heading
+`entryAnyOf`. `parallelCopies` is how many copies of a `parallel` project
+may be in plan and in flight at once (Studio 1, Company 2, Megacorp 3).
+Omit means 1. Omit `silentEntry` (or set it true) for a quiet heading
 change; `"silentEntry": false` announces the crossing. Floor numbers live
 in `content/eras.json`, not here.
 
@@ -193,6 +195,9 @@ Shape: `projectSchema`. The starting contract is `start.json`
   sequence.
 - `unique` — cannot start again after completion. Omit for repeatable
   gigs.
+- `parallel` — optional boolean. `true` means plan and in-flight copies
+  together may reach the active era's `parallelCopies`. The offer stays
+  one row. Omit means one copy. Ship next feature is the shipped case.
 - `pursue` — optional boolean, same style as `unique`. `true` is
   **Pursue** (spend Ideas = `sizePoints`, enter Plan). Omit or `false`
   is **Start** (no Ideas spend, write Ready immediately). Default Start
@@ -219,7 +224,7 @@ Shape: `projectSchema`. The starting contract is `start.json`
   churnRateDelta? }`). Applied every tick **once per
   `completedProjectIds` entry**, not while in-flight. A unique ship records
   one entry. A repeatable ship records every completion, so the nudge
-  stacks. Ship v1 and Ship next big feature raise organic user acquire this
+  stacks. Ship v1 and Ship next feature raise organic user acquire this
   way so each ship opens ceiling headroom instead of filling the
   reputation-driven churn cap in one lump.
 - Abandon — player can drop any in-flight contract, including the starter.

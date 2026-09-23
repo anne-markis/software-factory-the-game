@@ -351,7 +351,7 @@ describe("tick", () => {
       content.projects = [
         {
           id: "ship-vnext",
-          name: "Ship next big feature",
+          name: "Ship next feature",
           sizePoints: 1,
           upfrontCost: 0,
           payoutPerPoint: 0,
@@ -375,7 +375,7 @@ describe("tick", () => {
       s.projects = [
         {
           defId: "ship-vnext",
-          name: "Ship next big feature",
+          name: "Ship next feature",
           remaining: 0.5,
           payoutPerPoint: 0,
           completionBonus: 0,
@@ -392,7 +392,7 @@ describe("tick", () => {
       again.projects = [
         {
           defId: "ship-vnext",
-          name: "Ship next big feature",
+          name: "Ship next feature",
           remaining: 0.5,
           payoutPerPoint: 0,
           completionBonus: 0,

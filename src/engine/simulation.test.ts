@@ -1,10 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
-import { applyEffects } from "./effects";
 import { effectiveRate } from "./modifiers";
 import { loadShippedContent } from "./loadShippedContent";
 import { surplusGrewWhileInFlight, surplusWork, workLedgerIssues } from "./work";
-import type { Effect, GameContent, GameState } from "./types";
+import type { GameContent, GameState } from "./types";
 
 function fullContent(): GameContent {
   return loadShippedContent();
@@ -463,7 +462,7 @@ describe("simulation", () => {
     expect(r.everBroke).toBe(false); // unpaid hire payroll sheds the person rather than clamping to $0
     expect(r.endUsers).toBeGreaterThan(900); // climbs toward the ~1033 cap (observed ~1027)
     // Hire payroll starts after the 14-day delay. Subscription still
-    // compounds during recruiting. Ship next big feature is a flat 200
+    // compounds during recruiting. Ship next feature is a flat 200
     // Ideas and a $1,500 bonus, so this build finishes more product work
     // than the old v2–v5 ladder and ends higher (observed ~82k) while
     // staying well below the pre-payroll six-figure climb.
@@ -827,55 +826,6 @@ describe("simulation", () => {
     // this is the one probe where the mechanism change is actually visible
     // -- more points ship, more budget accrues. Still invariants-only by
     // design; no solvency/completion assertions changed.
-  });
-
-  // SPIRAL probe (Release 17): the headline systems behavior -- "success to the
-  // successful" running in reverse, a real downward spiral. Manufacture a build
-  // that has climbed to the top tier's reputation gate (enterprise-replatform:
-  // 2 completions AND 15 reputation, the two floors it stacks), confirm the
-  // contract is startable, then apply ONE security-breach's reputation hit and
-  // assert the tier re-locks -- projectAvailability flips it to not-startable
-  // with the reputation reason, live, no un-start mechanism needed. This is the
-  // income you needed to recover becoming unreachable precisely because an
-  // incident cost you the standing that unlocked it.
-  //
-  // RE-PINNED for the lean Studio pool: security-breach, the
-  // challenge that used to supply the reputation hit, is out of Studio, so the
-  // hit is applied as a literal effects pair here. The mechanism under test is
-  // projectAvailability's live reputation gate, not any one challenge, and the
-  // -5/-300 shape is the one a later era's breach card is expected to carry.
-  it("downward spiral: a reputation hit re-locks a tier the build had unlocked", () => {
-    const content = loadShippedContent("company");
-    const e = new Engine(content);
-    // Stage a Company build sitting on the first reputation-gated client
-    // (big-migration: 1 completion AND 5 reputation). Plenty of budget and
-    // Ideas so affordability is never the binding reason.
-    const s = e.getState() as GameState;
-    s.completedProjects = 1;
-    s.completedProjectIds = ["launch-beta"];
-    s.stocks.reputation = 5;
-    s.stocks.budget = 100000;
-    s.stocks.ideas = 20000;
-
-    const migrationAt = () => e.availableProjects().find((p) => p.def.id === "big-migration")!;
-    expect(migrationAt().startable).toBe(true);
-    expect(migrationAt().reason).toBeUndefined();
-
-    const breachEffects: Effect[] = [
-      { type: "addToStock", stock: "budget", value: -300 },
-      { type: "addToStock", stock: "reputation", value: -5 },
-    ];
-    applyEffects(s, breachEffects, "spiral-test");
-    expect(s.stocks.reputation).toBe(0);
-
-    const relocked = migrationAt();
-    expect(relocked.startable).toBe(false);
-    expect(relocked.reason).toBe("requires 5 reputation");
-
-    applyEffects(s, breachEffects, "spiral-test-2");
-    expect(s.stocks.reputation).toBe(0);
-    expect(migrationAt().startable).toBe(false);
-    expect(migrationAt().reason).toBe("requires 5 reputation");
   });
 
   it("upgrades matter: test suite reduces tech debt vs idle over 400 days", () => {

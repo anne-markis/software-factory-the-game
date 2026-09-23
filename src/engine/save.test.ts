@@ -133,10 +133,11 @@ describe("save/load", () => {
   // faucet (a v4 save has no ideas pile). Bumped to 6 for named Plan items, the
   // Plan stock, and the plan rate (a v5 save has no Plan pile). Bumped to 8 to
   // retire better-tooling (a v7 save can still own that id). Bumped to 9
-  // because Ship v2–v5 left the catalog. The UI's loadGame swallows this
-  // error and starts fresh, so old saves of either vintage are wiped silently.
-  it("is version 9 and rejects legacy v1–v8 saves so old saves start fresh", () => {
-    expect(SAVE_VERSION).toBe(9);
+  // because Ship v2–v5 left the catalog. Bumped to 10 to drop the client
+  // ladder and key Abandon/Cancel on project instance ids. The UI's loadGame
+  // swallows this error and starts fresh, so old saves are wiped silently.
+  it("is version 10 and rejects legacy v1–v9 saves so old saves start fresh", () => {
+    expect(SAVE_VERSION).toBe(10);
     expect(() => deserialize(JSON.stringify({ version: 1, state: {} }))).toThrow(/version 1/);
     expect(() => deserialize(JSON.stringify({ version: 2, state: {} }))).toThrow(/version 2/);
     expect(() => deserialize(JSON.stringify({ version: 3, state: {} }))).toThrow(/version 3/);
@@ -145,6 +146,7 @@ describe("save/load", () => {
     expect(() => deserialize(JSON.stringify({ version: 6, state: {} }))).toThrow(/version 6/);
     expect(() => deserialize(JSON.stringify({ version: 7, state: {} }))).toThrow(/version 7/);
     expect(() => deserialize(JSON.stringify({ version: 8, state: {} }))).toThrow(/version 8/);
+    expect(() => deserialize(JSON.stringify({ version: 9, state: {} }))).toThrow(/version 9/);
   });
 
   // A fresh Studio save round-trips its users stock and always-on stockDrags.

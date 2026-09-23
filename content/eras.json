@@ -3,11 +3,13 @@
   "eras": [
     {
       "id": "studio",
-      "name": "Studio"
+      "name": "Studio",
+      "parallelCopies": 1
     },
     {
       "id": "company",
       "name": "Company",
+      "parallelCopies": 2,
       "entryAnyOf": [
         { "minBudget": 500000 }
       ]
@@ -15,6 +17,7 @@
     {
       "id": "megacorp",
       "name": "Megacorp",
+      "parallelCopies": 3,
       "entryAnyOf": [
         { "minBudget": 10000000 }
       ]

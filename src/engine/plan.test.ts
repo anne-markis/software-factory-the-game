@@ -183,7 +183,7 @@ describe("Pursue, Plan, Cancel, auto-Ready", () => {
     e.pursueProject("split-plan");
     const s = e.getState();
     expect(s.stocks.ideas).toBe(50);
-    expect(s.plan).toEqual([{ defId: "split-plan", name: "Split plan", progress: 0, size: 1000 }]);
+    expect(s.plan).toMatchObject([{ defId: "split-plan", name: "Split plan", progress: 0, size: 1000 }]);
   });
 
   it("Cancel is not Abandon: pipeline remaining stays, and Abandon does not drop Plan items", () => {

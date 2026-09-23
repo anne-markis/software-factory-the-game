@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
 import { parseStartConfig, parseProjects } from "./content";
-import { projectsJson, startJson } from "./loadShippedContent";
+import { loadShippedContent, projectsJson, startJson } from "./loadShippedContent";
 import { effectiveRate } from "./modifiers";
 import { applyEffects } from "./effects";
 import { unshippedWork, workLedgerIssues } from "./work";
@@ -302,7 +302,7 @@ describe("projects", () => {
     s.stocks.ideas = 250;
     e.pursueProject("large-refactor");
     expect(e.getState().stocks.ideas).toBe(50);
-    expect(e.getState().plan).toEqual([
+    expect(e.getState().plan).toMatchObject([
       { defId: "large-refactor", name: "Large refactor", progress: 0, size: 2 },
     ]);
     for (let i = 0; i < 40 && e.getState().completedProjects < 2; i++) e.tick();
@@ -340,6 +340,33 @@ describe("projects", () => {
     expect(e.getState().completedProjectIds).toEqual(["launch-beta", "ship-v1", "ship-vnext"]);
     expect(e.availableProjects().find((p) => p.def.id === "ship-vnext")!.startable).toBe(true);
     expect(e.availableProjects().find((p) => p.def.id === "ship-vnext")!.reason).not.toBe("already completed");
+  });
+
+  it("allows one Ship next feature in Studio and two at once in Company", () => {
+    const studio = new Engine(loadShippedContent());
+    const studioState = studio.getState() as GameState;
+    studioState.completedProjectIds = ["launch-beta", "ship-v1"];
+    studioState.completedProjects = 2;
+    studioState.stocks.ideas = 500;
+    studio.pursueProject("ship-vnext");
+    expect(studio.availableProjects().find((p) => p.def.id === "ship-vnext")!.reason).toBe("already in plan");
+    expect(() => studio.pursueProject("ship-vnext")).toThrow(/plan/i);
+
+    const company = new Engine(loadShippedContent("company"));
+    const companyState = company.getState() as GameState;
+    companyState.completedProjectIds = ["launch-beta", "ship-v1"];
+    companyState.completedProjects = 2;
+    companyState.stocks.ideas = 500;
+    company.pursueProject("ship-vnext");
+    expect(company.availableProjects().find((p) => p.def.id === "ship-vnext")!.startable).toBe(true);
+    company.pursueProject("ship-vnext");
+    const copies = company.getState().plan.filter((p) => p.defId === "ship-vnext");
+    expect(copies).toHaveLength(2);
+    expect(copies[0]!.instanceId).not.toBe(copies[1]!.instanceId);
+    expect(company.availableProjects().find((p) => p.def.id === "ship-vnext")!.reason).toBe("already in plan");
+    company.cancelPlan(copies[1]!.instanceId!);
+    expect(company.getState().plan.filter((p) => p.defId === "ship-vnext")).toHaveLength(1);
+    expect(company.getState().plan[0]!.instanceId).toBe(copies[0]!.instanceId);
   });
 
   // Release 17: requiresReputation gates a tier ON TOP OF requiresCompleted

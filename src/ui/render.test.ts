@@ -1034,7 +1034,7 @@ describe("renderProjectOffers", () => {
     expect(html).not.toContain("already completed");
     // The repeatable follow-on is unlocked and still shown.
     expect(html).toContain('data-project="ship-vnext"');
-    expect(html).toContain("Ship next big feature");
+    expect(html).toContain("Ship next feature");
     // Repeatable gigs remain offerable after any completions.
     expect(html).toContain('data-project="gig-landing-page"');
     expect(projectAvailability(s, c).find((p) => p.def.id === "gig-landing-page")!.startable).toBe(true);
