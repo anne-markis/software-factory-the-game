@@ -3,7 +3,9 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   cockpitStatViews,
   createFlashController,
+  DAYS_PER_YEAR,
   deliveryStatViews,
+  formatDayWithYears,
   GAMBLE_REVEAL_MS,
   renderGambleReveal,
   STAT_FLASH_COOLDOWN_MS,
@@ -74,6 +76,24 @@ describe("gameFeel stat flash", () => {
     state.stocks.backlog += 1;
     syncStatRow(root, "stats", cockpitStatViews(state, content), flash);
     expect(root.querySelector(".v-flow")!.classList.contains("stat-flash")).toBe(true);
+  });
+
+  it("appends a calendar-year reading to Day", () => {
+    expect(DAYS_PER_YEAR).toBe(365);
+    expect(formatDayWithYears(0)).toBe("0 (0 years)");
+    expect(formatDayWithYears(10)).toBe("10 (0 years)");
+    expect(formatDayWithYears(182)).toBe("182 (0.5 years)");
+    expect(formatDayWithYears(365)).toBe("365 (1 year)");
+    expect(formatDayWithYears(730)).toBe("730 (2 years)");
+    expect(formatDayWithYears(2000)).toBe("2000 (5.5 years)");
+
+    const content = makeContent();
+    const state = initialState(content);
+    state.day = 365;
+    const day = cockpitStatViews(state, content).find((v) => v.stat === "day")!;
+    expect(day.label).toBe("Day");
+    expect(day.value).toBe("365 (1 year)");
+    expect(day.material).toBe(false);
   });
 
   it("does not put Era in the cockpit stats bar", () => {

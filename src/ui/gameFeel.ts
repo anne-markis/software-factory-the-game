@@ -19,6 +19,23 @@ function fmt(n: number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
+/** One calendar year. Matches payroll scale ($438/day ≈ $160k/year) and 365-day cooldowns. */
+export const DAYS_PER_YEAR = 365;
+
+/**
+ * Long-horizon reading of the sim clock. One decimal, dropping a trailing
+ * .0, with "year" only at exactly 1. Presentation only — the engine day
+ * is unchanged.
+ */
+export function formatDayWithYears(day: number): string {
+  const tenths = Math.round((day / DAYS_PER_YEAR) * 10);
+  const whole = Math.trunc(tenths / 10);
+  const frac = Math.abs(tenths % 10);
+  const shown = frac === 0 ? String(whole) : `${whole}.${frac}`;
+  const unit = tenths === 10 ? "year" : "years";
+  return `${day} (${shown} ${unit})`;
+}
+
 /** Brief highlight length; under 1x tick (1000ms) so it reads as a pulse. */
 export const STAT_FLASH_MS = 480;
 /**
@@ -50,7 +67,7 @@ export function cockpitStatViews(state: Readonly<GameState>, content: GameConten
   const budgetValue =
     runway === null ? `$${fmt(state.stocks.budget)}` : `$${fmt(state.stocks.budget)} (${runway}d)`;
   return [
-    { stat: "day", label: "Day", value: String(state.day), widthClass: "v-day", material: false },
+    { stat: "day", label: "Day", value: formatDayWithYears(state.day), widthClass: "v-day", material: false },
     // ADR 0009: cockpit Backlog is unshipped work, not the Ready-stage stock.
     { stat: "backlog", label: "Backlog", value: fmt(unshippedWork(state)), widthClass: "v-flow", material: true },
     {

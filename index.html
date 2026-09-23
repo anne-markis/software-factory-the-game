@@ -60,7 +60,10 @@
       .stat { display: inline-flex; align-items: baseline; gap: 0.5rem; min-width: 0; overflow: hidden; }
       .stat-label { color: var(--fg-dim); }
       .stat-value { display: inline-block; font-variant-numeric: tabular-nums; text-align: right; }
-      .stat-value.v-day { min-width: 5ch; } /* Day: up to ~5 digits */
+      /* Day appends a calendar-year reading, e.g. "365 (1 year)".
+         Left-align like Budget so the day stays visible and a tight
+         column clips the years suffix first. */
+      .stat-value.v-day { min-width: 12ch; text-align: left; }
       .stat-value.v-flow { min-width: 9ch; } /* Backlog/Shipped: e.g. "12,345.6" */
       .stat-value.v-count { min-width: 6ch; } /* In Progress/Done */
       /* Budget may append "(N days)" runway. No ch min-width: a wide
