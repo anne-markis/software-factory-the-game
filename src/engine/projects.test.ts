@@ -624,4 +624,39 @@ describe("Start vs Pursue offers", () => {
     expect(e.getState().stocks.ideas).toBe(10);
     expect(e.getState().plan).toEqual([]);
   });
+
+  it("keepProject starts the contract once the owner is active and again after it finishes", () => {
+    const c = content();
+    shrinkStart(c);
+    const refactor = requireContract(c.projects.find((p) => p.id === "small-refactor"));
+    refactor.sizePoints = 1;
+    c.decisions = [
+      {
+        id: "mgr",
+        name: "Mgr",
+        description: "m",
+        category: "change-structure",
+        cost: {},
+        effects: [{ type: "keepProject", project: "small-refactor" }],
+        removable: true,
+      },
+    ];
+    const e = new Engine(c);
+    e.applyDecision("mgr");
+    expect(e.getState().projects.some((p) => p.defId === "small-refactor")).toBe(false);
+    e.tick();
+    expect(e.getState().projects.some((p) => p.defId === "small-refactor")).toBe(true);
+
+    for (let i = 0; i < 15 && e.getState().projects.some((p) => p.defId === "small-refactor"); i++) e.tick();
+    expect(e.getState().projects.some((p) => p.defId === "small-refactor")).toBe(false);
+    e.tick();
+    expect(e.getState().projects.some((p) => p.defId === "small-refactor")).toBe(true);
+
+    const id = e.getState().decisions[0]!.instanceId;
+    e.removeDecision(id);
+    for (let i = 0; i < 15 && e.getState().projects.some((p) => p.defId === "small-refactor"); i++) e.tick();
+    expect(e.getState().projects.some((p) => p.defId === "small-refactor")).toBe(false);
+    e.tick();
+    expect(e.getState().projects.some((p) => p.defId === "small-refactor")).toBe(false);
+  });
 });

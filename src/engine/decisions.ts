@@ -96,7 +96,16 @@ export function applyDecision(state: GameState, content: GameContent, defId: str
   // this instance actually got (see archetypes.ts's debt mitigation check).
   const synergy = (def.synergies ?? []).find((s) => owned(state, s.ifOwned));
   const effects = synergy?.effects ?? def.effects;
-  const gamble = synergy?.gamble ?? def.gamble;
+  // The card's own synergy wins. Otherwise an active owner may replace the
+  // whole table (pending hires do not). Purchase-time only.
+  const provided = synergy?.gamble
+    ? undefined
+    : state.decisions
+        .filter((inst) => instanceIsActive(inst, state.day))
+        .map((inst) => content.decisions.find((d) => d.id === inst.defId))
+        .flatMap((owner) => owner?.replacesGamble ?? [])
+        .find((row) => row.id === def.id)?.gamble;
+  const gamble = synergy?.gamble ?? provided ?? def.gamble;
 
   const instanceId = `inst-${state.nextInstanceId++}`;
   const instance: DecisionInstance = { instanceId, defId: def.id };

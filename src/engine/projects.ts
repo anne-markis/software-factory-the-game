@@ -2,6 +2,7 @@ import type { ContractProjectDef, GameContent, GameState, PlanItem, ProjectDef }
 import { isContractProject, isPermanentProject } from "./types";
 import { isRetiredProject } from "./ktlo";
 import { availability } from "./decisions";
+import { instanceIsActive } from "./roster";
 import { log } from "./tick";
 import { drainUnshippedWork, unshippedWork } from "./work";
 import { effectiveRate } from "./modifiers";
@@ -135,6 +136,21 @@ function rejectUnstartable(content: GameContent, defId: string): void {
   if (!def) return;
   if (isPermanentProject(def)) throw new Error(`${def.name} is always on`);
   if (isRetiredProject(content, def.id)) throw new Error(`${def.name} is no longer offered`);
+}
+
+/** Start each active owner's keepProject contract when it is not already running. */
+export function scheduleKeptProjects(state: GameState, content: GameContent): void {
+  for (const inst of state.decisions) {
+    if (!instanceIsActive(inst, state.day)) continue;
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (!def) continue;
+    for (const effect of def.effects) {
+      if (effect.type !== "keepProject") continue;
+      const entry = projectAvailability(state, content).find((p) => p.def.id === effect.project);
+      if (!entry?.startable || entry.def.pursue === true) continue;
+      startProject(state, content, effect.project);
+    }
+  }
 }
 
 export function startProject(state: GameState, content: GameContent, defId: string): void {

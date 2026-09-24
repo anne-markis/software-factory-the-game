@@ -101,7 +101,11 @@ export type Effect =
   // active owners: the purchase uses the highest factor. A factor below 1
   // shrinks the grant. Recorded on the instance when its effects land
   // (after delayDays), not while the hire is still joining.
-  | { type: "scaleDecisionGrant"; targetDecision: string; stock: keyof Stocks; factor: number };
+  | { type: "scaleDecisionGrant"; targetDecision: string; stock: keyof Stocks; factor: number }
+  // Marker on a decision's base effects. While an instance of that def is
+  // active, the named contract is started whenever it is not already in
+  // flight or in plan. applyEffects does nothing; the tick reads the def.
+  | { type: "keepProject"; project: string };
 
 export interface StockGrantScale {
   targetDecision: string;
@@ -208,6 +212,11 @@ export interface DecisionDef {
   removable: boolean;
   unique?: boolean; // at most one owned instance at a time
   synergies?: Synergy[];
+  // While an active instance of this def is owned, purchasing `id` uses this
+  // gamble table instead of that card's own (full replace, same as Synergy.gamble).
+  // The buyer's own synergies win when one of those providers is owned.
+  // Pending (not yet started) copies do not count.
+  replacesGamble?: { id: string; gamble: GambleOutcome[] }[];
 }
 
 export interface DecisionInstance {

@@ -15,7 +15,7 @@ import { continuousDeployActive } from "./continuousDeploy";
 import { detectArchetypes } from "./archetypes";
 import { detectMilestones } from "./milestones";
 import { attachInjectedWork, committedWork, unshippedWork } from "./work";
-import { advancePlan } from "./projects";
+import { advancePlan, scheduleKeptProjects } from "./projects";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { ktloBurnPerDay, productFinishRate, syncKtloBase } from "./ktlo";
 import { applyEffects, clampStock, recordGrantScales } from "./effects";
@@ -430,6 +430,7 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   state.day += 1;
   pruneExpired(state);
   activateDueInstances(state, content);
+  scheduleKeptProjects(state, content);
 
   // Ramp growth runs after pruneExpired (so a modifier expiring this tick
   // doesn't grow first) and before challengePhase, so any challenge effect

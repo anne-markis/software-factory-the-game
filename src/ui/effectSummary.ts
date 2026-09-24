@@ -97,6 +97,8 @@ function describeEffect(effect: Effect): string | null {
       return "loses a developer";
     case "scaleDecisionGrant":
       return `${effect.targetDecision.replaceAll("-", " ")} x${effect.factor.toFixed(1)}`;
+    case "keepProject":
+      return `keeps ${effect.project.replaceAll("-", " ")} scheduled`;
     default: {
       // Exhaustiveness guard: a new Effect variant that reaches here is a
       // compile error, not a silently-blank card.
