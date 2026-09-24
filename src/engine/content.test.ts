@@ -1275,7 +1275,7 @@ describe("per-era content layout", () => {
 
     const company = loadShippedContent("company");
     expect(company.eraId).toBe("company");
-    expect(company.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
+    expect(company.decisions.map((d) => d.id)).toEqual([...studio.decisions.map((d) => d.id), "product-manager"]);
     expect(company.challenges.map((d) => d.id)).toEqual([
       ...studio.challenges.map((d) => d.id),
       "prod-incident",
@@ -1286,7 +1286,7 @@ describe("per-era content layout", () => {
 
     const megacorp = loadShippedContent("megacorp");
     expect(megacorp.eraId).toBe("megacorp");
-    expect(megacorp.decisions.map((d) => d.id)).toEqual(studio.decisions.map((d) => d.id));
+    expect(megacorp.decisions.map((d) => d.id)).toEqual(company.decisions.map((d) => d.id));
     expect(megacorp.challenges.map((d) => d.id)).toEqual(company.challenges.map((d) => d.id));
     expect(megacorp.projects.map((d) => d.id)).toEqual(company.projects.map((d) => d.id));
     expect(megacorp.retiredProjectIds).toEqual(["gig-landing-page"]);

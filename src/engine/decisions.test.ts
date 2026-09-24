@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
 import { decisionTargetsExactRate } from "./decisions";
 import { parseStartConfig, parseDecisions } from "./content";
-import { decisionsJson, startJson } from "./loadShippedContent";
+import { decisionsJson, loadShippedContent, startJson } from "./loadShippedContent";
 import { effectiveRate, effectiveDebtMultiplier } from "./modifiers";
 import { activateDueInstances } from "./tick";
 import type { GameContent, GameState } from "./types";
@@ -409,5 +409,49 @@ describe("decisions", () => {
     e.applyDecision("agent-ci-review");
     expect(effectiveRate(e.getState(), "review")).toBeCloseTo(reviewBefore * 2.5, 5);
     expect(e.getState().stocks.inReview).toBeGreaterThanOrEqual(0);
+  });
+
+  it("a product manager's hire roll sets discover and the user-interview multiplier", () => {
+    const company = loadShippedContent("company");
+    const e = new Engine(company);
+    const ideas = () => e.getState().stocks.ideas;
+    e.applyDecision("user-interviews");
+    expect(ideas()).toBe(300);
+
+    e.applyDecision("product-manager");
+    const pending = e.getState().decisions.find((d) => d.defId === "product-manager")!;
+    expect(pending.grantScales).toBeUndefined();
+    expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5, 10);
+    const beforeJoin = ideas();
+    e.applyDecision("user-interviews");
+    expect(ideas()).toBe(beforeJoin + 200);
+
+    settleHires(e);
+    const pm = e.getState().decisions.find((d) => d.defId === "product-manager")!;
+    const tier = (
+      {
+        "Strong hire": { discover: 5, factor: 5 },
+        "Decent hire": { discover: 2, factor: 2 },
+        "Shaky hire": { discover: 0.5, factor: 0.5 },
+        "Disaster hire": { discover: 0.1, factor: 0.1 },
+      } as const
+    )[pm.gambleLabel as "Strong hire" | "Decent hire" | "Shaky hire" | "Disaster hire"];
+    expect(tier).toBeDefined();
+    expect(effectiveRate(e.getState(), "discover")).toBeCloseTo(0.5 + tier.discover, 10);
+    const beforeScaled = ideas();
+    e.applyDecision("user-interviews");
+    expect(ideas()).toBeCloseTo(beforeScaled + 200 * tier.factor, 10);
+
+    const state = e.getState() as GameState;
+    state.decisions.push({
+      instanceId: "inst-weaker",
+      defId: "product-manager",
+      human: true,
+      gambleLabel: "Disaster hire",
+      grantScales: [{ targetDecision: "user-interviews", stock: "ideas", factor: 0.1 }],
+    });
+    const beforeMax = ideas();
+    e.applyDecision("user-interviews");
+    expect(ideas()).toBeCloseTo(beforeMax + 200 * tier.factor, 10);
   });
 });

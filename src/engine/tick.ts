@@ -18,7 +18,7 @@ import { attachInjectedWork, committedWork, unshippedWork } from "./work";
 import { advancePlan } from "./projects";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { ktloBurnPerDay, productFinishRate, syncKtloBase } from "./ktlo";
-import { applyEffects, clampStock } from "./effects";
+import { applyEffects, clampStock, recordGrantScales } from "./effects";
 import { instanceIsActive } from "./roster";
 
 // Release 3 replaces this stub with real challenge rolling.
@@ -308,6 +308,7 @@ export function activateDueInstances(state: GameState, content: GameContent): vo
   for (const inst of state.decisions) {
     if (inst.pendingEffects === undefined) continue;
     if (!instanceIsActive(inst, state.day)) continue;
+    recordGrantScales(inst, inst.pendingEffects);
     applyEffects(state, inst.pendingEffects, inst.instanceId, { instanceId: inst.instanceId, content });
     delete inst.pendingEffects;
     activated = true;

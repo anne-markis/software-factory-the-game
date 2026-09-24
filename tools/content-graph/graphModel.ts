@@ -177,6 +177,8 @@ export function formatEffect(effect: Effect): string {
         effect.op === "mul" ? `capacity ×${formatNumber(effect.value)}` : `capacity ${signed(effect.value)}`;
       return duration(effect.durationDays, body);
     }
+    case "scaleDecisionGrant":
+      return `${effect.targetDecision} ${effect.stock} ×${formatNumber(effect.factor)}`;
     default: {
       const exhaustive: never = effect;
       return exhaustive;

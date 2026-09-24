@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "id": "product-manager",
+    "name": "Hire product manager",
+    "description": "A product manager, hopefully a sharp one. It's a gamble: idea growth rises somewhere from 0.1 to 5.0 per day, and that same roll multiplies the ideas from each round of user interviews. If you hire more than one, idea growth stacks and interviews follow the strongest manager who has started. Recruiting takes 14 days and $2,000 up front; payroll starts when they do.",
+    "category": "change-structure",
+    "human": true,
+    "delayDays": 14,
+    "cost": {
+      "oneTime": 2000,
+      "perDay": 438
+    },
+    "effects": [],
+    "gamble": [
+      {
+        "probability": 0.5,
+        "label": "Strong hire",
+        "effects": [
+          { "type": "modifyRate", "target": "discover", "op": "add", "value": 5.0 },
+          { "type": "scaleDecisionGrant", "targetDecision": "user-interviews", "stock": "ideas", "factor": 5 }
+        ]
+      },
+      {
+        "probability": 0.25,
+        "label": "Decent hire",
+        "effects": [
+          { "type": "modifyRate", "target": "discover", "op": "add", "value": 2.0 },
+          { "type": "scaleDecisionGrant", "targetDecision": "user-interviews", "stock": "ideas", "factor": 2 }
+        ]
+      },
+      {
+        "probability": 0.2,
+        "label": "Shaky hire",
+        "effects": [
+          { "type": "modifyRate", "target": "discover", "op": "add", "value": 0.5 },
+          { "type": "scaleDecisionGrant", "targetDecision": "user-interviews", "stock": "ideas", "factor": 0.5 }
+        ]
+      },
+      {
+        "probability": 0.05,
+        "label": "Disaster hire",
+        "effects": [
+          { "type": "modifyRate", "target": "discover", "op": "add", "value": 0.1 },
+          { "type": "scaleDecisionGrant", "targetDecision": "user-interviews", "stock": "ideas", "factor": 0.1 }
+        ]
+      }
+    ],
+    "removable": true
+  }
+]

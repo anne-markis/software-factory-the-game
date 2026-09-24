@@ -95,6 +95,8 @@ function describeEffect(effect: Effect): string | null {
     case "removeHuman":
       // Challenge-only roster loss; not used on shop decision cards today.
       return "loses a developer";
+    case "scaleDecisionGrant":
+      return `${effect.targetDecision.replaceAll("-", " ")} x${effect.factor.toFixed(1)}`;
     default: {
       // Exhaustiveness guard: a new Effect variant that reaches here is a
       // compile error, not a silently-blank card.
@@ -112,6 +114,7 @@ function describeEffect(effect: Effect): string | null {
 // doesn't collapse cleanly (mixed ops/values, or no rate effects at all),
 // which routes the whole gamble to the best/worst fallback below.
 function collapsedOutcome(effects: Effect[]): { label: string; op: "add" | "mul"; value: number } | null {
+  if (effects.some((e) => e.type !== "modifyRate")) return null;
   const rateEffects = effects.filter((e): e is Extract<Effect, { type: "modifyRate" }> => e.type === "modifyRate");
   if (rateEffects.length === 0) return null;
   const [first, ...rest] = rateEffects;
@@ -129,7 +132,7 @@ function outcomeScore(effects: Effect[]): number {
   return effects.reduce((sum, e) => {
     if (e.type === "modifyRate" || e.type === "modifyDebtMultiplier") return sum + e.value;
     if (e.type === "addToStock") return sum + e.value;
-    if (e.type === "scaleStock") return sum + e.factor;
+    if (e.type === "scaleStock" || e.type === "scaleDecisionGrant") return sum + e.factor;
     return sum;
   }, 0);
 }
@@ -174,22 +177,31 @@ const RATE_RANGE_ORDER = ["pull", "finish", "review", "deploy", "discover", "pla
 function summarizeGamblePerTarget(gamble: GambleOutcome[]): string | null {
   const maps: Array<Map<string, number>> = [];
   const stockMaps: Array<Map<string, number>> = [];
+  const grantMaps: Array<Map<string, number>> = [];
   for (const outcome of gamble) {
     const byTarget = new Map<string, number>();
     const byStock = new Map<string, number>();
+    const byGrant = new Map<string, number>();
     for (const effect of outcome.effects) {
       if (effect.type === "addToStock") {
         if (byStock.has(effect.stock)) return null;
         byStock.set(effect.stock, effect.value);
         continue;
       }
+      if (effect.type === "scaleDecisionGrant") {
+        const key = `${effect.targetDecision}:${effect.stock}`;
+        if (byGrant.has(key)) return null;
+        byGrant.set(key, effect.factor);
+        continue;
+      }
       if (effect.type !== "modifyRate" || effect.op !== "add" || effect.durationDays !== undefined) return null;
       if (byTarget.has(effect.target)) return null;
       byTarget.set(effect.target, effect.value);
     }
-    if (byTarget.size === 0) return null;
+    if (byTarget.size === 0 && byGrant.size === 0) return null;
     maps.push(byTarget);
     stockMaps.push(byStock);
+    grantMaps.push(byGrant);
   }
   const keys = [...maps[0]!.keys()].sort();
   if (maps.some((m) => m.size !== keys.length || keys.some((k) => !m.has(k)))) return null;
@@ -205,7 +217,15 @@ function summarizeGamblePerTarget(gamble: GambleOutcome[]): string | null {
     const values = stockMaps.map((m) => m.get(stock) ?? 0);
     return `${stockLabel(stock)} ${fmtRange(Math.max(...values))} to ${fmtRange(Math.min(...values))}`;
   });
-  return [...ratePart, ...stockPart].join(", ");
+  const grantKeys = [...new Set(grantMaps.flatMap((m) => [...m.keys()]))];
+  const grantPart = grantKeys.map((key) => {
+    const values = grantMaps.map((m) => m.get(key) ?? 1);
+    const [targetDecision] = key.split(":");
+    const label = targetDecision.replaceAll("-", " ");
+    const fmtMul = (v: number) => `x${v.toFixed(1)}`;
+    return `${label} ${fmtMul(Math.max(...values))} to ${fmtMul(Math.min(...values))}`;
+  });
+  return [...ratePart, ...stockPart, ...grantPart].join(", ");
 }
 
 // Pure: same DecisionDef always yields the same string. Returns "" only for a

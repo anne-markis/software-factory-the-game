@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { parseDecisions } from "../engine/content";
-import { decisionsJson } from "../engine/loadShippedContent";
+import { decisionsJson, loadShippedContent } from "../engine/loadShippedContent";
 import type { DecisionDef } from "../engine/types";
 
 function base(overrides: Partial<DecisionDef>): DecisionDef {
@@ -227,6 +227,8 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(hire)).toBe(
       "capacity +1, finish +1.0 to -1.0, review +0.7 to +0.1, morale +4.0 to -15.0",
     );
+    const pm = loadShippedContent("company").decisions.find((d) => d.id === "product-manager")!;
+    expect(summarizeDecisionEffects(pm)).toBe("discover +5.0 to +0.1, user interviews x5.0 to x0.1");
     });
   });
 
