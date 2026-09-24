@@ -495,6 +495,38 @@ describe("parseDecisions", () => {
     expect(defs.map((d) => d.id)).toEqual(["ci-cd"]);
   });
 
+  it("pins the company engineering manager above a basic developer", () => {
+    const studio = loadShippedContent("studio");
+    const company = loadShippedContent("company");
+    expect(studio.decisions.some((d) => d.id === "eng-manager")).toBe(false);
+    const dev = studio.decisions.find((d) => d.id === "basic-dev")!;
+    const mgr = company.decisions.find((d) => d.id === "eng-manager")!;
+    expect(mgr.human).toBe(true);
+    expect(mgr.unique).toBe(true);
+    expect(mgr.delayDays).toBe(14);
+    expect(mgr.capacity).toBeUndefined();
+    expect(mgr.requires).toEqual(["basic-dev"]);
+    expect(mgr.cost.oneTime!).toBeGreaterThan(dev.cost.oneTime!);
+    expect(mgr.cost.perDay!).toBeGreaterThan(dev.cost.perDay!);
+    expect(mgr.effects).toEqual([{ type: "keepProject", project: "small-refactor" }]);
+    expect(mgr.gamble?.map((g) => g.label)).toEqual([
+      "Good manager",
+      "Decent manager",
+      "Poor manager",
+      "Disaster manager",
+    ]);
+    expect(mgr.gamble?.every((g) => g.effects.every((e) => e.type === "addToStock" && e.stock === "morale"))).toBe(true);
+    const poor = mgr.gamble?.find((g) => g.label === "Poor manager");
+    const good = mgr.gamble?.find((g) => g.label === "Good manager");
+    expect(poor?.effects[0]).toMatchObject({ value: expect.any(Number) });
+    expect((poor!.effects[0] as { value: number }).value).toBeLessThan(0);
+    expect((good!.effects[0] as { value: number }).value).toBeGreaterThan(0);
+    const replacement = mgr.replacesGamble?.find((row) => row.id === "basic-dev")!;
+    expect(replacement.gamble.map((g) => g.probability)).toEqual([0.62, 0.28, 0.08, 0.02]);
+    expect(replacement.gamble[0]!.probability).toBeGreaterThan(dev.gamble![0]!.probability);
+    expect(replacement.gamble[3]!.probability).toBeLessThan(dev.gamble![3]!.probability);
+  });
+
   it("rejects copying an inherited decision id into a later era file", () => {
     const prior = parseDecisions([
       { id: "agent", name: "Agent", description: "x", category: "ship-faster", cost: {}, effects: [], removable: true },
@@ -1275,7 +1307,11 @@ describe("per-era content layout", () => {
 
     const company = loadShippedContent("company");
     expect(company.eraId).toBe("company");
-    expect(company.decisions.map((d) => d.id)).toEqual([...studio.decisions.map((d) => d.id), "product-manager"]);
+    expect(company.decisions.map((d) => d.id)).toEqual([
+      ...studio.decisions.map((d) => d.id),
+      "product-manager",
+      "eng-manager",
+    ]);
     expect(company.decisions.find((d) => d.id === "product-manager")!.cost).toEqual({ oneTime: 2000, perDay: 400 });
     expect(company.challenges.map((d) => d.id)).toEqual([
       ...studio.challenges.map((d) => d.id),

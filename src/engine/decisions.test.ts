@@ -275,6 +275,59 @@ describe("decisions", () => {
     expect(sB.decisions[1].appliedSynergyIfOwned).toBeUndefined();
   });
 
+  it("an active replacesGamble owner tightens the next hire; a pending one does not", () => {
+    const table = (tight: boolean) =>
+      tight
+        ? [
+            { probability: 0.9, label: "Good", effects: [{ type: "modifyRate" as const, target: "finish" as const, op: "add" as const, value: 1 }] },
+            { probability: 0.1, label: "Bad", effects: [{ type: "modifyRate" as const, target: "finish" as const, op: "add" as const, value: -1 }] },
+          ]
+        : [
+            { probability: 0.5, label: "Good", effects: [{ type: "modifyRate" as const, target: "finish" as const, op: "add" as const, value: 1 }] },
+            { probability: 0.5, label: "Bad", effects: [{ type: "modifyRate" as const, target: "finish" as const, op: "add" as const, value: -1 }] },
+          ];
+    const fixture = (delayDays?: number) => {
+      const c = content();
+      c.decisions = [
+        {
+          id: "manager",
+          name: "Manager",
+          description: "m",
+          category: "change-structure",
+          cost: {},
+          effects: [],
+          removable: true,
+          unique: true,
+          delayDays,
+          replacesGamble: [{ id: "hire", gamble: table(true) }],
+        },
+        {
+          id: "hire",
+          name: "Hire",
+          description: "h",
+          category: "ship-faster",
+          cost: {},
+          effects: [],
+          removable: true,
+          gamble: table(false),
+        },
+      ];
+      return c;
+    };
+
+    const active = new Engine(fixture());
+    active.applyDecision("hire");
+    active.applyDecision("manager");
+    active.applyDecision("hire");
+    expect(active.getState().decisions.filter((d) => d.defId === "hire")[1]!.gambleLabel).toBe("Good");
+
+    const pending = new Engine(fixture(14));
+    pending.applyDecision("hire");
+    pending.applyDecision("manager");
+    pending.applyDecision("hire");
+    expect(pending.getState().decisions.filter((d) => d.defId === "hire")[1]!.gambleLabel).toBe("Bad");
+  });
+
   it("ci-cd requires the test suite first", () => {
     const e = new Engine(content());
     expect(() => e.applyDecision("ci-cd")).toThrow(/requires Add test suite/);

@@ -270,6 +270,7 @@ const effectSchema = z.discriminatedUnion("type", [
       factor: z.number().positive(),
     })
     .strict(),
+  z.object({ type: z.literal("keepProject"), project: z.string().min(1) }).strict(),
 ]);
 
 const gambleOutcomeSchema = z
@@ -325,6 +326,9 @@ const decisionSchema = z
           .object({ ifOwned: z.string(), effects: z.array(effectSchema).optional(), gamble: z.array(gambleOutcomeSchema).optional() })
           .strict(),
       )
+      .optional(),
+    replacesGamble: z
+      .array(z.object({ id: z.string(), gamble: z.array(gambleOutcomeSchema).min(1) }).strict())
       .optional(),
   })
   .strict();
@@ -397,6 +401,18 @@ export function parseDecisions(
       if (!resolvedIds.has(syn.ifOwned)) throw new Error(`Invalid content in ${source}: "${def.id}" synergy references unknown id "${syn.ifOwned}"`);
       assertScaleFromHumansIsAddOp(source, def.id, syn.effects ?? []);
       for (const outcome of syn.gamble ?? []) assertScaleFromHumansIsAddOp(source, def.id, outcome.effects);
+    }
+    for (const replacement of def.replacesGamble ?? []) {
+      if (!resolvedIds.has(replacement.id)) {
+        throw new Error(`Invalid content in ${source}: "${def.id}" replacesGamble references unknown id "${replacement.id}"`);
+      }
+      const total = replacement.gamble.reduce((sum, o) => sum + o.probability, 0);
+      if (Math.abs(total - 1) > 1e-9) {
+        throw new Error(
+          `Invalid content in ${source}: replacesGamble on "${def.id}" for "${replacement.id}" sums to ${total}, expected 1`,
+        );
+      }
+      for (const outcome of replacement.gamble) assertScaleFromHumansIsAddOp(source, def.id, outcome.effects);
     }
     assertScaleFromHumansIsAddOp(source, def.id, def.effects);
     for (const outcome of def.gamble ?? []) assertScaleFromHumansIsAddOp(source, def.id, outcome.effects);
@@ -759,6 +775,25 @@ export function validateContentGraph(content: GameContent): void {
       throw new Error(
         `Invalid content in ${challengesSource}: "${def.id}" condition.lacksDecision references unknown decision id "${lacksDecision}"`,
       );
+    }
+  }
+  const decisionsSource = content.eraId
+    ? `resolved catalog for era "${content.eraId}"`
+    : "content/decisions.json";
+  for (const def of content.decisions) {
+    const effects = [
+      ...def.effects,
+      ...(def.gamble ?? []).flatMap((o) => o.effects),
+      ...(def.synergies ?? []).flatMap((s) => [...(s.effects ?? []), ...(s.gamble ?? []).flatMap((o) => o.effects)]),
+      ...(def.replacesGamble ?? []).flatMap((r) => r.gamble.flatMap((o) => o.effects)),
+    ];
+    for (const effect of effects) {
+      if (effect.type !== "keepProject") continue;
+      if (!projectIds.has(effect.project)) {
+        throw new Error(
+          `Invalid content in ${decisionsSource}: "${def.id}" keepProject references unknown project id "${effect.project}"`,
+        );
+      }
     }
   }
 }

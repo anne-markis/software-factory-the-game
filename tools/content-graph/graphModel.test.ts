@@ -113,7 +113,7 @@ describe("content graph model", () => {
       model.nodes
         .filter((node) => node.kind === "decision" && node.eraId === "company")
         .map((node) => node.sourceId),
-    ).toEqual(["product-manager"]);
+    ).toEqual(["product-manager", "eng-manager"]);
     expect(
       model.nodes.filter((node) => node.kind === "decision" && node.eraId === "megacorp"),
     ).toEqual([]);
@@ -231,7 +231,7 @@ describe("content graph model", () => {
         to: "challenge:studio:model-deprecation",
       }),
     );
-    expect(company?.nativeDecisionCount).toBe(1);
+    expect(company?.nativeDecisionCount).toBe(2);
     expect(company?.ambientChallengeIds).toContain("challenge:company:prod-incident");
     expect(company?.ambientChallengeIds).toContain("challenge:company:weekend-in-the-desert");
     expect(incident?.eraId).toBe("company");

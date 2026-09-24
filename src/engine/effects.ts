@@ -230,6 +230,9 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
       case "modifyCapacity":
         pushModifier(state, source, "capacity", effect.op, effect.value, effect.durationDays);
         break;
+      case "keepProject":
+        // Marker only. scheduleKeptProjects reads the owning def each tick.
+        break;
     }
   }
 }

@@ -179,6 +179,8 @@ export function formatEffect(effect: Effect): string {
     }
     case "scaleDecisionGrant":
       return `${effect.targetDecision} ${effect.stock} ×${formatNumber(effect.factor)}`;
+    case "keepProject":
+      return `keeps ${effect.project} scheduled`;
     default: {
       const exhaustive: never = effect;
       return exhaustive;
@@ -300,6 +302,10 @@ function decisionCriteria(
   for (const synergy of decision.synergies ?? []) {
     const name = decisionsById.get(synergy.ifOwned)?.name ?? synergy.ifOwned;
     criteria.push(`Synergy if owned: ${name}`);
+  }
+  for (const replacement of decision.replacesGamble ?? []) {
+    const name = decisionsById.get(replacement.id)?.name ?? replacement.id;
+    criteria.push(`Replaces gamble of: ${name}`);
   }
   return criteria;
 }
@@ -500,6 +506,19 @@ function addDecisionGraph(
         from: decisionNodeId(fromEra, synergy.ifOwned),
         to: decisionNodeId(eraId, decision.id),
         label: `Synergy if ${providerName} owned`,
+        eraId,
+      });
+    }
+
+    for (const [index, replacement] of (decision.replacesGamble ?? []).entries()) {
+      const targetName = decisionsById.get(replacement.id)?.name ?? replacement.id;
+      const toEra = originById.get(replacement.id) ?? eraId;
+      edges.push({
+        id: `synergy:${eraId}:${decision.id}:${replacement.id}:${index}`,
+        kind: "synergy",
+        from: decisionNodeId(eraId, decision.id),
+        to: decisionNodeId(toEra, replacement.id),
+        label: `Replaces gamble of ${targetName}`,
         eraId,
       });
     }
