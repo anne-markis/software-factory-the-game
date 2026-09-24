@@ -107,8 +107,8 @@
       function model() {
         const watchMul = (harness ? 1.15 : 1) * (orch ? 1.7 : 1);
         const leakMul = harness ? 0.65 : 1;
-        const watch = humans * watchMul;
-        const leak = agents * 0.85 * leakMul;
+        const watch = humans * 8 * watchMul;
+        const leak = agents * 1.5 * leakMul;
         const oversight = agents === 0 ? 100 : clamp((100 * watch) / (watch + leak), 0, 100);
         const offPolicy = agents === 0 ? 0 : Math.max(0, (62 - oversight) / 62);
         const moraleLeak = Math.max(0, (58 - oversight) / 12);
@@ -195,9 +195,12 @@
         const el = document.getElementById("readout");
         el.innerHTML = `Oversight <strong>${m.oversight.toFixed(0)}</strong>. ${dirt} ${mood} ${cards.join(" ")}`;
 
+        const studio = m.offPolicy < 0.08
+          ? "Studio: the fleet is still inside what you asked for. Debt shows up when Oversight falls."
+          : "Studio: review is thin, so more of the fleet's finish is work you did not specify. Debt is the first place that shows up.";
         document.getElementById("caption").textContent = later
           ? "Later: the same stock. Off-policy finish is the fleet acting outside what you asked, on purpose or by drift. Orchestration can widen that gap. Still no quits."
-          : "Studio: review is thin, so more of the fleet's finish is work you did not specify. Debt is the first place that shows up.";
+          : studio;
       }
 
       function step(which, delta, max) {
