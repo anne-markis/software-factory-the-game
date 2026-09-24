@@ -302,6 +302,7 @@ const decisionSchema = z
       .array(z.object({ id: z.string(), per: z.number() }).strict())
       .optional(),
     cost: z.object({ oneTime: z.number().min(0).optional(), perDay: z.number().min(0).optional() }).strict(),
+    ktloPerDay: z.number().min(0).optional(),
     incomePerDay: z.number().min(0).optional(),
     // Studio monetization: income scaled by a stock's level.
     incomeFromStock: z.object({ stock: stockName, perUnit: z.number().min(0) }).strict().optional(),
@@ -556,6 +557,7 @@ const permanentProjectSchema = z
     permanent: z.literal(true),
     basePerDay: z.number().positive(),
     perDay: z.number().min(0),
+    hostingPerUser: z.number().min(0).optional(),
   })
   .strict();
 

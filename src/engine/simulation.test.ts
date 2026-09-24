@@ -76,7 +76,7 @@ describe("simulation", () => {
   // Launch beta that pays NOTHING per point (payoutPerPoint 0) and a $800
   // completion bonus. So an idle player earns $0 while shipping the beta and
   // $0 after (idle starts no follow-on project), which makes the whole budget
-  // trajectory a clean piecewise-linear -$20/day base burn with a single +$800
+  // trajectory a -$20/day base burn until launch, then hosting on top, with a single +$800
   // bump when the beta completes. Challenges are stripped to isolate this.
   //
   // Tech-debt drag never engages here: the beta is only 300 points, so idle
@@ -91,12 +91,13 @@ describe("simulation", () => {
   // on starting resources alone, no gigs and no monetization.
   //
   // COMPLETION -- day 377 (300 points at 0.8 finish/day after the 0.2 KTLO
-  // reserve; first ships day 3): +$800 bonus and +1 reputation land, budget
-  // jumps to 18260, and the beta's completionStockGrants add +30 users (the
-  // users economy switches on here; organic acquisition then runs the same tick).
+  // reserve; first ships day 3): +$800 bonus and +1 reputation land. The
+  // same tick adds users, so hosting ($0.12/user) joins the $20 base and
+  // budget lands near 18256.
   //
-  // PHASE 2 -- post-completion tail: still -$20/day (no project, no income),
-  // so budget(d) = 18260 - 20(d - 377), hitting 0 on day 1290 and clamped after.
+  // PHASE 2 -- post-completion tail: no project and no income, but hosting
+  // grows with users, so the drain is steeper than $20/day. Budget hits 0
+  // on day 664 and stays clamped.
   //
   // USERS -- 0 until day 377, then grow from 30 toward the steady state where
   // organic gain (3 + reputation 1 * 0.1 = 3.1/day) equals churn
@@ -125,7 +126,7 @@ describe("simulation", () => {
       }
       if (firstZeroDay === 0 && s.stocks.budget === 0) firstZeroDay = day;
       if (day === 300) { repBeforeCompletion = s.stocks.reputation; usersBeforeCompletion = s.stocks.users; }
-      if ([50, 100, 200, 300, 377, 1290].includes(day)) at[day] = s.stocks.budget;
+      if ([50, 100, 200, 300, 377, 664].includes(day)) at[day] = s.stocks.budget;
     }
     // Users and reputation stay at 0 through the whole beta, then step up the
     // moment it completes -- nothing invents users offstage before launch.
@@ -140,10 +141,9 @@ describe("simulation", () => {
     expect(at[200]).toBe(21000);
     expect(at[300]).toBe(19000); // solvency rule: beta finishes with budget to spare
     // Completion bump: +$800 bonus lands on day 377 (0.8 product finish after KTLO).
-    expect(at[377]).toBe(18260); // (25000 - 20*377) + 800
-    // Phase 2: clean -$20/day tail to zero. 18260 / 20 = 913 -> day 1290.
-    expect(firstZeroDay).toBe(1290);
-    expect(at[1290]).toBe(0);
+    expect(at[377]).toBeCloseTo(18256.0388, 3);
+    expect(firstZeroDay).toBe(664);
+    expect(at[664]).toBe(0);
     expect(e.getState().stocks.budget).toBe(0); // clamped through day 2000
     // Users climb toward the 1033 steady state (3.1/day gain == 0.3% churn).
     expect(e.getState().stocks.users).toBeCloseTo(1026, 0);
@@ -196,7 +196,7 @@ describe("simulation", () => {
     expect(sawUsers).toBe(true); // the users economy did switch on at launch
     expect(budgetAt300).toBeLessThan(19200); // pre-completion glide, well off 25,000 (observed 19000: no cash event reaches an idle Studio)
     expect(budgetAt300).toBeGreaterThan(0); // no instant death
-    expect(e.getState().stocks.budget).toBeLessThan(100); // broke by day 2000 (observed 0, first clamp ~day 1290)
+    expect(e.getState().stocks.budget).toBeLessThan(100); // broke by day 2000 (observed 0)
   });
 
   // Smart-strategy probe: a modest, sensible plan (test-suite day 1, ci-cd

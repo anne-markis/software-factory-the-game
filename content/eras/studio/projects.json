@@ -4,7 +4,8 @@
     "name": "Keep the lights on",
     "permanent": true,
     "basePerDay": 0.2,
-    "perDay": 20
+    "perDay": 20,
+    "hostingPerUser": 0.12
   },
   {
     "id": "gig-landing-page",

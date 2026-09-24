@@ -53,7 +53,8 @@
   {
     "id": "basic-dev",
     "name": "Hire basic developer",
-    "description": "Adds a developer, hopefully a strong one. It's a gamble, and they're gone for good if payroll fails. Reviewing PRs is part of the job. Recruiting takes 14 days and $2,000 up front; payroll starts when they do.",
+    "description": "Adds a developer, hopefully a strong one. It's a gamble, and they're gone for good if payroll fails. Reviewing PRs is part of the job. Recruiting takes 14 days and $2,000 up front; payroll starts when they do. Once they start, Keep the lights on rises by $35/day.",
+    "ktloPerDay": 35,
     "category": "ship-faster",
     "human": true,
     "delayDays": 14,
@@ -145,7 +146,8 @@
   {
     "id": "agent-harness",
     "name": "Agent harness",
-    "description": "Tests and guardrails around every agent you run: finishing and planning work 25% faster, tech debt grows 30% slower, and each agent pulls Oversight down more slowly. Ongoing cost to keep it running.",
+    "description": "Tests and guardrails around every agent you run: finishing and planning work 25% faster, tech debt grows 30% slower, and each agent pulls Oversight down more slowly. Ongoing cost to keep it running, plus $18/day on Keep the lights on.",
+    "ktloPerDay": 18,
     "category": "tame-debt",
     "cost": {
       "oneTime": 250,
@@ -180,7 +182,8 @@
   {
     "id": "agent-orchestration",
     "name": "Agent orchestration",
-    "description": "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster, tech debt grows 45% slower, and the same humans cover a larger fleet. Needs at least two agents to coordinate.",
+    "description": "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster, tech debt grows 45% slower, and the same humans cover a larger fleet. Needs at least two agents to coordinate. Adds $30/day to Keep the lights on.",
+    "ktloPerDay": 30,
     "category": "ship-faster",
     "cost": {
       "oneTime": 400,

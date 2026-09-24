@@ -208,7 +208,7 @@ describe("tick", () => {
           // day (grossGain 3 + reputation 1 * 0.1 = 3.1, churn 30 * 0.003 =
           // 0.09): 30 + 3.1 - 0.09 = 33.01.
           expect(s.stocks.users).toBeCloseTo(33.01, 5);
-          expect(s.stocks.budget).toBeCloseTo(budgetBeforeCompletion - ktloBurnPerDay(content) + 800, 5);
+          expect(s.stocks.budget).toBeCloseTo(budgetBeforeCompletion - ktloBurnPerDay(s, content) + 800, 5);
           expect(s.log.some((l) => l.message.includes("+30 users"))).toBe(true);
         } else {
           expect(usersBefore).toBe(0);
@@ -475,7 +475,7 @@ describe("tick", () => {
       const before = e.getState().stocks.budget; // users still 0
       e.tick();
       // Pure KTLO cash, no stock income: 0 users * 0.75 = 0.
-      expect(e.getState().stocks.budget).toBe(before - ktloBurnPerDay(content));
+      expect(e.getState().stocks.budget).toBe(before - ktloBurnPerDay(e.getState(), content));
     });
 
     it("one-time-product consumes no RNG and pays nothing while users are 0", () => {
@@ -492,7 +492,7 @@ describe("tick", () => {
         withoutOtp.tick();
         expect(withOtp.getState().stocks.users).toBe(0);
         expect(withOtp.getState().userIncomeFlow).toBe(0);
-        expect(withOtp.getState().stocks.budget).toBe(before - ktloBurnPerDay(content));
+        expect(withOtp.getState().stocks.budget).toBe(before - ktloBurnPerDay(withOtp.getState(), content));
         expect(withOtp.getState().log.some((l) => l.message.includes("product sale burst"))).toBe(false);
         expect(withOtp.getState().incomeByDay.at(-1)?.burst).toBe(0);
         expect(withOtp.getState().rngState).toBe(withoutOtp.getState().rngState);
@@ -574,14 +574,14 @@ describe("tick", () => {
       e.applyDecision("agent");
       e.applyDecision("agent-harness");
       // Founder + 1 hire: each coding agent is $4 × 2. Harness stays $5.
-      // 2×$8 + $5; KTLO stays $20.
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 21, ktlo: 20 });
+      // 2×$8 + $5. KTLO is the $20 base plus hire $35 and harness $18.
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 21, ktlo: 73 });
       e.applyDecision("agent-orchestration");
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 33, ktlo: 20 });
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 33, ktlo: 103 });
       e.applyDecision("test-suite");
       e.applyDecision("ci-cd");
       e.applyDecision("agent-ci-review");
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 45, ktlo: 20 });
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 45, ktlo: 103 });
     });
 
     it("records expensesByDay on tick and caps it with income history", () => {
@@ -783,7 +783,7 @@ describe("tick", () => {
       e.tick();
       const after = e.getState();
       expect(after.completedProjectIds).toContain("small-refactor");
-      expect(after.stocks.budget).toBeCloseTo(budgetBefore - ktloBurnPerDay(testContent()), 8);
+      expect(after.stocks.budget).toBeCloseTo(budgetBefore - ktloBurnPerDay(after, testContent()), 8);
     });
 
     it("lets debt attach lift remaining back over the grain instead of snapping", () => {

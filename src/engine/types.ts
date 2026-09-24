@@ -201,6 +201,10 @@ export interface DecisionDef {
   // kept so a later card can make agents add seats without renaming `agent`.
   capacityFromOwned?: { id: string; per: number }[];
   cost: { oneTime?: number; perDay?: number };
+  // Extra Keep-the-lights-on cash per active instance. Charged with the
+  // permanent project's perDay, not as this card's payroll. Pending hires
+  // (delayDays) do not pay it until they start. Omit for no surcharge.
+  ktloPerDay?: number;
   incomePerDay?: number;
   // Per-day income scaled by a stock's current level (Studio monetization). Stacks additively on top of the flat incomePerDay in
   // chargeUpkeep: totalIncome += stocks[stock] * perUnit. The subscription
@@ -321,6 +325,8 @@ export interface PermanentProjectDef {
   permanent: true;
   basePerDay: number;
   perDay: number;
+  // Dollars per current user added to the KTLO cash drain. Omit for none.
+  hostingPerUser?: number;
 }
 
 export interface ContractProjectDef {
