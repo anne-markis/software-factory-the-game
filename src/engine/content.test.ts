@@ -1276,6 +1276,7 @@ describe("per-era content layout", () => {
     const company = loadShippedContent("company");
     expect(company.eraId).toBe("company");
     expect(company.decisions.map((d) => d.id)).toEqual([...studio.decisions.map((d) => d.id), "product-manager"]);
+    expect(company.decisions.find((d) => d.id === "product-manager")!.cost).toEqual({ oneTime: 2000, perDay: 400 });
     expect(company.challenges.map((d) => d.id)).toEqual([
       ...studio.challenges.map((d) => d.id),
       "prod-incident",

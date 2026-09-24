@@ -8,7 +8,7 @@
     "delayDays": 14,
     "cost": {
       "oneTime": 2000,
-      "perDay": 438
+      "perDay": 400
     },
     "effects": [],
     "gamble": [
