@@ -105,7 +105,7 @@ match).
 
 ## Effects
 
-All nine types are one discriminated union (`effectSchema`). Extra keys
+All ten types are one discriminated union (`effectSchema`). Extra keys
 fail. `add` modifiers on a rate sum first, then `mul`, then debt and stock
 drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 
@@ -120,6 +120,7 @@ drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 | `rampRate` | `target` cannot be `"all"` — one effect per rate. Grows an add-op modifier up to `cap` while owned; removal drops the bonus immediately. |
 | `continuousDeploy` | Marker, not a numeric effect. Presence on an owned def's **base** `effects` (not a synergy swap) ships the entire `done` stock each tick. |
 | `modifyCapacity` | Add or mul In Progress seats. Not sickness-scaled. Prefer `DecisionDef.capacity` for a hire's own seat. |
+| `scaleDecisionGrant` | While this instance is active, a purchase of `targetDecision` multiplies its `addToStock` of `stock` by `factor` (below 1 shrinks it). Several active owners: the purchase uses the highest factor. Recorded when effects land, so a delayed hire does not scale grants until they start. `targetDecision` must be a known decision id in this era or an earlier one. |
 
 `start.json` `baseCapacity` is founder seats (Studio: 1). `DecisionDef.capacity` adds seats while owned (hire: 1). `capacityFromOwned` (`{ id, per }`) adds `per` per owned instance of `id` while this card is owned — Studio ships none; do not hardcode `agent` in the engine.
 

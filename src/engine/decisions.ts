@@ -1,7 +1,7 @@
 import type { DecisionDef, DecisionInstance, Effect, GameContent, GameState, GambleOutcome, RateId } from "./types";
 import type { Rng } from "./rng";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
-import { applyEffects } from "./effects";
+import { applyEffects, recordGrantScales } from "./effects";
 import { agentSeatCount, scaledDecisionCost } from "./agentCost";
 import { instanceIsActive } from "./roster";
 import { isDeliveryFrozen, log } from "./tick";
@@ -124,7 +124,8 @@ export function applyDecision(state: GameState, content: GameContent, defId: str
         : `Purchased: ${def.name}, joining in ${delay} days`,
     );
   } else {
-    applyEffects(state, queued, instanceId);
+    recordGrantScales(instance, queued);
+    applyEffects(state, queued, instanceId, { decisionId: def.id, content });
     log(state, gambleLabel ? `${def.name}: ${gambleLabel}` : `Purchased: ${def.name}`);
   }
   state.decisions.push(instance);

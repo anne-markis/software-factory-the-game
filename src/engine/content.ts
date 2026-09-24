@@ -262,6 +262,14 @@ const effectSchema = z.discriminatedUnion("type", [
       durationDays: z.number().positive().optional(),
     })
     .strict(),
+  z
+    .object({
+      type: z.literal("scaleDecisionGrant"),
+      targetDecision: z.string().min(1),
+      stock: stockName,
+      factor: z.number().positive(),
+    })
+    .strict(),
 ]);
 
 const gambleOutcomeSchema = z
@@ -392,6 +400,22 @@ export function parseDecisions(
     }
     assertScaleFromHumansIsAddOp(source, def.id, def.effects);
     for (const outcome of def.gamble ?? []) assertScaleFromHumansIsAddOp(source, def.id, outcome.effects);
+    const grantEffects = [
+      ...def.effects,
+      ...(def.gamble ?? []).flatMap((outcome) => outcome.effects),
+      ...(def.synergies ?? []).flatMap((syn) => [
+        ...(syn.effects ?? []),
+        ...(syn.gamble ?? []).flatMap((outcome) => outcome.effects),
+      ]),
+    ];
+    for (const effect of grantEffects) {
+      if (effect.type !== "scaleDecisionGrant") continue;
+      if (!resolvedIds.has(effect.targetDecision)) {
+        throw new Error(
+          `Invalid content in ${source}: "${def.id}" scaleDecisionGrant references unknown id "${effect.targetDecision}"`,
+        );
+      }
+    }
     for (const grant of def.capacityFromOwned ?? []) {
       if (!resolvedIds.has(grant.id)) {
         throw new Error(`Invalid content in ${source}: "${def.id}" capacityFromOwned references unknown id "${grant.id}"`);

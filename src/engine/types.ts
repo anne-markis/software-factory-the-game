@@ -95,7 +95,19 @@ export type Effect =
   | { type: "removeHuman" }
   // In Progress capacity (seats). Same add-then-mul shape as rates. Not
   // scaled by sickness: a sick hire still occupies a seat.
-  | { type: "modifyCapacity"; op: "add" | "mul"; value: number; durationDays?: number };
+  | { type: "modifyCapacity"; op: "add" | "mul"; value: number; durationDays?: number }
+  // While the owning instance is active, addToStock grants of `stock` on
+  // purchases of `targetDecision` use this factor instead of 1. Several
+  // active owners: the purchase uses the highest factor. A factor below 1
+  // shrinks the grant. Recorded on the instance when its effects land
+  // (after delayDays), not while the hire is still joining.
+  | { type: "scaleDecisionGrant"; targetDecision: string; stock: keyof Stocks; factor: number };
+
+export interface StockGrantScale {
+  targetDecision: string;
+  stock: keyof Stocks;
+  factor: number;
+}
 
 export type ModifierTarget = RateId | "allRates" | "debtMultiplier" | "capacity";
 
@@ -227,6 +239,10 @@ export interface DecisionInstance {
   // Effects rolled at purchase (base + gamble) to apply on the activation
   // tick. Deleted after they land. Absent on immediate purchases.
   pendingEffects?: Effect[];
+  // scaleDecisionGrant outcomes from the effects that already landed.
+  // Absent until activation, so a hire who has not started does not scale
+  // anyone else's grants.
+  grantScales?: StockGrantScale[];
 }
 
 export interface ChoiceOption {

@@ -1,4 +1,4 @@
-import type { Effect, GameContent, GameState, Modifier, ModifierTarget, StockName } from "./types";
+import type { DecisionInstance, Effect, GameContent, GameState, Modifier, ModifierTarget, StockName } from "./types";
 import { log } from "./tick";
 import { attachInjectedWork, isPipelineStock } from "./work";
 import { instanceIsActive } from "./roster";
@@ -8,6 +8,32 @@ export interface EffectContext {
   // Required for effects that consult decision defs (removeHuman). Optional
   // elsewhere so existing call sites stay unchanged.
   content?: GameContent;
+  // Set when these effects are a decision purchase. addToStock then honors
+  // active owners' scaleDecisionGrant factors for this def id.
+  decisionId?: string;
+}
+
+/** Copy scaleDecisionGrant rows onto the instance that owns these effects. */
+export function recordGrantScales(inst: DecisionInstance, effects: Effect[]): void {
+  const scales = effects.flatMap((effect) =>
+    effect.type === "scaleDecisionGrant"
+      ? [{ targetDecision: effect.targetDecision, stock: effect.stock, factor: effect.factor }]
+      : [],
+  );
+  if (scales.length > 0) inst.grantScales = scales;
+}
+
+/** Highest active scale for this purchase, or 1 when nobody is scaling it. */
+export function decisionGrantFactor(state: GameState, decisionId: string, stock: StockName): number {
+  let best: number | undefined;
+  for (const inst of state.decisions) {
+    if (!instanceIsActive(inst, state.day)) continue;
+    for (const scale of inst.grantScales ?? []) {
+      if (scale.targetDecision !== decisionId || scale.stock !== stock) continue;
+      best = best === undefined ? scale.factor : Math.max(best, scale.factor);
+    }
+  }
+  return best ?? 1;
 }
 
 // Expiry semantics: durationDays counts from the current day (expiresDay =
@@ -131,11 +157,16 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         pushModifier(state, source, "debtMultiplier", effect.op, effect.value, effect.durationDays);
         break;
       case "addToStock": {
+        const factor = ctx.decisionId ? decisionGrantFactor(state, ctx.decisionId, effect.stock) : 1;
         const before = state.stocks[effect.stock];
-        state.stocks[effect.stock] = clampStock(state, effect.stock, before + effect.value);
+        state.stocks[effect.stock] = clampStock(state, effect.stock, before + effect.value * factor);
         if (isPipelineStock(effect.stock)) attachInjectedWork(state, state.stocks[effect.stock] - before);
         break;
       }
+      case "scaleDecisionGrant":
+        // Stored on the owning instance via recordGrantScales when the
+        // effects land. Nothing to apply to stocks or modifiers here.
+        break;
       case "scaleStock": {
         // Immediate, like addToStock: no modifier is created, so a scaled
         // stock does not show up as a Friction/Cycle-speed/Leak-size
