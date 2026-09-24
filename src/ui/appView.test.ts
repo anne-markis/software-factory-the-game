@@ -153,13 +153,15 @@ describe("appView delivery-column stats layout", () => {
     expect(usersDetails.open).toBe(false);
     expect(usersDetails.tagName).toBe("DETAILS");
     expect(loops.contains(h.root.querySelector('[aria-label="User loop"]')!)).toBe(true);
-    expect(loops.contains(h.root.querySelector('[aria-label="Agent loop"]')!)).toBe(true);
-    expect(loops.contains(h.root.querySelector('[aria-label="Employee loop"]')!)).toBe(true);
+    const agentDetails = loops.querySelector<HTMLDetailsElement>(".agent-loop-details")!;
     const employeeDetails = loops.querySelector<HTMLDetailsElement>(".employee-loop-details")!;
-    expect(employeeDetails).toBeTruthy();
+    expect(agentDetails.hidden).toBe(true);
+    expect(employeeDetails.hidden).toBe(true);
     expect(employeeDetails.open).toBe(false);
-    const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toEqual(["Delivery loop", "User loop", "Agent loop", "Employee loop"]);
+    const headings = Array.from(loops.querySelectorAll("h3"))
+      .filter((el) => el.closest("details")?.hidden !== true)
+      .map((el) => el.textContent);
+    expect(headings).toEqual(["Delivery loop", "User loop"]);
     expect(headings).not.toContain("Delivery system");
     expect(headings).not.toContain("Progress system");
     expect(headings).not.toContain("Progress loop");
@@ -224,9 +226,21 @@ describe("appView delivery-column stats layout", () => {
 });
 
 describe("appView employee loop disclosure", () => {
-  it("starts collapsed and expands from the heading without saving", () => {
+  it("stays hidden until a human is hired, then starts collapsed", () => {
     const h = mount();
     const details = h.root.querySelector<HTMLDetailsElement>(".employee-loop-details")!;
+    expect(details.hidden).toBe(true);
+    h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!.click();
+    expect(details.hidden).toBe(false);
+    expect(details).toBe(h.root.querySelector(".employee-loop-details"));
+  });
+
+  it("starts collapsed and expands from the heading without saving", () => {
+    const h = mount();
+    h.engine.applyDecision("basic-dev");
+    h.view.render();
+    const details = h.root.querySelector<HTMLDetailsElement>(".employee-loop-details")!;
+    expect(details.hidden).toBe(false);
     const summary = details.querySelector("summary")!;
     expect(details.open).toBe(false);
     expect(details.querySelector('[aria-label="Employee loop"]')).not.toBeNull();
@@ -239,6 +253,18 @@ describe("appView employee loop disclosure", () => {
     summary.click();
     expect(details.open).toBe(false);
     expect(h.actions).toBe(actionsBefore);
+  });
+});
+
+describe("appView agent loop disclosure", () => {
+  it("stays hidden until a coding agent is added", () => {
+    const h = mount();
+    const details = h.root.querySelector<HTMLDetailsElement>(".agent-loop-details")!;
+    expect(details.hidden).toBe(true);
+    h.root.querySelector<HTMLElement>('[data-buy="agent"]')!.click();
+    expect(details.hidden).toBe(false);
+    expect(details.querySelector('[aria-label="Agent loop"]')).not.toBeNull();
+    expect(details).toBe(h.root.querySelector(".agent-loop-details"));
   });
 });
 

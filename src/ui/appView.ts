@@ -12,7 +12,7 @@
 // and each region is patched only when its own html actually changes (see
 // domPatch.ts), so a region whose data has not moved keeps its nodes.
 import type { Engine } from "../engine/engine";
-import type { GameContent, PendingChoice } from "../engine/types";
+import type { GameContent, GameState, PendingChoice } from "../engine/types";
 import {
   renderLog,
   renderChoicesScaffold,
@@ -122,6 +122,21 @@ const TIME_CONTROLS = "time-controls";
 const DECISIONS = "decisions";
 const PROJECTS = "projects";
 const CHOICES = "choices";
+
+function ownsHeadcount(
+  state: GameState,
+  content: GameContent,
+  flag: "human" | "agent",
+): boolean {
+  return state.decisions.some(
+    (inst) => content.decisions.find((d) => d.id === inst.defId)?.[flag] === true,
+  );
+}
+
+function syncLoopDisclosure(root: HTMLElement, selector: string, show: boolean): void {
+  const details = root.querySelector<HTMLElement>(selector);
+  if (details) details.hidden = !show;
+}
 
 function pageScaffold(): string {
   // time controls + Reset sit above the stats bar and loop panels
@@ -280,6 +295,10 @@ export function mountAppView(deps: AppViewDeps): AppView {
     page.patch(USERS_LOOP, usersLoopSvg(state, content));
     page.patch(AGENT_LOOP, agentLoopSvg(state, content));
     page.patch(EMPLOYEE_LOOP, employeeLoopSvg(state, content));
+    // Founder-only studios have no employee loop; agents stay off the page
+    // until the first coding-agent copy is owned. Pending hires count.
+    syncLoopDisclosure(root, ".agent-loop-details", ownsHeadcount(state, content, "agent"));
+    syncLoopDisclosure(root, ".employee-loop-details", ownsHeadcount(state, content, "human"));
     page.patch(GAMBLE_REVEAL, renderGambleReveal(gambleReveal));
     page.patch(STALL, renderStall(engine.isStalled(), engine.isDeliveryFrozen()));
     page.patch(TIME_CONTROLS, renderTimeControls(state.paused, deps.getSpeed(), SPEED_OPTIONS));
