@@ -15,10 +15,10 @@ import { continuousDeployActive } from "./continuousDeploy";
 import { detectArchetypes } from "./archetypes";
 import { detectMilestones } from "./milestones";
 import { attachInjectedWork, committedWork, unshippedWork } from "./work";
-import { advancePlan, scheduleKeptProjects } from "./projects";
+import { advancePlan, scheduleKeptProjects, scheduleProjectManagers } from "./projects";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { ktloBurnPerDay, productFinishRate, syncKtloBase } from "./ktlo";
-import { applyEffects, clampStock, recordGrantScales } from "./effects";
+import { applyEffects, clampStock, recordAutoSchedule, recordGrantScales } from "./effects";
 import { instanceIsActive } from "./roster";
 
 // Release 3 replaces this stub with real challenge rolling.
@@ -73,6 +73,29 @@ export function dailyExpenseSplit(
     else ktlo += perDay;
   }
   return { human, agents, ktlo };
+}
+
+/** Flat income plus stock-scaled income. Omits burst sales so a scheduler does not draw RNG. */
+export function recurringIncomePerDay(
+  state: Pick<GameState, "decisions" | "day" | "stocks">,
+  content: GameContent,
+): number {
+  let total = 0;
+  for (const inst of state.decisions) {
+    if (!instanceIsActive(inst, state.day)) continue;
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (!def) continue;
+    if (def.incomePerDay) total += def.incomePerDay;
+    if (def.incomeFromStock) {
+      total += state.stocks[def.incomeFromStock.stock] * def.incomeFromStock.perUnit;
+    }
+  }
+  return total;
+}
+
+export function dailyBurnPerDay(state: Pick<GameState, "decisions" | "day">, content: GameContent): number {
+  const split = dailyExpenseSplit(state, content);
+  return split.human + split.agents + split.ktlo;
 }
 
 // Attribute shipped points equally across in-flight remainings, pay revenue
@@ -309,6 +332,7 @@ export function activateDueInstances(state: GameState, content: GameContent): vo
     if (inst.pendingEffects === undefined) continue;
     if (!instanceIsActive(inst, state.day)) continue;
     recordGrantScales(inst, inst.pendingEffects);
+    recordAutoSchedule(inst, inst.pendingEffects);
     applyEffects(state, inst.pendingEffects, inst.instanceId, { instanceId: inst.instanceId, content });
     delete inst.pendingEffects;
     activated = true;
@@ -454,6 +478,9 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
   // Ideas faucet: always-on from day 0, not a pipeline stage, not frozen
   // with delivery. Shop cards raise it via modifyRate add on discover.
   state.stocks.ideas = Math.max(0, state.stocks.ideas + effectiveRate(state, "discover"));
+  // After this tick's ideas land, and before Plan fills, so a manager who
+  // can finally afford the next feature starts receiving plan points today.
+  scheduleProjectManagers(state, content);
 
   // Downstream first: ship Done, then review into Done, then finish into
   // In Review. Speed (finishRate) is how much leaves the Ready+In Progress

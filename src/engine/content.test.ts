@@ -1311,6 +1311,7 @@ describe("per-era content layout", () => {
       ...studio.decisions.map((d) => d.id),
       "product-manager",
       "eng-manager",
+      "project-manager",
     ]);
     expect(company.decisions.find((d) => d.id === "product-manager")!.cost).toEqual({ oneTime: 2000, perDay: 400 });
     expect(company.challenges.map((d) => d.id)).toEqual([

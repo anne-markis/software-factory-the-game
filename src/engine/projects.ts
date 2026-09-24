@@ -1,9 +1,9 @@
-import type { ContractProjectDef, GameContent, GameState, PlanItem, ProjectDef } from "./types";
+import type { AutoSchedulePolicy, ContractProjectDef, GameContent, GameState, PlanItem, ProjectDef } from "./types";
 import { isContractProject, isPermanentProject } from "./types";
 import { isRetiredProject } from "./ktlo";
 import { availability } from "./decisions";
 import { instanceIsActive } from "./roster";
-import { log } from "./tick";
+import { dailyBurnPerDay, log, recurringIncomePerDay } from "./tick";
 import { drainUnshippedWork, unshippedWork } from "./work";
 import { effectiveRate } from "./modifiers";
 
@@ -167,14 +167,19 @@ export function startProject(state: GameState, content: GameContent, defId: stri
   log(state, `Started project: ${def.name} (+${def.sizePoints} points, -$${def.upfrontCost})`);
 }
 
-export function pursueProject(state: GameState, content: GameContent, defId: string): void {
+export function pursueProject(
+  state: GameState,
+  content: GameContent,
+  defId: string,
+  opts?: { ideaCost?: number; scheduledBy?: string },
+): void {
   rejectUnstartable(content, defId);
   const def = content.projects.find((p) => p.id === defId);
   if (!def) throw new Error(`Unknown project: ${defId}`);
   if (!isContractProject(def) || !isPursue(def)) throw new Error(`${def.name} starts, it is not pursued`);
   const blocked = blockReason(state, content, def);
   if (blocked) throw new Error(`${def.name}: ${blocked}`);
-  const ideas = pursueIdeaCost(def);
+  const ideas = opts?.ideaCost ?? pursueIdeaCost(def);
   if (state.stocks.ideas < ideas) {
     throw new Error(`Cannot pursue ${def.name}: not enough ideas`);
   }
@@ -189,9 +194,45 @@ export function pursueProject(state: GameState, content: GameContent, defId: str
     name: def.name,
     progress: 0,
     size: def.sizePoints,
+    ...(opts?.scheduledBy ? { scheduledBy: opts.scheduledBy } : {}),
   });
   syncPlanStock(state);
   log(state, `Pursuing: ${def.name} (−${ideas} ideas, −$${def.upfrontCost})`);
+}
+
+function managerSlotTaken(state: GameState, instanceId: string): boolean {
+  if ((state.plan ?? []).some((item) => item.scheduledBy === instanceId)) return true;
+  return state.projects.some((project) => project.scheduledBy === instanceId);
+}
+
+function policyCanAfford(state: GameState, content: GameContent, def: ContractProjectDef, policy: AutoSchedulePolicy): boolean {
+  const ideas = pursueIdeaCost(def) * policy.ideaCostFactor;
+  if (state.stocks.ideas < ideas) return false;
+  if (state.stocks.budget < def.upfrontCost + policy.cashReserve) return false;
+  if (policy.skipWhenBurnExceedsIncome && dailyBurnPerDay(state, content) > recurringIncomePerDay(state, content)) {
+    return false;
+  }
+  return true;
+}
+
+/** Each active autoSchedule owner pursues at most one main-line project. */
+export function scheduleProjectManagers(state: GameState, content: GameContent): void {
+  for (const inst of state.decisions) {
+    const policy = inst.autoSchedule;
+    if (!policy || !instanceIsActive(inst, state.day)) continue;
+    if (managerSlotTaken(state, inst.instanceId)) continue;
+    for (const projectId of policy.projectIds) {
+      const def = content.projects.find((p) => p.id === projectId);
+      if (!def || !isContractProject(def) || !isPursue(def)) continue;
+      if (blockReason(state, content, def)) continue;
+      if (!policyCanAfford(state, content, def, policy)) break;
+      pursueProject(state, content, def.id, {
+        ideaCost: pursueIdeaCost(def) * policy.ideaCostFactor,
+        scheduledBy: inst.instanceId,
+      });
+      break;
+    }
+  }
 }
 
 export function takeProject(state: GameState, content: GameContent, defId: string): void {
@@ -234,6 +275,9 @@ function enterReadyFromPlan(state: GameState, content: GameContent, item: PlanIt
       completionBonus: 0,
       reputationReward: 0,
     });
+  }
+  if (item.scheduledBy) {
+    state.projects[state.projects.length - 1]!.scheduledBy = item.scheduledBy;
   }
   log(state, `Ready: ${item.name} (+${item.size} points)`);
 }

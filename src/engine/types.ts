@@ -105,7 +105,24 @@ export type Effect =
   // Marker on a decision's base effects. While an instance of that def is
   // active, the named contract is started whenever it is not already in
   // flight or in plan. applyEffects does nothing; the tick reads the def.
-  | { type: "keepProject"; project: string };
+  | { type: "keepProject"; project: string }
+  // While the owning instance is active, it may pursue one listed project
+  // with no click. projectIds is preference order: the first offerable id
+  // is the one they wait on. One instance, one slot (Plan or in flight).
+  | {
+      type: "autoSchedule";
+      projectIds: string[];
+      ideaCostFactor: number;
+      cashReserve: number;
+      skipWhenBurnExceedsIncome: boolean;
+    };
+
+export interface AutoSchedulePolicy {
+  projectIds: string[];
+  ideaCostFactor: number;
+  cashReserve: number;
+  skipWhenBurnExceedsIncome: boolean;
+}
 
 export interface StockGrantScale {
   targetDecision: string;
@@ -252,6 +269,9 @@ export interface DecisionInstance {
   // Absent until activation, so a hire who has not started does not scale
   // anyone else's grants.
   grantScales?: StockGrantScale[];
+  // autoSchedule outcome from the effects that already landed. Absent until
+  // activation, so a hire who has not started does not queue work.
+  autoSchedule?: AutoSchedulePolicy;
 }
 
 export interface ChoiceOption {
@@ -383,6 +403,9 @@ export interface PlanItem {
   name: string;
   progress: number;
   size: number;
+  // Decision instance that queued this item. Absent on player pursues.
+  // Kept until the item leaves Plan so that manager's slot stays taken.
+  scheduledBy?: string;
 }
 
 export interface ActiveProject {
@@ -407,6 +430,9 @@ export interface ActiveProject {
   // project is started/seeded, so completion pays the grants recorded at
   // start time even if content changes mid-game. Absent = no stock grants.
   completionStockGrants?: { stock: StockName; amount: number }[];
+  // Copied from Plan when auto-Ready. Holds the scheduling manager's slot
+  // until this contract completes or is abandoned.
+  scheduledBy?: string;
 }
 
 export interface PendingChoice {

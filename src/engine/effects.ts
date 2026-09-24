@@ -13,6 +13,19 @@ export interface EffectContext {
   decisionId?: string;
 }
 
+/** Copy the last autoSchedule effect onto the instance that owns these effects. */
+export function recordAutoSchedule(inst: DecisionInstance, effects: Effect[]): void {
+  for (const effect of effects) {
+    if (effect.type !== "autoSchedule") continue;
+    inst.autoSchedule = {
+      projectIds: [...effect.projectIds],
+      ideaCostFactor: effect.ideaCostFactor,
+      cashReserve: effect.cashReserve,
+      skipWhenBurnExceedsIncome: effect.skipWhenBurnExceedsIncome,
+    };
+  }
+}
+
 /** Copy scaleDecisionGrant rows onto the instance that owns these effects. */
 export function recordGrantScales(inst: DecisionInstance, effects: Effect[]): void {
   const scales = effects.flatMap((effect) =>
@@ -232,6 +245,10 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         break;
       case "keepProject":
         // Marker only. scheduleKeptProjects reads the owning def each tick.
+        break;
+      case "autoSchedule":
+        // Stored on the owning instance via recordAutoSchedule when the
+        // effects land. The tick pursues from that policy.
         break;
     }
   }
