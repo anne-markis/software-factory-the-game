@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mock — Agent loop, Oversight</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fff;
+        --fg: #000;
+        --fg-dim: #666;
+        --border: #999;
+        --desc: #444;
+        --note-bg: #f6f6f6;
+        --warn: #a60;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #181818;
+          --fg: #e8e8e8;
+          --fg-dim: #aaa;
+          --border: #888;
+          --desc: #c2c2c2;
+          --note-bg: #242424;
+          --warn: #e0a030;
+        }
+      }
+      body {
+        font-family: ui-monospace, monospace;
+        max-width: 920px;
+        margin: 1rem auto;
+        padding: 0 1rem 3rem;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      h1 { font-size: 1.6rem; margin: 0 0 0.5rem; }
+      h2 { font-size: 1rem; margin: 1.25rem 0 0.35rem; }
+      p { line-height: 1.45; color: var(--desc); max-width: 82ch; }
+      .lede { color: var(--fg); }
+      button { font-family: inherit; margin: 0; }
+      .panel { border: 1px solid var(--border); padding: 0.6rem 0.8rem 0.8rem; margin: 0 0 0.75rem; background: var(--note-bg); }
+      .controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; }
+      .step { display: inline-flex; align-items: center; gap: 0.35rem; }
+      .step b { font-variant-numeric: tabular-nums; min-width: 2.2ch; text-align: right; }
+      .step span { color: var(--fg-dim); }
+      .toggle { display: inline-flex; align-items: center; gap: 0.35rem; }
+      svg { width: 100%; height: auto; display: block; color: var(--fg); }
+      .diagram { border: 1px solid var(--border); padding: 0.25rem 0.35rem 0.15rem; margin: 0 0 0.75rem; }
+      .readout { color: var(--fg); margin: 0.65rem 0 0; }
+      .readout strong { font-variant-numeric: tabular-nums; }
+      .warn { color: var(--warn); }
+      .fine { font-size: 0.85rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Agent loop</h1>
+    <p class="lede">
+      Oversight is the governor on agents → throughput → more agents. Humans watch. Agents leak. Harness and orchestration sit on the arrows, not in new boxes. Low Oversight dirties finish and leaks into human morale. The fleet keeps shipping.
+    </p>
+
+    <div class="panel">
+      <div class="controls">
+        <div class="step">
+          <span>Humans</span>
+          <button type="button" id="humans-dec" aria-label="Remove a human">−</button>
+          <b id="humans-val">1</b>
+          <button type="button" id="humans-inc" aria-label="Add a human">+</button>
+        </div>
+        <div class="step">
+          <span>Agents</span>
+          <button type="button" id="agents-dec" aria-label="Remove an agent">−</button>
+          <b id="agents-val">2</b>
+          <button type="button" id="agents-inc" aria-label="Add an agent">+</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="harness" /> Harness</label>
+        <label class="toggle"><input type="checkbox" id="orch" /> Orchestration</label>
+        <label class="toggle"><input type="checkbox" id="later" /> Later reading</label>
+      </div>
+      <p class="readout" id="readout"></p>
+    </div>
+
+    <h2>Agent loop</h2>
+    <div class="diagram" id="agent-diagram"></div>
+
+    <h2>Employee loop leak</h2>
+    <p class="fine">Same morale stock as today. The overload label follows Oversight instead of agents per human.</p>
+    <div class="diagram" id="employee-diagram"></div>
+    <p class="fine" id="caption"></p>
+
+    <script>
+      const BOX_W = 150;
+      const BOX_H = 60;
+      const GAP = 60;
+      const Y = 28;
+
+      let humans = 1;
+      let agents = 2;
+      let harness = false;
+      let orch = false;
+      let later = false;
+
+      function clamp(n, lo, hi) {
+        return Math.max(lo, Math.min(hi, n));
+      }
+
+      function model() {
+        const watchMul = (harness ? 1.15 : 1) * (orch ? 1.7 : 1);
+        const leakMul = harness ? 0.65 : 1;
+        const watch = humans * 8 * watchMul;
+        const leak = agents * 1.5 * leakMul;
+        const oversight = agents === 0 ? 100 : clamp((100 * watch) / (watch + leak), 0, 100);
+        const offPolicy = agents === 0 ? 0 : Math.max(0, (62 - oversight) / 62);
+        const moraleLeak = Math.max(0, (58 - oversight) / 12);
+        return { watch, leak, oversight, offPolicy, moraleLeak };
+      }
+
+      function box(x, y, label, value) {
+        return `
+          <rect x="${x}" y="${y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="currentColor"/>
+          <text x="${x + BOX_W / 2}" y="${y + 24}" text-anchor="middle" font-size="16" fill="currentColor">${label}</text>
+          <text x="${x + BOX_W / 2}" y="${y + 46}" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">${value}</text>`;
+      }
+
+      function arrow(x1, x2, y, label, dashed) {
+        const mid = y + BOX_H / 2;
+        const dash = dashed ? ' stroke-dasharray="4 3"' : "";
+        return `
+          <line x1="${x1}" y1="${mid}" x2="${x2 - 8}" y2="${mid}" stroke="currentColor" marker-end="url(#arrow)"${dash}/>
+          <text x="${(x1 + x2) / 2}" y="${mid - 8}" text-anchor="middle" font-size="11" fill="currentColor">${label}</text>`;
+      }
+
+      function agentSvg(m) {
+        const viewW = 860;
+        const viewH = 168;
+        const contentWidth = 3 * BOX_W + 2 * GAP;
+        const x0 = (viewW - contentWidth) / 2;
+        const xH = x0;
+        const xO = x0 + BOX_W + GAP;
+        const xA = x0 + 2 * (BOX_W + GAP);
+        const loopY = Y + BOX_H + 36;
+        const left = xO + BOX_W * 0.28;
+        const right = xO + BOX_W * 0.72;
+        const leakLabel = m.leak > 0 ? `fleet −${m.leak.toFixed(1)}/day` : "fleet 0/day";
+        const policy = m.offPolicy <= 0.02 ? "in policy" : `off policy ${Math.round(m.offPolicy * 100)}%`;
+        return `
+          <svg viewBox="0 0 ${viewW} ${viewH}" role="img" aria-label="Agent loop">
+            <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+            ${box(xH, Y, "Humans", String(humans))}
+            ${arrow(xH + BOX_W, xO, Y, `watch ${m.watch.toFixed(1)}/day`, true)}
+            ${box(xO, Y, "Oversight", m.oversight.toFixed(0))}
+            ${arrow(xO + BOX_W, xA, Y, policy, true)}
+            ${box(xA, Y, "Agents", String(agents))}
+            <path d="M ${right} ${Y + BOX_H} V ${loopY} H ${left} V ${Y + BOX_H + 8}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+            <text x="${xO + BOX_W / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11" fill="currentColor">${leakLabel}</text>
+          </svg>`;
+      }
+
+      function employeeSvg(m) {
+        const viewW = 860;
+        const viewH = 120;
+        const contentWidth = 3 * BOX_W + 2 * GAP;
+        const x0 = (viewW - contentWidth) / 2;
+        const y = 16;
+        const leak = m.moraleLeak > 0.05 ? `oversight −${m.moraleLeak.toFixed(1)}/day` : "oversight 0/day";
+        return `
+          <svg viewBox="0 0 ${viewW} ${viewH}" role="img" aria-label="Employee loop leak">
+            <defs><marker id="arrow-e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+            ${box(x0, y, "Reputation", "—")}
+            ${arrow(x0 + BOX_W, x0 + BOX_W + GAP, y, "pride", true).replace("url(#arrow)", "url(#arrow-e)")}
+            ${box(x0 + BOX_W + GAP, y, "Morale", "70")}
+            ${arrow(x0 + BOX_W + GAP + BOX_W, x0 + 2 * (BOX_W + GAP), y, "quit", true).replace("url(#arrow)", "url(#arrow-e)")}
+            ${box(x0 + 2 * (BOX_W + GAP), y, "Employees", String(humans))}
+            <text x="${x0 + BOX_W + GAP + BOX_W / 2}" y="${y + BOX_H + 28}" text-anchor="middle" font-size="11" fill="currentColor">${leak}</text>
+          </svg>`;
+      }
+
+      function render() {
+        const m = model();
+        document.getElementById("humans-val").textContent = String(humans);
+        document.getElementById("agents-val").textContent = String(agents);
+        document.getElementById("agent-diagram").innerHTML = agentSvg(m);
+        document.getElementById("employee-diagram").innerHTML = employeeSvg(m);
+
+        const cards = [
+          harness ? "Harness slows the fleet leak." : "No harness: each agent drains Oversight at full strength.",
+          orch ? "Orchestration raises how much the same humans can watch." : "No orchestration: watch is headcount only.",
+        ];
+        const dirt = m.offPolicy < 0.08
+          ? "Finish stays on policy."
+          : `About ${Math.round(m.offPolicy * 100)}% of agent finish comes back as debt.`;
+        const mood = m.moraleLeak < 0.05
+          ? "Human morale holds."
+          : `Morale leak ${m.moraleLeak.toFixed(1)}/day from the cleanup.`;
+        const el = document.getElementById("readout");
+        el.innerHTML = `Oversight <strong>${m.oversight.toFixed(0)}</strong>. ${dirt} ${mood} ${cards.join(" ")}`;
+
+        const studio = m.offPolicy < 0.08
+          ? "Studio: the fleet is still inside what you asked for. Debt shows up when Oversight falls."
+          : "Studio: review is thin, so more of the fleet's finish is work you did not specify. Debt is the first place that shows up.";
+        document.getElementById("caption").textContent = later
+          ? "Later: the same stock. Off-policy finish is the fleet acting outside what you asked, on purpose or by drift. Orchestration can widen that gap. Still no quits."
+          : studio;
+      }
+
+      function step(which, delta, max) {
+        if (which === "humans") humans = clamp(humans + delta, 1, max);
+        else agents = clamp(agents + delta, 0, max);
+        if (agents < 2) orch = false;
+        document.getElementById("orch").checked = orch;
+        document.getElementById("orch").disabled = agents < 2;
+        render();
+      }
+
+      document.getElementById("humans-dec").onclick = () => step("humans", -1, 12);
+      document.getElementById("humans-inc").onclick = () => step("humans", 1, 12);
+      document.getElementById("agents-dec").onclick = () => step("agents", -1, 24);
+      document.getElementById("agents-inc").onclick = () => step("agents", 1, 24);
+      document.getElementById("harness").onchange = (e) => { harness = e.target.checked; render(); };
+      document.getElementById("orch").onchange = (e) => { orch = e.target.checked; render(); };
+      document.getElementById("later").onchange = (e) => { later = e.target.checked; render(); };
+      document.getElementById("orch").disabled = true;
+      render();
+    </script>
+  </body>
+</html>

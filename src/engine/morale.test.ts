@@ -115,30 +115,63 @@ describe("delayed hire", () => {
   });
 });
 
-describe("agent overload and quit", () => {
-  it("does not drain morale at 10 agents with founder only", () => {
+describe("oversight and quit", () => {
+  it("holds oversight at 100 with no agents and does not drain morale", () => {
     const e = new Engine(content());
-    for (let i = 0; i < 10; i++) e.applyDecision("agent");
-    const before = e.getState().stocks.morale;
     e.tick();
+    expect(e.getState().stocks.oversight).toBe(100);
+    expect(e.getState().oversightOffPolicy).toBe(0);
     expect(e.getState().moraleOverloadFlow).toBe(0);
-    expect(e.getState().stocks.morale).toBeCloseTo(before + 0.2, 10);
   });
 
-  it("drains morale when agents per human exceed 10; harness does not count", () => {
+  it("two agents stay in policy", () => {
     const e = new Engine(content());
-    for (let i = 0; i < 11; i++) e.applyDecision("agent");
+    e.applyDecision("agent");
+    e.applyDecision("agent");
+    e.tick();
+    expect(e.getState().stocks.oversight).toBeCloseTo(72.7, 0);
+    expect(e.getState().oversightOffPolicy).toBe(0);
+    expect(e.getState().moraleOverloadFlow).toBe(0);
+  });
+
+  it("a large unwatched fleet drops oversight, dirties finish, and leaks morale", () => {
+    const e = new Engine(content());
+    for (let i = 0; i < 8; i++) e.applyDecision("agent");
+    const s = e.getState() as GameState;
+    s.stocks.backlog = 0;
+    s.stocks.inProgress = 0;
+    s.stocks.inReview = 0;
+    s.stocks.done = 0;
+    const moraleBefore = s.stocks.morale;
+    e.tick();
+    const after = e.getState();
+    expect(after.stocks.oversight).toBeCloseTo(40, 0);
+    expect(after.oversightOffPolicy).toBeGreaterThan(0.3);
+    expect(after.stocks.techDebt).toBeGreaterThan(0);
+    expect(after.moraleOverloadFlow).toBeGreaterThan(1);
+    expect(after.stocks.morale).toBeLessThan(moraleBefore);
+  });
+
+  it("harness and orchestration pull a large fleet back into policy", () => {
+    const e = new Engine(content());
+    for (let i = 0; i < 8; i++) e.applyDecision("agent");
     e.applyDecision("agent-harness");
+    e.applyDecision("agent-orchestration");
     e.tick();
-    expect(e.getState().moraleOverloadFlow).toBeCloseTo(0.3, 10);
+    expect(e.getState().stocks.oversight).toBeGreaterThan(62);
+    expect(e.getState().oversightOffPolicy).toBe(0);
+    expect(e.getState().moraleOverloadFlow).toBe(0);
   });
 
-  it("pending hires do not count in the human denominator", () => {
-    const e = new Engine(content());
-    for (let i = 0; i < 11; i++) e.applyDecision("agent");
-    e.applyDecision("basic-dev");
-    e.tick();
-    expect(e.getState().moraleOverloadFlow).toBeCloseTo(0.3, 10);
+  it("a hire who has not started yet does not widen the watch", () => {
+    const bare = new Engine(content());
+    for (let i = 0; i < 8; i++) bare.applyDecision("agent");
+    bare.tick();
+    const withHire = new Engine(content());
+    for (let i = 0; i < 8; i++) withHire.applyDecision("agent");
+    withHire.applyDecision("basic-dev");
+    withHire.tick();
+    expect(withHire.getState().stocks.oversight).toBeCloseTo(bare.getState().stocks.oversight, 5);
   });
 
   it("does not quit while morale is in the safe band, even at 0 reputation", () => {

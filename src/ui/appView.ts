@@ -50,6 +50,7 @@ import { getBuildInfo } from "./buildInfo";
 import { loopDiagramSvg, renderDeliveryCarets, syncZoomCarets, type ZoomStage } from "./loopDiagram";
 import { usersLoopSvg } from "./usersLoop";
 import { employeeLoopSvg } from "./employeeLoop";
+import { agentLoopSvg } from "./agentLoop";
 import { renderStageZoom } from "./inProgressPanel";
 import { continuousDeployActive } from "../engine/continuousDeploy";
 import { createRegion, SECTION_ATTR } from "./domPatch";
@@ -113,6 +114,7 @@ const DELIVERY_CARETS = "delivery-carets";
 const STAGE_ZOOM = "stage-zoom";
 const DELIVERY_STATS = "delivery-stats";
 const USERS_LOOP = "users-loop";
+const AGENT_LOOP = "agent-loop";
 const EMPLOYEE_LOOP = "employee-loop";
 const GAMBLE_REVEAL = "gamble-reveal";
 const STALL = "stall";
@@ -153,6 +155,10 @@ function pageScaffold(): string {
       <details class="panel users-loop-details">
         <summary><h3>User loop</h3></summary>
         <div ${SECTION_ATTR}="${USERS_LOOP}"></div>
+      </details>
+      <details class="panel agent-loop-details">
+        <summary><h3>Agent loop</h3></summary>
+        <div ${SECTION_ATTR}="${AGENT_LOOP}"></div>
       </details>
       <details class="panel employee-loop-details">
         <summary><h3>Employee loop</h3></summary>
@@ -272,6 +278,7 @@ export function mountAppView(deps: AppViewDeps): AppView {
     if (caretsHost) syncZoomCarets(caretsHost, openZoom);
     page.patch(STAGE_ZOOM, renderStageZoom(state, content, openZoom));
     page.patch(USERS_LOOP, usersLoopSvg(state, content));
+    page.patch(AGENT_LOOP, agentLoopSvg(state, content));
     page.patch(EMPLOYEE_LOOP, employeeLoopSvg(state, content));
     page.patch(GAMBLE_REVEAL, renderGambleReveal(gambleReveal));
     page.patch(STALL, renderStall(engine.isStalled(), engine.isDeliveryFrozen()));

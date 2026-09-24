@@ -262,11 +262,14 @@ generic same-shape slowdown keyed on any stock and a rate target.
 `condition.minCompletedProjects`. Owned decision `stockFlowMods` and
 completed-project `stockFlowMods` add to a matching flow. Omit either
 array for `[]`. `stockMax` is an optional per-stock ceiling (Studio:
-morale 100). `headcountRatioDrags` drain a stock when a flagged-instance
-ratio exceeds `freeBand` (Studio: agents per human, founder counts, onto
-morale). `instanceChurn` is a per-active-instance quit roll when a stock
-is below `safeBand` (Studio: morale → humans). Pending `delayDays`
-instances do not count for either.
+morale 100, oversight 100). `oversight` is the agent-loop coverage ratio
+(`perHuman`, `perAgent`, policy and morale bands, `approachPerDay`).
+Decision `oversightMods` multiply the watch or leak weights (harness,
+orchestration). `headcountRatioDrags` still drain a stock when a
+flagged-instance ratio exceeds `freeBand`; Studio morale does not use it.
+`instanceChurn` is a per-active-instance quit roll when a stock is below
+`safeBand` (Studio: morale → humans). Pending `delayDays` instances do not
+count for either.
 
 Numbers for these knobs live in `content/start.json`. Archetype log lines
 (`src/engine/archetypes.ts`) are engine-side; new cards are classified

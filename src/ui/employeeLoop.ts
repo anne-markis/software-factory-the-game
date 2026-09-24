@@ -60,7 +60,7 @@ export function employeeLoopSvg(state: Readonly<GameState>, _content: GameConten
   const left = xMorale + BOX_W * 0.28;
   const right = xMorale + BOX_W * 0.72;
   const overload = state.moraleOverloadFlow;
-  const leakLabel = overload > 0 ? `overload −${overload.toFixed(1)}/day` : "overload 0/day";
+  const leakLabel = overload > 0 ? `oversight −${overload.toFixed(1)}/day` : "oversight 0/day";
   const leak = `
     <path d="M ${right} ${Y + BOX_H} V ${loopY} H ${left} V ${Y + BOX_H + 8}" fill="none" stroke="currentColor" stroke-dasharray="4 3" marker-end="url(#employee-arrow)"/>
     <text x="${xMorale + BOX_W / 2}" y="${loopY - 6}" text-anchor="middle" font-size="11" fill="currentColor">${leakLabel}</text>`;

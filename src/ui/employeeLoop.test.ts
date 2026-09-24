@@ -15,7 +15,7 @@ describe("employeeLoopSvg", () => {
     expect(svg).toContain("Reputation");
     expect(svg).toContain("Morale");
     expect(svg).toContain("Employees");
-    expect(svg).toContain("overload");
+    expect(svg).toContain("oversight");
     expect(svg).toContain("quit");
     expect(svg).toContain('aria-label="Employee loop"');
     expect(svg).toContain('data-coupling="true"');

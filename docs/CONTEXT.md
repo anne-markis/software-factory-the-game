@@ -65,11 +65,17 @@ Monetization decisions *read* users; they do not invent a second population.
 **Morale** is the employee-loop quality stock. It seeds at 70 and caps at
 100 (`start.stockMax`). One company-wide number for every hired human type:
 it recovers slowly, reputation only *helps* (being unknown does not drain
-it), agent overload above 10 agents per human (founder counts) drains it,
-and hire quality / incidents add or spend via `addToStock`. Low morale
-rolls a per-human quit chance on **active** hires. Headcount itself stays
-as `human: true` instances, not a second stock. Pending recruits (see
-`delayDays`) do not count until they start.
+it), low Oversight drains it, and hire quality / incidents add or spend via
+`addToStock`. Low morale rolls a per-human quit chance on **active** hires.
+Headcount itself stays as `human: true` instances, not a second stock.
+Pending recruits (see `delayDays`) do not count until they start.
+
+**Oversight** is the agent-loop quality stock. It seeds at 100 and caps at
+100. One company-wide number: humans fill a coverage ratio (the founder
+counts), each active agent leaks it, harness slows that leak, and
+orchestration raises how much the same humans cover. The stock snaps to
+that ratio each tick (`approachPerDay`). Below 62, a share of agent finish
+is added as tech debt. Below 58, morale leaks. Agents do not quit.
 
 **Ideas** is the idea-to-value pile. It seeds at 100 and fills from day 0
 at the `discover` rate (`start.baseRates.discover`, 0.5/day). Discover is

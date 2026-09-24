@@ -69,6 +69,9 @@ export function initialState(content: GameContent): GameState {
     moralePrideFlow: 0,
     moraleOverloadFlow: 0,
     employeeQuitRate: 0,
+    oversightWatch: 0,
+    oversightLeak: 0,
+    oversightOffPolicy: 0,
     stockMax: { ...(s.stockMax ?? {}) },
     nextInstanceId: 1,
     nextProjectInstanceId: 2,
@@ -114,6 +117,9 @@ export class Engine {
       }
       if (restored.stocks.morale === undefined) {
         restored.stocks.morale = content.start.stocks.morale;
+      }
+      if (restored.stocks.oversight === undefined) {
+        restored.stocks.oversight = content.start.stocks.oversight;
       }
       if (restored.stockMax === undefined) {
         restored.stockMax = { ...(content.start.stockMax ?? {}) };
