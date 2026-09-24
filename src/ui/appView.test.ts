@@ -153,12 +153,13 @@ describe("appView delivery-column stats layout", () => {
     expect(usersDetails.open).toBe(false);
     expect(usersDetails.tagName).toBe("DETAILS");
     expect(loops.contains(h.root.querySelector('[aria-label="User loop"]')!)).toBe(true);
+    expect(loops.contains(h.root.querySelector('[aria-label="Agent loop"]')!)).toBe(true);
     expect(loops.contains(h.root.querySelector('[aria-label="Employee loop"]')!)).toBe(true);
     const employeeDetails = loops.querySelector<HTMLDetailsElement>(".employee-loop-details")!;
     expect(employeeDetails).toBeTruthy();
     expect(employeeDetails.open).toBe(false);
     const headings = Array.from(loops.querySelectorAll("h3")).map((el) => el.textContent);
-    expect(headings).toEqual(["Delivery loop", "User loop", "Employee loop"]);
+    expect(headings).toEqual(["Delivery loop", "User loop", "Agent loop", "Employee loop"]);
     expect(headings).not.toContain("Delivery system");
     expect(headings).not.toContain("Progress system");
     expect(headings).not.toContain("Progress loop");

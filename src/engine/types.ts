@@ -31,10 +31,15 @@ export interface Stocks {
   plan: number;
   // Morale: company-wide employee-loop quality stock. One number for every
   // hired human type. Recovers slowly, reputation only helps (never a
-  // day-one drain for being unknown), agent overload drains, hire quality
+  // day-one drain for being unknown), low Oversight drains, hire quality
   // and incidents add/spend via addToStock. Low morale rolls quit on
   // active humans. Optional stockMax (Studio: 100) caps it. Clamped at 0.
   morale: number;
+  // Oversight: company-wide agent-loop quality stock. Humans fill the
+  // coverage ratio (founder counts); each agent leaks it. Harness and
+  // orchestration scale those weights. Low Oversight bends agent finish
+  // into tech debt and drains morale. Agents do not quit. Studio caps at 100.
+  oversight: number;
 }
 
 export type StockName = keyof Stocks;
@@ -176,6 +181,10 @@ export interface DecisionDef {
   // Additive nudges to start.stockFlows (ADR 0006). Studio decisions ship
   // none; the engine sums deltas from owned decisions when present.
   stockFlowMods?: StockFlowMod[];
+  // Multipliers on the Oversight coverage weights. Watch scales how much
+  // each human covers; leak scales how hard each agent pulls the stock down.
+  // Studio: harness slows the leak, orchestration raises the watch.
+  oversightMods?: { watchMul?: number; leakMul?: number };
   effects: Effect[];
   gamble?: GambleOutcome[];
   requires?: string[];
@@ -440,6 +449,22 @@ export interface StockFlow {
 
 export type HeadcountFlag = "human" | "agent";
 
+// Coverage ratio for the agent loop, read from content at tick time.
+// Target = 100 * watch / (watch + leak), where watch is humans (founder
+// counts) times perHuman and leak is agents times perAgent. Owned
+// oversightMods multiply those weights. approachPerDay is how much of the
+// gap to that target closes each tick (1 snaps). Below offPolicyBelow, a
+// share of agent finish is added as tech debt. Below moraleLeakBelow, morale
+// loses (band - oversight) / moraleLeakScale per day.
+export interface OversightConfig {
+  perHuman: number;
+  perAgent: number;
+  offPolicyBelow: number;
+  moraleLeakBelow: number;
+  moraleLeakScale: number;
+  approachPerDay: number;
+}
+
 // Always-on drain: when flagged-instance ratio exceeds freeBand, subtract
 // drainPerExcess * (ratio - freeBand) from `stock` each tick. Studio uses
 // this for agent:human overload on morale. FounderCounts adds 1 to the
@@ -484,9 +509,12 @@ export interface StartConfig {
   // these after the 0-floor. Studio caps morale at 100. Copied onto
   // GameState at init so applyEffects stays content-free.
   stockMax?: Partial<Record<StockName, number>>;
-  // Always-on headcount-ratio drains (Studio agent:human morale overload).
-  // Read from content at tick time. Optional; treated as [] when absent.
+  // Always-on headcount-ratio drains. Read from content at tick time.
+  // Optional; treated as [] when absent. Studio morale no longer uses this;
+  // low Oversight is the morale drain.
   headcountRatioDrags?: HeadcountRatioDrag[];
+  // Agent-loop coverage. Optional; when omitted the stock stays put.
+  oversight?: OversightConfig;
   // Always-on per-instance quit rolls (Studio morale → human quit).
   // Read from content at tick time. Optional; treated as [] when absent.
   instanceChurn?: InstanceChurn[];
@@ -628,12 +656,18 @@ export interface GameState {
   // Realized employee-loop flows this tick. moraleRecoverFlow is the flat
   // acquirePerDay on the morale stockFlow; moralePrideFlow is the
   // acquirePerStock (reputation) term — help only, never negative.
-  // moraleOverloadFlow is the headcount-ratio drain (0 when under the band).
-  // employeeQuitRate is the per-human quit probability used this tick.
+  // moraleOverloadFlow is the Oversight → morale drain (0 while Oversight
+  // stays above the leak band). employeeQuitRate is the per-human quit
+  // probability used this tick.
   moraleRecoverFlow: number;
   moralePrideFlow: number;
   moraleOverloadFlow: number;
   employeeQuitRate: number;
+  // Agent-loop weights this tick (diagram labels, not the net stock delta).
+  // oversightOffPolicy is the share of agent finish added as tech debt.
+  oversightWatch: number;
+  oversightLeak: number;
+  oversightOffPolicy: number;
   // Optional per-stock ceilings, copied from start.stockMax at init.
   // applyEffects clamps writes through clampStock. {} when content omits.
   stockMax: Partial<Record<StockName, number>>;

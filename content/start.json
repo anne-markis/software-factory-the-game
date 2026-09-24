@@ -1,6 +1,6 @@
 {
   "seed": 20260714,
-  "stocks": { "backlog": 300, "inProgress": 0, "inReview": 0, "done": 0, "shipped": 0, "budget": 25000, "techDebt": 0, "reputation": 0, "users": 0, "ideas": 100, "plan": 0, "morale": 70 },
+  "stocks": { "backlog": 300, "inProgress": 0, "inReview": 0, "done": 0, "shipped": 0, "budget": 25000, "techDebt": 0, "reputation": 0, "users": 0, "ideas": 100, "plan": 0, "morale": 70, "oversight": 100 },
   "baseRates": { "pull": 2, "finish": 1, "review": 1, "deploy": 1, "discover": 0.5, "plan": 1, "ktlo": 0 },
   "baseCapacity": 1,
   "debtMultiplier": 0.2,
@@ -23,17 +23,15 @@
       "acquirePerStock": { "stock": "reputation", "perUnit": 0.05 }
     }
   ],
-  "stockMax": { "morale": 100 },
-  "headcountRatioDrags": [
-    {
-      "stock": "morale",
-      "numerator": "agent",
-      "denominator": "human",
-      "founderCounts": true,
-      "freeBand": 10,
-      "drainPerExcess": 0.3
-    }
-  ],
+  "stockMax": { "morale": 100, "oversight": 100 },
+  "oversight": {
+    "perHuman": 8,
+    "perAgent": 1.5,
+    "offPolicyBelow": 62,
+    "moraleLeakBelow": 58,
+    "moraleLeakScale": 12,
+    "approachPerDay": 1
+  },
   "instanceChurn": [
     {
       "stock": "morale",

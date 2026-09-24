@@ -16,6 +16,7 @@ function stocks(partial: Partial<GameState["stocks"]> = {}): GameState["stocks"]
     ideas: 0,
     plan: 0,
     morale: 0,
+    oversight: 0,
     ...partial,
   };
 }

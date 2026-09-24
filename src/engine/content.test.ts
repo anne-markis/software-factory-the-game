@@ -55,17 +55,17 @@ describe("parseStartConfig", () => {
       { stock: "morale", amount: 5 },
     ]);
     expect(cfg.stocks.morale).toBe(70);
-    expect(cfg.stockMax).toEqual({ morale: 100 });
-    expect(cfg.headcountRatioDrags).toEqual([
-      {
-        stock: "morale",
-        numerator: "agent",
-        denominator: "human",
-        founderCounts: true,
-        freeBand: 10,
-        drainPerExcess: 0.3,
-      },
-    ]);
+    expect(cfg.stocks.oversight).toBe(100);
+    expect(cfg.stockMax).toEqual({ morale: 100, oversight: 100 });
+    expect(cfg.oversight).toEqual({
+      perHuman: 8,
+      perAgent: 1.5,
+      offPolicyBelow: 62,
+      moraleLeakBelow: 58,
+      moraleLeakScale: 12,
+      approachPerDay: 1,
+    });
+    expect(cfg.headcountRatioDrags).toBeUndefined();
     expect(cfg.instanceChurn).toEqual([{ stock: "morale", flag: "human", safeBand: 40, maxRatePerDay: 0.02 }]);
     // Always-on support drag on users above a 25-user free band.
     expect(cfg.stockDrags).toEqual([
@@ -298,6 +298,7 @@ describe("parseDecisions", () => {
       { type: "modifyDebtMultiplier", op: "mul", value: 0.7 },
     ]);
     expect(harness.synergies).toBeUndefined();
+    expect(harness.oversightMods).toEqual({ watchMul: 1.15, leakMul: 0.65 });
 
     // agent-orchestration (replacing swarm-orchestrator): the same KIND of
     // effect as the harness with a bigger speed multiplier and a deeper debt
@@ -316,6 +317,7 @@ describe("parseDecisions", () => {
     // ongoing burn so it stays a real budget decision rather than a strict
     // upgrade you buy the moment you can afford it.
     expect(orch.cost.perDay!).toBeGreaterThan(harness.cost.perDay!);
+    expect(orch.oversightMods).toEqual({ watchMul: 1.7 });
 
     const ciReview = defs.find((d) => d.id === "agent-ci-review")!;
     expect(ciReview.unique).toBe(true);

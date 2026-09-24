@@ -27,6 +27,7 @@ const stocksSchema = z
     ideas: z.number().min(0),
     plan: z.number().min(0),
     morale: z.number().min(0),
+    oversight: z.number().min(0),
   })
   .strict();
 
@@ -41,7 +42,7 @@ const milestoneSchema = z
 
 const deliveryRate = z.enum(["pull", "finish", "review", "deploy"]);
 const rateTarget = z.enum(["pull", "finish", "review", "deploy", "discover", "plan", "ktlo", "all"]);
-const stockName = z.enum(["backlog", "inProgress", "inReview", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas", "plan", "morale"]);
+const stockName = z.enum(["backlog", "inProgress", "inReview", "done", "shipped", "budget", "techDebt", "reputation", "users", "ideas", "plan", "morale", "oversight"]);
 const headcountFlag = z.enum(["human", "agent"]);
 
 // Stocks granted on project completion (Studio spine). Shared by
@@ -122,6 +123,17 @@ const startSchema = z
       .optional(),
     // Optional per-stock ceilings (Studio: morale 100).
     stockMax: z.record(stockName, z.number().positive()).optional(),
+    oversight: z
+      .object({
+        perHuman: z.number().gt(0),
+        perAgent: z.number().gt(0),
+        offPolicyBelow: z.number().gt(0),
+        moraleLeakBelow: z.number().gt(0),
+        moraleLeakScale: z.number().gt(0),
+        approachPerDay: z.number().gt(0).lte(1),
+      })
+      .strict()
+      .optional(),
     // Agent:human (or any flag pair) drain onto a stock.
     headcountRatioDrags: z
       .array(
@@ -282,6 +294,13 @@ const decisionSchema = z
       .optional(),
     // Additive stock-flow nudges (ADR 0006). Studio decisions ship none.
     stockFlowMods: stockFlowModSchema,
+    oversightMods: z
+      .object({
+        watchMul: z.number().gt(0).optional(),
+        leakMul: z.number().gt(0).optional(),
+      })
+      .strict()
+      .optional(),
     effects: z.array(effectSchema),
     gamble: z.array(gambleOutcomeSchema).optional(),
     requires: z.array(z.string()).optional(),

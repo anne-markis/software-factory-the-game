@@ -145,7 +145,7 @@
   {
     "id": "agent-harness",
     "name": "Agent harness",
-    "description": "Tests and guardrails around every agent you run: finishing and planning work 25% faster and tech debt grows 30% slower. Ongoing cost to keep it running.",
+    "description": "Tests and guardrails around every agent you run: finishing and planning work 25% faster, tech debt grows 30% slower, and each agent pulls Oversight down more slowly. Ongoing cost to keep it running.",
     "category": "tame-debt",
     "cost": {
       "oneTime": 250,
@@ -154,6 +154,7 @@
     "requires": [
       "agent"
     ],
+    "oversightMods": { "watchMul": 1.15, "leakMul": 0.65 },
     "effects": [
       {
         "type": "modifyRate",
@@ -179,7 +180,7 @@
   {
     "id": "agent-orchestration",
     "name": "Agent orchestration",
-    "description": "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster and tech debt grows 45% slower. Needs at least two agents to coordinate.",
+    "description": "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster, tech debt grows 45% slower, and the same humans cover a larger fleet. Needs at least two agents to coordinate.",
     "category": "ship-faster",
     "cost": {
       "oneTime": 400,
@@ -188,6 +189,7 @@
     "requiresCounts": [
       { "id": "agent", "count": 2 }
     ],
+    "oversightMods": { "watchMul": 1.7 },
     "effects": [
       {
         "type": "modifyRate",

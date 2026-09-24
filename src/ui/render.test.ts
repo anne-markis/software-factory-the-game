@@ -509,7 +509,7 @@ describe("renderDecisions", () => {
     // known long-ish entry -- assert it appears whole, not clipped to its first
     // sentence or an ellipsis (Release 20 removes the old 87-char truncation).
     const orchestrationDesc =
-      "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster and tech debt grows 45% slower. Needs at least two agents to coordinate.";
+      "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster, tech debt grows 45% slower, and the same humans cover a larger fleet. Needs at least two agents to coordinate.";
     expect(orchestrationDesc.length).toBeGreaterThan(110);
     expect(html).toContain(`<div class="tt-node-desc">${orchestrationDesc}</div>`);
     expect(html).not.toContain("...");

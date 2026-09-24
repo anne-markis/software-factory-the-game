@@ -10,7 +10,7 @@ import type {
 import type { Rng } from "./rng";
 import { sampleIndependentHits } from "./binomial";
 import { agentSeatCount, scaledDecisionCost } from "./agentCost";
-import { effectiveDebtMultiplier, effectiveRate, pruneExpired } from "./modifiers";
+import { effectiveDebtMultiplier, effectiveRate, pruneExpired, scaledModifierValue } from "./modifiers";
 import { continuousDeployActive } from "./continuousDeploy";
 import { detectArchetypes } from "./archetypes";
 import { detectMilestones } from "./milestones";
@@ -319,8 +319,71 @@ export function activateDueInstances(state: GameState, content: GameContent): vo
   }
 }
 
-function applyHeadcountRatioDrags(state: GameState, content: GameContent): void {
+function oversightWeights(state: GameState, content: GameContent): { watch: number; leak: number; humans: number; agents: number } {
+  const cfg = content.start.oversight;
+  if (!cfg) return { watch: 0, leak: 0, humans: 0, agents: 0 };
+  let watchMul = 1;
+  let leakMul = 1;
+  for (const inst of state.decisions) {
+    if (!instanceIsActive(inst, state.day)) continue;
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (!def?.oversightMods) continue;
+    watchMul *= def.oversightMods.watchMul ?? 1;
+    leakMul *= def.oversightMods.leakMul ?? 1;
+  }
+  const humans = flaggedActiveCount(state, content, "human") + 1;
+  const agents = flaggedActiveCount(state, content, "agent");
+  return {
+    watch: humans * cfg.perHuman * watchMul,
+    leak: agents * cfg.perAgent * leakMul,
+    humans,
+    agents,
+  };
+}
+
+function agentFinishContribution(state: GameState): number {
+  let add = 0;
+  for (const m of state.modifiers) {
+    if (m.op !== "add" || (m.target !== "finish" && m.target !== "allRates")) continue;
+    const inst = state.decisions.find((d) => d.instanceId === m.source);
+    if (!inst?.agent || !instanceIsActive(inst, state.day)) continue;
+    add += scaledModifierValue(state, m);
+  }
+  let mul = 1;
+  for (const m of state.modifiers) {
+    if (m.op !== "mul" || (m.target !== "finish" && m.target !== "allRates")) continue;
+    mul *= m.value;
+  }
+  return add * mul;
+}
+
+function applyOversight(state: GameState, content: GameContent, frozen: boolean): number {
+  state.oversightWatch = 0;
+  state.oversightLeak = 0;
+  state.oversightOffPolicy = 0;
   state.moraleOverloadFlow = 0;
+  const cfg = content.start.oversight;
+  if (!cfg) return 0;
+  const { watch, leak, agents } = oversightWeights(state, content);
+  state.oversightWatch = watch;
+  state.oversightLeak = leak;
+  const cap = state.stockMax.oversight ?? 100;
+  const target = agents === 0 || watch + leak <= 0 ? cap : Math.min(cap, (cap * watch) / (watch + leak));
+  const current = state.stocks.oversight;
+  const next = clampStock(state, "oversight", current + cfg.approachPerDay * (target - current));
+  state.stocks.oversight = next;
+  const offPolicy = agents === 0 ? 0 : Math.max(0, (cfg.offPolicyBelow - next) / cfg.offPolicyBelow);
+  state.oversightOffPolicy = offPolicy;
+  const moraleLeak = Math.max(0, (cfg.moraleLeakBelow - next) / cfg.moraleLeakScale);
+  state.moraleOverloadFlow = moraleLeak;
+  if (moraleLeak > 0) {
+    state.stocks.morale = clampStock(state, "morale", state.stocks.morale - moraleLeak);
+  }
+  if (frozen || offPolicy <= 0) return 0;
+  return offPolicy * agentFinishContribution(state);
+}
+
+function applyHeadcountRatioDrags(state: GameState, content: GameContent): void {
   for (const drag of content.start.headcountRatioDrags ?? []) {
     const numerator = flaggedActiveCount(state, content, drag.numerator);
     let denominator = flaggedActiveCount(state, content, drag.denominator);
@@ -416,7 +479,7 @@ export function tick(state: GameState, rng: Rng, content: GameContent, challenge
 
   attributeShipped(state, shippedFlow);
 
-  const debtGain = shippedFlow * effectiveDebtMultiplier(state);
+  const debtGain = shippedFlow * effectiveDebtMultiplier(state) + applyOversight(state, content, frozen);
   state.stocks.techDebt += debtGain;
   // Studio spine: tech debt always accrues, but it only refills
   // the backlog once the first project (the Launch beta) has completed. This
