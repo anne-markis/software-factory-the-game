@@ -99,6 +99,8 @@ function describeEffect(effect: Effect): string | null {
       return `${effect.targetDecision.replaceAll("-", " ")} x${effect.factor.toFixed(1)}`;
     case "keepProject":
       return `keeps ${effect.project.replaceAll("-", " ")} scheduled`;
+    case "autoSchedule":
+      return `schedules one of ${effect.projectIds.length}`;
     default: {
       // Exhaustiveness guard: a new Effect variant that reaches here is a
       // compile error, not a silently-blank card.
@@ -190,6 +192,7 @@ function summarizeGamblePerTarget(gamble: GambleOutcome[]): string | null {
         byStock.set(effect.stock, effect.value);
         continue;
       }
+      if (effect.type === "autoSchedule" || effect.type === "keepProject") continue;
       if (effect.type === "scaleDecisionGrant") {
         const key = `${effect.targetDecision}:${effect.stock}`;
         if (byGrant.has(key)) return null;

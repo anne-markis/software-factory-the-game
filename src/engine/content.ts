@@ -271,6 +271,15 @@ const effectSchema = z.discriminatedUnion("type", [
     })
     .strict(),
   z.object({ type: z.literal("keepProject"), project: z.string().min(1) }).strict(),
+  z
+    .object({
+      type: z.literal("autoSchedule"),
+      projectIds: z.array(z.string().min(1)).min(1),
+      ideaCostFactor: z.number().positive(),
+      cashReserve: z.number().min(0),
+      skipWhenBurnExceedsIncome: z.boolean(),
+    })
+    .strict(),
 ]);
 
 const gambleOutcomeSchema = z
@@ -788,11 +797,27 @@ export function validateContentGraph(content: GameContent): void {
       ...(def.replacesGamble ?? []).flatMap((r) => r.gamble.flatMap((o) => o.effects)),
     ];
     for (const effect of effects) {
-      if (effect.type !== "keepProject") continue;
-      if (!projectIds.has(effect.project)) {
-        throw new Error(
-          `Invalid content in ${decisionsSource}: "${def.id}" keepProject references unknown project id "${effect.project}"`,
-        );
+      if (effect.type === "keepProject") {
+        if (!projectIds.has(effect.project)) {
+          throw new Error(
+            `Invalid content in ${decisionsSource}: "${def.id}" keepProject references unknown project id "${effect.project}"`,
+          );
+        }
+        continue;
+      }
+      if (effect.type !== "autoSchedule") continue;
+      for (const projectId of effect.projectIds) {
+        if (!projectIds.has(projectId)) {
+          throw new Error(
+            `Invalid content in ${decisionsSource}: "${def.id}" autoSchedule references unknown project id "${projectId}"`,
+          );
+        }
+        const project = content.projects.find((p) => p.id === projectId);
+        if (!project || !isContractProject(project) || project.pursue !== true) {
+          throw new Error(
+            `Invalid content in ${decisionsSource}: "${def.id}" autoSchedule project "${projectId}" is not a pursue contract`,
+          );
+        }
       }
     }
   }

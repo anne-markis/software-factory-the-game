@@ -127,5 +127,77 @@
     ],
     "removable": true,
     "unique": true
+  },
+  {
+    "id": "project-manager",
+    "name": "Hire project manager",
+    "description": "Queues one main-line project — Ship v1, otherwise one Ship next feature — as soon as ideas and cash allow. Each manager holds a single slot; another feature needs another manager. It's a gamble: plan speed, the idea cost of what they queue, and how much cash they refuse to dip into. Anyone but a disaster hire also waits while daily burn outruns income. Recruiting takes 14 days and $2,000 up front; payroll is $350 a day once they start.",
+    "category": "change-structure",
+    "human": true,
+    "delayDays": 14,
+    "cost": {
+      "oneTime": 2000,
+      "perDay": 350
+    },
+    "effects": [],
+    "gamble": [
+      {
+        "probability": 0.5,
+        "label": "Strong hire",
+        "effects": [
+          { "type": "modifyRate", "target": "plan", "op": "add", "value": 1.0 },
+          {
+            "type": "autoSchedule",
+            "projectIds": ["ship-v1", "ship-vnext"],
+            "ideaCostFactor": 0.5,
+            "cashReserve": 5000,
+            "skipWhenBurnExceedsIncome": true
+          }
+        ]
+      },
+      {
+        "probability": 0.25,
+        "label": "Decent hire",
+        "effects": [
+          { "type": "modifyRate", "target": "plan", "op": "add", "value": 0.5 },
+          {
+            "type": "autoSchedule",
+            "projectIds": ["ship-v1", "ship-vnext"],
+            "ideaCostFactor": 1,
+            "cashReserve": 2000,
+            "skipWhenBurnExceedsIncome": true
+          }
+        ]
+      },
+      {
+        "probability": 0.2,
+        "label": "Shaky hire",
+        "effects": [
+          { "type": "modifyRate", "target": "plan", "op": "add", "value": 0.2 },
+          {
+            "type": "autoSchedule",
+            "projectIds": ["ship-v1", "ship-vnext"],
+            "ideaCostFactor": 1,
+            "cashReserve": 0,
+            "skipWhenBurnExceedsIncome": true
+          }
+        ]
+      },
+      {
+        "probability": 0.05,
+        "label": "Disaster hire",
+        "effects": [
+          { "type": "modifyRate", "target": "plan", "op": "add", "value": 0.1 },
+          {
+            "type": "autoSchedule",
+            "projectIds": ["ship-v1", "ship-vnext"],
+            "ideaCostFactor": 2,
+            "cashReserve": 0,
+            "skipWhenBurnExceedsIncome": false
+          }
+        ]
+      }
+    ],
+    "removable": true
   }
 ]

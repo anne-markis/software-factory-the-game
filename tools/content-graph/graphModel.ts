@@ -181,6 +181,8 @@ export function formatEffect(effect: Effect): string {
       return `${effect.targetDecision} ${effect.stock} ×${formatNumber(effect.factor)}`;
     case "keepProject":
       return `keeps ${effect.project} scheduled`;
+    case "autoSchedule":
+      return `auto-schedules ${effect.projectIds.join(", ")}`;
     default: {
       const exhaustive: never = effect;
       return exhaustive;
