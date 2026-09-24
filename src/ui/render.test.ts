@@ -130,15 +130,15 @@ describe("renderStats", () => {
   it("marks Budget with budget-low when runway is at or under 14 days", () => {
     const c = content();
     const e = new Engine(c);
-    e.applyDecision("basic-dev"); // +$438/day after they start → burn 458
+    e.applyDecision("basic-dev"); // +$438/day payroll and +$35 KTLO after they start → burn 493
     const state = e.getState() as GameState;
     for (const inst of state.decisions) {
       if (inst.activeOnDay !== undefined) inst.activeOnDay = state.day;
     }
     activateDueInstances(state, c);
-    state.stocks.budget = 4580; // exactly 10 days
+    state.stocks.budget = 4930; // exactly 10 days
     const html = renderStats(state, c);
-    expect(html).toContain('class="stat-value v-budget budget-low">$4,580 (10d)</span>');
+    expect(html).toContain('class="stat-value v-budget budget-low">$4,930 (10d)</span>');
   });
 
   it("appends Nd runway and warns at 1d", () => {
@@ -509,7 +509,7 @@ describe("renderDecisions", () => {
     // known long-ish entry -- assert it appears whole, not clipped to its first
     // sentence or an ellipsis (Release 20 removes the old 87-char truncation).
     const orchestrationDesc =
-      "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster, tech debt grows 45% slower, and the same humans cover a larger fleet. Needs at least two agents to coordinate.";
+      "A planner splits work across your agents and reviews what comes back: finishing, planning, and review 45% faster, tech debt grows 45% slower, and the same humans cover a larger fleet. Needs at least two agents to coordinate. Adds $30/day to Keep the lights on.";
     expect(orchestrationDesc.length).toBeGreaterThan(110);
     expect(html).toContain(`<div class="tt-node-desc">${orchestrationDesc}</div>`);
     expect(html).not.toContain("...");

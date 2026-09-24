@@ -31,7 +31,7 @@ export function netRecurringBurnPerDay(state: Readonly<GameState>, content: Game
       income += state.stocks[def.incomeFromStock.stock] * def.incomeFromStock.perUnit;
     }
   }
-  return ktloBurnPerDay(content) + payroll - income;
+  return ktloBurnPerDay(state, content) + payroll - income;
 }
 
 // Whole days until budget cannot cover another day of recurring burn.

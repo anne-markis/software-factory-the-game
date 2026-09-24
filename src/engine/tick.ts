@@ -56,12 +56,12 @@ function isAgentExpenseId(defId: string): boolean {
 
 /** Owned per-day drain plus KTLO cash, bucketed for the Expenses chart. */
 export function dailyExpenseSplit(
-  state: Pick<GameState, "decisions" | "day">,
+  state: Pick<GameState, "decisions" | "day" | "stocks">,
   content: GameContent,
 ): Omit<DailyExpenses, "day"> {
   let human = 0;
   let agents = 0;
-  let ktlo = ktloBurnPerDay(content);
+  let ktlo = ktloBurnPerDay(state, content);
   for (const inst of state.decisions) {
     if (!instanceIsActive(inst, state.day)) continue;
     const def = content.decisions.find((d) => d.id === inst.defId);
@@ -93,7 +93,10 @@ export function recurringIncomePerDay(
   return total;
 }
 
-export function dailyBurnPerDay(state: Pick<GameState, "decisions" | "day">, content: GameContent): number {
+export function dailyBurnPerDay(
+  state: Pick<GameState, "decisions" | "day" | "stocks">,
+  content: GameContent,
+): number {
   const split = dailyExpenseSplit(state, content);
   return split.human + split.agents + split.ktlo;
 }
@@ -292,11 +295,19 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
   }
   recordDailyIncome(state, recurringIncome, burstIncome);
   const seats = agentSeatCount({ decisions: snapshot, day: state.day });
-  recordDailyExpenses(state, dailyExpenseSplit({ decisions: snapshot, day: state.day }, content));
+  recordDailyExpenses(
+    state,
+    dailyExpenseSplit({ decisions: snapshot, day: state.day, stocks: state.stocks }, content),
+  );
   // Clamp at 0 deliberately per the design spec: budget never goes negative.
   // Insolvency also freezes delivery (isDeliveryFrozen) and removes unpaid
   // payroll; it is not a negative balance.
-  state.stocks.budget = Math.max(0, state.stocks.budget - ktloBurnPerDay(content) + totalIncome);
+  state.stocks.budget = Math.max(
+    0,
+    state.stocks.budget -
+      ktloBurnPerDay({ decisions: snapshot, day: state.day, stocks: state.stocks }, content) +
+      totalIncome,
+  );
   for (const inst of snapshot) {
     if (!instanceIsActive(inst, state.day)) continue;
     const def = content.decisions.find((d) => d.id === inst.defId);

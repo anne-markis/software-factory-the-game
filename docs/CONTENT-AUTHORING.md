@@ -69,7 +69,11 @@ shared bill. `delayDays`
 `day + delayDays`; the one-time cost and gamble still resolve at
 purchase. Pending instances count as owned for `unique` / `requires`.
 Studio's basic developer is `$2,000` + 14 days + `$438/day` after they
-start.
+start. Optional `ktloPerDay` is extra Keep-the-lights-on cash per active
+instance (same start gate as payroll). It is not part of `cost.perDay`, so
+a missed payroll day still removes the card for the wage, while the
+surcharge only applies while the instance is active. Studio uses `$35` on
+each hire, `$18` on the harness, and `$30` on orchestration.
 
 Cost may be `{}`. `incomePerDay` / `incomeFromStock` / `burstFromStock`
 credit in the same income step **before** payroll that tick. Burst rolls
@@ -214,7 +218,9 @@ Shape: `projectSchema`. The starting contract is `start.json`
 - `permanent: true` — always-on overhead, not a contract. Fields are
   `id`, `name`, `basePerDay` (the `ktlo` rate, taken out of finish
   before contract work), and `perDay` (cash drain, shown on Expenses as
-  KTLO). It does not take an In Progress seat. No size or payout. It
+  KTLO). Optional `hostingPerUser` adds that many dollars per current
+  user to the same drain (Studio uses `$0.12`). Active `ktloPerDay` on
+  owned decisions is added there too. It does not take an In Progress seat. No size or payout. It
   is not offered and cannot be abandoned. It appears when its era’s
   catalog is active and is inherited after that. Studio ships Keep the
   lights on; `start.baseRates.ktlo` is the seed (0) and `syncKtloBase`

@@ -1,6 +1,7 @@
 import type { GameContent, GameState, PermanentProjectDef } from "./types";
 import { isPermanentProject } from "./types";
 import { effectiveRate } from "./modifiers";
+import { instanceIsActive } from "./roster";
 
 export function permanentProjects(content: GameContent): PermanentProjectDef[] {
   return content.projects.filter(isPermanentProject);
@@ -13,10 +14,21 @@ export function syncKtloBase(state: GameState, content: GameContent): void {
   state.baseRates.ktlo = base;
 }
 
-/** Cash drain on Keep the lights on (and any other permanent project). */
-export function ktloBurnPerDay(content: GameContent): number {
+/** Cash drain on Keep the lights on, plus active-card and hosting surcharges. */
+export function ktloBurnPerDay(
+  state: Pick<GameState, "decisions" | "day" | "stocks">,
+  content: GameContent,
+): number {
   let n = 0;
-  for (const def of permanentProjects(content)) n += def.perDay;
+  for (const def of permanentProjects(content)) {
+    n += def.perDay;
+    if (def.hostingPerUser) n += state.stocks.users * def.hostingPerUser;
+  }
+  for (const inst of state.decisions) {
+    if (!instanceIsActive(inst, state.day)) continue;
+    const def = content.decisions.find((d) => d.id === inst.defId);
+    if (def?.ktloPerDay) n += def.ktloPerDay;
+  }
   return n;
 }
 

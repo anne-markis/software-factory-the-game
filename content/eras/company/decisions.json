@@ -2,7 +2,8 @@
   {
     "id": "product-manager",
     "name": "Hire product manager",
-    "description": "A product manager, hopefully a sharp one. It's a gamble: idea growth rises somewhere from 0.1 to 5.0 per day, and that same roll multiplies the ideas from each round of user interviews. If you hire more than one, idea growth stacks and interviews follow the strongest manager who has started. Recruiting takes 14 days and $2,000 up front; payroll starts when they do.",
+    "description": "A product manager, hopefully a sharp one. It's a gamble: idea growth rises somewhere from 0.1 to 5.0 per day, and that same roll multiplies the ideas from each round of user interviews. If you hire more than one, idea growth stacks and interviews follow the strongest manager who has started. Recruiting takes 14 days and $2,000 up front; payroll starts when they do. Once they start, Keep the lights on rises by $35/day.",
+    "ktloPerDay": 35,
     "category": "change-structure",
     "human": true,
     "delayDays": 14,
@@ -50,7 +51,8 @@
   {
     "id": "eng-manager",
     "name": "Hire engineering manager",
-    "description": "Costs a bit more than a developer, and the hire is a gamble for morale. A good manager lifts happiness; a poor one drags it down. While they are here, the next developer is more likely to be a good hire, and a small refactor stays on the schedule. Recruiting takes 14 days and $2,500 up front; payroll starts when they do.",
+    "description": "Costs a bit more than a developer, and the hire is a gamble for morale. A good manager lifts happiness; a poor one drags it down. While they are here, the next developer is more likely to be a good hire, and a small refactor stays on the schedule. Recruiting takes 14 days and $2,500 up front; payroll starts when they do. Once they start, Keep the lights on rises by $35/day.",
+    "ktloPerDay": 35,
     "category": "change-structure",
     "human": true,
     "delayDays": 14,

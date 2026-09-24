@@ -746,8 +746,8 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     let chart = h.root.querySelector('[data-section="expenses-chart"]')!;
     expect(chart.textContent).toContain("Human $0/day");
     expect(chart.textContent).toContain("Agents $13/day");
-    expect(chart.textContent).toContain("KTLO $20/day");
-    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $33");
+    expect(chart.textContent).toContain("KTLO $38/day");
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $51");
     h.root.querySelector<HTMLElement>('[data-buy="agent-orchestration"]')!.click();
     h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!.click();
     h.root.querySelector<HTMLElement>('[data-buy="ci-cd"]')!.click();
@@ -756,8 +756,8 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     h.view.render();
     chart = h.root.querySelector('[data-section="expenses-chart"]')!;
     expect(chart.textContent).toContain("Agents $37/day");
-    expect(chart.textContent).toContain("KTLO $20/day");
-    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $57");
+    expect(chart.textContent).toContain("KTLO $68/day");
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $105");
   });
 
   it("puts subscription receipts on Income, while purchase stays in Events", () => {

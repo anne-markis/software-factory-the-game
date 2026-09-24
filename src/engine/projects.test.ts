@@ -240,8 +240,8 @@ describe("projects", () => {
     // 20 + (−50) clamps at 0, not −30.
     expect(e.getState().stocks.techDebt).toBe(0);
     // No payoutPerPoint / completionBonus / reputationReward — only daily burn.
-    const days = e.getState().day - dayBefore;
-    expect(e.getState().stocks.budget).toBeCloseTo(budgetBefore - 20 * days, 5);
+    const spent = e.getState().expensesByDay.filter((d) => d.day > dayBefore).reduce((n, d) => n + d.ktlo, 0);
+    expect(e.getState().stocks.budget).toBeCloseTo(budgetBefore - spent, 5);
     expect(e.getState().stocks.reputation).toBe(repBefore);
 
     // Repeatable: startable again after completion (not unique).
@@ -272,8 +272,8 @@ describe("projects", () => {
     expect(e.getState().completedProjects).toBe(2);
     expect(e.getState().completedProjectIds).toContain("medium-refactor");
     expect(e.getState().stocks.techDebt).toBe(0);
-    const days = e.getState().day - dayBefore;
-    expect(e.getState().stocks.budget).toBeCloseTo(budgetBefore - 20 * days, 5);
+    const spent = e.getState().expensesByDay.filter((d) => d.day > dayBefore).reduce((n, d) => n + d.ktlo, 0);
+    expect(e.getState().stocks.budget).toBeCloseTo(budgetBefore - spent, 5);
     expect(e.getState().stocks.reputation).toBe(repBefore);
     expect(e.availableProjects().find((p) => p.def.id === "medium-refactor")!.startable).toBe(true);
   });
