@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Engine } from "./engine";
 import { parseStartConfig, parseProjects } from "./content";
-import { projectsJson, startJson } from "./loadShippedContent";
+import { loadShippedContent, projectsJson, startJson } from "./loadShippedContent";
 import { effectiveRate } from "./modifiers";
 import { applyEffects } from "./effects";
 import { unshippedWork, workLedgerIssues } from "./work";
@@ -302,7 +302,7 @@ describe("projects", () => {
     s.stocks.ideas = 250;
     e.pursueProject("large-refactor");
     expect(e.getState().stocks.ideas).toBe(50);
-    expect(e.getState().plan).toEqual([
+    expect(e.getState().plan).toMatchObject([
       { defId: "large-refactor", name: "Large refactor", progress: 0, size: 2 },
     ]);
     for (let i = 0; i < 40 && e.getState().completedProjects < 2; i++) e.tick();
@@ -314,24 +314,59 @@ describe("projects", () => {
     expect(e.availableProjects().find((p) => p.def.id === "large-refactor")!.startable).toBe(true);
   });
 
-  it("unlocks Ship v1 after Launch beta and keeps v2 locked until v1 completes", () => {
+  it("unlocks Ship v1 after Launch beta and keeps the next feature locked until v1 completes", () => {
     const c = content({ ideas: 2000 });
     shrinkStart(c);
     const v1 = requireContract(c.projects.find((p) => p.id === "ship-v1"));
     v1.sizePoints = 2;
+    const next = requireContract(c.projects.find((p) => p.id === "ship-vnext"));
+    next.sizePoints = 2;
     const e = new Engine(c);
     expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(false);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-vnext")!.startable).toBe(false);
     for (let i = 0; i < 6; i++) e.tick();
     expect(e.getState().completedProjectIds).toEqual(["launch-beta"]);
     expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.startable).toBe(true);
-    expect(e.availableProjects().find((p) => p.def.id === "ship-v2")!.startable).toBe(false);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-vnext")!.startable).toBe(false);
     e.pursueProject("ship-v1");
-    (e.getState() as GameState).debtMultiplierBase = 0; // isolate the ladder from debt refill
+    (e.getState() as GameState).debtMultiplierBase = 0; // isolate the path from debt refill
     for (let i = 0; i < 20 && e.getState().completedProjects < 2; i++) e.tick();
     expect(e.getState().completedProjectIds).toEqual(["launch-beta", "ship-v1"]);
-    expect(e.availableProjects().find((p) => p.def.id === "ship-v2")!.startable).toBe(true);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-vnext")!.startable).toBe(true);
     expect(e.availableProjects().find((p) => p.def.id === "ship-v1")!.reason).toBe("already completed");
     expect(() => e.startProject("ship-v1")).toThrow(/already completed/);
+    e.pursueProject("ship-vnext");
+    for (let i = 0; i < 20 && e.getState().completedProjects < 3; i++) e.tick();
+    expect(e.getState().completedProjectIds).toEqual(["launch-beta", "ship-v1", "ship-vnext"]);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-vnext")!.startable).toBe(true);
+    expect(e.availableProjects().find((p) => p.def.id === "ship-vnext")!.reason).not.toBe("already completed");
+  });
+
+  it("allows one Ship next feature in Studio and two at once in Company", () => {
+    const studio = new Engine(loadShippedContent());
+    const studioState = studio.getState() as GameState;
+    studioState.completedProjectIds = ["launch-beta", "ship-v1"];
+    studioState.completedProjects = 2;
+    studioState.stocks.ideas = 500;
+    studio.pursueProject("ship-vnext");
+    expect(studio.availableProjects().find((p) => p.def.id === "ship-vnext")!.reason).toBe("already in plan");
+    expect(() => studio.pursueProject("ship-vnext")).toThrow(/plan/i);
+
+    const company = new Engine(loadShippedContent("company"));
+    const companyState = company.getState() as GameState;
+    companyState.completedProjectIds = ["launch-beta", "ship-v1"];
+    companyState.completedProjects = 2;
+    companyState.stocks.ideas = 500;
+    company.pursueProject("ship-vnext");
+    expect(company.availableProjects().find((p) => p.def.id === "ship-vnext")!.startable).toBe(true);
+    company.pursueProject("ship-vnext");
+    const copies = company.getState().plan.filter((p) => p.defId === "ship-vnext");
+    expect(copies).toHaveLength(2);
+    expect(copies[0]!.instanceId).not.toBe(copies[1]!.instanceId);
+    expect(company.availableProjects().find((p) => p.def.id === "ship-vnext")!.reason).toBe("already in plan");
+    company.cancelPlan(copies[1]!.instanceId!);
+    expect(company.getState().plan.filter((p) => p.defId === "ship-vnext")).toHaveLength(1);
+    expect(company.getState().plan[0]!.instanceId).toBe(copies[0]!.instanceId);
   });
 
   // Release 17: requiresReputation gates a tier ON TOP OF requiresCompleted
@@ -521,7 +556,7 @@ describe("projects", () => {
 });
 
 describe("Start vs Pursue offers", () => {
-  it("omits Ship v1 from takeable offers before Launch beta and lists it disabled while Ideas < 400 after", () => {
+  it("omits Ship v1 from takeable offers before Launch beta and lists it disabled while Ideas < 200 after", () => {
     const e = new Engine(content({ ideas: 100 }));
     const before = e.availableProjects().find((p) => p.def.id === "ship-v1")!;
     expect(before.def.pursue).toBe(true);
@@ -531,15 +566,15 @@ describe("Start vs Pursue offers", () => {
     const s = e.getState() as GameState;
     s.completedProjects = 1;
     s.completedProjectIds = ["launch-beta"];
-    s.stocks.ideas = 399;
+    s.stocks.ideas = 199;
     const short = e.availableProjects().find((p) => p.def.id === "ship-v1")!;
     expect(short.startable).toBe(false);
     expect(short.reason).toBe("cannot afford");
     expect(() => e.pursueProject("ship-v1")).toThrow(/ideas/i);
-    expect(e.getState().stocks.ideas).toBe(399);
+    expect(e.getState().stocks.ideas).toBe(199);
     expect(e.getState().plan).toEqual([]);
 
-    s.stocks.ideas = 400;
+    s.stocks.ideas = 200;
     const ready = e.availableProjects().find((p) => p.def.id === "ship-v1")!;
     expect(ready.startable).toBe(true);
     expect(ready.reason).toBeUndefined();

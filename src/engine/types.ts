@@ -130,10 +130,10 @@ export type DecisionCategory = "ship-faster" | "earn-income" | "tame-debt" | "pr
 // Additive stock-flow modifier (ADR 0006). Nudges an existing
 // start.stockFlows entry for the named stock: deltas are summed each tick
 // and added to that flow's acquirePerDay / churnRatePerDay. Sources:
-// owned decisions, and completed projects (looked up from
-// completedProjectIds). Studio decisions ship none; Studio versions use
-// this so shipping a product raises acquire instead of landing on the
-// churn cap.
+// owned decisions, and completed projects (one application per
+// completedProjectIds entry). Studio decisions ship none; Ship v1 and
+// each Ship next feature use this so shipping a product raises
+// acquire instead of landing on the churn cap.
 export interface StockFlowMod {
   stock: StockName;
   acquirePerDayDelta?: number;
@@ -288,14 +288,18 @@ export interface ContractProjectDef {
   // extra mechanism needed.
   requiresReputation?: number;
   // Must have completed this specific project id (the start project's id, or
-  // another catalog id). Studio versions use this so gigs cannot skip the
-  // ladder: v1 requires launch-beta, v2 requires ship-v1, and so on. Checked
-  // against state.completedProjectIds after the completed-count floor.
+  // another catalog id). Studio's critical path uses this so gigs cannot
+  // skip the product: Ship v1 requires launch-beta, Ship next feature
+  // requires ship-v1. Checked against state.completedProjectIds after the
+  // completed-count floor.
   requiresCompletedId?: string;
   // When true, the project cannot be started again after it has completed
-  // (or while it is already in flight). Studio's v1–v5 ladder is unique;
-  // tiny client gigs omit this and stay repeatable. Default false.
+  // (or while it is already in flight). Ship v1 is unique; Ship next
+  // feature and tiny client gigs omit this and stay repeatable. Default false.
   unique?: boolean;
+  // When true, plan + in-flight copies may reach the active era's
+  // parallelCopies (default 1). The offer stays one row. Omit means one copy.
+  parallel?: boolean;
   // When true, the offer is Pursue (spend Ideas, enter Plan). Omit or false
   // is Start (no Ideas spend, write Ready immediately). Default must stay
   // Start so inherited gigs do not silently Pursue.
@@ -310,10 +314,11 @@ export interface ContractProjectDef {
   // the users economy (users stay 0 until then). Clamped at 0 like every
   // other stock write.
   completionStockGrants?: { stock: StockName; amount: number }[];
-  // Permanent acquire/churn nudges while this project id is in
-  // completedProjectIds (same shape as DecisionDef.stockFlowMods). Studio
-  // versions raise organic user acquire so a version ship opens ceiling
-  // headroom instead of filling the reputation-driven cap in one lump.
+  // Acquire/churn nudges applied once per completedProjectIds entry for
+  // this id (same shape as DecisionDef.stockFlowMods). Not applied while
+  // in-flight. Ship v1 records one entry; each Ship next feature
+  // completion records another, so organic user acquire stacks per ship
+  // instead of filling the reputation-driven cap in one lump.
   stockFlowMods?: StockFlowMod[];
 }
 
@@ -338,6 +343,9 @@ export function requireContract(def: ProjectDef | undefined): ContractProjectDef
 // counts toward size at the plan rate split evenly across items.
 export interface PlanItem {
   defId: string;
+  // Distinguishes copies of the same def. Cancel targets this, not defId.
+  // Omitted on hand-built fixtures; Engine assigns one before play.
+  instanceId?: string;
   name: string;
   progress: number;
   size: number;
@@ -345,6 +353,9 @@ export interface PlanItem {
 
 export interface ActiveProject {
   defId: string;
+  // Distinguishes copies of the same def. Abandon targets this, not defId.
+  // Omitted on hand-built fixtures; Engine assigns one before play.
+  instanceId?: string;
   name: string;
   // Unshipped points still owed on this contract (ADR 0009). Extra pipeline
   // inflow (debt refill, scope creep, addToStock/scaleStock on a pipeline
@@ -522,6 +533,9 @@ export interface EraDef {
   // Omit or true: crossing writes no Events line and is not a next-goal.
   // false: announce the crossing. Parsed JSON omits the key for the default.
   silentEntry?: boolean;
+  // How many copies of a parallel project may sit in plan and in flight
+  // together. Omit means 1. Ship next feature is the shipped parallel offer.
+  parallelCopies?: number;
 }
 
 export interface ErasConfig {
@@ -577,10 +591,10 @@ export interface GameState {
   // backfills [] (and stocks.plan / baseRates.plan from content).
   plan: PlanItem[];
   completedProjects: number;
-  // Ids of projects that have ever completed this game (the start project
-  // plus catalog defs). Used by requiresCompletedId and unique. Counted
-  // once per id even if a repeatable gig finishes twice. initialState seeds
-  // []; deserialize backfills [] on current-version hand-built states.
+  // One entry per project completion (the start project plus catalog
+  // defs). requiresCompletedId and unique only test presence. Repeatable
+  // ships append again so stockFlowMods stack per completion. initialState
+  // seeds []; deserialize backfills [] on current-version hand-built states.
   completedProjectIds: string[];
   pendingChoices: PendingChoice[];
   log: LogEntry[];
@@ -624,6 +638,9 @@ export interface GameState {
   // applyEffects clamps writes through clampStock. {} when content omits.
   stockMax: Partial<Record<StockName, number>>;
   nextInstanceId: number;
+  // Next suffix for project instance ids (`proj-N`). Engine backfills when
+  // a hand-built state omits it.
+  nextProjectInstanceId: number;
   nextModifierId: number;
   rngState: number;
   // The game's content seed, copied from content.start.seed at init. Challenge

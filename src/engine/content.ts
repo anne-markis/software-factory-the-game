@@ -467,13 +467,16 @@ const contractProjectSchema = z
     requiresReputation: z.number().min(0).optional(),
     requiresCompletedId: z.string().min(1).optional(),
     unique: z.boolean().optional(),
+    // Omit = one copy. true = up to the active era's parallelCopies.
+    parallel: z.boolean().optional(),
     // Omit = Start. true = Pursue. Same optional-boolean style as unique.
     pursue: z.boolean().optional(),
     // Ideas spent on Pursue. Independent of sizePoints. Omit = spend sizePoints.
     ideaCost: z.number().min(0).optional(),
     completionStockGrants: completionStockGrantsSchema,
-    // Same shape as DecisionDef.stockFlowMods. Applied while this id is in
-    // completedProjectIds (not while in-flight).
+    // Same shape as DecisionDef.stockFlowMods. Applied once per
+    // completedProjectIds entry (not while in-flight). Repeatable ships
+    // record every completion, so the nudge stacks.
     stockFlowMods: stockFlowModSchema,
   })
   .strict();
@@ -541,6 +544,7 @@ const eraDefSchema = z
     name: z.string().min(1),
     entryAnyOf: z.array(eraEntryPredicateSchema).min(1).optional(),
     silentEntry: z.boolean().optional(),
+    parallelCopies: z.number().int().min(1).optional(),
   })
   .strict();
 

@@ -31,7 +31,7 @@ describe("KTLO", () => {
 
     const mega = loadShippedContent("megacorp");
     expect(mega.projects.some((p) => p.id === "ktlo")).toBe(true);
-    expect(mega.retiredProjectIds ?? []).toEqual([]);
+    expect(mega.retiredProjectIds ?? []).toEqual(["gig-landing-page"]);
     expect(mega.projects.some((p) => p.id === "gig-bugfix")).toBe(false);
   });
 
@@ -72,7 +72,7 @@ describe("KTLO", () => {
     expect(live).toBeDefined();
     expect(live!.remaining).toBe(before);
     expect(e.availableProjects().some((p) => p.def.id === "gig-bugfix")).toBe(false);
-    expect(e.availableProjects().some((p) => p.def.id === "gig-landing-page")).toBe(true);
+    expect(e.availableProjects().some((p) => p.def.id === "gig-landing-page")).toBe(false);
     e.abandonProject("gig-landing-page");
     expect(e.getState().projects.some((p) => p.defId === "gig-landing-page")).toBe(false);
     expect(workLedgerIssues(e.getState())).toEqual([]);

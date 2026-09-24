@@ -4,7 +4,7 @@ import { tick, type ChallengePhase, log, isDeliveryFrozen } from "./tick";
 import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
 import { grantMissingPlanRates, hydrateHumanScale } from "./effects";
 import { rollChallenges, resolveChoice } from "./challenges";
-import { startProject, abandonProject, pursueProject, cancelPlan, takeProject, planStock, projectAvailability, isStalled, type ProjectAvailability } from "./projects";
+import { startProject, abandonProject, pursueProject, cancelPlan, takeProject, planStock, projectAvailability, isStalled, assignMissingProjectInstances, type ProjectAvailability } from "./projects";
 import { eraCrossingIsSilent, evaluateNextEraEntry, formatEraEntryPredicate } from "./eras";
 import { syncKtloBase } from "./ktlo";
 
@@ -38,6 +38,7 @@ export function initialState(content: GameContent): GameState {
     projects: [
       {
         defId: s.initialProject.id,
+        instanceId: "proj-1",
         name: s.initialProject.name,
         remaining: s.initialProject.sizePoints,
         payoutPerPoint: s.initialProject.payoutPerPoint,
@@ -70,6 +71,7 @@ export function initialState(content: GameContent): GameState {
     employeeQuitRate: 0,
     stockMax: { ...(s.stockMax ?? {}) },
     nextInstanceId: 1,
+    nextProjectInstanceId: 2,
     nextModifierId: 1,
     rngState: 0,
     gameSeed: s.seed,
@@ -175,6 +177,7 @@ export class Engine {
       this.rng = createRng(content.start.seed);
       this.state.rngState = this.rng.getState();
     }
+    assignMissingProjectInstances(this.state);
     syncKtloBase(this.state, this.content);
   }
 

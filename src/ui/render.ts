@@ -475,7 +475,7 @@ export function renderProjectsStatus(
       const eta = formatProjectEta(item.size - item.progress, planRate, planN);
       const chips = def ? chipsHtml(projectEffectChips(def)) : "";
       return `<tr data-plan-status="${esc(item.defId)}">
-        <td class="proj-btn"><button type="button" data-cancel="${esc(item.defId)}">Cancel</button></td>
+        <td class="proj-btn"><button type="button" data-cancel="${esc(item.defId)}" data-instance="${esc(item.instanceId ?? item.defId)}">Cancel</button></td>
         <td><div class="proj-name"><strong>${esc(item.name)}</strong></div>${etaSub(eta)}</td>
         <td class="num">${fmt(item.progress)} / ${fmt(item.size)}</td>
         <td class="num">${PROJ_EMPTY}</td>
@@ -494,7 +494,7 @@ export function renderProjectsStatus(
       const catalog = found && isContractProject(found) ? found : undefined;
       const chips = chipsHtml(projectEffectChips(extrasForActive(p, content)));
       return `<tr class="proj-now" data-project-status="${esc(p.defId)}">
-        <td class="proj-btn"><button type="button" data-abandon="${esc(p.defId)}">Abandon</button></td>
+        <td class="proj-btn"><button type="button" data-abandon="${esc(p.defId)}" data-instance="${esc(p.instanceId ?? p.defId)}">Abandon</button></td>
         <td>
           <span class="proj-chip proj-chip-now">in flight</span>${stallChip(eta)}
           <div class="proj-name"><strong>${esc(p.name)}</strong></div>${etaSub(eta)}

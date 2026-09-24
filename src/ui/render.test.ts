@@ -909,7 +909,7 @@ describe("renderProjectOffers", () => {
   }
 
   // unmet prerequisite rows are omitted; startable gigs stay.
-  it("shows startable offers without efficiency copy, omitting Ship v1–v5 gates", () => {
+  it("shows startable offers without efficiency copy, omitting the critical-path gates", () => {
     const c = studioProjects();
     const e = new Engine(c);
     const html = renderProjectOffers(e.availableProjects(), e.getState());
@@ -925,14 +925,14 @@ describe("renderProjectOffers", () => {
     expect(html).not.toMatch(/100 · \$0 ·/);
     expect(html).not.toMatch(/efficiency/i);
     expect(html).not.toContain("drops efficiency");
-    for (const id of ["ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
+    for (const id of ["ship-v1", "ship-vnext"]) {
       expect(html).not.toContain(`data-project="${id}"`);
     }
     expect(html).not.toContain("requires completed Launch beta");
     expect(html).not.toContain("requires completed Ship v1");
   });
 
-  it("reveals Ship v1 after Launch beta completes, keeping v2–v5 hidden", () => {
+  it("reveals Ship v1 after Launch beta completes, keeping the next feature hidden", () => {
     const c = studioProjects();
     const s = initialState(c);
     s.completedProjects = 1;
@@ -940,9 +940,7 @@ describe("renderProjectOffers", () => {
     const html = renderProjectOffers(projectAvailability(s, c), s);
     expect(html).toContain('data-project="ship-v1"');
     expect(html).not.toContain("requires completed Launch beta");
-    for (const id of ["ship-v2", "ship-v3", "ship-v4", "ship-v5"]) {
-      expect(html).not.toContain(`data-project="${id}"`);
-    }
+    expect(html).not.toContain('data-project="ship-vnext"');
     expect(html).not.toContain("requires completed Ship v1");
   });
 
@@ -982,7 +980,7 @@ describe("renderProjectOffers", () => {
     s.stocks.ideas = 100;
     const html = renderProjectOffers(projectAvailability(s, c), s);
     expect(html).toContain('data-project="ship-v1" disabled>Pursue<');
-    expect(html).toContain('class="num proj-warn">400<');
+    expect(html).toContain('class="num proj-warn">200<');
     expect(html).not.toContain("cannot afford");
     expect(html).not.toContain('data-project="ship-v1" disabled>Start<');
   });
@@ -1034,8 +1032,9 @@ describe("renderProjectOffers", () => {
     const html = renderProjectOffers(projectAvailability(s, c), s);
     expect(html).not.toContain('data-project="ship-v1"');
     expect(html).not.toContain("already completed");
-    // Next ladder step is unlocked and still shown.
-    expect(html).toContain('data-project="ship-v2"');
+    // The repeatable follow-on is unlocked and still shown.
+    expect(html).toContain('data-project="ship-vnext"');
+    expect(html).toContain("Ship next feature");
     // Repeatable gigs remain offerable after any completions.
     expect(html).toContain('data-project="gig-landing-page"');
     expect(projectAvailability(s, c).find((p) => p.def.id === "gig-landing-page")!.startable).toBe(true);

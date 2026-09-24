@@ -174,7 +174,7 @@ describe("rollChallenges", () => {
     const e = new Engine(loadShippedContent("company"));
     const s = e.getState() as GameState;
     s.completedProjects = 6;
-    s.completedProjectIds = ["launch-beta", "ship-v1", "ship-v2", "ship-v3", "ship-v4", "ship-v5"];
+    s.completedProjectIds = ["launch-beta", "ship-v1", "ship-vnext", "ship-vnext", "ship-vnext", "ship-vnext"];
     s.projects = [];
     s.plan = [{ defId: "small-crm", name: "Small CRM build", progress: 113, size: 5000 }];
     s.stocks.backlog = 0;
@@ -188,7 +188,7 @@ describe("rollChallenges", () => {
     s.stocks.shipped = 13506.6;
     s.stocks.ideas = 4205;
     e.tick();
-    expect(e.getState().userAcquireFlow).toBeCloseTo(9.5, 5); // 3 + 5 versions + 15 × 0.1
+    expect(e.getState().userAcquireFlow).toBeCloseTo(9.5, 5); // 3 + 5 ships + 15 × 0.1
     for (let i = 0; i < 800; i++) e.tick();
     expect(e.getState().stocks.reputation).toBe(15);
     expect(e.getState().projects).toHaveLength(0);

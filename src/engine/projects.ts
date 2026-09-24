@@ -34,9 +34,24 @@ function projectName(content: GameContent, id: string): string {
   return content.projects.find((p) => p.id === id)?.name ?? id;
 }
 
+function copyCount(state: GameState, defId: string): number {
+  const inFlight = state.projects.filter((p) => p.defId === defId).length;
+  const inPlan = planItems(state).filter((p) => p.defId === defId).length;
+  return inFlight + inPlan;
+}
+
+// Parallel offers share one row. The cap is the active era's parallelCopies,
+// defaulting to 1 when the era omits it or the fixture has no era catalog.
+export function parallelCap(state: GameState, content: GameContent, def: ContractProjectDef): number {
+  if (def.parallel !== true) return 1;
+  return content.eras?.eras.find((era) => era.id === state.eraId)?.parallelCopies ?? 1;
+}
+
 function blockReason(state: GameState, content: GameContent, def: ContractProjectDef): string | undefined {
-  if (state.projects.some((p) => p.defId === def.id)) return "already in flight";
-  if (planItems(state).some((p) => p.defId === def.id)) return "already in plan";
+  if (copyCount(state, def.id) >= parallelCap(state, content, def)) {
+    if (state.projects.some((p) => p.defId === def.id)) return "already in flight";
+    return "already in plan";
+  }
   if (def.unique && completedIds(state).includes(def.id)) return "already completed";
   const needed = def.requiresCompleted ?? 0;
   if (state.completedProjects < needed) return `requires ${needed} completed project(s)`;
@@ -78,10 +93,32 @@ export function projectAvailability(state: GameState, content: GameContent): Pro
   });
 }
 
-function enterReady(state: GameState, def: ContractProjectDef): void {
+function ensureProjectInstanceCounter(state: GameState): void {
+  if (state.nextProjectInstanceId === undefined) state.nextProjectInstanceId = 1;
+}
+
+export function assignMissingProjectInstances(state: GameState): void {
+  ensureProjectInstanceCounter(state);
+  for (const project of state.projects) {
+    if (!project.instanceId) project.instanceId = allocProjectInstance(state);
+  }
+  for (const item of state.plan ?? []) {
+    if (!item.instanceId) item.instanceId = allocProjectInstance(state);
+  }
+}
+
+function allocProjectInstance(state: GameState): string {
+  ensureProjectInstanceCounter(state);
+  const id = `proj-${state.nextProjectInstanceId}`;
+  state.nextProjectInstanceId += 1;
+  return id;
+}
+
+function enterReady(state: GameState, def: ContractProjectDef, instanceId = allocProjectInstance(state)): void {
   state.stocks.backlog += def.sizePoints;
   state.projects.push({
     defId: def.id,
+    instanceId,
     name: def.name,
     remaining: def.sizePoints,
     payoutPerPoint: def.payoutPerPoint,
@@ -132,6 +169,7 @@ export function pursueProject(state: GameState, content: GameContent, defId: str
   state.stocks.budget -= def.upfrontCost;
   planItems(state).push({
     defId: def.id,
+    instanceId: allocProjectInstance(state),
     name: def.name,
     progress: 0,
     size: def.sizePoints,
@@ -147,10 +185,17 @@ export function takeProject(state: GameState, content: GameContent, defId: strin
   else startProject(state, content, defId);
 }
 
-export function cancelPlan(state: GameState, defId: string): void {
+function planIndex(state: GameState, key: string): number {
   const items = planItems(state);
-  const idx = items.findIndex((p) => p.defId === defId);
-  if (idx < 0) throw new Error(`${defId} is not in plan`);
+  const byInstance = items.findIndex((p) => p.instanceId === key);
+  if (byInstance >= 0) return byInstance;
+  return items.findIndex((p) => p.defId === key);
+}
+
+export function cancelPlan(state: GameState, key: string): void {
+  const items = planItems(state);
+  const idx = planIndex(state, key);
+  if (idx < 0) throw new Error(`${key} is not in plan`);
   const item = items[idx]!;
   items.splice(idx, 1);
   syncPlanStock(state);
@@ -159,12 +204,14 @@ export function cancelPlan(state: GameState, defId: string): void {
 
 function enterReadyFromPlan(state: GameState, content: GameContent, item: PlanItem): void {
   const def = content.projects.find((p) => p.id === item.defId);
+  const instanceId = item.instanceId || allocProjectInstance(state);
   if (def && isContractProject(def)) {
-    enterReady(state, def);
+    enterReady(state, def, instanceId);
   } else {
     state.stocks.backlog += item.size;
     state.projects.push({
       defId: item.defId,
+      instanceId,
       name: item.name,
       remaining: item.size,
       payoutPerPoint: 0,
@@ -214,9 +261,15 @@ export function advancePlan(state: GameState, content: GameContent): void {
   syncPlanStock(state);
 }
 
-export function abandonProject(state: GameState, defId: string): void {
-  const idx = state.projects.findIndex((p) => p.defId === defId);
-  if (idx < 0) throw new Error(`${defId} is not in flight`);
+function projectIndex(state: GameState, key: string): number {
+  const byInstance = state.projects.findIndex((p) => p.instanceId === key);
+  if (byInstance >= 0) return byInstance;
+  return state.projects.findIndex((p) => p.defId === key);
+}
+
+export function abandonProject(state: GameState, key: string): void {
+  const idx = projectIndex(state, key);
+  if (idx < 0) throw new Error(`${key} is not in flight`);
   const p = state.projects[idx];
   drainUnshippedWork(state, p.remaining);
   state.projects.splice(idx, 1);
