@@ -133,7 +133,7 @@
   {
     "id": "project-manager",
     "name": "Hire project manager",
-    "description": "Queues one main-line project — Ship v1, otherwise one Ship next feature — as soon as ideas and cash allow. Each manager holds a single slot; another feature needs another manager. It's a gamble: plan speed, the idea cost of what they queue, and how much cash they refuse to dip into. Anyone but a disaster hire also waits while daily burn outruns income. Recruiting takes 14 days and $2,000 up front; payroll is $350 a day once they start.",
+    "description": "Auto queues the next feature. It's a gamble: plan speed, the idea cost of what they queue, and how much cash they refuse to dip into. Recruiting takes 14 days and $2,000 up front; payroll is $350 a day once they start.",
     "category": "change-structure",
     "human": true,
     "delayDays": 14,
