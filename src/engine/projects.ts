@@ -41,11 +41,15 @@ function copyCount(state: GameState, defId: string): number {
   return inFlight + inPlan;
 }
 
-// Parallel offers share one row. The cap is the active era's parallelCopies,
-// defaulting to 1 when the era omits it or the fixture has no era catalog.
+// Active era's parallelCopies, or 1 when the era omits it or the fixture has no catalog.
+function eraParallelCopies(state: GameState, content: GameContent): number {
+  return content.eras?.eras.find((era) => era.id === state.eraId)?.parallelCopies ?? 1;
+}
+
+// Parallel offers share one row. The cap is the active era's parallelCopies.
 export function parallelCap(state: GameState, content: GameContent, def: ContractProjectDef): number {
   if (def.parallel !== true) return 1;
-  return content.eras?.eras.find((era) => era.id === state.eraId)?.parallelCopies ?? 1;
+  return eraParallelCopies(state, content);
 }
 
 function blockReason(state: GameState, content: GameContent, def: ContractProjectDef): string | undefined {
@@ -200,9 +204,10 @@ export function pursueProject(
   log(state, `Pursuing: ${def.name} (−${ideas} ideas, −$${def.upfrontCost})`);
 }
 
-function managerSlotTaken(state: GameState, instanceId: string): boolean {
-  if ((state.plan ?? []).some((item) => item.scheduledBy === instanceId)) return true;
-  return state.projects.some((project) => project.scheduledBy === instanceId);
+function slotsHeldBy(state: GameState, instanceId: string): number {
+  const inPlan = (state.plan ?? []).filter((item) => item.scheduledBy === instanceId).length;
+  const inFlight = state.projects.filter((project) => project.scheduledBy === instanceId).length;
+  return inPlan + inFlight;
 }
 
 function policyCanAfford(state: GameState, content: GameContent, def: ContractProjectDef, policy: AutoSchedulePolicy): boolean {
@@ -215,22 +220,37 @@ function policyCanAfford(state: GameState, content: GameContent, def: ContractPr
   return true;
 }
 
-/** Each active autoSchedule owner pursues at most one main-line project. */
+// First offerable id in preference order. An unaffordable id stops the
+// search so a later, cheaper project is not a fallback. Returns whether a
+// project was queued.
+function pursueNextScheduled(
+  state: GameState,
+  content: GameContent,
+  instanceId: string,
+  policy: AutoSchedulePolicy,
+): boolean {
+  for (const projectId of policy.projectIds) {
+    const def = content.projects.find((p) => p.id === projectId);
+    if (!def || !isContractProject(def) || !isPursue(def)) continue;
+    if (blockReason(state, content, def)) continue;
+    if (!policyCanAfford(state, content, def, policy)) return false;
+    pursueProject(state, content, def.id, {
+      ideaCost: pursueIdeaCost(def) * policy.ideaCostFactor,
+      scheduledBy: instanceId,
+    });
+    return true;
+  }
+  return false;
+}
+
+/** Each active autoSchedule owner may fill the era's parallel project cap. */
 export function scheduleProjectManagers(state: GameState, content: GameContent): void {
+  const cap = eraParallelCopies(state, content);
   for (const inst of state.decisions) {
     const policy = inst.autoSchedule;
     if (!policy || !instanceIsActive(inst, state.day)) continue;
-    if (managerSlotTaken(state, inst.instanceId)) continue;
-    for (const projectId of policy.projectIds) {
-      const def = content.projects.find((p) => p.id === projectId);
-      if (!def || !isContractProject(def) || !isPursue(def)) continue;
-      if (blockReason(state, content, def)) continue;
-      if (!policyCanAfford(state, content, def, policy)) break;
-      pursueProject(state, content, def.id, {
-        ideaCost: pursueIdeaCost(def) * policy.ideaCostFactor,
-        scheduledBy: inst.instanceId,
-      });
-      break;
+    while (slotsHeldBy(state, inst.instanceId) < cap) {
+      if (!pursueNextScheduled(state, content, inst.instanceId, policy)) break;
     }
   }
 }

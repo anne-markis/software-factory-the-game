@@ -106,9 +106,10 @@ export type Effect =
   // active, the named contract is started whenever it is not already in
   // flight or in plan. applyEffects does nothing; the tick reads the def.
   | { type: "keepProject"; project: string }
-  // While the owning instance is active, it may pursue one listed project
-  // with no click. projectIds is preference order: the first offerable id
-  // is the one they wait on. One instance, one slot (Plan or in flight).
+  // While the owning instance is active, it may pursue listed projects
+  // with no click, up to the active era's parallelCopies. projectIds is
+  // preference order: the first offerable id is the one they keep queueing.
+  // Held slots stay taken from Plan through in flight.
   | {
       type: "autoSchedule";
       projectIds: string[];

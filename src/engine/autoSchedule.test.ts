@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Engine } from "./engine";
 import { loadShippedContent } from "./loadShippedContent";
-import { advancePlan, scheduleProjectManagers } from "./projects";
+import { advancePlan, pursueProject, scheduleProjectManagers } from "./projects";
 import { activateDueInstances } from "./tick";
 import type { AutoSchedulePolicy, GameState } from "./types";
 
@@ -56,24 +56,25 @@ describe("project manager auto-schedule", () => {
     expect(engine.getState().stocks.ideas).toBe(0);
   });
 
-  it("holds one slot through Ready and does not queue a second feature", () => {
+  it("holds every queued copy through Ready and does not exceed the era cap", () => {
     const engine = companyEngine();
     openMainLine(engine, ["launch-beta", "ship-v1"]);
     addManager(engine, "pm-1", policy());
     const state = engine.getState() as GameState;
     scheduleProjectManagers(state, engine.getContent());
-    expect(state.plan).toHaveLength(1);
-    state.plan[0]!.progress = state.plan[0]!.size - 0.5;
+    expect(state.plan).toHaveLength(2);
+    expect(state.plan.every((item) => item.defId === "ship-vnext" && item.scheduledBy === "pm-1")).toBe(true);
+    for (const item of state.plan) item.progress = item.size - 0.5;
     advancePlan(state, engine.getContent());
     expect(state.plan).toEqual([]);
-    expect(state.projects.some((project) => project.defId === "ship-vnext" && project.scheduledBy === "pm-1")).toBe(true);
+    expect(state.projects.filter((project) => project.defId === "ship-vnext" && project.scheduledBy === "pm-1")).toHaveLength(2);
     const ideas = state.stocks.ideas;
     scheduleProjectManagers(state, engine.getContent());
     expect(state.plan).toEqual([]);
     expect(state.stocks.ideas).toBe(ideas);
   });
 
-  it("lets a second manager fill the next Company copy and stops at the era cap", () => {
+  it("one manager fills the Company cap and a second adds no feature", () => {
     const engine = companyEngine();
     openMainLine(engine, ["launch-beta", "ship-v1"]);
     addManager(engine, "pm-1", policy());
@@ -81,8 +82,57 @@ describe("project manager auto-schedule", () => {
     addManager(engine, "pm-3", policy());
     scheduleProjectManagers(engine.getState() as GameState, engine.getContent());
     const queued = engine.getState().plan;
-    expect(queued.map((item) => item.scheduledBy)).toEqual(["pm-1", "pm-2"]);
-    expect(queued.every((item) => item.defId === "ship-vnext")).toBe(true);
+    expect(queued).toHaveLength(2);
+    expect(queued.every((item) => item.scheduledBy === "pm-1" && item.defId === "ship-vnext")).toBe(true);
+  });
+
+  it("one manager fills Megacorp's three parallel copies", () => {
+    const content = loadShippedContent("megacorp");
+    content.challenges = [];
+    const engine = new Engine(content);
+    openMainLine(engine, ["launch-beta", "ship-v1"]);
+    addManager(engine, "pm-1", policy());
+    scheduleProjectManagers(engine.getState() as GameState, engine.getContent());
+    const queued = engine.getState().plan;
+    expect(queued).toHaveLength(3);
+    expect(queued.every((item) => item.scheduledBy === "pm-1" && item.defId === "ship-vnext")).toBe(true);
+  });
+
+  it("stops when the next copy is unaffordable and fills it on a later call", () => {
+    const engine = companyEngine();
+    openMainLine(engine, ["launch-beta", "ship-v1"]);
+    (engine.getState() as GameState).stocks.ideas = 200;
+    addManager(engine, "pm-1", policy());
+    scheduleProjectManagers(engine.getState() as GameState, engine.getContent());
+    expect(engine.getState().plan).toHaveLength(1);
+    expect(engine.getState().stocks.ideas).toBe(0);
+
+    (engine.getState() as GameState).stocks.ideas = 200;
+    scheduleProjectManagers(engine.getState() as GameState, engine.getContent());
+    expect(engine.getState().plan).toHaveLength(2);
+    expect(engine.getState().plan.every((item) => item.scheduledBy === "pm-1")).toBe(true);
+  });
+
+  it("a second manager fills a slot the first could not afford", () => {
+    const engine = companyEngine();
+    openMainLine(engine, ["launch-beta", "ship-v1"]);
+    (engine.getState() as GameState).stocks.ideas = 300;
+    addManager(engine, "pm-1", policy({ ideaCostFactor: 1 }));
+    addManager(engine, "pm-2", policy({ ideaCostFactor: 0.5 }));
+    scheduleProjectManagers(engine.getState() as GameState, engine.getContent());
+    expect(engine.getState().plan.map((item) => item.scheduledBy)).toEqual(["pm-1", "pm-2"]);
+    expect(engine.getState().stocks.ideas).toBe(0);
+  });
+
+  it("leaves room for a player-started copy instead of exceeding the era cap", () => {
+    const engine = companyEngine();
+    openMainLine(engine, ["launch-beta", "ship-v1"]);
+    const state = engine.getState() as GameState;
+    pursueProject(state, engine.getContent(), "ship-vnext");
+    addManager(engine, "pm-1", policy());
+    scheduleProjectManagers(state, engine.getContent());
+    expect(state.plan).toHaveLength(2);
+    expect(state.plan.filter((item) => item.scheduledBy === "pm-1")).toHaveLength(1);
   });
 
   it("does not exceed Studio's single parallel copy", () => {
@@ -93,7 +143,7 @@ describe("project manager auto-schedule", () => {
     addManager(engine, "pm-1", policy());
     addManager(engine, "pm-2", policy());
     scheduleProjectManagers(engine.getState() as GameState, engine.getContent());
-    expect(engine.getState().plan).toHaveLength(1);
+    expect(engine.getState().plan.map((item) => item.scheduledBy)).toEqual(["pm-1"]);
   });
 
   it("a cautious hire waits while burn exceeds income; a disaster hire does not", () => {

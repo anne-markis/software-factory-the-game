@@ -100,7 +100,7 @@ function describeEffect(effect: Effect): string | null {
     case "keepProject":
       return `keeps ${effect.project.replaceAll("-", " ")} scheduled`;
     case "autoSchedule":
-      return `schedules one of ${effect.projectIds.length}`;
+      return "schedules up to the era cap";
     case "modifyKtloCash":
       return withFeltDuration(`KTLO ${signed(effect.perDay)}/day`, effect.durationDays);
     case "sellCompany":

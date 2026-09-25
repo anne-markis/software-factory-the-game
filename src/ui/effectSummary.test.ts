@@ -83,6 +83,21 @@ describe("summarizeDecisionEffects", () => {
     expect(summarizeDecisionEffects(def)).toBe("removes the Done stage");
   });
 
+  it("autoSchedule names the era cap rather than a single slot", () => {
+    const def = base({
+      effects: [
+        {
+          type: "autoSchedule",
+          projectIds: ["ship-v1", "ship-vnext"],
+          ideaCostFactor: 1,
+          cashReserve: 0,
+          skipWhenBurnExceedsIncome: true,
+        },
+      ],
+    });
+    expect(summarizeDecisionEffects(def)).toBe("schedules up to the era cap");
+  });
+
   it("incomePerDay is included as a def field, not an effect", () => {
     const def = base({ effects: [], incomePerDay: 8 });
     expect(summarizeDecisionEffects(def)).toBe("+$8/day");
