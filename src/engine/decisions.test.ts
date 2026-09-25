@@ -190,6 +190,43 @@ describe("decisions", () => {
     expect(entry.code).toBe("missing-requires");
   });
 
+  it("removing a human, pending or active, drops morale by the start config cost", () => {
+    const pending = new Engine(content());
+    pending.applyDecision("basic-dev");
+    const joining = pending.getState().decisions.find((d) => d.defId === "basic-dev")!;
+    expect(joining.activeOnDay).toBeGreaterThan(pending.getState().day);
+    expect(pending.getState().stocks.morale).toBe(70);
+    pending.removeDecision(joining.instanceId);
+    expect(pending.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(false);
+    expect(pending.getState().stocks.morale).toBe(30);
+    expect(pending.getState().log.at(-1)?.message).toBe("Removed: Hire basic developer. Morale −40.");
+
+    const active = new Engine(content());
+    active.applyDecision("basic-dev");
+    settleHires(active);
+    const before = active.getState().stocks.morale;
+    const id = active.getState().decisions.find((d) => d.defId === "basic-dev")!.instanceId;
+    active.removeDecision(id);
+    expect(active.getState().stocks.morale).toBe(before - 40);
+  });
+
+  it("removing an agent does not spend morale", () => {
+    const e = new Engine(content());
+    e.applyDecision("agent");
+    const id = e.getState().decisions.find((d) => d.defId === "agent")!.instanceId;
+    e.removeDecision(id);
+    expect(e.getState().stocks.morale).toBe(70);
+    expect(e.getState().log.at(-1)?.message).toBe("Removed: Add coding agent");
+  });
+
+  it("clamps a firing hit that would pass zero", () => {
+    const e = new Engine(content());
+    e.applyDecision("basic-dev");
+    (e.getState() as GameState).stocks.morale = 10;
+    e.removeDecision(e.getState().decisions.find((d) => d.defId === "basic-dev")!.instanceId);
+    expect(e.getState().stocks.morale).toBe(0);
+  });
+
   it("removeDecision drops effects and upkeep", () => {
     const e = new Engine(content());
     e.applyDecision("agent");
@@ -381,9 +418,11 @@ describe("decisions", () => {
     settleHires(e);
     const s = e.getState() as GameState;
     s.stocks.budget = 30;
+    const morale = e.getState().stocks.morale;
     e.tick();
     expect(e.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(false);
     expect(e.getState().log.some((l) => l.message.includes("Payroll failed"))).toBe(true);
+    expect(e.getState().stocks.morale).toBeGreaterThan(morale - 1);
   });
 
   it("classifies review cards by exact modifyRate target, not all", () => {

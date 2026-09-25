@@ -67,6 +67,7 @@ describe("parseStartConfig", () => {
     });
     expect(cfg.headcountRatioDrags).toBeUndefined();
     expect(cfg.instanceChurn).toEqual([{ stock: "morale", flag: "human", safeBand: 40, maxRatePerDay: 0.02 }]);
+    expect(cfg.humanRemovalMorale).toBe(40);
     // Always-on support drag on users above a 25-user free band.
     expect(cfg.stockDrags).toEqual([
       { stock: "users", freeBand: 25, dragPerPoint: 0.004, maxDrag: 0.35, target: "all" },

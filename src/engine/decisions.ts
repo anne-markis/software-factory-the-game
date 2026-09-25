@@ -1,7 +1,7 @@
 import type { DecisionDef, DecisionInstance, Effect, GameContent, GameState, GambleOutcome, RateId } from "./types";
 import type { Rng } from "./rng";
 import { applySeatCapacity, effectiveCapacity } from "./capacity";
-import { applyEffects, recordAutoSchedule, recordGrantScales } from "./effects";
+import { applyEffects, clampStock, recordAutoSchedule, recordGrantScales } from "./effects";
 import { agentSeatCount, scaledDecisionCost } from "./agentCost";
 import { instanceIsActive } from "./roster";
 import { isDeliveryFrozen, log } from "./tick";
@@ -177,8 +177,14 @@ export function removeDecision(state: GameState, content: GameContent, instanceI
   if (!inst) throw new Error(`Unknown instance: ${instanceId}`);
   const def = content.decisions.find((d) => d.id === inst.defId);
   if (def && !def.removable) throw new Error(`${def.name} cannot be removed`);
+  const moraleHit = def?.human === true ? (content.start.humanRemovalMorale ?? 0) : 0;
   state.decisions = state.decisions.filter((d) => d.instanceId !== instanceId);
   state.modifiers = state.modifiers.filter((m) => m.source !== instanceId);
   rebalanceSeats(state, content);
-  if (def) log(state, `Removed: ${def.name}`);
+  if (moraleHit > 0) {
+    state.stocks.morale = clampStock(state, "morale", state.stocks.morale - moraleHit);
+  }
+  if (def) {
+    log(state, moraleHit > 0 ? `Removed: ${def.name}. Morale −${moraleHit}.` : `Removed: ${def.name}`);
+  }
 }

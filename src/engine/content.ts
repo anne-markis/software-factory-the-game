@@ -162,6 +162,8 @@ const startSchema = z
           .strict(),
       )
       .optional(),
+    // Player Remove of a human card. Payroll failure and quits do not use it.
+    humanRemovalMorale: z.number().positive().optional(),
     initialProject: z
       .object({
         id: z.string(),

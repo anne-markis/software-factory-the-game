@@ -933,6 +933,37 @@ describe("appView click delegation on the stable root", () => {
     confirmSpy.mockRestore();
   });
 
+  it("names the morale drop when confirming removal of a human", () => {
+    const h = mount();
+    h.root.querySelector<HTMLElement>('[data-buy="basic-dev"]')!.click();
+    const removeBtn = h.root.querySelector<HTMLElement>("[data-remove]")!;
+    const before = h.engine.getState().stocks.morale;
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    removeBtn.click();
+    expect(confirmSpy).toHaveBeenCalledWith(
+      "Remove Hire basic developer? Morale drops by 40. One-time cost is not refunded.",
+    );
+    expect(h.engine.getState().stocks.morale).toBe(before - 40);
+    expect(h.engine.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(false);
+    confirmSpy.mockRestore();
+  });
+
+  it("keeps the plain confirm when removing an agent", () => {
+    const h = mount();
+    h.root.querySelector<HTMLElement>('[data-buy="agent"]')!.click();
+    const removeBtn = [...h.root.querySelectorAll<HTMLElement>("[data-remove]")].find((btn) => {
+      const inst = h.engine.getState().decisions.find((d) => d.instanceId === btn.dataset.remove);
+      return inst?.defId === "agent";
+    });
+    expect(removeBtn).toBeTruthy();
+    const morale = h.engine.getState().stocks.morale;
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    removeBtn!.click();
+    expect(confirmSpy).toHaveBeenCalledWith("Remove this decision? One-time cost is not refunded.");
+    expect(h.engine.getState().stocks.morale).toBe(morale);
+    confirmSpy.mockRestore();
+  });
+
   it("removes an owned decision through data-remove after confirm", () => {
     const h = mount();
     // Buy every removable decision that is affordable until one shows Remove.
@@ -948,7 +979,7 @@ describe("appView click delegation on the stable root", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     removeBtn!.click();
     expect(confirmSpy).toHaveBeenCalledWith(
-      "Remove this decision? One-time cost is not refunded.",
+      "Remove Hire basic developer? Morale drops by 40. One-time cost is not refunded.",
     );
     expect(h.engine.getState().decisions.length).toBe(owned - 1);
     expect(h.actions).toBeGreaterThan(0);
