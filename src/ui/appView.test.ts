@@ -951,7 +951,7 @@ describe("appView click delegation on the stable root", () => {
   it("keeps the plain confirm when removing an agent", () => {
     const h = mount();
     h.root.querySelector<HTMLElement>('[data-buy="agent"]')!.click();
-    const removeBtn = [...h.root.querySelectorAll<HTMLElement>("[data-remove]")].find((btn) => {
+    const removeBtn = Array.from(h.root.querySelectorAll<HTMLElement>("[data-remove]")).find((btn) => {
       const inst = h.engine.getState().decisions.find((d) => d.instanceId === btn.dataset.remove);
       return inst?.defId === "agent";
     });
