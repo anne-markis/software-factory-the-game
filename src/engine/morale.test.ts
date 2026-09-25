@@ -69,11 +69,11 @@ describe("delayed hire", () => {
     e.applyDecision("basic-dev");
     const s = e.getState();
     expect(s.stocks.budget).toBe(before - 2000);
-    expect(s.decisions).toHaveLength(1);
-    expect(s.decisions[0]!.gambleLabel).toBeDefined();
-    expect(s.decisions[0]!.activeOnDay).toBe(14);
-    expect(s.decisions[0]!.pendingEffects?.length).toBeGreaterThan(0);
-    expect(s.modifiers.filter((m) => m.source === s.decisions[0]!.instanceId)).toHaveLength(0);
+    const hire = s.decisions.find((d) => d.defId === "basic-dev")!;
+    expect(hire.gambleLabel).toBeDefined();
+    expect(hire.activeOnDay).toBe(14);
+    expect(hire.pendingEffects?.length).toBeGreaterThan(0);
+    expect(s.modifiers.filter((m) => m.source === hire.instanceId)).toHaveLength(0);
     expect(effectiveCapacity(s, content())).toBe(1);
     expect(effectiveRate(s, "finish")).toBe(finish);
     expect(s.log.some((l) => /joining in 14 days/.test(l.message))).toBe(true);
@@ -84,9 +84,9 @@ describe("delayed hire", () => {
     e.applyDecision("basic-dev");
     const afterHire = e.getState().stocks.budget;
     e.tick();
-    // Fixture has no KTLO project; pending hire must not add $438 payroll.
-    expect(e.getState().stocks.budget).toBe(afterHire);
-    expect(e.getState().decisions).toHaveLength(1);
+    // Fixture has no KTLO project. The granted product still adds $10, and a pending hire must not add $438 payroll.
+    expect(e.getState().stocks.budget).toBe(afterHire - 10);
+    expect(e.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(true);
   });
 
   it("activates on day 14: effects, seat, payroll, morale nudge", () => {
@@ -98,7 +98,7 @@ describe("delayed hire", () => {
     expect(effectiveCapacity(e.getState(), content())).toBe(1);
     e.tick();
     expect(e.getState().day).toBe(14);
-    expect(e.getState().decisions[0]!.pendingEffects).toBeUndefined();
+    expect(e.getState().decisions.find((d) => d.defId === "basic-dev")!.pendingEffects).toBeUndefined();
     expect(effectiveCapacity(e.getState(), content())).toBe(2);
     expect(e.getState().log.some((l) => l.message.includes("started"))).toBe(true);
     const finish = effectiveRate(e.getState(), "finish");
@@ -111,7 +111,7 @@ describe("delayed hire", () => {
     e.applyDecision("basic-dev");
     settleHires(e);
     expect(effectiveCapacity(e.getState(), content())).toBe(2);
-    expect(e.getState().decisions[0]!.pendingEffects).toBeUndefined();
+    expect(e.getState().decisions.find((d) => d.defId === "basic-dev")!.pendingEffects).toBeUndefined();
   });
 });
 

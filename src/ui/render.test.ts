@@ -122,32 +122,32 @@ describe("renderStats", () => {
     const c = content();
     const e = new Engine(c);
     const html = renderStats(e.getState(), c);
-    // Fresh game: $25,000 / $20/day = 1250 days; healthy, no warning class.
-    expect(html).toContain('class="stat-value v-budget">$25,000 (1250d)</span>');
+    // Fresh game: $25,000 / $30/day = 833 days; healthy, no warning class.
+    expect(html).toContain('class="stat-value v-budget">$25,000 (833d)</span>');
     expect(html).not.toContain("budget-low");
   });
 
   it("marks Budget with budget-low when runway is at or under 14 days", () => {
     const c = content();
     const e = new Engine(c);
-    e.applyDecision("basic-dev"); // +$438/day payroll and +$35 KTLO after they start → burn 493
+    e.applyDecision("basic-dev"); // +$438/day payroll and +$35 KTLO after they start → burn 503 with the granted product
     const state = e.getState() as GameState;
     for (const inst of state.decisions) {
       if (inst.activeOnDay !== undefined) inst.activeOnDay = state.day;
     }
     activateDueInstances(state, c);
-    state.stocks.budget = 4930; // exactly 10 days
+    state.stocks.budget = 5030; // exactly 10 days
     const html = renderStats(state, c);
-    expect(html).toContain('class="stat-value v-budget budget-low">$4,930 (10d)</span>');
+    expect(html).toContain('class="stat-value v-budget budget-low">$5,030 (10d)</span>');
   });
 
   it("appends Nd runway and warns at 1d", () => {
     const c = content();
     const e = new Engine(c);
     const state = e.getState();
-    state.stocks.budget = 20; // 1 day at KTLO $20
+    state.stocks.budget = 30; // 1 day at KTLO $30
     const html = renderStats(state, c);
-    expect(html).toContain('class="stat-value v-budget budget-low">$20 (1d)</span>');
+    expect(html).toContain('class="stat-value v-budget budget-low">$30 (1d)</span>');
   });
 
   it("omits runway and warning when net burn is not positive", () => {
@@ -232,7 +232,7 @@ describe("renderDecisions", () => {
     const c = content();
     const e = new Engine(c);
     const avail = e.availableDecisions();
-    const html = decisionsPanelScaffold(c, [], avail);
+    const html = decisionsPanelScaffold(c, [...e.getState().decisions], avail);
     expect(html).toContain(`<h3>Alter the system</h3>`);
     expect(html).not.toContain("Alter the loop");
     expect(html).not.toContain(`<h3>Owned</h3>`);
@@ -283,7 +283,7 @@ describe("renderDecisions", () => {
     c.start.stocks.budget = 0;
     const e = new Engine(c);
     const html = renderDecisions(e.availableDecisions(), [...e.getState().decisions], c);
-    expect(html).toContain('data-buy="one-time-product" disabled');
+    expect(html).toContain('data-buy="hack-day" disabled');
     expect(html).toContain("cannot afford");
     // Prerequisite-locked cards stay hidden even when broke.
     expect(html).not.toContain('data-buy="ci-cd"');
@@ -293,7 +293,7 @@ describe("renderDecisions", () => {
   it("shows owned instances with gamble outcome and remove button", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
-    const inst = e.getState().decisions[0];
+    const inst = e.getState().decisions.find((d) => d.defId === "basic-dev")!;
     const html = renderOwnedList([...e.getState().decisions], content());
     expect(html).toContain(`data-remove="${inst.instanceId}"`);
     expect(html).toContain(`[${inst.gambleLabel}]`);
@@ -382,10 +382,10 @@ describe("renderDecisions", () => {
     const e = new Engine(content());
     e.applyDecision("subscription");
     const owned = [...e.getState().decisions];
-    expect(owned).toHaveLength(1);
+    expect(owned.filter((d) => d.defId === "subscription")).toHaveLength(1);
     let shop = renderDecisions(e.availableDecisions(), owned, content());
     expect(shop).not.toContain("Subscription plan");
-    e.removeDecision(owned[0]!.instanceId);
+    e.removeDecision(owned.find((d) => d.defId === "subscription")!.instanceId);
     shop = renderDecisions(e.availableDecisions(), [...e.getState().decisions], content());
     expect(shop).toContain("Subscription plan");
     expect(shop).toContain('data-buy="subscription"');
@@ -433,7 +433,8 @@ describe("renderDecisions", () => {
       "hack-day",
       "user-interviews",
       "subscription",
-      "one-time-product",
+      "raise-round",
+      "sell-company",
     ]);
   });
 
@@ -452,7 +453,8 @@ describe("renderDecisions", () => {
       "hack-day",
       "user-interviews",
       "subscription",
-      "one-time-product",
+      "raise-round",
+      "sell-company",
     ]);
   });
 
@@ -470,7 +472,8 @@ describe("renderDecisions", () => {
       "hack-day",
       "user-interviews",
       "subscription",
-      "one-time-product",
+      "raise-round",
+      "sell-company",
     ]);
   });
 
@@ -478,8 +481,9 @@ describe("renderDecisions", () => {
     const c = content();
     const e = new Engine(c);
     const avail = e.availableDecisions();
-    const scaffold = decisionsPanelScaffold(c, [], avail);
-    const live = renderDecisions(avail, [], c);
+    const owned = [...e.getState().decisions];
+    const scaffold = decisionsPanelScaffold(c, owned, avail);
+    const live = renderDecisions(avail, owned, c);
     const shellIds = [...scaffold.matchAll(/data-section="decision-node:([^"]+)"/g)].map((m) => m[1]!);
     expect(shellIds).toEqual(shopBuyIds(live));
     expect(shellIds).toEqual([
@@ -489,7 +493,8 @@ describe("renderDecisions", () => {
       "hack-day",
       "user-interviews",
       "subscription",
-      "one-time-product",
+      "raise-round",
+      "sell-company",
     ]);
   });
 
@@ -529,7 +534,7 @@ describe("renderDecisions", () => {
     // so exactly one card carries the chip. A deterministic decision
     // (test-suite) does not.
     const gambleChips = html.match(/class="tt-gamble"/g) ?? [];
-    expect(gambleChips.length).toBe(1);
+    expect(gambleChips.length).toBe(2);
     expect(html).toContain('<span class="tt-gamble"');
     // The "(gamble)" suffix moved out of the derived line onto the chip, so a
     // gamble card shows the range alone.
@@ -592,10 +597,10 @@ describe("renderDecisions", () => {
     const c = content();
     c.start.stocks.budget = 0;
     const e = new Engine(c);
-    const product = e.availableDecisions().find((a) => a.def.id === "one-time-product")!;
-    const html = renderDecisionNode(product, 0);
+    const hack = e.availableDecisions().find((a) => a.def.id === "hack-day")!;
+    const html = renderDecisionNode(hack, 0);
     const { chrome, details } = nodeParts(html);
-    expect(html).toMatch(/<button class="tt-buy" data-buy="one-time-product" disabled>Buy<\/button>/);
+    expect(html).toMatch(/<button class="tt-buy" data-buy="hack-day" disabled>Buy<\/button>/);
     expect(chrome).toContain('class="tt-reason"');
     expect(chrome).toContain("cannot afford");
     expect(details).not.toContain("cannot afford");
@@ -885,7 +890,7 @@ describe("renderProjectsStatus", () => {
     expect(html).toContain("always on");
     expect(html).toContain(">On<");
     expect(html).toContain("0.2/day of finish");
-    expect(html).toContain("$20/day");
+    expect(html).toContain("$30/day");
     expect(html).toContain("hosting $0 until 1 user");
     expect(html).toContain("cannot cancel");
     expect(html).not.toContain("seat");
@@ -896,7 +901,7 @@ describe("renderProjectsStatus", () => {
     e.getState().stocks.users = 150;
     const band = renderProjectsStatus([...e.getState().projects], e.getState(), e.getContent());
     expect(band).toContain("hosting $18 until 400 users");
-    expect(band).toContain("$38/day");
+    expect(band).toContain("$48/day");
     e.getState().modifiers.push({
       id: "spike",
       source: "usage-overage",
@@ -906,7 +911,7 @@ describe("renderProjectsStatus", () => {
       expiresDay: e.getState().day + 3,
     });
     const spiked = renderProjectsStatus([...e.getState().projects], e.getState(), e.getContent());
-    expect(spiked).toContain("$78/day");
+    expect(spiked).toContain("$88/day");
     expect(spiked).toContain("spike $40/day");
     const offers = renderProjectOffers(e.availableProjects(), e.getState());
     expect(offers).not.toContain("Bugfix sprint");

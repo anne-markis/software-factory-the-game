@@ -464,7 +464,7 @@ describe("tick", () => {
       expect(subDelta - noSubDelta).toBeCloseTo(60, 5);
       const day = withSub.getState().incomeByDay.at(-1);
       expect(day?.recurring).toBeCloseTo(75, 5);
-      expect(day?.burst).toBe(0);
+      expect(day?.burst).toBe(withoutSub.getState().incomeByDay.at(-1)?.burst);
       expect(withSub.getState().log.some((l) => /\$/.test(l.message) && /burst|income|subscription/i.test(l.message))).toBe(false);
     });
 
@@ -484,7 +484,9 @@ describe("tick", () => {
       content.start.stocks.backlog = 0;
       const withOtp = new Engine(content);
       const withoutOtp = new Engine(content);
-      withOtp.applyDecision("one-time-product");
+      (withoutOtp.getState() as GameState).decisions = withoutOtp
+        .getState()
+        .decisions.filter((d) => d.defId !== "one-time-product");
       expect(withOtp.getState().rngState).toBe(withoutOtp.getState().rngState);
 
       for (let i = 0; i < 50; i++) {
@@ -504,7 +506,6 @@ describe("tick", () => {
       const content = ciCdContent();
       content.start.stocks.backlog = 0;
       const e = new Engine(content);
-      e.applyDecision("one-time-product");
       const sale = 1.2;
       const users = 100;
       let daysWithSales = 0;
@@ -535,7 +536,6 @@ describe("tick", () => {
       const content = ciCdContent();
       content.start.stocks.backlog = 0;
       const e = new Engine(content);
-      e.applyDecision("one-time-product");
       let daysWithSales = 0;
       let maxBurst = 0;
       for (let i = 0; i < 400; i++) {
@@ -564,7 +564,7 @@ describe("tick", () => {
     it("splits expenses into human, the agent stack, and KTLO", () => {
       const content = withKtlo(ciCdContent());
       const e = new Engine(content);
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 0, agents: 0, ktlo: 20 });
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 0, agents: 0, ktlo: 30 });
       e.applyDecision("basic-dev");
       const hired = e.getState() as GameState;
       for (const inst of hired.decisions) {
@@ -575,14 +575,14 @@ describe("tick", () => {
       e.applyDecision("agent");
       e.applyDecision("agent-harness");
       // Founder + 1 hire: each coding agent is $4 × 2. Harness stays $5.
-      // 2×$8 + $5. KTLO is the $20 base plus hire $35 and harness $18.
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 21, ktlo: 73 });
+      // 2×$8 + $5. KTLO is the $20 base, the granted product's $10, hire $35, and harness $18.
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 21, ktlo: 83 });
       e.applyDecision("agent-orchestration");
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 33, ktlo: 103 });
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 33, ktlo: 113 });
       e.applyDecision("test-suite");
       e.applyDecision("ci-cd");
       e.applyDecision("agent-ci-review");
-      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 45, ktlo: 103 });
+      expect(dailyExpenseSplit(e.getState(), content)).toEqual({ human: 438, agents: 45, ktlo: 113 });
     });
 
     it("records expensesByDay on tick and caps it with income history", () => {
@@ -590,7 +590,7 @@ describe("tick", () => {
       const e = new Engine(content);
       e.applyDecision("agent");
       e.tick();
-      expect(e.getState().expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, ktlo: 20 });
+      expect(e.getState().expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, ktlo: 30 });
       for (let i = 0; i < INCOME_HISTORY_DAYS + 2; i++) e.tick();
       const days = e.getState().expensesByDay;
       expect(days).toHaveLength(INCOME_HISTORY_DAYS);
@@ -916,7 +916,7 @@ describe("tick", () => {
       s.stocks.budget = 0;
       e.tick();
 
-      expect(e.getState().decisions).toHaveLength(0);
+      expect(e.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(false);
       expect(e.getState().log.some((l) => l.message.includes("Payroll failed"))).toBe(true);
     });
 

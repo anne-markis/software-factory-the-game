@@ -263,7 +263,7 @@ describe("save/load", () => {
     delete raw.state.nextInstanceId;
     const restored = deserialize(JSON.stringify(raw));
     expect(restored.nextModifierId).toBe(3);
-    expect(restored.nextInstanceId).toBe(2);
+    expect(restored.nextInstanceId).toBe(3);
   });
 
   it("defaults a missing challengeLastFired to {} (legacy save shape)", () => {
@@ -453,7 +453,7 @@ describe("save/load", () => {
     a.tick();
     const restored = deserialize(serialize(a.getState()));
     expect(restored.expensesByDay).toEqual(a.getState().expensesByDay);
-    expect(restored.expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, ktlo: 20 });
+    expect(restored.expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, ktlo: 30 });
   });
 
   it("loads a legacy save without lastChallengeDay fine (stays undefined, no default needed)", () => {

@@ -317,7 +317,48 @@
       "perUnit": 1.2
     },
     "effects": [],
-    "removable": true,
+    "removable": false,
+    "unique": true
+  },
+  {
+    "id": "raise-round",
+    "name": "Raise a round",
+    "description": "Pitch investors. Costs $10,000, and the fee is gone either way. Most pitches miss and morale drops by 20. A term sheet is rarer: +$600,000, +25 reputation, and +40 users. A check that size can carry the factory into the next era.",
+    "category": "earn-income",
+    "cost": {
+      "oneTime": 10000
+    },
+    "effects": [],
+    "gamble": [
+      {
+        "probability": 0.75,
+        "label": "Missed the round",
+        "effects": [{ "type": "addToStock", "stock": "morale", "value": -20 }]
+      },
+      {
+        "probability": 0.25,
+        "label": "Term sheet",
+        "effects": [
+          { "type": "addToStock", "stock": "budget", "value": 600000 },
+          { "type": "addToStock", "stock": "reputation", "value": 25 },
+          { "type": "addToStock", "stock": "users", "value": 40 }
+        ]
+      }
+    ],
+    "removable": false
+  },
+  {
+    "id": "sell-company",
+    "name": "Sell the company",
+    "description": "Sell and start a new company. The buyer pays $10,000,000 on top of whatever is in the bank. Users, reputation, crew, and the product do not carry over. The new company opens in the era that treasury already qualifies for.",
+    "category": "change-structure",
+    "cost": {
+      "oneTime": 0
+    },
+    "effects": [
+      { "type": "sellCompany", "budgetGrant": 10000000 }
+    ],
+    "removable": false,
     "unique": true
   }
 ]

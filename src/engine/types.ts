@@ -118,7 +118,11 @@ export type Effect =
     }
   // Temporary KTLO cash. perDay may be negative (a credit). durationDays is
   // required so this stays a spike or a dip, not a second copy of ktloPerDay.
-  | { type: "modifyKtloCash"; perDay: number; durationDays: number };
+  | { type: "modifyKtloCash"; perDay: number; durationDays: number }
+  // Ends this company. The engine replaces the run with a new one whose
+  // budget is the treasury plus budgetGrant, in the highest era that
+  // treasury already qualifies for. Not applied as a stock effect.
+  | { type: "sellCompany"; budgetGrant: number };
 
 export interface AutoSchedulePolicy {
   projectIds: string[];
@@ -607,6 +611,9 @@ export interface StartConfig {
   // Named reputation thresholds (Release 17), sorted ascending by
   // parseStartConfig's integrity check. See milestones.ts for detection.
   milestones: { id: string; reputation: number; name: string; message: string }[];
+  // Decision ids owned at the start of a new game, without paying oneTime.
+  // Missing ids are skipped so a fixture catalog can omit them.
+  grantedDecisionIds?: string[];
 }
 
 // One scale era in content/eras.json (ADR 0001). Entry predicates are an OR

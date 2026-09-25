@@ -1,18 +1,18 @@
 import type { GameContent, GameState } from "./types";
 import { createRng, type Rng } from "./rng";
 import { tick, type ChallengePhase, log, isDeliveryFrozen } from "./tick";
-import { applyDecision, removeDecision, availability, type Availability } from "./decisions";
+import { applyDecision, grantDecision, removeDecision, availability, type Availability } from "./decisions";
 import { grantMissingPlanRates, hydrateHumanScale } from "./effects";
 import { rollChallenges, resolveChoice } from "./challenges";
 import { startProject, abandonProject, pursueProject, cancelPlan, takeProject, planStock, projectAvailability, isStalled, assignMissingProjectInstances, type ProjectAvailability } from "./projects";
-import { eraCrossingIsSilent, evaluateNextEraEntry, formatEraEntryPredicate } from "./eras";
+import { eraCrossingIsSilent, eraDisplayName, eraForTreasury, evaluateNextEraEntry, formatEraEntryPredicate } from "./eras";
 import { syncKtloBase } from "./ktlo";
 
 export type LoadEraContent = (eraId: string) => GameContent;
 
 export function initialState(content: GameContent): GameState {
   const s = content.start;
-  return {
+  const state: GameState = {
     day: 0,
     paused: false,
     // Per-era content: hold the active era id from content.
@@ -80,6 +80,8 @@ export function initialState(content: GameContent): GameState {
     gameSeed: s.seed,
     challengeLastFired: {},
   };
+  for (const id of s.grantedDecisionIds ?? []) grantDecision(state, content, id);
+  return state;
 }
 
 export class Engine {
@@ -236,7 +238,33 @@ export class Engine {
   }
 
   applyDecision(defId: string): void {
-    applyDecision(this.state, this.content, defId, this.rng);
+    applyDecision(this.state, this.content, defId, this.rng, {
+      sellCompany: (budgetGrant) => this.foundNewCompany(budgetGrant),
+    });
+  }
+
+  /**
+   * Sell this company. The new one keeps the treasury plus the buyer's
+   * check, and opens in the highest era that budget already clears.
+   * Crew, cards, users, reputation, and in-flight work do not carry.
+   */
+  private foundNewCompany(budgetGrant: number): void {
+    const budget = this.state.stocks.budget + budgetGrant;
+    const paused = this.state.paused;
+    const rngState = this.rng.getState();
+    const fresh = initialState(this.content);
+    fresh.stocks.budget = budget;
+    fresh.paused = paused;
+    fresh.rngState = rngState;
+    const eras = this.content.eras;
+    if (eras && this.loadEra) {
+      const eraId = eraForTreasury(fresh, eras);
+      fresh.eraId = eraId;
+      this.content = this.loadEra(eraId);
+    }
+    this.state = fresh;
+    const name = eraDisplayName(this.content.eras, fresh.eraId);
+    log(this.state, `Sold the company. A new one starts in ${name} with $${budget.toLocaleString("en-US")}.`);
   }
 
   removeDecision(instanceId: string): void {

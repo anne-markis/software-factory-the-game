@@ -103,6 +103,8 @@ function describeEffect(effect: Effect): string | null {
       return `schedules one of ${effect.projectIds.length}`;
     case "modifyKtloCash":
       return withFeltDuration(`KTLO ${signed(effect.perDay)}/day`, effect.durationDays);
+    case "sellCompany":
+      return `new company, +$${effect.budgetGrant.toLocaleString("en-US")}`;
     default: {
       // Exhaustiveness guard: a new Effect variant that reaches here is a
       // compile error, not a silently-blank card.

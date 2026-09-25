@@ -116,7 +116,7 @@ Pending copies do not replace the table.
 
 ## Effects
 
-All thirteen types are one discriminated union (`effectSchema`). Extra keys
+All fourteen types are one discriminated union (`effectSchema`). Extra keys
 fail. `add` modifiers on a rate sum first, then `mul`, then debt and stock
 drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 
@@ -135,6 +135,7 @@ drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 | `keepProject` | Marker on a decision's **base** `effects`. While an instance is active, the named contract is started whenever it is not already in flight or in plan, including after it finishes. Pending hires do not schedule. A pursue project is skipped. The project id must exist in the resolved catalog. |
 | `autoSchedule` | Recorded on the instance when effects land (after `delayDays`). Each active owner pursues at most one listed project, in `projectIds` order: the first id that is currently offerable is the one they wait on. They spend `ideaCostFactor` times that project's idea cost, and only when cash covers the upfront cost plus `cashReserve`. `skipWhenBurnExceedsIncome` waits while KTLO plus payroll exceed recurring income (burst sales are ignored). The slot stays taken from Plan through in-flight. Removing the hire does not cancel work already queued. Ids must be pursue contracts in the resolved catalog. |
 | `modifyKtloCash` | Adds `perDay` dollars to the KTLO cash drain for `durationDays` (negative is a credit). The total drain floors at `$0`. This is the spike and the dip. Standing surcharges stay on `ktloPerDay`. |
+| `sellCompany` | Ends the run. The engine starts a new company whose budget is the treasury plus `budgetGrant`, in the highest era that treasury already qualifies for. Not applied as a stock effect. |
 
 `start.json` `baseCapacity` is founder seats (Studio: 1). `DecisionDef.capacity` adds seats while owned (hire: 1). `capacityFromOwned` (`{ id, per }`) adds `per` per owned instance of `id` while this card is owned — Studio ships none; do not hardcode `agent` in the engine.
 

@@ -57,6 +57,21 @@ export function nextEraDef(eras: ErasConfig, eraId: string): EraDef | undefined 
 }
 
 /**
+ * Highest rung this treasury already clears, walking every entry from the
+ * start of the ladder. A normal tick climbs one rung; a company sale uses
+ * this so the new company opens in the era the budget qualifies for.
+ */
+export function eraForTreasury(state: Readonly<GameState>, eras: ErasConfig): string {
+  let eraId = eras.startingEraId;
+  for (let i = 0; i < eras.eras.length; i++) {
+    const hit = evaluateNextEraEntry({ ...state, eraId }, eras);
+    if (!hit) return eraId;
+    eraId = hit.era.id;
+  }
+  return eraId;
+}
+
+/**
  * If any OR-path into the next era is met, return that era and the first
  * matching path. Tick stays name-dumb: it only walks the ordered catalog.
  */
