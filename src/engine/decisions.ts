@@ -4,7 +4,7 @@ import { applySeatCapacity, effectiveCapacity } from "./capacity";
 import { applyEffects, clampStock, recordAutoSchedule, recordGrantScales } from "./effects";
 import { agentSeatCount, scaledDecisionCost } from "./agentCost";
 import { instanceIsActive } from "./roster";
-import { isDeliveryFrozen, log } from "./tick";
+import { isDeliveryFrozen, log, syncHumanQuitRate } from "./tick";
 
 export type AvailabilityCode = "missing-requires" | "cannot-afford" | "already-owned";
 
@@ -183,6 +183,7 @@ export function removeDecision(state: GameState, content: GameContent, instanceI
   rebalanceSeats(state, content);
   if (moraleHit > 0) {
     state.stocks.morale = clampStock(state, "morale", state.stocks.morale - moraleHit);
+    syncHumanQuitRate(state, content);
   }
   if (def) {
     log(state, moraleHit > 0 ? `Removed: ${def.name}. Morale −${moraleHit}.` : `Removed: ${def.name}`);

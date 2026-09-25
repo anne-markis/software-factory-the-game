@@ -199,6 +199,7 @@ describe("decisions", () => {
     pending.removeDecision(joining.instanceId);
     expect(pending.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(false);
     expect(pending.getState().stocks.morale).toBe(30);
+    expect(pending.getState().employeeQuitRate).toBeCloseTo(0.005, 10);
     expect(pending.getState().log.at(-1)?.message).toBe("Removed: Hire basic developer. Morale −40.");
 
     const active = new Engine(content());
