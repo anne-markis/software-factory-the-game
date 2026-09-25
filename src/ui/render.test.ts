@@ -104,8 +104,8 @@ describe("renderStats", () => {
     const e = new Engine(c);
     const state = e.getState() as import("../engine/types").GameState;
     state.pointsPerDay = 10;
-    state.stocks.ideas = 50;
-    state.stocks.plan = 0;
+    state.stocks.ideas = 10000;
+    state.plan = [{ defId: "ship-v1", name: "Ship v1", progress: 10, size: 400 }];
     // Fresh seed puts the initial project in Ready; pin unshipped for a
     // stable assertion.
     state.stocks.backlog = 50;
@@ -113,8 +113,8 @@ describe("renderStats", () => {
     state.stocks.inReview = 0;
     state.stocks.done = 0;
     const html = renderStats(state, c);
-    // 50 + 0 + 50 = 100 / 10 = 10 days
-    expect(html).toContain('<span class="stat-value v-eta">~10d</span>');
+    // Plan size 400 + unshipped 50 = 450 / 10 = 45 days. Ideas stay out.
+    expect(html).toContain('<span class="stat-value v-eta">~45d</span>');
   });
 
   // Budget must telegraph runway before payroll wipe.
