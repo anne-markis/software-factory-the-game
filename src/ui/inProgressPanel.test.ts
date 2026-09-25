@@ -119,7 +119,7 @@ describe("renderStageZoom", () => {
     // scaleStock has no rate/debt-multiplier target, so it contributes no
     // Friction, Cycle-speed, or Leak-size row of its own -- techDebt isn't
     // surfaced as a rate contributor at all, so there is nothing else to see.
-    const instanceModifiers = s.modifiers.filter((m) => m.source === s.decisions[0].instanceId);
+    const instanceModifiers = s.modifiers.filter((m) => m.source === s.decisions.find((d) => d.defId !== "one-time-product")!.instanceId);
     expect(instanceModifiers).toHaveLength(1);
     expect(instanceModifiers[0]).toMatchObject({ target: "allRates", op: "mul", value: 0.6 });
   });
@@ -129,7 +129,7 @@ describe("renderStageZoom", () => {
     e.applyDecision("basic-dev");
     settleHires(e);
     const s = e.getState() as MutableState;
-    const inst = s.decisions[0];
+    const inst = s.decisions.find((d) => d.defId === "basic-dev")!;
     // A hire writes one finish modifier (the seat is DecisionDef.capacity).
     const mod = s.modifiers.find((m) => m.source === inst.instanceId && m.target === "finish")!;
     expect(mod.value).toBeGreaterThan(0); // this seed rolls a positive hire
@@ -165,7 +165,7 @@ describe("renderStageZoom", () => {
     e.applyDecision("basic-dev");
     settleHires(e);
     const s = e.getState() as MutableState;
-    const inst = s.decisions[0];
+    const inst = s.decisions.find((d) => d.defId === "basic-dev")!;
     const mod = s.modifiers.find((m) => m.source === inst.instanceId)!;
     mod.value = Math.abs(mod.value) || 1; // guarantee a positive (speed-group) contribution
     inst.sickUntilDay = s.day + 3;
@@ -284,7 +284,7 @@ describe("renderStageZoom", () => {
     const s = e.getState() as MutableState;
     // Target the finish modifier -- the one the panel surfaces (Release 15
     // hires now split into pull + finish add modifiers).
-    const mod = s.modifiers.find((m) => m.source === s.decisions[0].instanceId && m.target === "finish")!;
+    const mod = s.modifiers.find((m) => m.source === s.decisions.find((d) => d.defId === "basic-dev")!.instanceId && m.target === "finish")!;
     mod.value = -0.5;
     const svg = panel(s, content());
     expect(svg).toContain("-0.5/day");

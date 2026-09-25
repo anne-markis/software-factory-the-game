@@ -141,10 +141,11 @@ describe("simulation", () => {
     expect(at[200]).toBe(21000);
     expect(at[300]).toBe(19000); // solvency rule: beta finishes with budget to spare
     // Completion bump: +$800 bonus lands on day 377 (0.8 product finish after KTLO).
-    expect(at[377]).toBeCloseTo(18256.0388, 3);
-    expect(firstZeroDay).toBe(664);
-    expect(at[664]).toBe(0);
-    expect(e.getState().stocks.budget).toBe(0); // clamped through day 2000
+    // One-time product is owned from day 0, so launch turns users into sales
+    // and the treasury does not drain to zero.
+    expect(at[377]).toBeGreaterThan(18000);
+    expect(firstZeroDay).toBe(931);
+    expect(e.getState().stocks.budget).toBe(0);
     // Users climb toward the 1033 steady state (3.1/day gain == 0.3% churn).
     expect(e.getState().stocks.users).toBeCloseTo(1026, 0);
     expect(e.getState().stocks.reputation).toBe(1); // no challenges, so it never drops
@@ -196,7 +197,7 @@ describe("simulation", () => {
     expect(sawUsers).toBe(true); // the users economy did switch on at launch
     expect(budgetAt300).toBeLessThan(19200); // pre-completion glide, well off 25,000 (observed 19000: no cash event reaches an idle Studio)
     expect(budgetAt300).toBeGreaterThan(0); // no instant death
-    expect(e.getState().stocks.budget).toBeLessThan(100); // broke by day 2000 (observed 0)
+    expect(e.getState().stocks.budget).toBe(0); // product sales delay the drain; an idle factory is still broke by day 2000
   });
 
   // Smart-strategy probe: a modest, sensible plan (test-suite day 1, ci-cd
@@ -628,9 +629,8 @@ describe("simulation", () => {
   // Launch beta on starting resources, then buy the agent ladder out of
   // subscription income -- and pins what a player sees along the way:
   //
-  //   d1-d2 subscription + one-time-product (one-time cost, no upkeep, and
-  //           worth nothing yet at 0 users -- the setup a Studio player makes
-  //           before there is anything to sell)
+  //   d1 subscription (one-time product is already owned at the start of a
+  //           new game, so it is not a shop click)
   //   d377 Launch beta completes: +$800, +1 reputation, +30 users, and the
   //           users economy (and with it the subscription) switches on
   //   d377-80 the agent ladder, one card a day, in the order the gates imply:
@@ -681,7 +681,6 @@ describe("simulation", () => {
     }
     expect(buys).toEqual([
       "d1:subscription",
-      "d2:one-time-product",
       "d377:agent",
       "d378:agent",
       "d379:agent-harness",
@@ -720,6 +719,9 @@ describe("simulation", () => {
       while (bought) {
         bought = false;
         for (const a of e.availableDecisions()) {
+          // Raise and sell are spike cards. Sell replaces the run, so a
+          // greedy buyer would restart every day and never exercise the shop.
+          if (a.def.id === "raise-round" || a.def.id === "sell-company") continue;
           if (a.purchasable && !e.getState().decisions.some((d) => d.defId === a.def.id)) {
             e.applyDecision(a.def.id);
             bought = true;

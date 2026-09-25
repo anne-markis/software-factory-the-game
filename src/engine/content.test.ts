@@ -244,6 +244,8 @@ describe("parseDecisions", () => {
       "user-interviews",
       "subscription",
       "one-time-product",
+      "raise-round",
+      "sell-company",
     ]);
     const dev = defs.find((d) => d.id === "basic-dev")!;
     expect(dev.cost.perDay).toBe(438);

@@ -263,7 +263,7 @@ describe("save/load", () => {
     delete raw.state.nextInstanceId;
     const restored = deserialize(JSON.stringify(raw));
     expect(restored.nextModifierId).toBe(3);
-    expect(restored.nextInstanceId).toBe(2);
+    expect(restored.nextInstanceId).toBe(3);
   });
 
   it("defaults a missing challengeLastFired to {} (legacy save shape)", () => {

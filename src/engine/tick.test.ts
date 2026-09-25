@@ -463,7 +463,7 @@ describe("tick", () => {
       expect(subDelta - noSubDelta).toBeCloseTo(75, 5);
       const day = withSub.getState().incomeByDay.at(-1);
       expect(day?.recurring).toBeCloseTo(75, 5);
-      expect(day?.burst).toBe(0);
+      expect(day?.burst).toBe(withoutSub.getState().incomeByDay.at(-1)?.burst);
       expect(withSub.getState().log.some((l) => /\$/.test(l.message) && /burst|income|subscription/i.test(l.message))).toBe(false);
     });
 
@@ -483,7 +483,9 @@ describe("tick", () => {
       content.start.stocks.backlog = 0;
       const withOtp = new Engine(content);
       const withoutOtp = new Engine(content);
-      withOtp.applyDecision("one-time-product");
+      (withoutOtp.getState() as GameState).decisions = withoutOtp
+        .getState()
+        .decisions.filter((d) => d.defId !== "one-time-product");
       expect(withOtp.getState().rngState).toBe(withoutOtp.getState().rngState);
 
       for (let i = 0; i < 50; i++) {
@@ -503,7 +505,6 @@ describe("tick", () => {
       const content = ciCdContent();
       content.start.stocks.backlog = 0;
       const e = new Engine(content);
-      e.applyDecision("one-time-product");
       const sale = 1.2;
       const users = 100;
       let daysWithSales = 0;
@@ -534,7 +535,6 @@ describe("tick", () => {
       const content = ciCdContent();
       content.start.stocks.backlog = 0;
       const e = new Engine(content);
-      e.applyDecision("one-time-product");
       let daysWithSales = 0;
       let maxBurst = 0;
       for (let i = 0; i < 400; i++) {
@@ -915,7 +915,7 @@ describe("tick", () => {
       s.stocks.budget = 0;
       e.tick();
 
-      expect(e.getState().decisions).toHaveLength(0);
+      expect(e.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(false);
       expect(e.getState().log.some((l) => l.message.includes("Payroll failed"))).toBe(true);
     });
 

@@ -8,12 +8,12 @@ function content(): GameContent {
 }
 
 describe("buildTechTree", () => {
-  it("groups the lean Studio content into CI/CD and agent ladders plus five standalone decisions", () => {
+  it("groups the lean Studio content into CI/CD and agent ladders plus standalone decisions", () => {
     const tree = buildTechTree(content());
     expect(tree.chains).toHaveLength(2);
     expect(tree.chains.map((c) => c.name)).toEqual(["Add test suite", "Add coding agent"]);
     expect(tree.standalone.map((d) => d.id).sort()).toEqual(
-      ["basic-dev", "hack-day", "one-time-product", "subscription", "user-interviews"].sort(),
+      ["basic-dev", "hack-day", "one-time-product", "raise-round", "sell-company", "subscription", "user-interviews"].sort(),
     );
   });
 

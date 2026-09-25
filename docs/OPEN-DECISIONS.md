@@ -70,3 +70,22 @@ only. The loops-of-loops framing eventually wants Backlog, Done (while
 it exists), and Shipped to each expose an inner loop with its own
 contributors. Deferred until the In Progress inner-loop presentation
 proves itself.
+
+## 4. Undesigned growth cards
+
+Recorded 2026-09-25. Placeholders only. No numbers, no schema, no
+shop copy. Fill this section in when either card is ready to design.
+
+### Paid ads
+
+A repeatable spend that buys users, meant to get more extreme as the
+audience grows (the paperclips marketing trajectory: reach that pays
+for more reach). Not designed. Open: price curve, whether ads are cash
+only or also spend reputation, and how hard support drag should punish
+a bought audience.
+
+### Conference talk
+
+A spend that slows delivery for a few days and rolls reputation plus a
+user lump, or a morale hit when the room is empty. Not designed. Open:
+cost, odds, and the size of the hit and the miss.

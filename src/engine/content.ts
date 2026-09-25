@@ -175,6 +175,7 @@ const startSchema = z
       .strict(),
     challengeSpacingDays: z.number().int().min(0),
     milestones: z.array(milestoneSchema),
+    grantedDecisionIds: z.array(z.string().min(1)).optional(),
   })
   .strict();
 
@@ -280,6 +281,7 @@ const effectSchema = z.discriminatedUnion("type", [
       skipWhenBurnExceedsIncome: z.boolean(),
     })
     .strict(),
+  z.object({ type: z.literal("sellCompany"), budgetGrant: z.number().positive() }).strict(),
 ]);
 
 const gambleOutcomeSchema = z

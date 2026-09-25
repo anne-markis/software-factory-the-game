@@ -79,7 +79,30 @@ function rebalanceSeats(state: GameState, content: GameContent): void {
   applySeatCapacity(state, effectiveCapacity(state, content), 0);
 }
 
-export function applyDecision(state: GameState, content: GameContent, defId: string, rng: Rng): void {
+/** Own a decision without paying oneTime or rolling a gamble. Used at new-game start. */
+export function grantDecision(state: GameState, content: GameContent, defId: string): void {
+  const def = content.decisions.find((d) => d.id === defId);
+  if (!def) return;
+  if (state.decisions.some((d) => d.defId === defId)) return;
+  const instanceId = `inst-${state.nextInstanceId++}`;
+  const instance: DecisionInstance = { instanceId, defId: def.id };
+  if (def.human) instance.human = true;
+  if (def.agent) instance.agent = true;
+  applyEffects(state, def.effects.filter((e) => e.type !== "sellCompany"), instanceId, { decisionId: def.id, content });
+  state.decisions.push(instance);
+}
+
+export type ApplyDecisionHooks = {
+  sellCompany?: (budgetGrant: number) => void;
+};
+
+export function applyDecision(
+  state: GameState,
+  content: GameContent,
+  defId: string,
+  rng: Rng,
+  hooks?: ApplyDecisionHooks,
+): void {
   const entry = availability(state, content).find((a) => a.def.id === defId);
   if (!entry) throw new Error(`Unknown decision: ${defId}`);
   if (!entry.purchasable) {
@@ -88,6 +111,12 @@ export function applyDecision(state: GameState, content: GameContent, defId: str
     );
   }
   const def = entry.def;
+  const sale = def.effects.find((e) => e.type === "sellCompany");
+  if (sale?.type === "sellCompany") {
+    if (!hooks?.sellCompany) throw new Error(`${def.name} requires the engine to start a new company`);
+    hooks.sellCompany(sale.budgetGrant);
+    return;
+  }
   state.stocks.budget -= scaledDecisionCost(def, agentSeatCount(state), "oneTime");
 
   // Synergy ownership is evaluated at purchase time only; removing the

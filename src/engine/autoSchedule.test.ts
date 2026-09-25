@@ -129,7 +129,7 @@ describe("project manager auto-schedule", () => {
     scheduleProjectManagers(engine.getState() as GameState, engine.getContent());
     expect(engine.getState().plan).toEqual([]);
 
-    (engine.getState() as GameState).decisions[0]!.activeOnDay = engine.getState().day;
+    (engine.getState() as GameState).decisions.find((d) => d.instanceId === "pm-1")!.activeOnDay = engine.getState().day;
     scheduleProjectManagers(engine.getState() as GameState, engine.getContent());
     expect(engine.getState().plan).toHaveLength(1);
     engine.removeDecision("pm-1");
