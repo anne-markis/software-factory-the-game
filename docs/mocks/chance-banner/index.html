@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mock — chance events get a quick banner</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fff;
+        --fg: #000;
+        --fg-dim: #666;
+        --border: #999;
+        --accent-amber: #a60;
+        --accent-red: #c00;
+        --desc: #444;
+        --stall-bg: #fdd;
+        --stall-fg: #000;
+        --chip-users: #246;
+        --gift-bg: color-mix(in srgb, var(--chip-users) 16%, var(--bg));
+        --gift-fg: var(--fg);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #181818;
+          --fg: #e8e8e8;
+          --fg-dim: #aaa;
+          --border: #888;
+          --accent-amber: #e0a030;
+          --accent-red: #ff6b6b;
+          --desc: #c2c2c2;
+          --stall-bg: #4a1f1f;
+          --stall-fg: #ffd6d6;
+          --chip-users: #8ab4e8;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        font-family: ui-monospace, monospace;
+        max-width: 980px;
+        margin: 1rem auto;
+        padding: 0 1rem 3rem;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      h1 { font-size: 1.4rem; margin: 0 0 0.4rem; }
+      h2 { font-size: 1.05rem; margin: 0 0 0.35rem; }
+      h3 { font-size: 0.95rem; margin: 1.25rem 0 0.35rem; }
+      p { line-height: 1.45; color: var(--desc); max-width: 78ch; margin: 0 0 0.75rem; }
+      .lede { color: var(--fg); }
+      .shot { margin: 0 0 2.25rem; }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+        margin: 0 0 1rem;
+      }
+      th, td {
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+        padding: 0.35rem 0.5rem 0.35rem 0;
+        line-height: 1.35;
+      }
+      th { color: var(--fg-dim); font-weight: normal; }
+      td.yes { color: var(--accent-red); font-weight: bold; white-space: nowrap; }
+      td.keep { color: var(--accent-amber); font-weight: bold; white-space: nowrap; }
+      td.no { color: var(--fg-dim); white-space: nowrap; }
+      .compare td, .compare th { white-space: nowrap; }
+      .stage {
+        border: 1px solid var(--border);
+        padding: 0.65rem 0.75rem 0.75rem;
+        background: var(--bg);
+        margin: 0 0 0.75rem;
+      }
+      .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+      @media (max-width: 800px) { .pair { grid-template-columns: 1fr; } }
+      .game-title { font-size: 1.15rem; margin: 0 0 0.45rem; color: var(--fg); }
+      .chrome {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.55rem;
+      }
+      button {
+        font-family: inherit;
+        font-size: 0.78rem;
+        margin: 0 2px 0 0;
+        min-width: 3.2rem;
+        text-align: center;
+        opacity: 0.6;
+        background: var(--bg);
+        color: var(--fg);
+        border: 1px solid var(--border);
+        padding: 0.1rem 0.35rem;
+      }
+      button.on { opacity: 1; font-weight: bold; }
+      .stats { display: flex; flex-wrap: wrap; gap: 0.2rem 0.7rem; font-size: 0.82rem; margin: 0 0 0.55rem; }
+      .stat-label { color: var(--fg-dim); }
+      .reveal-host {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        margin: 0 0 0.55rem;
+        background: var(--bg);
+        border-bottom: 1px solid var(--accent-amber);
+      }
+      .gamble-reveal { padding: 0.3rem 0; font-size: 0.92rem; color: var(--fg); }
+      .gamble-reveal-outcome { color: var(--accent-amber); font-weight: bold; }
+      .bar {
+        padding: 0.45rem 0.55rem;
+        font-weight: bold;
+        font-size: 0.88rem;
+        margin: 0 0 0.55rem;
+        line-height: 1.35;
+      }
+      .bar.hit { background: var(--stall-bg); color: var(--stall-fg); }
+      .bar.gift { background: var(--gift-bg); color: var(--gift-fg); border-left: 3px solid var(--chip-users); }
+      .held { color: var(--fg-dim); font-weight: normal; }
+      .loops { display: flex; gap: 0.35rem; align-items: stretch; margin: 0 0 0.65rem; font-size: 0.75rem; }
+      .box {
+        flex: 1;
+        border: 1px solid var(--border);
+        padding: 0.35rem 0.4rem;
+        min-width: 0;
+      }
+      .box b { display: block; font-size: 0.95rem; }
+      .box span { color: var(--fg-dim); }
+      .arrow { align-self: center; color: var(--fg-dim); }
+      .cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 0.6rem; }
+      @media (max-width: 700px) { .cols { grid-template-columns: 1fr; } }
+      .panel { border: 1px solid var(--border); padding: 0.4rem 0.55rem 0.5rem; }
+      .panel h4 { margin: 0 0 0.3rem; font-size: 0.85rem; }
+      .log { font-size: 0.75rem; line-height: 1.35; color: var(--fg-dim); }
+      .log .fresh { color: var(--accent-red); }
+      .note { font-size: 0.8rem; color: var(--fg-dim); margin: 0.15rem 0 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Chance events, a quick banner</h1>
+    <p class="lede">
+      A roll the player did not click should be visible at 5× without opening Events. Raise a round and the hire gambles already stick on screen for 5 seconds. They keep that reveal. They do not get a second one.
+    </p>
+    <p>
+      Three treatments of one moment: Day 86, the factory is running at 5×, and Production incident just fired. The log line is there in every frame. The banner is the only thing that changes.
+    </p>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th></th>
+          <th>1. Hire strip</th>
+          <th>2. Hit or gift</th>
+          <th>3. Soft pause</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>How long</td>
+          <td>5 seconds</td>
+          <td>5 seconds</td>
+          <td>Until Resume</td>
+        </tr>
+        <tr>
+          <td>Clock</td>
+          <td>Keeps running</td>
+          <td>Keeps running</td>
+          <td>Stops</td>
+        </tr>
+        <tr>
+          <td>Look</td>
+          <td>Amber line, same as a hire</td>
+          <td>Red wash for a hit, users-chip wash for a gift</td>
+          <td>Same bar as 2</td>
+        </tr>
+        <tr>
+          <td>New color</td>
+          <td>None</td>
+          <td>None</td>
+          <td>None</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Recommendation is 1. It is chrome the cockpit already has, aimed at the lines that today only reach the log. 2 makes a gift readable as a gift, and it puts a second full-width bar next to Insolvent. 3 is the one you cannot miss, and it stops the factory for something that can fire again in 40 days.
+    </p>
+
+    <section class="shot" id="mock-1">
+      <h2>1. Same strip as the hire reveal</h2>
+      <p>
+        Sticky under the top of the page, amber outcome, no card. Gone after 5 seconds. A later event replaces this line. Raise a round already looks like this, so a hire and an incident never show two strips at once.
+      </p>
+      <div class="stage">
+        <div class="game-title">Software Factory</div>
+        <div class="chrome">
+          <div>
+            <button>Pause</button><button>1×</button><button>2×</button><button class="on">5×</button>
+          </div>
+          <button>Reset</button>
+        </div>
+        <div class="stats">
+          <span><span class="stat-label">Day</span> 86 (0.2 years)</span>
+          <span><span class="stat-label">Backlog</span> 420</span>
+          <span><span class="stat-label">Budget</span> $48,200 (41d)</span>
+          <span><span class="stat-label">Points/Day</span> 2.4</span>
+        </div>
+        <div class="reveal-host">
+          <div class="gamble-reveal">
+            <span>Production incident</span>:
+            <span class="gamble-reveal-outcome">−$8,000, users −1.5%, morale −8, delivery −20% for 3 days</span>
+          </div>
+        </div>
+        <div class="loops">
+          <div class="box">Ready <b>310</b><span>pull 2.4/day</span></div>
+          <div class="arrow">→</div>
+          <div class="box">In Progress <b>2</b><span>finish 2.4/day</span></div>
+          <div class="arrow">→</div>
+          <div class="box">In Review <b>4</b><span>review 1.9/day</span></div>
+          <div class="arrow">→</div>
+          <div class="box">Shipped <b>1,840</b><span>deploy 2.4/day</span></div>
+        </div>
+        <div class="cols">
+          <div class="panel">
+            <h4>Delivery</h4>
+            <div class="log">The loop keeps moving. Nothing on the diagram is the banner.</div>
+          </div>
+          <div class="panel">
+            <h4>Events</h4>
+            <div class="log">
+              <div class="fresh">Day 86: Production incident: Something broke in production. Costs $8,000, 1.5% of users leave, morale takes a hit, and delivery slows 20% for 3 days.</div>
+              <div>Day 84: Project complete: Ship v1 (+$12000 bonus, +8 reputation)</div>
+              <div>Day 72: Hire basic developer started</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">The banner is the short consequence. The log keeps the authored sentence.</p>
+    </section>
+
+    <section class="shot" id="mock-2">
+      <h2>2. Hit or gift bar</h2>
+      <p>
+        A full-width bar under the stats, same family as Insolvent, gone after 5 seconds. The clock keeps running. A hit uses the stall wash. A gift uses the users chip, diluted, so Cloud credit does not look like a fire.
+      </p>
+      <div class="pair">
+        <div class="stage">
+          <div class="game-title">Software Factory</div>
+          <div class="chrome">
+            <div>
+              <button>Pause</button><button>1×</button><button>2×</button><button class="on">5×</button>
+            </div>
+            <button>Reset</button>
+          </div>
+          <div class="stats">
+            <span><span class="stat-label">Day</span> 86</span>
+            <span><span class="stat-label">Budget</span> $48,200</span>
+            <span><span class="stat-label">Points/Day</span> 2.4</span>
+          </div>
+          <div class="bar hit">Production incident. −$8,000, users −1.5%, morale −8, delivery −20% for 3 days.</div>
+          <div class="panel">
+            <h4>Events</h4>
+            <div class="log">
+              <div class="fresh">Day 86: Production incident: Something broke in production…</div>
+              <div>Day 84: Project complete: Ship v1</div>
+            </div>
+          </div>
+          <p class="note">Hit. Same wash as Insolvent.</p>
+        </div>
+        <div class="stage">
+          <div class="game-title">Software Factory</div>
+          <div class="chrome">
+            <div>
+              <button>Pause</button><button>1×</button><button>2×</button><button class="on">5×</button>
+            </div>
+            <button>Reset</button>
+          </div>
+          <div class="stats">
+            <span><span class="stat-label">Day</span> 91</span>
+            <span><span class="stat-label">Budget</span> $51,040</span>
+            <span><span class="stat-label">Points/Day</span> 3.0</span>
+          </div>
+          <div class="bar gift">Cloud credit. Keep the lights on is $12/day lower for 14 days.</div>
+          <div class="panel">
+            <h4>Events</h4>
+            <div class="log">
+              <div class="fresh">Day 91: Cloud credit: The host posted a credit. Keep the lights on is $12/day lower for 14 days.</div>
+              <div>Day 86: Production incident: Something broke in production…</div>
+            </div>
+          </div>
+          <p class="note">Gift. Users-chip wash, not the stall red.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot" id="mock-3">
+      <h2>3. Soft pause</h2>
+      <p>
+        The hit bar from 2, and the day clock stops. 5× drops back to Pause until Resume. A player who was in the shop cannot scroll past it, because the factory is not moving. Decision-needed choices already have their own interrupt. This mock is for events that have no choice.
+      </p>
+      <div class="stage">
+        <div class="game-title">Software Factory</div>
+        <div class="chrome">
+          <div>
+            <button class="on">Resume</button><button>1×</button><button>2×</button><button>5×</button>
+          </div>
+          <button>Reset</button>
+        </div>
+        <div class="stats">
+          <span><span class="stat-label">Day</span> 86 (0.2 years)</span>
+          <span><span class="stat-label">Backlog</span> 420</span>
+          <span><span class="stat-label">Budget</span> $48,200 (41d)</span>
+          <span><span class="stat-label">Points/Day</span> 2.4</span>
+        </div>
+        <div class="bar hit">
+          Production incident. −$8,000, users −1.5%, morale −8, delivery −20% for 3 days.
+          <span class="held">Held. Resume to continue.</span>
+        </div>
+        <div class="loops">
+          <div class="box">Ready <b>310</b><span>pull 2.4/day</span></div>
+          <div class="arrow">→</div>
+          <div class="box">In Progress <b>2</b><span>finish 2.4/day</span></div>
+          <div class="arrow">→</div>
+          <div class="box">In Review <b>4</b><span>review 1.9/day</span></div>
+          <div class="arrow">→</div>
+          <div class="box">Shipped <b>1,840</b><span>deploy 2.4/day</span></div>
+        </div>
+        <div class="panel">
+          <h4>Events</h4>
+          <div class="log">
+            <div class="fresh">Day 86: Production incident: Something broke in production. Costs $8,000, 1.5% of users leave, morale takes a hit, and delivery slows 20% for 3 days.</div>
+            <div>Day 84: Project complete: Ship v1 (+$12000 bonus, +8 reputation)</div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Speed was 5×. The banner took the clock. Resume returns to 5×.</p>
+    </section>
+
+    <h2>Which lines get the banner</h2>
+    <p>
+      Yes means a new banner, whichever mock we pick. Already shown means the hire reveal is already that banner. No means the log only. Company and Megacorp keep the Studio challenges and add two more.
+    </p>
+
+    <h3>Yes</h3>
+    <table>
+      <thead>
+        <tr><th>What happened</th><th>Era</th><th>Log line</th><th>Banner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Scope creep</td>
+          <td>Studio, and later</td>
+          <td>Scope creep: Whoever you shipped to 'just remembered' a few requirements. Backlog +75.</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Model deprecation</td>
+          <td>Studio, and later</td>
+          <td>Model deprecation: Your AI vendor sunsets the model your agents run on…</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Runaway agent loop</td>
+          <td>Studio, and later</td>
+          <td>Runaway agent loop: An agent gets stuck retrying itself… Costs $60.</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Usage overage</td>
+          <td>Studio, and later</td>
+          <td>Usage overage: A traffic spike blows past the capacity you sized for…</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Cloud credit</td>
+          <td>Studio, and later</td>
+          <td>Cloud credit: The host posted a credit. Keep the lights on is $12/day lower for 14 days.</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Production incident</td>
+          <td>Company, and later</td>
+          <td>Production incident: Something broke in production…</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Weekend in the desert</td>
+          <td>Company, and later</td>
+          <td>Weekend in the desert: You disappeared into the desert… Ideas +5000.</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Someone quits</td>
+          <td>Any, once morale is low</td>
+          <td>Quit: Hire basic developer</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>A choice expires</td>
+          <td>None shipped</td>
+          <td>{name}: expired, defaulted to "{option}"</td>
+          <td class="yes">Yes</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      A quit is a morale roll, not a click. A choice challenge is not in the content today. If one is added and the timer runs out, the default landed with no click, so it gets the banner. The "Decision needed" line does not: that moment already opens the choice interrupt.
+    </p>
+
+    <h3>Already shown</h3>
+    <table>
+      <thead>
+        <tr><th>What happened</th><th>Log line</th><th>Banner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Raise a round</td>
+          <td>Raise a round: Missed the round — or — Term sheet</td>
+          <td class="keep">Already shown</td>
+        </tr>
+        <tr>
+          <td>Hire basic developer</td>
+          <td>Hire basic developer: Strong hire, joining in 14 days (also Decent, Net-negative, Disaster)</td>
+          <td class="keep">Already shown</td>
+        </tr>
+        <tr>
+          <td>Hire product manager</td>
+          <td>Hire product manager: Strong hire, joining in 14 days (also Decent, Shaky, Disaster)</td>
+          <td class="keep">Already shown</td>
+        </tr>
+        <tr>
+          <td>Hire engineering manager</td>
+          <td>Hire engineering manager: Good manager, joining in 14 days (also Decent, Poor, Disaster)</td>
+          <td class="keep">Already shown</td>
+        </tr>
+        <tr>
+          <td>Hire project manager</td>
+          <td>Hire project manager: Strong hire, joining in 14 days (also Decent, Shaky, Disaster)</td>
+          <td class="keep">Already shown</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The player clicked. The result was still a roll, so the issue calls these out. The reveal that already sticks for 5 seconds is the banner. An engineering manager who is already working also changes the next developer's odds. That next hire still uses this same reveal.
+    </p>
+
+    <h3>No</h3>
+    <table>
+      <thead>
+        <tr><th>What happened</th><th>Log line</th><th>Banner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Buy a card with no gamble</td>
+          <td>Purchased: Add test suite</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Remove a card</td>
+          <td>Removed: Hire basic developer. Morale −40.</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>A recruit's start date arrives</td>
+          <td>Hire basic developer started</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Start, pursue, cancel, ready, abandon</td>
+          <td>Started project: … / Pursuing: … / Cancelled plan: … / Ready: … / Abandoned project: …</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>A project manager queues work</td>
+          <td>Pursuing: Ship v1</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>An engineering manager keeps a refactor on the schedule</td>
+          <td>Started project: Small refactor</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>A project finishes</td>
+          <td>Project complete: Ship v1 (+$… bonus, +… reputation)</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>A finish grants users or morale</td>
+          <td>Launch beta: +30 users</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Decision needed</td>
+          <td>Decision needed: {name} ({n} days to respond)</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>The player picks a choice</td>
+          <td>{name}: chose "{option}"</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Someone is lost because of that choice</td>
+          <td>Lost: Hire basic developer</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Payroll fails</td>
+          <td>Payroll failed: Hire basic developer removed permanently</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Reputation milestone</td>
+          <td>Milestone: Trusted vendor. Bigger contracts are opening up.</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Limits to growth</td>
+          <td>Limits to growth: tech debt drag now cancels {n}% of your capacity…</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Shifting the burden</td>
+          <td>Shifting the burden: quick capacity fixes are feeding the debt loop…</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Era crossing</td>
+          <td>Entered {era} (…). Shipped eras do not log this.</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>Sell the company</td>
+          <td>Sold the company. A new one starts in {era} with $…</td>
+          <td class="no">No</td>
+        </tr>
+        <tr>
+          <td>One-time product sales</td>
+          <td>Not logged. The income chart draws the burst.</td>
+          <td class="no">No</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Payroll is not a roll. Insolvent. is already on screen. Daily product sales are a roll on purpose, and they stay off the log so the banner does not fire every day. A project manager queuing work, and a refactor that stays scheduled, are the policy on a card the player already bought.
+    </p>
+  </body>
+</html>
