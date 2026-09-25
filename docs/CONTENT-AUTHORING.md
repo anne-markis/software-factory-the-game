@@ -293,7 +293,9 @@ orchestration). `headcountRatioDrags` still drain a stock when a
 flagged-instance ratio exceeds `freeBand`; Studio morale does not use it.
 `instanceChurn` is a per-active-instance quit roll when a stock is below
 `safeBand` (Studio: morale → humans). Pending `delayDays` instances do not
-count for either.
+count for either. `humanRemovalMorale` is the morale a player Remove spends
+on a `human: true` card, pending or active (Studio: 40). Payroll failure
+and quits do not spend it. Omit the key for 0.
 
 Numbers for these knobs live in `content/start.json`. Archetype log lines
 (`src/engine/archetypes.ts`) are engine-side; new cards are classified

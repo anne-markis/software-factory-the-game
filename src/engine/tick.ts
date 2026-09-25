@@ -433,13 +433,23 @@ function applyHeadcountRatioDrags(state: GameState, content: GameContent): void 
   }
 }
 
-function applyInstanceChurn(state: GameState, content: GameContent, rng: Rng): void {
+/** Per-human quit chance from morale, for the employee-loop arrow. Does not roll quits. */
+export function syncHumanQuitRate(state: GameState, content: GameContent): void {
   state.employeeQuitRate = 0;
+  for (const rule of content.start.instanceChurn ?? []) {
+    if (rule.flag !== "human") continue;
+    const level = state.stocks[rule.stock];
+    const p = level >= rule.safeBand ? 0 : ((rule.safeBand - level) / rule.safeBand) * rule.maxRatePerDay;
+    state.employeeQuitRate = Math.max(state.employeeQuitRate, p);
+  }
+}
+
+function applyInstanceChurn(state: GameState, content: GameContent, rng: Rng): void {
+  syncHumanQuitRate(state, content);
   let quit = false;
   for (const rule of content.start.instanceChurn ?? []) {
     const level = state.stocks[rule.stock];
     const p = level >= rule.safeBand ? 0 : ((rule.safeBand - level) / rule.safeBand) * rule.maxRatePerDay;
-    if (rule.flag === "human") state.employeeQuitRate = Math.max(state.employeeQuitRate, p);
     if (p <= 0) continue;
     const targets = state.decisions.filter((inst) => {
       if (!instanceIsActive(inst, state.day)) return false;

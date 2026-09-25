@@ -74,7 +74,9 @@ still climbs only one rung). The one-time product grant applies again.
 100 (`start.stockMax`). One company-wide number for every hired human type:
 it recovers slowly, reputation only *helps* (being unknown does not drain
 it), low Oversight drains it, and hire quality / incidents add or spend via
-`addToStock`. Low morale rolls a per-human quit chance on **active** hires.
+`addToStock`. Player Remove of a human spends `start.humanRemovalMorale`
+(40), whether they are still joining or already on staff. Payroll failure
+and quits do not. Low morale rolls a per-human quit chance on **active** hires.
 Headcount itself stays as `human: true` instances, not a second stock.
 Pending recruits (see `delayDays`) do not count until they start.
 

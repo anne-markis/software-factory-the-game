@@ -197,6 +197,7 @@ describe("oversight and quit", () => {
     e.tick();
     expect(e.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(false);
     expect(e.getState().log.some((l) => l.message.startsWith("Quit:"))).toBe(true);
+    expect(e.getState().stocks.morale).toBeGreaterThan(0);
   });
 });
 

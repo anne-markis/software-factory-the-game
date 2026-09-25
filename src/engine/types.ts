@@ -588,6 +588,10 @@ export interface StartConfig {
   // Always-on per-instance quit rolls (Studio morale → human quit).
   // Read from content at tick time. Optional; treated as [] when absent.
   instanceChurn?: InstanceChurn[];
+  // Morale spent when the player removes a human card, pending or active.
+  // Optional; treated as 0 when absent. Payroll failure and quits do not
+  // use this.
+  humanRemovalMorale?: number;
   // Tech-debt drag (Release 15, Limits to Growth): the debt stock pushes back
   // on throughput. freeDebt is the grace band (no drag at or below it),
   // dragPerPoint is the per-excess-point slowdown, maxDrag caps how much

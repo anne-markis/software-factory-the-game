@@ -390,13 +390,20 @@ export function mountAppView(deps: AppViewDeps): AppView {
       node.querySelector(".tt-node-disclose")?.setAttribute("aria-expanded", open ? "true" : "false");
       return;
     } else if (target.dataset.remove) {
-      // FR-7.1: Remove is irreversible (modifiers dropped, one-time cost not refunded). Gate it behind the same native confirm pattern
-      // Reset already uses so a misclick on a dense Owned list cannot wipe a
-      // sunk-cost hire in one gesture.
-      if (!confirm("Remove this decision? One-time cost is not refunded.")) {
+      // Remove is irreversible (modifiers dropped, one-time cost not refunded).
+      // A human card also spends morale, including a recruit who has not started.
+      const instanceId = target.dataset.remove;
+      const inst = engine.getState().decisions.find((d) => d.instanceId === instanceId);
+      const def = inst ? content.decisions.find((d) => d.id === inst.defId) : undefined;
+      const moraleHit = content.start.humanRemovalMorale ?? 0;
+      const message =
+        def?.human === true && moraleHit > 0
+          ? `Remove ${def.name}? Morale drops by ${moraleHit}. One-time cost is not refunded.`
+          : "Remove this decision? One-time cost is not refunded.";
+      if (!confirm(message)) {
         return;
       }
-      engine.removeDecision(target.dataset.remove);
+      engine.removeDecision(instanceId);
     } else if (target.closest("[data-abandon]")) {
       const el = target.closest<HTMLElement>("[data-abandon]")!;
       const key = el.dataset.instance || el.dataset.abandon;
