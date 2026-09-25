@@ -56,7 +56,7 @@ function isAgentExpenseId(defId: string): boolean {
 
 /** Owned per-day drain plus KTLO cash, bucketed for the Expenses chart. */
 export function dailyExpenseSplit(
-  state: Pick<GameState, "decisions" | "day" | "stocks">,
+  state: Pick<GameState, "decisions" | "day" | "stocks" | "modifiers">,
   content: GameContent,
 ): Omit<DailyExpenses, "day"> {
   let human = 0;
@@ -94,7 +94,7 @@ export function recurringIncomePerDay(
 }
 
 export function dailyBurnPerDay(
-  state: Pick<GameState, "decisions" | "day" | "stocks">,
+  state: Pick<GameState, "decisions" | "day" | "stocks" | "modifiers">,
   content: GameContent,
 ): number {
   const split = dailyExpenseSplit(state, content);
@@ -297,7 +297,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
   const seats = agentSeatCount({ decisions: snapshot, day: state.day });
   recordDailyExpenses(
     state,
-    dailyExpenseSplit({ decisions: snapshot, day: state.day, stocks: state.stocks }, content),
+    dailyExpenseSplit({ decisions: snapshot, day: state.day, stocks: state.stocks, modifiers: state.modifiers }, content),
   );
   // Clamp at 0 deliberately per the design spec: budget never goes negative.
   // Insolvency also freezes delivery (isDeliveryFrozen) and removes unpaid
@@ -305,7 +305,7 @@ function chargeUpkeep(state: GameState, content: GameContent, rng: Rng): void {
   state.stocks.budget = Math.max(
     0,
     state.stocks.budget -
-      ktloBurnPerDay({ decisions: snapshot, day: state.day, stocks: state.stocks }, content) +
+      ktloBurnPerDay({ decisions: snapshot, day: state.day, stocks: state.stocks, modifiers: state.modifiers }, content) +
       totalIncome,
   );
   for (const inst of snapshot) {

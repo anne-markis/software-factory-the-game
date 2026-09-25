@@ -101,6 +101,8 @@ function describeEffect(effect: Effect): string | null {
       return `keeps ${effect.project.replaceAll("-", " ")} scheduled`;
     case "autoSchedule":
       return `schedules one of ${effect.projectIds.length}`;
+    case "modifyKtloCash":
+      return withFeltDuration(`KTLO ${signed(effect.perDay)}/day`, effect.durationDays);
     case "sellCompany":
       return `new company, +$${effect.budgetGrant.toLocaleString("en-US")}`;
     default: {
@@ -261,6 +263,7 @@ export function summarizeDecisionEffects(def: DecisionDef): string {
     );
   }
   if (def.gamble && def.gamble.length > 0) parts.push(summarizeGamble(def.gamble));
+  if (def.ktloPerDay) parts.push(`KTLO +$${fmtNum(def.ktloPerDay)}/day`);
   // Empty for a decision whose whole story is conditional (a synergy target or
   // a challenge gate) and so has nothing of its own to state. The caller omits
   // the line entirely rather than printing "no direct effect", which reads as

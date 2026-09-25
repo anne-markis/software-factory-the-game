@@ -71,39 +71,38 @@ describe("simulation", () => {
     }
   });
 
-  // Studio spine idle-mechanism probe. RE-PINNED wholesale: the
-  // Studio economy replaces the 1500-pt First Contract ($17/pt) with a 300-pt
-  // Launch beta that pays NOTHING per point (payoutPerPoint 0) and a $800
-  // completion bonus. So an idle player earns $0 while shipping the beta and
-  // $0 after (idle starts no follow-on project), which makes the whole budget
-  // trajectory a -$20/day base burn until launch, then hosting on top, with a single +$800
-  // bump when the beta completes. Challenges are stripped to isolate this.
+  // Studio spine idle-mechanism probe. Challenges are stripped.
+  //
+  // Launch beta pays $0 per point and $800 on completion. The one-time
+  // product is granted on day 0, so pre-launch burn is $30/day ($20 base +
+  // $10 product) and there are no sales until users exist.
   //
   // Tech-debt drag never engages here: the beta is only 300 points, so idle
   // ships at most ~60 techDebt (0.2/pt) before the pipeline empties -- far
   // below the freeDebt 400 grace band -- and payout is $0 anyway, so even if
   // it did drag, it could not move the budget. Hence the exact linear pins.
   //
-  // PHASE 1 -- pre-completion, exactly linear: budget(d) = 25000 - 20d (no
-  // payout during the beta). Day 50 = 24000, 100 = 23000, 200 = 21000, 300 =
-  // 19000. This is the Studio solvency rule made concrete: the beta finishes
-  // (day 377) with the budget still comfortably positive (~19000 at day 300),
-  // on starting resources alone, no gigs and no monetization.
+  // PHASE 1 -- pre-completion, exactly linear: budget(d) = 25000 - 30d.
+  // Day 50 = 23500, 100 = 22000, 200 = 19000, 300 = 16000. The beta still
+  // finishes with budget to spare.
   //
   // COMPLETION -- day 377 (300 points at 0.8 finish/day after the 0.2 KTLO
   // reserve; first ships day 3): +$800 bonus and +1 reputation land. The
-  // same tick adds users, so hosting ($0.12/user) joins the $20 base and
-  // budget lands near 18256.
+  // same tick adds users. About 33 users sit in the $6 hosting band, and the
+  // owned product starts selling. Budget lands at 14486.4.
   //
-  // PHASE 2 -- post-completion tail: no project and no income, but hosting
-  // grows with users, so the drain is steeper than $20/day. Budget hits 0
-  // on day 664 and stays clamped.
+  // PHASE 2 -- post-completion: hosting stays flat inside a band and steps
+  // at 100, 400, and 1,000 users. Expected product sales near the user
+  // equilibrium cover that bill, so the treasury stays positive and finishes
+  // day 2000 at 27988.8.
   //
   // USERS -- 0 until day 377, then grow from 30 toward the steady state where
   // organic gain (3 + reputation 1 * 0.1 = 3.1/day) equals churn
-  // (users * 0.003), i.e. about 1033 users. By day 2000 the idle run is
-  // still a few users short of that cap.
-  it("idle mechanism: $0/pt Launch beta, clean -$20/day burn with a +$800 completion bump, then drains to zero", () => {
+  // (users * 0.003), i.e. about 1033 users. That is an equilibrium, not a
+  // ceiling: more reputation or shipped features raise the gain and the
+  // balance point moves up. By day 2000 the idle run is still a few users
+  // short of that balance.
+  it("idle mechanism: $0/pt Launch beta, -$30/day until launch, then product sales cover banded hosting", () => {
     const c = fullContent();
     c.challenges = [];
     const e = new Engine(c);
@@ -126,7 +125,7 @@ describe("simulation", () => {
       }
       if (firstZeroDay === 0 && s.stocks.budget === 0) firstZeroDay = day;
       if (day === 300) { repBeforeCompletion = s.stocks.reputation; usersBeforeCompletion = s.stocks.users; }
-      if ([50, 100, 200, 300, 377, 664].includes(day)) at[day] = s.stocks.budget;
+      if ([50, 100, 200, 300, 377].includes(day)) at[day] = s.stocks.budget;
     }
     // Users and reputation stay at 0 through the whole beta, then step up the
     // moment it completes -- nothing invents users offstage before launch.
@@ -135,17 +134,15 @@ describe("simulation", () => {
     expect(completionDay).toBe(377);
     expect(repAfterCompletion).toBe(c.start.initialProject.reputationReward); // 1
     expect(usersAfterCompletion).toBeCloseTo(33.01, 1); // 30 grant + first organic day (3.1 - 0.09 churn)
-    // Phase 1: exactly linear -$20/day, no payout during the $0/pt beta.
-    expect(at[50]).toBe(24000);
-    expect(at[100]).toBe(23000);
-    expect(at[200]).toBe(21000);
-    expect(at[300]).toBe(19000); // solvency rule: beta finishes with budget to spare
-    // Completion bump: +$800 bonus lands on day 377 (0.8 product finish after KTLO).
-    // One-time product is owned from day 0, so launch turns users into sales
-    // and the treasury does not drain to zero.
-    expect(at[377]).toBeGreaterThan(18000);
-    expect(firstZeroDay).toBe(931);
-    expect(e.getState().stocks.budget).toBe(0);
+    // Phase 1: exactly linear -$30/day, no payout during the $0/pt beta.
+    expect(at[50]).toBe(23500);
+    expect(at[100]).toBe(22000);
+    expect(at[200]).toBe(19000);
+    expect(at[300]).toBe(16000); // solvency rule: beta finishes with budget to spare
+    // Completion bump plus the first product sales. Hosting is a flat band.
+    expect(at[377]).toBeCloseTo(14486.4, 5);
+    expect(firstZeroDay).toBe(0); // sales cover the bands; the run never hits $0
+    expect(e.getState().stocks.budget).toBeCloseTo(27988.8, 4);
     // Users climb toward the 1033 steady state (3.1/day gain == 0.3% churn).
     expect(e.getState().stocks.users).toBeCloseTo(1026, 0);
     expect(e.getState().stocks.reputation).toBe(1); // no challenges, so it never drops
@@ -153,15 +150,14 @@ describe("simulation", () => {
 
   // Full-content idle probe: same do-nothing player, challenges on.
   //
-  // RE-PINNED for the lean Studio pool. The pool is now three
-  // events, two of which (model-deprecation, runaway-agent-loop) are gated on
-  // owning something from the agent ladder -- so the idle player, which owns
-  // nothing, only ever sees scope-creep, and only after the beta ships
-  // (minCompletedProjects 1). After the beta there is no in-flight project, so
-  // scope creep is unattributed surplus (ADR 0009) and cannot change the beta's
+  // Agent-gated events (model-deprecation, runaway-agent-loop) stay quiet
+  // because the idle player owns no agent. After the beta ships, scope-creep,
+  // usage-overage, and cloud-credit can fire. After the beta there is no
+  // in-flight project, so scope creep is unattributed surplus (ADR 0009) and cannot change the beta's
   // completion day. The idle trajectory is nearly the challenge-free one: the
-  // beta still completes on day 377 and the +$800 bonus is still the only
-  // income the run ever sees.
+  // beta still completes on day 377. Pre-launch burn is still $30/day, so
+  // day 300 is 16000. Challenges then shave the post-launch climb; day 2000
+  // ends at 26908.8, about $1080 under the challenge-free run.
   //
   // RE-PINNED for content wave (release 8, task 4.5): challenge rolls are now
   // hashed per challenge (hashRoll on gameSeed/day/id) instead of drawn
@@ -171,15 +167,10 @@ describe("simulation", () => {
   // point of the refactor is that these values no longer move when a
   // challenge is added or reordered in content.
   //
-  // Studio spine: the idle player owns no monetization decisions,
-  // so its +30 users (and organic growth after the beta) never turn into
-  // income -- the beta's $800 bonus is the only cash the run ever sees against
-  // a steady -$20/day base burn, and it drains to zero well within the horizon.
-  // The Release 9 challenge-retune measurements that used to live here (fire
-  // counts for ddos/prod-incident/laptop-dies/open-source-windfall) are gone
-  // with those challenges; the assertions below pin the shape, not exact
-  // challenge-dependent values.
-  it("idle with full content: no monetization means the users grant never pays off; drains to zero within the horizon", () => {
+  // The starting one-time product is owned from day 0, so the user grant
+  // does turn into sales. Those sales, against flat hosting bands, leave the
+  // treasury positive through day 2000.
+  it("idle with full content: starting-product sales cover banded hosting through day 2000", () => {
     const e = new Engine(fullContent());
     const check = ledgerWatcher();
     let budgetAt300 = NaN;
@@ -195,9 +186,8 @@ describe("simulation", () => {
     }
     expect(completionDay).toBe(377);
     expect(sawUsers).toBe(true); // the users economy did switch on at launch
-    expect(budgetAt300).toBeLessThan(19200); // pre-completion glide, well off 25,000 (observed 19000: no cash event reaches an idle Studio)
-    expect(budgetAt300).toBeGreaterThan(0); // no instant death
-    expect(e.getState().stocks.budget).toBe(0); // product sales delay the drain; an idle factory is still broke by day 2000
+    expect(budgetAt300).toBe(16000); // 25000 - 30*300; no cash event reaches an idle Studio before launch
+    expect(e.getState().stocks.budget).toBeCloseTo(26908.8, 4);
   });
 
   // Smart-strategy probe: a modest, sensible plan (test-suite day 1, ci-cd
@@ -695,7 +685,7 @@ describe("simulation", () => {
     // Only the lean pool can fire, and scope-creep waits for the launch
     // (minCompletedProjects 1) rather than a calendar day.
     for (const id of Object.keys(s.challengeLastFired)) {
-      expect(["scope-creep", "model-deprecation", "runaway-agent-loop"]).toContain(id);
+      expect(["scope-creep", "model-deprecation", "runaway-agent-loop", "usage-overage", "cloud-credit"]).toContain(id);
     }
     expect(s.challengeLastFired["scope-creep"] ?? Infinity).toBeGreaterThan(completedDay);
   });

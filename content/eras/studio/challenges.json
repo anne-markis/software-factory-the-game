@@ -29,5 +29,23 @@
     },
     "cooldownDays": 45,
     "effects": [{ "type": "addToStock", "stock": "budget", "value": -60 }]
+  },
+  {
+    "id": "usage-overage",
+    "name": "Usage overage",
+    "description": "A traffic spike blows past the capacity you sized for. Keep the lights on is $40/day higher for 3 days.",
+    "probabilityPerDay": 0.01,
+    "condition": { "minCompletedProjects": 1 },
+    "cooldownDays": 40,
+    "effects": [{ "type": "modifyKtloCash", "perDay": 40, "durationDays": 3 }]
+  },
+  {
+    "id": "cloud-credit",
+    "name": "Cloud credit",
+    "description": "The host posted a credit. Keep the lights on is $12/day lower for 14 days.",
+    "probabilityPerDay": 0.002,
+    "condition": { "minCompletedProjects": 1 },
+    "cooldownDays": 120,
+    "effects": [{ "type": "modifyKtloCash", "perDay": -12, "durationDays": 14 }]
   }
 ]

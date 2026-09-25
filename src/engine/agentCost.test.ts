@@ -46,9 +46,9 @@ describe("coding agent cost per human", () => {
     e.applyDecision("agent");
     expect(e.getState().stocks.budget).toBe(before - 20);
     e.tick();
-    // No permanent KTLO project. The hire still adds $35 ktloPerDay beside $438 payroll and the agent's $8.
-    expect(e.getState().expensesByDay.at(-1)).toMatchObject({ human: 438, agents: 8, ktlo: 35 });
-    expect(e.getState().stocks.budget).toBe(before - 20 - 438 - 8 - 35);
+    // No permanent KTLO project. The hire adds $35 and the granted product adds $10, beside $438 payroll and the agent's $8.
+    expect(e.getState().expensesByDay.at(-1)).toMatchObject({ human: 438, agents: 8, ktlo: 45 });
+    expect(e.getState().stocks.budget).toBe(before - 20 - 438 - 8 - 45);
   });
 
   it("ignores a hire until they start, then raises agent payroll", () => {

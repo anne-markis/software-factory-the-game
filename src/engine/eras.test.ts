@@ -13,9 +13,9 @@ import type { GameState } from "./types";
 const shipped = shippedEras();
 const COMPANY_BUDGET = shipped.eras.find((era) => era.id === "company")!.entryAnyOf![0].minBudget!;
 const MEGACORP_BUDGET = shipped.eras.find((era) => era.id === "megacorp")!.entryAnyOf![0].minBudget!;
-/** Floors are checked after the day's $20 base burn. */
-const COMPANY_CLEAR = COMPANY_BUDGET + 20;
-const MEGACORP_CLEAR = MEGACORP_BUDGET + 40;
+/** Floors are checked after the day's burn. Fresh burn is $30 ($20 base + the granted product). Megacorp takes two ticks. */
+const COMPANY_CLEAR = COMPANY_BUDGET + 30;
+const MEGACORP_CLEAR = MEGACORP_BUDGET + 60;
 
 function stateAt(eraId: string, stocks: Partial<GameState["stocks"]> = {}): GameState {
   const e = new Engine(loadShippedContent(eraId));

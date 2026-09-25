@@ -18,7 +18,7 @@ function content(): GameContent {
 describe("netRecurringBurnPerDay", () => {
   it("is KTLO cash alone on a fresh game", () => {
     const e = new Engine(content());
-    expect(netRecurringBurnPerDay(e.getState(), content())).toBe(20);
+    expect(netRecurringBurnPerDay(e.getState(), content())).toBe(30);
   });
 
   it("adds owned perDay upkeep and subtracts incomePerDay", () => {
@@ -47,11 +47,11 @@ describe("netRecurringBurnPerDay", () => {
     }
     activateDueInstances(s, c);
     e.applyDecision("retainer"); // incomePerDay 8
-    // 20 KTLO + 35 hire surcharge + 438 payroll - 8 income
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(485);
+    // 20 KTLO + 10 granted product + 35 hire surcharge + 438 payroll - 8 income
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(495);
     e.applyDecision("agent");
     // Founder + the active hire: the agent's $4/day is charged twice.
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(493);
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(503);
   });
 
   // Studio spine: subscription income scales with the users stock,
@@ -62,10 +62,11 @@ describe("netRecurringBurnPerDay", () => {
     e.applyDecision("subscription"); // incomeFromStock users * 0.75
     const s = e.getState() as import("../engine/types").GameState;
     s.stocks.users = 0;
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(20); // 0 users -> no income yet
+    // 0 users -> no income yet. Base $20 + granted product $10 + plan $15.
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(45);
     s.stocks.users = 100;
-    // 20 KTLO - (100 users * 0.75) = 20 - 75 = -55 (net income)
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-55);
+    // 45 KTLO - (100 users * 0.75) = -30. This fixture has no hosting bands.
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-30);
   });
 });
 
@@ -75,9 +76,9 @@ describe("budgetRunwayDays", () => {
     const e = new Engine(c);
     const state = e.getState();
     state.stocks.budget = 250;
-    // burn 20 → 12 days
-    expect(budgetRunwayDays(state, c)).toBe(12);
-    expect(12).toBeLessThanOrEqual(RUNWAY_WARN_DAYS);
+    // burn 30 → 8 days
+    expect(budgetRunwayDays(state, c)).toBe(8);
+    expect(8).toBeLessThanOrEqual(RUNWAY_WARN_DAYS);
   });
 
   it("returns null when net burn is not positive", () => {
@@ -86,8 +87,8 @@ describe("budgetRunwayDays", () => {
     const e = new Engine(c);
     e.applyDecision("subscription"); // recurring income, no payroll
     const s = e.getState() as import("../engine/types").GameState;
-    s.stocks.users = 40; // 40 users x $0.75 = $30/day
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-30);
+    s.stocks.users = 40; // $30/day income, minus plan $15 and granted product $10 (no base project)
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-5);
     expect(budgetRunwayDays(e.getState(), c)).toBeNull();
   });
 
@@ -95,7 +96,7 @@ describe("budgetRunwayDays", () => {
     const c = content();
     const e = new Engine(c);
     const days = budgetRunwayDays(e.getState(), c);
-    expect(days).toBe(1250); // 25000 / 20
+    expect(days).toBe(833); // 25000 / 30
     expect(days!).toBeGreaterThan(RUNWAY_WARN_DAYS);
   });
 });

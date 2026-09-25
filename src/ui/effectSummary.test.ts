@@ -103,9 +103,9 @@ describe("summarizeDecisionEffects", () => {
   it("the shipped subscription and one-time-product cards summarise their user-scaled income", () => {
     const decisions = parseDecisions(decisionsJson);
     const sub = decisions.find((d) => d.id === "subscription")!;
-    expect(summarizeDecisionEffects(sub)).toBe("+$0.75/user/day");
+    expect(summarizeDecisionEffects(sub)).toBe("+$0.75/user/day, KTLO +$15/day");
     const otp = decisions.find((d) => d.id === "one-time-product")!;
-    expect(summarizeDecisionEffects(otp)).toBe("~8%/user/day chance of a $1.2 sale");
+    expect(summarizeDecisionEffects(otp)).toBe("~8%/user/day chance of a $1.2 sale, KTLO +$10/day");
   });
 
   // the agent ladder is the shop's headline retune, so pin what its
@@ -126,9 +126,11 @@ describe("summarizeDecisionEffects", () => {
       "finish +0.2/day (+10%/human), plan +0.2/day (+10%/human), review +0.05/day, debt +0.04",
     );
     const harness = decisions.find((d) => d.id === "agent-harness")!;
-    expect(summarizeDecisionEffects(harness)).toBe("finish x1.25, plan x1.25, debt x0.7");
+    expect(summarizeDecisionEffects(harness)).toBe("finish x1.25, plan x1.25, debt x0.7, KTLO +$18/day");
     const orchestration = decisions.find((d) => d.id === "agent-orchestration")!;
-    expect(summarizeDecisionEffects(orchestration)).toBe("finish x1.45, plan x1.45, review x1.45, debt x0.55");
+    expect(summarizeDecisionEffects(orchestration)).toBe(
+      "finish x1.45, plan x1.45, review x1.45, debt x0.55, KTLO +$30/day",
+    );
     const ciReview = decisions.find((d) => d.id === "agent-ci-review")!;
     expect(summarizeDecisionEffects(ciReview)).toBe("review x2.5");
   });
@@ -225,10 +227,12 @@ describe("summarizeDecisionEffects", () => {
       const decisions = parseDecisions(decisionsJson);
       const hire = decisions.find((d) => d.id === "basic-dev")!;
     expect(summarizeDecisionEffects(hire)).toBe(
-      "capacity +1, finish +1.0 to -1.0, review +0.7 to +0.1, morale +4.0 to -15.0",
+      "capacity +1, finish +1.0 to -1.0, review +0.7 to +0.1, morale +4.0 to -15.0, KTLO +$35/day",
     );
     const pm = loadShippedContent("company").decisions.find((d) => d.id === "product-manager")!;
-    expect(summarizeDecisionEffects(pm)).toBe("discover +5.0 to +0.1, user interviews x5.0 to x0.1");
+    expect(summarizeDecisionEffects(pm)).toBe(
+      "discover +5.0 to +0.1, user interviews x5.0 to x0.1, KTLO +$35/day",
+    );
     });
   });
 

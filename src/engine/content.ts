@@ -281,6 +281,13 @@ const effectSchema = z.discriminatedUnion("type", [
       skipWhenBurnExceedsIncome: z.boolean(),
     })
     .strict(),
+  z
+    .object({
+      type: z.literal("modifyKtloCash"),
+      perDay: z.number(),
+      durationDays: z.number().positive(),
+    })
+    .strict(),
   z.object({ type: z.literal("sellCompany"), budgetGrant: z.number().positive() }).strict(),
 ]);
 
@@ -552,6 +559,13 @@ const contractProjectSchema = z
   })
   .strict();
 
+const hostingTierSchema = z
+  .object({
+    minUsers: z.number().int().positive(),
+    perDay: z.number().positive(),
+  })
+  .strict();
+
 const permanentProjectSchema = z
   .object({
     id: z.string(),
@@ -559,7 +573,7 @@ const permanentProjectSchema = z
     permanent: z.literal(true),
     basePerDay: z.number().positive(),
     perDay: z.number().min(0),
-    hostingPerUser: z.number().min(0).optional(),
+    hostingTiers: z.array(hostingTierSchema).min(1).optional(),
   })
   .strict();
 
@@ -588,6 +602,17 @@ export function parseProjects(
       throw new Error(
         `Invalid content in ${source}: "${def.id}" has ideaCost but is not a Pursue offer`,
       );
+    }
+    if (!isContractProject(def) && def.hostingTiers) {
+      let prev = 0;
+      for (const tier of def.hostingTiers) {
+        if (tier.minUsers <= prev) {
+          throw new Error(
+            `Invalid content in ${source}: "${def.id}" hostingTiers minUsers must be strictly increasing`,
+          );
+        }
+        prev = tier.minUsers;
+      }
     }
   }
   return defs;

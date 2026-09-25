@@ -453,7 +453,7 @@ describe("save/load", () => {
     a.tick();
     const restored = deserialize(serialize(a.getState()));
     expect(restored.expensesByDay).toEqual(a.getState().expensesByDay);
-    expect(restored.expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, ktlo: 20 });
+    expect(restored.expensesByDay.at(-1)).toEqual({ day: 1, human: 0, agents: 4, ktlo: 30 });
   });
 
   it("loads a legacy save without lastChallengeDay fine (stays undefined, no default needed)", () => {

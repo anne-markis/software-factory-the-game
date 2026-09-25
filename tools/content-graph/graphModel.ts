@@ -183,6 +183,8 @@ export function formatEffect(effect: Effect): string {
       return `keeps ${effect.project} scheduled`;
     case "autoSchedule":
       return `auto-schedules ${effect.projectIds.join(", ")}`;
+    case "modifyKtloCash":
+      return duration(effect.durationDays, `KTLO ${signed(effect.perDay)}/day`);
     case "sellCompany":
       return `sell company +$${formatNumber(effect.budgetGrant)}`;
     default: {

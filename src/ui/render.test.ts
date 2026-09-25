@@ -122,32 +122,32 @@ describe("renderStats", () => {
     const c = content();
     const e = new Engine(c);
     const html = renderStats(e.getState(), c);
-    // Fresh game: $25,000 / $20/day = 1250 days; healthy, no warning class.
-    expect(html).toContain('class="stat-value v-budget">$25,000 (1250d)</span>');
+    // Fresh game: $25,000 / $30/day = 833 days; healthy, no warning class.
+    expect(html).toContain('class="stat-value v-budget">$25,000 (833d)</span>');
     expect(html).not.toContain("budget-low");
   });
 
   it("marks Budget with budget-low when runway is at or under 14 days", () => {
     const c = content();
     const e = new Engine(c);
-    e.applyDecision("basic-dev"); // +$438/day payroll and +$35 KTLO after they start → burn 493
+    e.applyDecision("basic-dev"); // +$438/day payroll and +$35 KTLO after they start → burn 503 with the granted product
     const state = e.getState() as GameState;
     for (const inst of state.decisions) {
       if (inst.activeOnDay !== undefined) inst.activeOnDay = state.day;
     }
     activateDueInstances(state, c);
-    state.stocks.budget = 4930; // exactly 10 days
+    state.stocks.budget = 5030; // exactly 10 days
     const html = renderStats(state, c);
-    expect(html).toContain('class="stat-value v-budget budget-low">$4,930 (10d)</span>');
+    expect(html).toContain('class="stat-value v-budget budget-low">$5,030 (10d)</span>');
   });
 
   it("appends Nd runway and warns at 1d", () => {
     const c = content();
     const e = new Engine(c);
     const state = e.getState();
-    state.stocks.budget = 20; // 1 day at KTLO $20
+    state.stocks.budget = 30; // 1 day at KTLO $30
     const html = renderStats(state, c);
-    expect(html).toContain('class="stat-value v-budget budget-low">$20 (1d)</span>');
+    expect(html).toContain('class="stat-value v-budget budget-low">$30 (1d)</span>');
   });
 
   it("omits runway and warning when net burn is not positive", () => {
@@ -890,13 +890,29 @@ describe("renderProjectsStatus", () => {
     expect(html).toContain("always on");
     expect(html).toContain(">On<");
     expect(html).toContain("0.2/day of finish");
-    expect(html).toContain("$20/day");
+    expect(html).toContain("$30/day");
+    expect(html).toContain("hosting $0 until 1 user");
     expect(html).toContain("cannot cancel");
     expect(html).not.toContain("seat");
     expect(html).not.toContain('data-abandon="ktlo"');
     expect(html).not.toContain("Bugfix sprint");
     expect(html).toContain("Back-burner feature");
     expect(html).toContain('data-abandon="gig-landing-page"');
+    e.getState().stocks.users = 150;
+    const band = renderProjectsStatus([...e.getState().projects], e.getState(), e.getContent());
+    expect(band).toContain("hosting $18 until 400 users");
+    expect(band).toContain("$48/day");
+    e.getState().modifiers.push({
+      id: "spike",
+      source: "usage-overage",
+      target: "ktloCash",
+      op: "add",
+      value: 40,
+      expiresDay: e.getState().day + 3,
+    });
+    const spiked = renderProjectsStatus([...e.getState().projects], e.getState(), e.getContent());
+    expect(spiked).toContain("$88/day");
+    expect(spiked).toContain("spike $40/day");
     const offers = renderProjectOffers(e.availableProjects(), e.getState());
     expect(offers).not.toContain("Bugfix sprint");
     expect(offers).not.toContain("Back-burner feature");

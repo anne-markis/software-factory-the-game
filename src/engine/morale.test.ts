@@ -84,8 +84,8 @@ describe("delayed hire", () => {
     e.applyDecision("basic-dev");
     const afterHire = e.getState().stocks.budget;
     e.tick();
-    // Fixture has no KTLO project; pending hire must not add $438 payroll.
-    expect(e.getState().stocks.budget).toBe(afterHire);
+    // Fixture has no KTLO project. The granted product still adds $10, and a pending hire must not add $438 payroll.
+    expect(e.getState().stocks.budget).toBe(afterHire - 10);
     expect(e.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(true);
   });
 

@@ -73,7 +73,8 @@ start. Optional `ktloPerDay` is extra Keep-the-lights-on cash per active
 instance (same start gate as payroll). It is not part of `cost.perDay`, so
 a missed payroll day still removes the card for the wage, while the
 surcharge only applies while the instance is active. Studio uses `$35` on
-each hire, `$18` on the harness, and `$30` on orchestration.
+each hire, `$18` on the harness, `$30` on orchestration, `$15` on the
+subscription, and `$10` on the one-time product.
 
 Cost may be `{}`. `incomePerDay` / `incomeFromStock` / `burstFromStock`
 credit in the same income step **before** payroll that tick. Burst rolls
@@ -115,7 +116,7 @@ Pending copies do not replace the table.
 
 ## Effects
 
-All twelve types are one discriminated union (`effectSchema`). Extra keys
+All fourteen types are one discriminated union (`effectSchema`). Extra keys
 fail. `add` modifiers on a rate sum first, then `mul`, then debt and stock
 drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 
@@ -133,6 +134,8 @@ drags (`src/engine/modifiers.ts`). In-flight count does not multiply rates.
 | `scaleDecisionGrant` | While this instance is active, a purchase of `targetDecision` multiplies its `addToStock` of `stock` by `factor` (below 1 shrinks it). Several active owners: the purchase uses the highest factor. Recorded when effects land, so a delayed hire does not scale grants until they start. `targetDecision` must be a known decision id in this era or an earlier one. |
 | `keepProject` | Marker on a decision's **base** `effects`. While an instance is active, the named contract is started whenever it is not already in flight or in plan, including after it finishes. Pending hires do not schedule. A pursue project is skipped. The project id must exist in the resolved catalog. |
 | `autoSchedule` | Recorded on the instance when effects land (after `delayDays`). Each active owner pursues at most one listed project, in `projectIds` order: the first id that is currently offerable is the one they wait on. They spend `ideaCostFactor` times that project's idea cost, and only when cash covers the upfront cost plus `cashReserve`. `skipWhenBurnExceedsIncome` waits while KTLO plus payroll exceed recurring income (burst sales are ignored). The slot stays taken from Plan through in-flight. Removing the hire does not cancel work already queued. Ids must be pursue contracts in the resolved catalog. |
+| `modifyKtloCash` | Adds `perDay` dollars to the KTLO cash drain for `durationDays` (negative is a credit). The total drain floors at `$0`. This is the spike and the dip. Standing surcharges stay on `ktloPerDay`. |
+| `sellCompany` | Ends the run. The engine starts a new company whose budget is the treasury plus `budgetGrant`, in the highest era that treasury already qualifies for. Not applied as a stock effect. |
 
 `start.json` `baseCapacity` is founder seats (Studio: 1). `DecisionDef.capacity` adds seats while owned (hire: 1). `capacityFromOwned` (`{ id, per }`) adds `per` per owned instance of `id` while this card is owned — Studio ships none; do not hardcode `agent` in the engine.
 
@@ -218,9 +221,15 @@ Shape: `projectSchema`. The starting contract is `start.json`
 - `permanent: true` — always-on overhead, not a contract. Fields are
   `id`, `name`, `basePerDay` (the `ktlo` rate, taken out of finish
   before contract work), and `perDay` (cash drain, shown on Expenses as
-  KTLO). Optional `hostingPerUser` adds that many dollars per current
-  user to the same drain (Studio uses `$0.12`). Active `ktloPerDay` on
-  owned decisions is added there too. It does not take an In Progress seat. No size or payout. It
+  KTLO). Optional `hostingTiers` (`{ minUsers, perDay }`, strictly
+  increasing `minUsers`) adds one flat hosting bill: the tier with the
+  greatest `minUsers` that the current user count still meets. Inside a
+  band the bill does not move. Falling under a line steps it back down.
+  Studio's bands are `$6` from 1 user, `$18` from 100, `$36` from 400,
+  `$60` from 1,000, `$90` from 2,500, `$130` from 6,000, and `$180` from
+  15,000, on top of the `$20` base. Active `ktloPerDay` on owned
+  decisions is added there too, and a live `modifyKtloCash` modifier
+  adds or subtracts for its duration. It does not take an In Progress seat. No size or payout. It
   is not offered and cannot be abandoned. It appears when its era’s
   catalog is active and is inherited after that. Studio ships Keep the
   lights on; `start.baseRates.ktlo` is the seed (0) and `syncKtloBase`

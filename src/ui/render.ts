@@ -1,9 +1,9 @@
 import type { Availability } from "../engine/decisions";
 import { pursueIdeaCost, type ProjectAvailability } from "../engine/projects";
-import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject, DailyIncome, DailyExpenses } from "../engine/types";
+import type { DecisionDef, DecisionInstance, GameContent, GameState, PendingChoice, LogEntry, ChallengeDef, ActiveProject, DailyIncome, DailyExpenses, PermanentProjectDef } from "../engine/types";
 import { isContractProject } from "../engine/types";
 import { effectiveRate } from "../engine/modifiers";
-import { permanentProjects } from "../engine/ktlo";
+import { activeHostingTier, ktloBurnPerDay, ktloCashAdjustment, nextHostingTier, permanentProjects } from "../engine/ktlo";
 import { summarizeDecisionEffects } from "./effectSummary";
 import { projectEffectChips, type ProjectChip, type ProjectEffectSource } from "./projectEffects";
 import { SECTION_ATTR } from "./domPatch";
@@ -435,25 +435,47 @@ function stallChip(eta: string): string {
   return eta === "stalled" ? `<span class="proj-chip proj-chip-stall">stalled</span>` : "";
 }
 
+function userCountLabel(n: number): string {
+  const shown = fmt(n);
+  return n === 1 ? `${shown} user` : `${shown} users`;
+}
+
+function hostingClause(def: PermanentProjectDef, users: number): string {
+  if (!def.hostingTiers || def.hostingTiers.length === 0) return "";
+  const now = activeHostingTier(def, users)?.perDay ?? 0;
+  const next = nextHostingTier(def, users);
+  if (next) return `hosting $${fmt(now)} until ${userCountLabel(next.minUsers)}`;
+  return `hosting $${fmt(now)}`;
+}
+
 function permanentRows(state: Readonly<GameState>, content: GameContent): string {
   const defs = permanentProjects(content);
   if (defs.length === 0) return "";
   const rows = defs
     .map((def) => {
       const rate = defs.length === 1 ? effectiveRate(state, "ktlo") : def.basePerDay;
+      const burn =
+        defs.length === 1
+          ? ktloBurnPerDay(state, content)
+          : def.perDay + (activeHostingTier(def, state.stocks.users)?.perDay ?? 0);
+      const hosting = hostingClause(def, state.stocks.users);
+      const hostingBit = hosting ? ` · ${hosting}` : "";
+      const spike = defs.length === 1 ? ktloCashAdjustment(state) : 0;
+      const spikeBit =
+        spike === 0 ? "" : ` · ${spike > 0 ? "spike" : "credit"} $${fmt(Math.abs(spike))}/day`;
       return `<tr class="proj-ktlo" data-project-status="${esc(def.id)}">
         <td class="proj-btn"><button type="button" disabled title="Cannot cancel">On</button></td>
         <td>
           <span class="proj-chip proj-chip-ktlo">always on</span>
           <div class="proj-name"><strong>${esc(def.name)}</strong></div>
-          <div class="proj-sub">${fmt(rate)}/day of finish · $${fmt(def.perDay)}/day · cannot cancel</div>
+          <div class="proj-sub">${fmt(rate)}/day of finish · $${fmt(burn)}/day${hostingBit}${spikeBit} · cannot cancel</div>
         </td>
         <td class="num">ongoing</td>
         <td class="num">${PROJ_EMPTY}</td>
         <td class="num">${PROJ_EMPTY}</td>
         <td class="num">${PROJ_EMPTY}</td>
         <td class="num">${PROJ_EMPTY}</td>
-        <td class="proj-fx"><span class="proj-chip">−${fmt(rate)} finish/day</span><span class="proj-chip">$${fmt(def.perDay)}/day</span></td>
+        <td class="proj-fx"><span class="proj-chip">−${fmt(rate)} finish/day</span><span class="proj-chip">$${fmt(burn)}/day</span></td>
       </tr>`;
     })
     .join("");

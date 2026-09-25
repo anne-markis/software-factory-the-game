@@ -372,7 +372,7 @@ describe("appView era identity stays off the player chrome", () => {
   it("never shows an era name on the title, then silently swaps into Company after the budget floor fires", () => {
     const content = loadShippedContent();
     const restored = initialState(content);
-    restored.stocks.budget = content.eras!.eras.find((era) => era.id === "company")!.entryAnyOf![0].minBudget! + 20;
+    restored.stocks.budget = content.eras!.eras.find((era) => era.id === "company")!.entryAnyOf![0].minBudget! + 30;
     const h = mount({ content, restored, loadEra: loadShippedContent, richBudget: false });
     expect(h.root.querySelector("h1.game-title")!.textContent!.trim()).toBe("Software Factory");
     expect(h.root.querySelector(".era-kicker")).toBeNull();
@@ -731,9 +731,9 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     const chart = h.root.querySelector('[data-section="expenses-chart"]')!;
     expect(chart.textContent).toContain("Human $0/day");
     expect(chart.textContent).toContain("Agents $0/day");
-    expect(chart.textContent).toContain("KTLO $20/day");
+    expect(chart.textContent).toContain("KTLO $30/day");
     expect(chart.querySelector(".income-bars")).toBeTruthy();
-    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $20");
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $30");
   });
 
   it("rolls harness, orchestration, and agent CI review into Agents", () => {
@@ -746,8 +746,8 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     let chart = h.root.querySelector('[data-section="expenses-chart"]')!;
     expect(chart.textContent).toContain("Human $0/day");
     expect(chart.textContent).toContain("Agents $13/day");
-    expect(chart.textContent).toContain("KTLO $38/day");
-    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $51");
+    expect(chart.textContent).toContain("KTLO $48/day");
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $61");
     h.root.querySelector<HTMLElement>('[data-buy="agent-orchestration"]')!.click();
     h.root.querySelector<HTMLElement>('[data-buy="test-suite"]')!.click();
     h.root.querySelector<HTMLElement>('[data-buy="ci-cd"]')!.click();
@@ -756,8 +756,8 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     h.view.render();
     chart = h.root.querySelector('[data-section="expenses-chart"]')!;
     expect(chart.textContent).toContain("Agents $37/day");
-    expect(chart.textContent).toContain("KTLO $68/day");
-    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $105");
+    expect(chart.textContent).toContain("KTLO $78/day");
+    expect(h.root.querySelector('[data-section="expenses-title"]')!.textContent).toBe("Expenses: $115");
   });
 
   it("puts subscription receipts on Income, while purchase stays in Events", () => {
