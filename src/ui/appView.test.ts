@@ -769,8 +769,8 @@ describe("appView keeps the DOM in step with state (no stale memoized regions)",
     h.view.render();
     const chart = h.root.querySelector('[data-section="income-chart"]')!;
     expect(chart.textContent).toContain("Recurring $75/day");
-    expect(chart.textContent).toContain("Burst $0/day");
-    expect(h.root.querySelector('[data-section="income-title"]')!.textContent).toBe("Income: $75");
+    expect(chart.textContent).toContain("Burst $10.8/day");
+    expect(h.root.querySelector('[data-section="income-title"]')!.textContent).toBe("Income: $85.8");
     expect(h.root.querySelector(".log")!.textContent).not.toMatch(/product sale burst|incomeFromStock/i);
   });
 

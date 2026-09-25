@@ -555,8 +555,8 @@ describe("rollChallenges", () => {
     expect(hashRoll(SEED, 30, "sickness:i1")).toBeLessThan(0.1);
     expect(hashRoll(SEED, 30, "sickness:i2")).toBeGreaterThanOrEqual(0.1);
     rollChallenges(s, noRng, c);
-    expect(s.decisions[0].sickUntilDay).toBe(35); // day 30 + durationDays 5
-    expect(s.decisions[1].sickUntilDay).toBeUndefined();
+    expect(s.decisions.find((d) => d.instanceId === "i1")!.sickUntilDay).toBe(35); // day 30 + durationDays 5
+    expect(s.decisions.find((d) => d.instanceId === "i2")!.sickUntilDay).toBeUndefined();
   });
 
   it("different challenges get independent rolls on the same day", () => {

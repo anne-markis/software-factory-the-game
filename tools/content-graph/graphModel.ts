@@ -183,6 +183,8 @@ export function formatEffect(effect: Effect): string {
       return `keeps ${effect.project} scheduled`;
     case "autoSchedule":
       return `auto-schedules ${effect.projectIds.join(", ")}`;
+    case "sellCompany":
+      return `sell company +$${formatNumber(effect.budgetGrant)}`;
     default: {
       const exhaustive: never = effect;
       return exhaustive;

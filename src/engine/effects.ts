@@ -246,6 +246,8 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
       case "keepProject":
         // Marker only. scheduleKeptProjects reads the owning def each tick.
         break;
+      case "sellCompany":
+        throw new Error("sellCompany is applied by the engine, not as a stock effect");
       case "autoSchedule":
         // Stored on the owning instance via recordAutoSchedule when the
         // effects land. The tick pursues from that policy.

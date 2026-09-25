@@ -105,6 +105,7 @@ describe("KTLO", () => {
     const split = hired.expensesByDay.at(-1)!;
     expect(split.human).toBe(438);
     expect(split.ktlo).toBeCloseTo(85);
-    expect(hired.stocks.budget).toBeCloseTo(before - 85 - 438 - 8 - 5);
+    const burst = hired.incomeByDay.at(-1)!.burst;
+    expect(hired.stocks.budget).toBeCloseTo(before - 85 - 438 - 8 - 5 + burst);
   });
 });

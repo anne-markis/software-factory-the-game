@@ -52,6 +52,7 @@
       { "stock": "morale", "amount": 5 }
     ]
   },
+  "grantedDecisionIds": ["one-time-product"],
   "challengeSpacingDays": 35,
   "milestones": [
     { "id": "trusted", "reputation": 5, "name": "Trusted vendor", "message": "Milestone: Trusted vendor. Bigger contracts are opening up." },

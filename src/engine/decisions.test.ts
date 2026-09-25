@@ -44,14 +44,14 @@ describe("decisions", () => {
     const e = new Engine(content());
     e.applyDecision("basic-dev");
     const s0 = e.getState();
-    expect(s0.decisions).toHaveLength(1);
-    expect(s0.decisions[0].gambleLabel).toBeDefined();
-    expect(s0.modifiers.filter((m) => m.source === s0.decisions[0].instanceId)).toHaveLength(0);
+    const hire0 = s0.decisions.find((d) => d.defId === "basic-dev")!;
+    expect(hire0.gambleLabel).toBeDefined();
+    expect(s0.modifiers.filter((m) => m.source === hire0.instanceId)).toHaveLength(0);
     settleHires(e);
     const s = e.getState();
     // Hire writes two gambled modifiers: finish and review. The seat is
     // DecisionDef.capacity, not a modifier. Morale is addToStock, not a modifier.
-    const mods = s.modifiers.filter((m) => m.source === s.decisions[0].instanceId);
+    const mods = s.modifiers.filter((m) => m.source === s.decisions.find((d) => d.defId === "basic-dev")!.instanceId);
     expect(mods).toHaveLength(2);
     expect(mods.some((m) => m.target === "review" && [0.7, 0.4, 0.1].includes(m.value))).toBe(true);
     const finish = mods.find((m) => m.target === "finish")!;
@@ -184,7 +184,7 @@ describe("decisions", () => {
     e.applyDecision("agent");
     e.applyDecision("agent");
     expect(e.availableDecisions().find((a) => a.def.id === "agent-orchestration")!.purchasable).toBe(true);
-    e.removeDecision(e.getState().decisions[0].instanceId);
+    e.removeDecision(e.getState().decisions.find((d) => d.defId === "agent")!.instanceId);
     const entry = e.availableDecisions().find((a) => a.def.id === "agent-orchestration")!;
     expect(entry.purchasable).toBe(false);
     expect(entry.code).toBe("missing-requires");
@@ -193,10 +193,10 @@ describe("decisions", () => {
   it("removeDecision drops effects and upkeep", () => {
     const e = new Engine(content());
     e.applyDecision("agent");
-    const inst = e.getState().decisions[0];
+    const inst = e.getState().decisions.find((d) => d.defId === "agent")!;
     e.removeDecision(inst.instanceId);
     const s = e.getState();
-    expect(s.decisions).toHaveLength(0);
+    expect(s.decisions.some((d) => d.defId === "agent")).toBe(false);
     expect(s.modifiers.filter((m) => m.source === inst.instanceId)).toHaveLength(0);
   });
 
@@ -216,7 +216,7 @@ describe("decisions", () => {
   it("removeDecision rejects non-removable decisions", () => {
     const e = new Engine(content());
     e.applyDecision("test-suite");
-    const inst = e.getState().decisions[0];
+    const inst = e.getState().decisions.find((d) => d.defId === "test-suite")!;
     expect(() => e.removeDecision(inst.instanceId)).toThrow(/cannot be removed/);
   });
 
@@ -382,7 +382,7 @@ describe("decisions", () => {
     const s = e.getState() as GameState;
     s.stocks.budget = 30;
     e.tick();
-    expect(e.getState().decisions).toHaveLength(0);
+    expect(e.getState().decisions.some((d) => d.defId === "basic-dev")).toBe(false);
     expect(e.getState().log.some((l) => l.message.includes("Payroll failed"))).toBe(true);
   });
 

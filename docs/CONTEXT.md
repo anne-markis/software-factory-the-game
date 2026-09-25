@@ -61,6 +61,14 @@ separate from **stall** (pipeline empty and nothing affordable).
 Launch beta project completes (`completionStockGrants`), then grows via
 always-on **stock flows** and can slow delivery via **stock drag**.
 Monetization decisions *read* users; they do not invent a second population.
+A new game already owns **One-time product** (`start.grantedDecisionIds`);
+the $400 is not charged. Subscription is the early monetization click.
+**Raise a round** is a repeatable $10,000 gamble: usually morale −20 and
+the fee is gone; a term sheet adds $600,000, 25 reputation, and 40 users.
+**Sell the company** replaces the run. Budget becomes the treasury plus
+$10,000,000. Users, reputation, crew, cards, and pipeline reset, and the
+new company opens in the highest era that budget already clears (a tick
+still climbs only one rung). The one-time product grant applies again.
 
 **Morale** is the employee-loop quality stock. It seeds at 70 and caps at
 100 (`start.stockMax`). One company-wide number for every hired human type:

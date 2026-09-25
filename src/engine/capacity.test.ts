@@ -181,7 +181,7 @@ describe("tick seats", () => {
     expect(e.getState().stocks.inProgress).toBe(2);
     const ready = e.getState().stocks.backlog;
     const done = e.getState().stocks.done;
-    e.removeDecision(e.getState().decisions[0]!.instanceId);
+    e.removeDecision(e.getState().decisions.find((d) => d.defId === "basic-dev")!.instanceId);
     const s = e.getState();
     expect(s.stocks.inProgress).toBe(1);
     expect(s.stocks.backlog).toBe(ready + 1);
