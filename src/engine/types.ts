@@ -115,7 +115,10 @@ export type Effect =
       ideaCostFactor: number;
       cashReserve: number;
       skipWhenBurnExceedsIncome: boolean;
-    };
+    }
+  // Temporary KTLO cash. perDay may be negative (a credit). durationDays is
+  // required so this stays a spike or a dip, not a second copy of ktloPerDay.
+  | { type: "modifyKtloCash"; perDay: number; durationDays: number };
 
 export interface AutoSchedulePolicy {
   projectIds: string[];
@@ -130,7 +133,7 @@ export interface StockGrantScale {
   factor: number;
 }
 
-export type ModifierTarget = RateId | "allRates" | "debtMultiplier" | "capacity";
+export type ModifierTarget = RateId | "allRates" | "debtMultiplier" | "capacity" | "ktloCash";
 
 export interface Modifier {
   id: string;
@@ -317,16 +320,21 @@ export interface ChallengeDef {
 
 // Always-on overhead (Keep the lights on). Not a contract: no remaining,
 // no payout, no offer row. Present from Studio, inherited after that.
-// Cards scale basePerDay via modifyRate target "ktlo". perDay is the cash
-// drain (replaces the old start.baseBurnPerDay). It does not take a seat.
+// Cards scale basePerDay via modifyRate target "ktlo". perDay is the flat
+// cash drain. hostingTiers add one flat hosting bill for the highest band
+// the current user count qualifies for, and drop back when users do.
+export interface HostingTier {
+  minUsers: number;
+  perDay: number;
+}
+
 export interface PermanentProjectDef {
   id: string;
   name: string;
   permanent: true;
   basePerDay: number;
   perDay: number;
-  // Dollars per current user added to the KTLO cash drain. Omit for none.
-  hostingPerUser?: number;
+  hostingTiers?: HostingTier[];
 }
 
 export interface ContractProjectDef {

@@ -76,7 +76,7 @@ describe("simulation", () => {
   // Launch beta that pays NOTHING per point (payoutPerPoint 0) and a $800
   // completion bonus. So an idle player earns $0 while shipping the beta and
   // $0 after (idle starts no follow-on project), which makes the whole budget
-  // trajectory a -$20/day base burn until launch, then hosting on top, with a single +$800
+  // trajectory a -$20/day base burn until launch, then a flat hosting band, with a single +$800
   // bump when the beta completes. Challenges are stripped to isolate this.
   //
   // Tech-debt drag never engages here: the beta is only 300 points, so idle
@@ -92,17 +92,19 @@ describe("simulation", () => {
   //
   // COMPLETION -- day 377 (300 points at 0.8 finish/day after the 0.2 KTLO
   // reserve; first ships day 3): +$800 bonus and +1 reputation land. The
-  // same tick adds users, so hosting ($0.12/user) joins the $20 base and
-  // budget lands near 18256.
+  // same tick adds users. About 33 users sit in the $6 hosting band, so the
+  // drain is $26 and the budget lands at 18254.
   //
-  // PHASE 2 -- post-completion tail: no project and no income, but hosting
-  // grows with users, so the drain is steeper than $20/day. Budget hits 0
-  // on day 664 and stays clamped.
+  // PHASE 2 -- post-completion tail: no project and no income. Hosting stays
+  // flat inside a band and steps up at 100, 400, and 1,000 users. Budget hits
+  // 0 on day 757 and stays clamped.
   //
   // USERS -- 0 until day 377, then grow from 30 toward the steady state where
   // organic gain (3 + reputation 1 * 0.1 = 3.1/day) equals churn
-  // (users * 0.003), i.e. about 1033 users. By day 2000 the idle run is
-  // still a few users short of that cap.
+  // (users * 0.003), i.e. about 1033 users. That is an equilibrium, not a
+  // ceiling: more reputation or shipped features raise the gain and the
+  // balance point moves up. By day 2000 the idle run is still a few users
+  // short of that balance.
   it("idle mechanism: $0/pt Launch beta, clean -$20/day burn with a +$800 completion bump, then drains to zero", () => {
     const c = fullContent();
     c.challenges = [];
@@ -126,7 +128,7 @@ describe("simulation", () => {
       }
       if (firstZeroDay === 0 && s.stocks.budget === 0) firstZeroDay = day;
       if (day === 300) { repBeforeCompletion = s.stocks.reputation; usersBeforeCompletion = s.stocks.users; }
-      if ([50, 100, 200, 300, 377, 664].includes(day)) at[day] = s.stocks.budget;
+      if ([50, 100, 200, 300, 377, 757].includes(day)) at[day] = s.stocks.budget;
     }
     // Users and reputation stay at 0 through the whole beta, then step up the
     // moment it completes -- nothing invents users offstage before launch.
@@ -141,9 +143,9 @@ describe("simulation", () => {
     expect(at[200]).toBe(21000);
     expect(at[300]).toBe(19000); // solvency rule: beta finishes with budget to spare
     // Completion bump: +$800 bonus lands on day 377 (0.8 product finish after KTLO).
-    expect(at[377]).toBeCloseTo(18256.0388, 3);
-    expect(firstZeroDay).toBe(664);
-    expect(at[664]).toBe(0);
+    expect(at[377]).toBe(18254);
+    expect(firstZeroDay).toBe(757);
+    expect(at[757]).toBe(0);
     expect(e.getState().stocks.budget).toBe(0); // clamped through day 2000
     // Users climb toward the 1033 steady state (3.1/day gain == 0.3% churn).
     expect(e.getState().stocks.users).toBeCloseTo(1026, 0);
@@ -696,7 +698,7 @@ describe("simulation", () => {
     // Only the lean pool can fire, and scope-creep waits for the launch
     // (minCompletedProjects 1) rather than a calendar day.
     for (const id of Object.keys(s.challengeLastFired)) {
-      expect(["scope-creep", "model-deprecation", "runaway-agent-loop"]).toContain(id);
+      expect(["scope-creep", "model-deprecation", "runaway-agent-loop", "usage-overage", "cloud-credit"]).toContain(id);
     }
     expect(s.challengeLastFired["scope-creep"] ?? Infinity).toBeGreaterThan(completedDay);
   });

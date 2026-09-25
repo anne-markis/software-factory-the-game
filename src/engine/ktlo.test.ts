@@ -3,6 +3,7 @@ import { Engine } from "./engine";
 import { loadShippedContent, shippedEras } from "./loadShippedContent";
 import { effectiveRate } from "./modifiers";
 import { effectiveCapacity } from "./capacity";
+import { applyEffects } from "./effects";
 import { ktloBurnPerDay, productFinishRate } from "./ktlo";
 import { workLedgerIssues } from "./work";
 import type { GameState } from "./types";
@@ -16,7 +17,14 @@ describe("KTLO", () => {
     const studioKtlo = studio.getContent().projects.find((p) => p.id === "ktlo");
     expect(studioKtlo && isPermanentProject(studioKtlo) && studioKtlo.basePerDay).toBe(0.2);
     expect(studioKtlo && isPermanentProject(studioKtlo) && studioKtlo.perDay).toBe(20);
-    expect(studioKtlo && isPermanentProject(studioKtlo) && studioKtlo.hostingPerUser).toBe(0.12);
+    expect(studioKtlo && isPermanentProject(studioKtlo) && studioKtlo.hostingTiers?.[0]).toEqual({
+      minUsers: 1,
+      perDay: 6,
+    });
+    expect(studioKtlo && isPermanentProject(studioKtlo) && studioKtlo.hostingTiers?.at(-1)).toEqual({
+      minUsers: 15000,
+      perDay: 180,
+    });
     expect(studio.getState().baseRates.ktlo).toBeCloseTo(0.2);
     expect(studio.availableProjects().some((p) => p.def.id === "gig-bugfix")).toBe(false);
     expect(studio.availableProjects().some((p) => p.def.id === "gig-landing-page")).toBe(true);
@@ -79,32 +87,67 @@ describe("KTLO", () => {
     expect(workLedgerIssues(e.getState())).toEqual([]);
   });
 
-  it("adds hosting and active-card surcharges without replacing card payroll", () => {
+  it("holds a hosting band flat, steps at the threshold, and steps back down", () => {
     const e = new Engine(loadShippedContent());
     const content = e.getContent();
     const fresh = e.getState();
     expect(ktloBurnPerDay(fresh, content)).toBe(20);
 
+    fresh.stocks.users = 99;
+    expect(ktloBurnPerDay(fresh, content)).toBe(26);
     fresh.stocks.users = 100;
-    expect(ktloBurnPerDay(fresh, content)).toBeCloseTo(32);
+    expect(ktloBurnPerDay(fresh, content)).toBe(38);
+    fresh.stocks.users = 399;
+    expect(ktloBurnPerDay(fresh, content)).toBe(38);
+    fresh.stocks.users = 1000;
+    expect(ktloBurnPerDay(fresh, content)).toBe(80);
+    fresh.stocks.users = 2500;
+    expect(ktloBurnPerDay(fresh, content)).toBe(110);
+    fresh.stocks.users = 99;
+    expect(ktloBurnPerDay(fresh, content)).toBe(26);
+  });
+
+  it("adds a short spike and a credit on top of the band, and floors at zero", () => {
+    const e = new Engine(loadShippedContent());
+    const content = e.getContent();
+    const s = e.getState() as GameState;
+    s.stocks.users = 100;
+    expect(ktloBurnPerDay(s, content)).toBe(38);
+    applyEffects(s, [{ type: "modifyKtloCash", perDay: 40, durationDays: 3 }], "usage");
+    expect(ktloBurnPerDay(s, content)).toBe(78);
+    applyEffects(s, [{ type: "modifyKtloCash", perDay: -12, durationDays: 14 }], "credit");
+    expect(ktloBurnPerDay(s, content)).toBe(66);
+    applyEffects(s, [{ type: "modifyKtloCash", perDay: -1000, durationDays: 2 }], "wipe");
+    expect(ktloBurnPerDay(s, content)).toBe(0);
+  });
+
+  it("adds hosting and active-card surcharges without replacing card payroll", () => {
+    const e = new Engine(loadShippedContent());
+    const content = e.getContent();
+    const fresh = e.getState();
+    fresh.stocks.users = 100;
+    expect(ktloBurnPerDay(fresh, content)).toBe(38);
+
+    e.applyDecision("subscription");
+    expect(ktloBurnPerDay(e.getState(), content)).toBe(53);
 
     e.applyDecision("agent");
     e.applyDecision("agent-harness");
-    expect(ktloBurnPerDay(e.getState(), content)).toBeCloseTo(50);
+    expect(ktloBurnPerDay(e.getState(), content)).toBe(71);
 
     e.applyDecision("basic-dev");
-    expect(ktloBurnPerDay(e.getState(), content)).toBeCloseTo(50);
+    expect(ktloBurnPerDay(e.getState(), content)).toBe(71);
     const hired = e.getState() as GameState;
     for (const inst of hired.decisions) {
       if (inst.defId === "basic-dev" && inst.activeOnDay !== undefined) inst.activeOnDay = hired.day;
     }
-    expect(ktloBurnPerDay(hired, content)).toBeCloseTo(85);
+    expect(ktloBurnPerDay(hired, content)).toBe(106);
 
     const before = hired.stocks.budget;
     e.tick();
     const split = hired.expensesByDay.at(-1)!;
     expect(split.human).toBe(438);
-    expect(split.ktlo).toBeCloseTo(85);
-    expect(hired.stocks.budget).toBeCloseTo(before - 85 - 438 - 8 - 5);
+    expect(split.ktlo).toBeCloseTo(106);
+    expect(hired.stocks.budget).toBeCloseTo(before - 106 - 438 - 8 - 5 + 75);
   });
 });

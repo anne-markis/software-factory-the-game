@@ -5,7 +5,15 @@
     "permanent": true,
     "basePerDay": 0.2,
     "perDay": 20,
-    "hostingPerUser": 0.12
+    "hostingTiers": [
+      { "minUsers": 1, "perDay": 6 },
+      { "minUsers": 100, "perDay": 18 },
+      { "minUsers": 400, "perDay": 36 },
+      { "minUsers": 1000, "perDay": 60 },
+      { "minUsers": 2500, "perDay": 90 },
+      { "minUsers": 6000, "perDay": 130 },
+      { "minUsers": 15000, "perDay": 180 }
+    ]
   },
   {
     "id": "gig-landing-page",

@@ -886,12 +886,28 @@ describe("renderProjectsStatus", () => {
     expect(html).toContain(">On<");
     expect(html).toContain("0.2/day of finish");
     expect(html).toContain("$20/day");
+    expect(html).toContain("hosting $0 until 1 user");
     expect(html).toContain("cannot cancel");
     expect(html).not.toContain("seat");
     expect(html).not.toContain('data-abandon="ktlo"');
     expect(html).not.toContain("Bugfix sprint");
     expect(html).toContain("Back-burner feature");
     expect(html).toContain('data-abandon="gig-landing-page"');
+    e.getState().stocks.users = 150;
+    const band = renderProjectsStatus([...e.getState().projects], e.getState(), e.getContent());
+    expect(band).toContain("hosting $18 until 400 users");
+    expect(band).toContain("$38/day");
+    e.getState().modifiers.push({
+      id: "spike",
+      source: "usage-overage",
+      target: "ktloCash",
+      op: "add",
+      value: 40,
+      expiresDay: e.getState().day + 3,
+    });
+    const spiked = renderProjectsStatus([...e.getState().projects], e.getState(), e.getContent());
+    expect(spiked).toContain("$78/day");
+    expect(spiked).toContain("spike $40/day");
     const offers = renderProjectOffers(e.availableProjects(), e.getState());
     expect(offers).not.toContain("Bugfix sprint");
     expect(offers).not.toContain("Back-burner feature");

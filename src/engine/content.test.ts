@@ -341,9 +341,11 @@ describe("parseDecisions", () => {
     // (no project gate) -- they simply do nothing at 0 users.
     const sub = defs.find((d) => d.id === "subscription")!;
     expect(sub.incomeFromStock).toEqual({ stock: "users", perUnit: 0.75 });
+    expect(sub.ktloPerDay).toBe(15);
     expect(sub.requires).toBeUndefined();
     const oneTime = defs.find((d) => d.id === "one-time-product")!;
     expect(oneTime.burstFromStock).toEqual({ stock: "users", probabilityPerDay: 0.08, perUnit: 1.2 });
+    expect(oneTime.ktloPerDay).toBe(10);
     expect(oneTime.requires).toBeUndefined();
     // Nothing in the lean shop uses the flat incomePerDay any more
     // (support-retainer, its only user, is out of Studio).
@@ -675,14 +677,18 @@ describe("parseDecisions", () => {
 });
 
 describe("parseChallenges", () => {
-  it("ships exactly the three lean Studio challenges", () => {
+  it("ships the lean Studio challenges", () => {
     const defs = parseChallenges(challengesJson);
-    // The lean pool: one delivery event, one agent finish drag, one agent cash
-    // hit. Hire drama (sickness, key-dev-poached), org/calendar pain
-    // (meeting-creep, team-conflict), free money (cloud-credits,
-    // open-source-windfall), ddos, security-breach, api-price-hike,
-    // laptop-dies and prod-incident all leave Studio (§5.4).
-    expect(defs.map((c) => c.id)).toEqual(["scope-creep", "model-deprecation", "runaway-agent-loop"]);
+    // Delivery, the agent ladder, and two KTLO bill events (a spike and a
+    // credit). Hire drama, org pain, cash windfalls, and prod-incident stay
+    // out of Studio.
+    expect(defs.map((c) => c.id)).toEqual([
+      "scope-creep",
+      "model-deprecation",
+      "runaway-agent-loop",
+      "usage-overage",
+      "cloud-credit",
+    ]);
     // shipped challenges are immediate (no Decision-needed / expiry).
     expect(defs.every((c) => c.choice === undefined)).toBe(true);
     // Nothing left in the pool rolls per human dev or scales on tech debt, so
@@ -772,6 +778,20 @@ describe("parseChallenges", () => {
     expect(runaway.cooldownDays).toBe(45);
     expect(runaway.effects).toEqual([{ type: "addToStock", stock: "budget", value: -60 }]);
     expect(runaway.description).toContain("$60");
+
+    const overage = defs.find((c) => c.id === "usage-overage")!;
+    expect(overage.probabilityPerDay).toBe(0.01);
+    expect(overage.cooldownDays).toBe(40);
+    expect(overage.condition).toEqual({ minCompletedProjects: 1 });
+    expect(overage.effects).toEqual([{ type: "modifyKtloCash", perDay: 40, durationDays: 3 }]);
+    expect(overage.description).toContain("$40");
+
+    const credit = defs.find((c) => c.id === "cloud-credit")!;
+    expect(credit.probabilityPerDay).toBe(0.002);
+    expect(credit.cooldownDays).toBe(120);
+    expect(credit.condition).toEqual({ minCompletedProjects: 1 });
+    expect(credit.effects).toEqual([{ type: "modifyKtloCash", perDay: -12, durationDays: 14 }]);
+    expect(credit.description).toContain("$12");
   });
 
   it("parses a minCompletedProjects condition and rejects a fractional one", () => {

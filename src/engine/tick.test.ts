@@ -458,9 +458,10 @@ describe("tick", () => {
       withoutSub.tick();
       const subDelta = withSub.getState().stocks.budget - subBudgetBefore;
       const noSubDelta = withoutSub.getState().stocks.budget - noSubBudgetBefore;
-      // The only difference is the subscription's incomeFromStock: 100 users *
-      // $0.75/user/day = $75/day on top of whatever the no-sub engine did.
-      expect(subDelta - noSubDelta).toBeCloseTo(75, 5);
+      // Subscription adds $75/day of income and $15/day of KTLO. Net versus
+      // the same engine without the card is +$60. The income series still
+      // records the $75; the surcharge lands on the KTLO expense.
+      expect(subDelta - noSubDelta).toBeCloseTo(60, 5);
       const day = withSub.getState().incomeByDay.at(-1);
       expect(day?.recurring).toBeCloseTo(75, 5);
       expect(day?.burst).toBe(0);

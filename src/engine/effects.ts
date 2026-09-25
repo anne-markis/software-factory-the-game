@@ -250,6 +250,9 @@ export function applyEffects(state: GameState, effects: Effect[], source: string
         // Stored on the owning instance via recordAutoSchedule when the
         // effects land. The tick pursues from that policy.
         break;
+      case "modifyKtloCash":
+        pushModifier(state, source, "ktloCash", "add", effect.perDay, effect.durationDays);
+        break;
     }
   }
 }

@@ -288,7 +288,8 @@
   {
     "id": "subscription",
     "name": "Subscription plan",
-    "description": "Charge your users a recurring fee. Earns $0.75 per user per day, so it scales with your user base and does nothing while you have no users.",
+    "description": "Charge your users a recurring fee. Earns $0.75 per user per day, so it scales with your user base and does nothing while you have no users. Keep the lights on rises by $15/day while the plan is on.",
+    "ktloPerDay": 15,
     "category": "earn-income",
     "cost": {
       "oneTime": 500
@@ -304,7 +305,8 @@
   {
     "id": "one-time-product",
     "name": "One-time product",
-    "description": "Sell a paid add-on. Each user has a chance to buy each day, so a small audience means fewer sales, not none. Worth nothing at zero users.",
+    "description": "Sell a paid add-on. Each user has a chance to buy each day, so a small audience means fewer sales, not none. Worth nothing at zero users. Keep the lights on rises by $10/day while it is on.",
+    "ktloPerDay": 10,
     "category": "earn-income",
     "cost": {
       "oneTime": 400

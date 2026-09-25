@@ -62,10 +62,11 @@ describe("netRecurringBurnPerDay", () => {
     e.applyDecision("subscription"); // incomeFromStock users * 0.75
     const s = e.getState() as import("../engine/types").GameState;
     s.stocks.users = 0;
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(20); // 0 users -> no income yet
+    // 0 users -> no income yet, but the plan still adds $15 of KTLO.
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(35);
     s.stocks.users = 100;
-    // 20 KTLO - (100 users * 0.75) = 20 - 75 = -55 (net income)
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-55);
+    // 20 base + 15 subscription KTLO - (100 users * 0.75) = 35 - 75 = -40
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-40);
   });
 });
 
@@ -86,8 +87,8 @@ describe("budgetRunwayDays", () => {
     const e = new Engine(c);
     e.applyDecision("subscription"); // recurring income, no payroll
     const s = e.getState() as import("../engine/types").GameState;
-    s.stocks.users = 40; // 40 users x $0.75 = $30/day
-    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-30);
+    s.stocks.users = 40; // 40 users x $0.75 = $30/day, minus the plan's $15 KTLO
+    expect(netRecurringBurnPerDay(e.getState(), c)).toBe(-15);
     expect(budgetRunwayDays(e.getState(), c)).toBeNull();
   });
 
